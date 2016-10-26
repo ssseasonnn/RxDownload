@@ -28,7 +28,6 @@ import rx.Observable;
 import rx.Subscriber;
 import rx.functions.Action1;
 import rx.functions.Func1;
-import rx.functions.FuncN;
 import rx.schedulers.Schedulers;
 
 import static java.nio.channels.FileChannel.MapMode.READ_WRITE;
@@ -254,20 +253,26 @@ public class RxDownload {
                 tasks.add(rangeDownloadTask(range.start[i], range.end[i], i, url, filePath));
             }
         }
-
-        Log.d("before combine", Thread.currentThread().getName());
-        return Observable.combineLatestDelayError(tasks, new FuncN<DownloadStatus>() {
+        Log.d("before merge", Thread.currentThread().getName());
+        return Observable.mergeDelayError(tasks).doOnNext(new Action1<DownloadStatus>() {
             @Override
-            public DownloadStatus call(Object... args) {
-                return getDownloadStatus(args);
+            public void call(DownloadStatus downloadStatus) {
+                Log.d("enter combine", Thread.currentThread().getName());
             }
-        })
-                .doOnError(new Action1<Throwable>() {
-                    @Override
-                    public void call(Throwable throwable) {
-                        Log.w(TAG, throwable);
-                    }
-                });
+        });
+        //        Log.d("before combine", Thread.currentThread().getName());
+        //        return Observable.combineLatestDelayError(tasks, new FuncN<DownloadStatus>() {
+        //            @Override
+        //            public DownloadStatus call(Object... args) {
+        //                return getDownloadStatus(args);
+        //            }
+        //        })
+        //                .doOnError(new Action1<Throwable>() {
+        //                    @Override
+        //                    public void call(Throwable throwable) {
+        //                        Log.w(TAG, throwable);
+        //                    }
+        //                });
     }
 
     @NonNull
@@ -297,14 +302,14 @@ public class RxDownload {
         Log.d("enter create range task", Thread.currentThread().getName());
         String range = "bytes=" + start + "-" + end;
         return mDownloadApi.download(range, url)
-                //                .subscribeOn(Schedulers.io())
+                                .subscribeOn(Schedulers.io())
                 .flatMap(new Func1<Response<ResponseBody>, Observable<DownloadStatus>>() {
                     @Override
                     public Observable<DownloadStatus> call(Response<ResponseBody> response) {
                         Log.d("enter create range flat", Thread.currentThread().getName());
                         return saveRangeFile(start, end, i, filePath, response.body());
                     }
-                }).onBackpressureLatest();
+                }).sample(3,TimeUnit.SECONDS,Schedulers.newThread());
     }
 
     /**
@@ -355,7 +360,8 @@ public class RxDownload {
 
             record = new RandomAccessFile(filePath + SUFFIX, "rwd");
             recordChannel = record.getChannel();
-            MappedByteBuffer recordBuffer = recordChannel.map(READ_WRITE, i * EACH_RECORD_SIZE, EACH_RECORD_SIZE);
+            //MappedByteBuffer recordBuffer = recordChannel.map(READ_WRITE, i * EACH_RECORD_SIZE, EACH_RECORD_SIZE);
+            MappedByteBuffer recordBuffer = recordChannel.map(READ_WRITE, 0, RECORD_FILE_TOTAL_SIZE);
 
             save = new RandomAccessFile(filePath, "rwd");
             saveChannel = save.getChannel();
@@ -364,8 +370,18 @@ public class RxDownload {
             inStream = response.byteStream();
             while ((readLen = inStream.read(buffer)) != -1) {
                 saveBuffer.put(buffer, 0, readLen);
-                recordBuffer.putLong(0, recordBuffer.getLong(0) + readLen);
-                status.downloadSize += readLen;
+                recordBuffer.putLong(i * EACH_RECORD_SIZE, recordBuffer.getLong(i * EACH_RECORD_SIZE) + readLen);
+
+                long total = 0;
+                for (int j = 0; j < MAX_THREADS; j++) {
+                    long startTemp = recordBuffer.getLong(j * EACH_RECORD_SIZE);
+                    long endTemp = recordBuffer.getLong(j * EACH_RECORD_SIZE + 8);
+                    long temp = endTemp - startTemp + 1;
+                    total += temp;
+                }
+
+                //                status.downloadSize += readLen;
+                status.downloadSize = total;
                 subscriber.onNext(status);
             }
             Log.i(TAG, Thread.currentThread().getName() + " complete download! Download size is " +

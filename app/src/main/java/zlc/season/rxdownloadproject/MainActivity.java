@@ -45,6 +45,7 @@ public class MainActivity extends AppCompatActivity {
     private Subscription mSubscription;
     private String weixin = "http://dldir1.qq.com/weixin/android/weixin6327android880.apk";
     private String android = "http://www.taxiaides.com/xyyc/file/version/android";
+    private Subscription mSubscription1;
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -72,14 +73,17 @@ public class MainActivity extends AppCompatActivity {
     public void onClick(View view) {
         switch (view.getId()) {
             case R.id.download:
-                RxDownload.getInstance()
-                        .download(android, null, null)
+                mSubscription1 = RxDownload.getInstance()
+                        .download(android, null, null, true)
+                        .subscribeOn(Schedulers.io())
                         .observeOn(AndroidSchedulers.mainThread())
                         .subscribe(new Subscriber<DownloadStatus>() {
 
                             @Override
                             public void onCompleted() {
-                                Log.d("oncomplete", "complete");
+                                if (mSubscription1 != null && !mSubscription1.isUnsubscribed()) {
+                                    mSubscription1.unsubscribe();
+                                }
                             }
 
                             @Override
@@ -89,22 +93,24 @@ public class MainActivity extends AppCompatActivity {
 
                             @Override
                             public void onNext(DownloadStatus result) {
-                                Log.d("MainActivity", "downloadSize:" + result.downloadSize);
                                 mProgressBar.setMax((int) result.totalSize);
                                 mProgressBar.setProgress((int) result.downloadSize);
                             }
                         });
                 break;
             case fab:
-                RxDownload.getInstance()
-                        .download(weixin, null, null)
+                mSubscription = RxDownload.getInstance()
+                        .maxThread(1)
+                        .download(weixin, null, null, true)
+                        .subscribeOn(Schedulers.io())
                         .observeOn(AndroidSchedulers.mainThread())
                         .subscribe(new Subscriber<DownloadStatus>() {
 
-
                             @Override
                             public void onCompleted() {
-                                Log.d("oncomplete", "complete");
+                                if (mSubscription != null && !mSubscription.isUnsubscribed()) {
+                                    mSubscription.unsubscribe();
+                                }
                             }
 
                             @Override
@@ -114,7 +120,6 @@ public class MainActivity extends AppCompatActivity {
 
                             @Override
                             public void onNext(DownloadStatus result) {
-                                Log.d("MainActivity", "downloadSize:" + result.downloadSize);
                                 mProgressBar.setMax((int) result.totalSize);
                                 mProgressBar.setProgress((int) result.downloadSize);
                             }
@@ -122,26 +127,7 @@ public class MainActivity extends AppCompatActivity {
                 break;
 
             case R.id.pause:
-                RxDownload.getInstance()
-                        .combineTest()
-                        .subscribeOn(Schedulers.io())
-                        .observeOn(AndroidSchedulers.mainThread())
-                        .subscribe(new Subscriber<String>() {
-                            @Override
-                            public void onCompleted() {
 
-                            }
-
-                            @Override
-                            public void onError(Throwable e) {
-
-                            }
-
-                            @Override
-                            public void onNext(String integer) {
-                                Log.d("MainActivity", integer);
-                            }
-                        });
                 break;
             case R.id.cancel:
                 mSubscription.unsubscribe();

@@ -9,7 +9,7 @@ package zlc.season.rxdownload;
 public class DownloadStatus {
     public long totalSize;
     public long downloadSize;
-    public boolean isChuncked = false;
+    public boolean isChunked = false;
 
     public DownloadStatus() {
     }

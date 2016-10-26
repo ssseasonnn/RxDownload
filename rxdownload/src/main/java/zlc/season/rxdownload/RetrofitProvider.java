@@ -44,5 +44,4 @@ public class RetrofitProvider {
                     .build();
         }
     }
-
 }

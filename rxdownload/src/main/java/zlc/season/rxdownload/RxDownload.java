@@ -29,6 +29,8 @@ import rx.Observable;
 import rx.Subscriber;
 import rx.functions.Action1;
 import rx.functions.Func1;
+import rx.functions.Func2;
+import rx.functions.FuncN;
 import rx.schedulers.Schedulers;
 
 import static java.nio.channels.FileChannel.MapMode.READ_WRITE;
@@ -83,6 +85,54 @@ public class RxDownload {
         return this;
     }
 
+    public Observable<String> combineTest() {
+        final String[] s1 = new String[]{"1", "2", "3", "4", "5"};
+        final String[] s2 = new String[]{"a", "b", "c", "d", "e"};
+        Observable<String> test1 = Observable.create(new Observable.OnSubscribe<String>() {
+            @Override
+            public void call(Subscriber<? super String> subscriber) {
+                for (String each : s1) {
+                    subscriber.onNext(each);
+                    Log.d(TAG, "test1 send: " + each);
+                    try {
+                        Thread.sleep(2000);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+                subscriber.onCompleted();
+                Log.d(TAG, "test1 send complete");
+            }
+        })
+                .subscribeOn(Schedulers.io());
+
+        Observable<String> test2 = Observable.create(new Observable.OnSubscribe<String>() {
+            @Override
+            public void call(Subscriber<? super String> subscriber) {
+                for (String each : s2) {
+                    subscriber.onNext(each);
+                    Log.d(TAG, "test2 send: " + each);
+                    try {
+                        Thread.sleep(2000);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+                subscriber.onCompleted();
+                Log.d(TAG, "test2 send complete");
+            }
+        })
+                .subscribeOn(Schedulers.io());
+
+        Observable<String> result = Observable.combineLatest(test1, test2, new Func2<String, String, String>() {
+            @Override
+            public String call(String integer, String integer2) {
+                return integer + " - " + integer2;
+            }
+        }).subscribeOn(Schedulers.io());
+        return result;
+    }
+
     public Observable<DownloadStatus> download(final String url, final String saveName, final String savePath) {
         beforeDownload();
         return mDownloadApi.download(RANGE_TEST, url)
@@ -133,16 +183,16 @@ public class RxDownload {
                  * prepare download
                  */
                 prepareDownload(filePath, contentLength);
-                response.body().close();
-                return startMultiThreadDownload(filePath, url, contentLength);
+                closeUtils(response.body());
+                return startMultiThreadDownload(filePath, url);
             case CONTINUE_DOWNLOAD:
-                response.body().close();
-                return startMultiThreadDownload(filePath, url, contentLength);
+                closeUtils(response.body());
+                return startMultiThreadDownload(filePath, url);
             case FILE_ALREADY_DOWNLOADED:
-                response.body().close();
+                closeUtils(response.body());
                 return Observable.just(new DownloadStatus(contentLength, contentLength));
             default:
-                response.body().close();
+                closeUtils(response.body());
                 throw new RuntimeException("unknown error");
         }
     }
@@ -158,159 +208,168 @@ public class RxDownload {
         return Observable.create(new Observable.OnSubscribe<DownloadStatus>() {
             @Override
             public void call(Subscriber<? super DownloadStatus> subscriber) {
-                specificSaveNormalFile(subscriber, savePath, response);
+                try {
+                    specificSaveNormalFile(subscriber, savePath, response);
+                } catch (IOException e) {
+                    Log.w(TAG, e);
+                    subscriber.onError(e);
+                }
             }
-        }).subscribeOn(Schedulers.io())
-                .buffer(2, TimeUnit.SECONDS)
-                .flatMap(new Func1<List<DownloadStatus>, Observable<DownloadStatus>>() {
-                    @Override
-                    public Observable<DownloadStatus> call(List<DownloadStatus> list) {
-                        DownloadStatus result = new DownloadStatus();
-                        for (DownloadStatus each : list) {
-                            result.downloadSize += each.downloadSize;
-                            result.totalSize = each.totalSize;
-                        }
-                        Log.d(TAG, "buffer");
-                        Log.d(TAG, "result. " + result.downloadSize + " - " + result.totalSize);
-                        return Observable.just(result);
-                    }
-                })
+        }).subscribeOn(Schedulers.io()).sample(100, TimeUnit.MILLISECONDS)
                 .doOnError(new Action1<Throwable>() {
                     @Override
                     public void call(Throwable throwable) {
                         Log.w(TAG, throwable);
                     }
                 });
+        //                .buffer(2, TimeUnit.SECONDS)
+        //                .map(new Func1<List<DownloadStatus>, DownloadStatus>() {
+        //                    @Override
+        //                    public DownloadStatus call(List<DownloadStatus> downloadStatuses) {
+        //                        if (downloadStatuses.size() > 0) {
+        //                            return downloadStatuses.get(downloadStatuses.size() - 1);
+        //                        }
+        //                        return new DownloadStatus(0, 0);
+        //                    }
+        //                })
+        //                .flatMap(new Func1<List<DownloadStatus>, Observable<DownloadStatus>>() {
+        //                    @Override
+        //                    public Observable<DownloadStatus> call(List<DownloadStatus> list) {
+        //                        DownloadStatus result = new DownloadStatus();
+        //                        for (DownloadStatus each : list) {
+        //                            result.downloadSize += each.downloadSize;
+        //                            result.totalSize = each.totalSize;
+        //                        }
+        //                        Log.d(TAG, "buffer");
+        //                        Log.d(TAG, "result. " + result.downloadSize + " - " + result.totalSize);
+        //                        return Observable.just(result);
+        //                    }
+        //                })
+
     }
 
     private void specificSaveNormalFile(Subscriber<? super DownloadStatus> subscriber, String savePath,
-                                        ResponseBody response) {
+                                        ResponseBody response) throws IOException {
         InputStream inputStream = null;
         OutputStream outputStream = null;
         try {
-            try {
-                int readLen;
-                byte[] buffer = new byte[1024000];
-                File file = new File(savePath);
-                DownloadStatus status = new DownloadStatus();
+            int readLen;
+            byte[] buffer = new byte[8192];
+            File file = new File(savePath);
+            DownloadStatus status = new DownloadStatus();
 
-                inputStream = new BufferedInputStream(response.byteStream());
-                outputStream = new BufferedOutputStream(new FileOutputStream(file));
+            inputStream = response.byteStream();
+            outputStream = new BufferedOutputStream(new FileOutputStream(file));
 
-                long contentLength = response.contentLength();
-                if (contentLength == -1) {
-                    status.isChuncked = true;
-                }
-                status.totalSize = contentLength;
-
-                while ((readLen = inputStream.read(buffer)) != -1) {
-                    outputStream.write(buffer, 0, readLen);
-                    status.downloadSize = readLen;
-                    Log.d(TAG, "status.downloadSize:" + status.downloadSize + " - " + status.totalSize);
-                    subscriber.onNext(status);
-                }
-                outputStream.flush(); // This is important!!!
-                subscriber.onCompleted();
-            } finally {
-                closeUtils(inputStream);
-                closeUtils(outputStream);
-                closeUtils(response);
+            long contentLength = response.contentLength();
+            if (contentLength == -1) {
+                status.isChuncked = true;
             }
-        } catch (IOException e) {
-            Log.w(TAG, e);
-            subscriber.onError(e);
+            status.totalSize = contentLength;
+
+            while ((readLen = inputStream.read(buffer)) != -1) {
+                outputStream.write(buffer, 0, readLen);
+                status.downloadSize += readLen;
+                subscriber.onNext(status);
+            }
+            outputStream.flush(); // This is important!!!
+            subscriber.onCompleted();
+        } finally {
+            closeUtils(inputStream);
+            closeUtils(outputStream);
+            closeUtils(response);
         }
     }
 
     /**
      * 多线程+断点续传
      *
-     * @param filePath  filePath
-     * @param url       url
-     * @param totalSize 文件总大小
+     * @param filePath filePath
+     * @param url      url
      * @return Observable
      * @throws IOException
      */
-    private Observable<DownloadStatus> startMultiThreadDownload(String filePath, String url, long totalSize) throws
+    private Observable<DownloadStatus> startMultiThreadDownload(String filePath, String url) throws
             IOException {
         DownloadRange range = getDownloadRange(filePath);
         List<Observable<DownloadStatus>> tasks = new ArrayList<>();
         for (int i = 0; i < MAX_THREADS; i++) {
             if (range.start[i] <= range.end[i]) {
-                tasks.add(rangeDownloadTask(range.start[i], range.end[i], i, url, filePath, totalSize));
+                tasks.add(rangeDownloadTask(range.start[i], range.end[i], i, url, filePath));
             }
         }
-        return Observable.mergeDelayError(tasks)
-                .buffer(2, TimeUnit.SECONDS)
-                .flatMap(new Func1<List<DownloadStatus>, Observable<DownloadStatus>>() {
-                    @Override
-                    public Observable<DownloadStatus> call(List<DownloadStatus> list) {
-                        DownloadStatus result = new DownloadStatus();
-                        for (DownloadStatus each : list) {
-                            result.downloadSize += each.downloadSize;
-                            result.totalSize = each.totalSize;
-                        }
-                        return Observable.just(result);
-                    }
-                })
-                .doOnError(new Action1<Throwable>() {
-                    @Override
-                    public void call(Throwable throwable) {
-                        Log.w(TAG, throwable);
-                    }
-                });
+        return Observable.combineLatest(tasks, new FuncN<DownloadStatus>() {
+            @Override
+            public DownloadStatus call(Object... args) {
+                DownloadStatus total = new DownloadStatus();
+                for (Object each : args) {
+                    DownloadStatus temp = (DownloadStatus) each;
+                    total.totalSize += temp.totalSize;
+                    total.downloadSize += temp.downloadSize;
+                }
+                return total;
+            }
+        }).doOnError(new Action1<Throwable>() {
+            @Override
+            public void call(Throwable throwable) {
+                Log.w(TAG, throwable);
+            }
+        });
     }
 
     /**
      * 分段下载的任务
      *
-     * @param start     从start字节开始
-     * @param end       到end字节结束
-     * @param i         下载编号
-     * @param url       下载地址
-     * @param filePath  保存路径
-     * @param totalSize
+     * @param start    从start字节开始
+     * @param end      到end字节结束
+     * @param i        下载编号
+     * @param url      下载地址
+     * @param filePath 保存路径
      * @return Observable
      */
     private Observable<DownloadStatus> rangeDownloadTask(final long start, final long end, final int i,
-                                                         final String url, final String filePath,
-                                                         final long totalSize) {
+                                                         final String url, final String filePath) {
         String range = "bytes=" + start + "-" + end;
         return mDownloadApi.download(range, url)
                 .subscribeOn(Schedulers.io())
                 .flatMap(new Func1<Response<ResponseBody>, Observable<DownloadStatus>>() {
                     @Override
                     public Observable<DownloadStatus> call(Response<ResponseBody> response) {
-                        return saveRangeFile(start, end, i, filePath, response.body(), totalSize);
+                        return saveRangeFile(start, end, i, filePath, response.body());
                     }
-                });
+                }).sample(100, TimeUnit.MILLISECONDS);
     }
 
     /**
      * 保存断点下载的文件,以及下载进度
      *
-     * @param start     从start开始
-     * @param end       到end结束
-     * @param i         下载编号
-     * @param filePath  保存路径
-     * @param response  响应值
-     * @param totalSize
+     * @param start    从start开始
+     * @param end      到end结束
+     * @param i        下载编号
+     * @param filePath 保存路径
+     * @param response 响应值
      * @return Observable
      */
     private Observable<DownloadStatus> saveRangeFile(final long start, final long end, final int i,
-                                                     final String filePath, final ResponseBody response,
-                                                     final long totalSize) {
+                                                     final String filePath, final ResponseBody response) {
 
         return Observable.create(new Observable.OnSubscribe<DownloadStatus>() {
             @Override
             public void call(Subscriber<? super DownloadStatus> subscriber) {
-                specificSaveRangeFile(subscriber, start, end, filePath, i, response, totalSize);
+                try {
+                    specificSaveRangeFile(subscriber, start, end, filePath, i, response);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    Log.w(TAG, e);
+                    subscriber.onError(e);
+                }
             }
         });
     }
 
-    private void specificSaveRangeFile(Subscriber<? super DownloadStatus> subscriber, long start, long end,
-                                       String filePath, int i, ResponseBody response, long totalSize) {
+    private void specificSaveRangeFile(Subscriber<? super DownloadStatus> subscriber,
+                                       long start, long end, String filePath, int i,
+                                       ResponseBody response) throws IOException {
         RandomAccessFile record = null;
         FileChannel recordChannel = null;
 
@@ -319,47 +378,39 @@ public class RxDownload {
 
         InputStream inStream = null;
         try {
-            try {
-                Log.i(TAG, "Download start! " + Thread.currentThread().getName() + " start from " + start +
-                        " to " + end);
+            Log.i(TAG, "Range download start! " + Thread.currentThread().getName() + " start from " +
+                    start + " to " + end);
 
-                byte[] buffer = new byte[4096];
-                int readLen;
-                int total = 0;
-                DownloadStatus status = new DownloadStatus();
-                status.totalSize = totalSize;
+            byte[] buffer = new byte[4096];
+            int readLen;
+            DownloadStatus status = new DownloadStatus();
+            status.totalSize = response.contentLength();
 
-                record = new RandomAccessFile(filePath + SUFFIX, "rwd");
-                recordChannel = record.getChannel();
-                MappedByteBuffer recordBuffer = recordChannel.map(READ_WRITE, i * EACH_RECORD_SIZE,
-                        EACH_RECORD_SIZE);
+            record = new RandomAccessFile(filePath + SUFFIX, "rwd");
+            recordChannel = record.getChannel();
+            MappedByteBuffer recordBuffer = recordChannel.map(READ_WRITE, i * EACH_RECORD_SIZE, EACH_RECORD_SIZE);
 
-                save = new RandomAccessFile(filePath, "rwd");
-                saveChannel = save.getChannel();
-                MappedByteBuffer saveBuffer = saveChannel.map(READ_WRITE, start, end - start + 1);
+            save = new RandomAccessFile(filePath, "rwd");
+            saveChannel = save.getChannel();
+            MappedByteBuffer saveBuffer = saveChannel.map(READ_WRITE, start, end - start + 1);
 
-                inStream = new BufferedInputStream(response.byteStream());
-                while ((readLen = inStream.read(buffer)) != -1) {
-                    saveBuffer.put(buffer, 0, readLen);
-                    total += readLen;
-                    recordBuffer.putLong(0, recordBuffer.getLong(0) + readLen);
-                    status.downloadSize = readLen;
-                    subscriber.onNext(status);
-                }
-                Log.i(TAG, "Download complete! " + Thread.currentThread().getName() + " download " + total +
-                        " size");
-                subscriber.onCompleted();
-            } finally {
-                closeUtils(record);
-                closeUtils(recordChannel);
-                closeUtils(save);
-                closeUtils(saveChannel);
-                closeUtils(inStream);
-                closeUtils(response);
+            inStream = new BufferedInputStream(response.byteStream());
+            while ((readLen = inStream.read(buffer)) != -1) {
+                saveBuffer.put(buffer, 0, readLen);
+                recordBuffer.putLong(0, recordBuffer.getLong(0) + readLen);
+                status.downloadSize += readLen;
+                subscriber.onNext(status);
             }
-        } catch (IOException e) {
-            Log.w(TAG, e);
-            subscriber.onError(e);
+            Log.i(TAG, "Range download complete! " + Thread.currentThread().getName() + " download " +
+                    status.downloadSize + " size");
+            subscriber.onCompleted();
+        } finally {
+            closeUtils(record);
+            closeUtils(recordChannel);
+            closeUtils(save);
+            closeUtils(saveChannel);
+            closeUtils(inStream);
+            closeUtils(response);
         }
     }
 
@@ -507,9 +558,9 @@ public class RxDownload {
      */
     private String getDefaultFileName(String url, Headers headers) {
         String fileName = null;
-        String contentDisposition = headers.get("content-disposition");
-        if (!TextUtils.isEmpty(contentDisposition)) {
-            Matcher m = Pattern.compile(".*filename=(.*)").matcher(contentDisposition);
+        String temp = headers.get("content-disposition");
+        if (!TextUtils.isEmpty(temp)) {
+            Matcher m = Pattern.compile(".*filename=(.*)").matcher(temp);
             if (m.find()) {
                 fileName = m.group(1);
             }

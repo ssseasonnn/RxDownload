@@ -18,6 +18,7 @@ import butterknife.OnClick;
 import rx.Subscriber;
 import rx.Subscription;
 import rx.android.schedulers.AndroidSchedulers;
+import rx.schedulers.Schedulers;
 import zlc.season.rxdownload.DownloadStatus;
 import zlc.season.rxdownload.RxDownload;
 
@@ -40,7 +41,6 @@ public class MainActivity extends AppCompatActivity {
     @BindView(R.id.cancel)
     Button mCancel;
 
-    long alreadyDownloadSize = 0;
 
     private Subscription mSubscription;
     private String weixin = "http://dldir1.qq.com/weixin/android/weixin6327android880.apk";
@@ -80,7 +80,6 @@ public class MainActivity extends AppCompatActivity {
                             @Override
                             public void onCompleted() {
                                 Log.d("oncomplete", "complete");
-                                Log.d("MainActivity", "alreadyDownloadSize:" + alreadyDownloadSize);
                             }
 
                             @Override
@@ -90,10 +89,9 @@ public class MainActivity extends AppCompatActivity {
 
                             @Override
                             public void onNext(DownloadStatus result) {
-                                Log.d("MainActivity", "result.downloadSize:" + result.downloadSize);
-                                alreadyDownloadSize += result.downloadSize;
+                                Log.d("MainActivity", "downloadSize:" + result.downloadSize);
                                 mProgressBar.setMax((int) result.totalSize);
-                                mProgressBar.setProgress((int) alreadyDownloadSize);
+                                mProgressBar.setProgress((int) result.downloadSize);
                             }
                         });
                 break;
@@ -107,7 +105,6 @@ public class MainActivity extends AppCompatActivity {
                             @Override
                             public void onCompleted() {
                                 Log.d("oncomplete", "complete");
-                                Log.d("MainActivity", "alreadyDownloadSize:" + alreadyDownloadSize);
                             }
 
                             @Override
@@ -117,14 +114,34 @@ public class MainActivity extends AppCompatActivity {
 
                             @Override
                             public void onNext(DownloadStatus result) {
-                                alreadyDownloadSize += result.downloadSize;
+                                Log.d("MainActivity", "downloadSize:" + result.downloadSize);
                                 mProgressBar.setMax((int) result.totalSize);
-                                mProgressBar.setProgress((int) alreadyDownloadSize);
+                                mProgressBar.setProgress((int) result.downloadSize);
                             }
                         });
                 break;
 
             case R.id.pause:
+                RxDownload.getInstance()
+                        .combineTest()
+                        .subscribeOn(Schedulers.io())
+                        .observeOn(AndroidSchedulers.mainThread())
+                        .subscribe(new Subscriber<String>() {
+                            @Override
+                            public void onCompleted() {
+
+                            }
+
+                            @Override
+                            public void onError(Throwable e) {
+
+                            }
+
+                            @Override
+                            public void onNext(String integer) {
+                                Log.d("MainActivity", integer);
+                            }
+                        });
                 break;
             case R.id.cancel:
                 mSubscription.unsubscribe();

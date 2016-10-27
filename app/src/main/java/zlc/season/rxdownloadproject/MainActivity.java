@@ -120,6 +120,7 @@ public class MainActivity extends AppCompatActivity {
 
                             @Override
                             public void onNext(DownloadStatus result) {
+                                Log.d("on next",Thread.currentThread().getName());
                                 mProgressBar.setMax((int) result.totalSize);
                                 mProgressBar.setProgress((int) result.downloadSize);
                             }
@@ -137,9 +138,52 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+//        if (BuildConfig.DEBUG) {
+//            StrictMode.setThreadPolicy(new StrictMode.ThreadPolicy.Builder()
+////                    .detectDiskReads()
+////                    .detectDiskWrites()
+////                    .detectNetwork()   // or .detectAll() for all detectable problems
+//                    .detectAll()
+//                    .penaltyLog()
+//                    .penaltyDialog()
+//                    .build());
+//            StrictMode.setVmPolicy(new StrictMode.VmPolicy.Builder()
+////                    .detectLeakedSqlLiteObjects()
+////                    .detectLeakedClosableObjects()
+//                    .detectAll()
+//                    .penaltyLog()
+//                    .penaltyDeath()
+//                    .build());
+//        }
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         ButterKnife.bind(this);
         setSupportActionBar(mToolbar);
+
+//        mSubscription = RxDownload.getInstance()
+//                .maxThread(1)
+//                .download(weixin, null, null, true)
+//                .subscribeOn(Schedulers.io())
+//                .observeOn(AndroidSchedulers.mainThread())
+//                .subscribe(new Subscriber<DownloadStatus>() {
+//
+//                    @Override
+//                    public void onCompleted() {
+//                        if (mSubscription != null && !mSubscription.isUnsubscribed()) {
+//                            mSubscription.unsubscribe();
+//                        }
+//                    }
+//
+//                    @Override
+//                    public void onError(Throwable e) {
+//                        Log.w("Error", e);
+//                    }
+//
+//                    @Override
+//                    public void onNext(DownloadStatus result) {
+//                        mProgressBar.setMax((int) result.totalSize);
+//                        mProgressBar.setProgress((int) result.downloadSize);
+//                    }
+//                });
     }
 }

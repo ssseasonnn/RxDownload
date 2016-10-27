@@ -297,14 +297,14 @@ public class RxDownload {
         Log.d("enter create range task", Thread.currentThread().getName());
         String range = "bytes=" + start + "-" + end;
         return mDownloadApi.download(range, url)
-                //                .subscribeOn(Schedulers.io())
+                .subscribeOn(Schedulers.io())
                 .flatMap(new Func1<Response<ResponseBody>, Observable<DownloadStatus>>() {
                     @Override
                     public Observable<DownloadStatus> call(Response<ResponseBody> response) {
                         Log.d("enter create range flat", Thread.currentThread().getName());
                         return saveRangeFile(start, end, i, filePath, response.body());
                     }
-                }).onBackpressureLatest();
+                }).sample(500, TimeUnit.MILLISECONDS);
     }
 
     /**
@@ -366,6 +366,8 @@ public class RxDownload {
                 saveBuffer.put(buffer, 0, readLen);
                 recordBuffer.putLong(0, recordBuffer.getLong(0) + readLen);
                 status.downloadSize += readLen;
+                Log.d("while", Thread.currentThread().getName());
+                Log.d(TAG, "send data" + readLen);
                 subscriber.onNext(status);
             }
             Log.i(TAG, Thread.currentThread().getName() + " complete download! Download size is " +

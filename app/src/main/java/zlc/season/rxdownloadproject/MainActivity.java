@@ -100,7 +100,7 @@ public class MainActivity extends AppCompatActivity {
                 break;
             case fab:
                 mSubscription = RxDownload.getInstance()
-                        .maxThread(3)
+                        .maxThread(2)
                         .download(weixin, null, null, true)
                         .subscribeOn(Schedulers.io())
                         .observeOn(AndroidSchedulers.mainThread())

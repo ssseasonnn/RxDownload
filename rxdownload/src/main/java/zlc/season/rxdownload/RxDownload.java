@@ -125,6 +125,7 @@ public class RxDownload {
     private Observable<DownloadStatus> createDownloadObservable(Response<ResponseBody> response, String saveName,
                                                                 String savePath, String url,
                                                                 boolean forceReDownload) throws IOException {
+        Log.d(TAG, "create observable " + Thread.currentThread().getName());
         String fileName = getFileSaveName(saveName, url, response.headers());
         String filePath = getFileSavePath(savePath) + File.separator + fileName;
 
@@ -231,6 +232,7 @@ public class RxDownload {
      */
     private Observable<DownloadStatus> startMultiThreadDownload(String filePath,
                                                                 String url) throws IOException {
+        Log.d(TAG, "start multi " + Thread.currentThread().getName());
         DownloadRange range = getDownloadRange(filePath);
 
         if (MAX_THREADS == 1) {
@@ -240,6 +242,7 @@ public class RxDownload {
         List<Observable<DownloadStatus>> tasks = new ArrayList<>();
         for (int i = 0; i < MAX_THREADS; i++) {
             if (range.start[i] <= range.end[i]) {
+                Log.d(TAG, "add task " + Thread.currentThread().getName());
                 tasks.add(rangeDownloadTask(range.start[i], range.end[i], i, url, filePath));
             }
         }
@@ -259,6 +262,7 @@ public class RxDownload {
 
     @NonNull
     private DownloadStatus getDownloadStatus(Object[] args) {
+        Log.d(TAG, "combine " + Thread.currentThread().getName());
         DownloadStatus total = new DownloadStatus();
         for (Object arg : args) {
             DownloadStatus temp = (DownloadStatus) arg;
@@ -280,6 +284,7 @@ public class RxDownload {
      */
     private Observable<DownloadStatus> rangeDownloadTask(final long start, final long end, final int i,
                                                          final String url, final String filePath) {
+        Log.d(TAG, "range download " + Thread.currentThread().getName());
         String range = "bytes=" + start + "-" + end;
         return mDownloadApi.download(range, url)
                 .subscribeOn(Schedulers.io())
@@ -288,7 +293,7 @@ public class RxDownload {
                     public Observable<DownloadStatus> call(Response<ResponseBody> response) {
                         return saveRangeFile(start, end, i, filePath, response.body());
                     }
-                }).sample(500, TimeUnit.MILLISECONDS);
+                }).onBackpressureLatest();
     }
 
     /**
@@ -320,6 +325,7 @@ public class RxDownload {
     private void specificSaveRangeFile(Subscriber<? super DownloadStatus> subscriber,
                                        long start, long end, String filePath, int i,
                                        ResponseBody response) throws IOException {
+        Log.d(TAG, "save file " + Thread.currentThread().getName());
         RandomAccessFile record = null;
         FileChannel recordChannel = null;
 
@@ -344,6 +350,7 @@ public class RxDownload {
 
             inStream = response.byteStream();
             while ((readLen = inStream.read(buffer)) != -1) {
+                Log.d(TAG, "while " + Thread.currentThread().getName());
                 saveBuffer.put(buffer, 0, readLen);
                 recordBuffer.putLong(0, recordBuffer.getLong(0) + readLen);
                 status.downloadSize += readLen;

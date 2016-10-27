@@ -74,7 +74,7 @@ public class MainActivity extends AppCompatActivity {
         switch (view.getId()) {
             case R.id.download:
                 mSubscription1 = RxDownload.getInstance()
-                        .download(android, null, null, true)
+                        .download(android, null, null)
                         .subscribeOn(Schedulers.io())
                         .observeOn(AndroidSchedulers.mainThread())
                         .subscribe(new Subscriber<DownloadStatus>() {
@@ -100,8 +100,8 @@ public class MainActivity extends AppCompatActivity {
                 break;
             case fab:
                 mSubscription = RxDownload.getInstance()
-                        .maxThread(1)
-                        .download(weixin, null, null, true)
+                        .maxThread(3)
+                        .download(weixin, null, null)
                         .subscribeOn(Schedulers.io())
                         .observeOn(AndroidSchedulers.mainThread())
                         .subscribe(new Subscriber<DownloadStatus>() {

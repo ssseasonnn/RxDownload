@@ -100,7 +100,7 @@ public class MainActivity extends AppCompatActivity {
                 break;
             case fab:
                 mSubscription = RxDownload.getInstance()
-                        .maxThread(1)
+                        .maxThread(3)
                         .download(weixin, null, null, true)
                         .subscribeOn(Schedulers.io())
                         .observeOn(AndroidSchedulers.mainThread())
@@ -120,7 +120,6 @@ public class MainActivity extends AppCompatActivity {
 
                             @Override
                             public void onNext(DownloadStatus result) {
-                                Log.d("on next",Thread.currentThread().getName());
                                 mProgressBar.setMax((int) result.totalSize);
                                 mProgressBar.setProgress((int) result.downloadSize);
                             }

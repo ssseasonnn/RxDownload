@@ -65,7 +65,6 @@ public class RxDownload {
     }
 
     public static RxDownload getInstance() {
-        Log.d("Main", Thread.currentThread().getName());
         return new RxDownload();
     }
 
@@ -95,17 +94,12 @@ public class RxDownload {
      */
     public Observable<DownloadStatus> download(final String url, final String saveName, final String savePath,
                                                final boolean forceReDownload) {
-        Log.d("enter download", Thread.currentThread().getName());
         beforeDownload();
         return mDownloadApi.download(RANGE_TEST, url)
-                //                .observeOn(Schedulers.io())
-                .subscribeOn(Schedulers.io())
-                .observeOn(Schedulers.io())
                 .flatMap(new Func1<Response<ResponseBody>, Observable<DownloadStatus>>() {
                     @Override
                     public Observable<DownloadStatus> call(final Response<ResponseBody> response) {
                         try {
-                            Log.d("enter flat map", Thread.currentThread().getName());
                             return createDownloadObservable(response, saveName, savePath, url, forceReDownload);
                         } catch (IOException e) {
                             Log.w(TAG, e);
@@ -131,7 +125,6 @@ public class RxDownload {
     private Observable<DownloadStatus> createDownloadObservable(Response<ResponseBody> response, String saveName,
                                                                 String savePath, String url,
                                                                 boolean forceReDownload) throws IOException {
-        Log.d("enter create download", Thread.currentThread().getName());
         String fileName = getFileSaveName(saveName, url, response.headers());
         String filePath = getFileSavePath(savePath) + File.separator + fileName;
 
@@ -175,12 +168,10 @@ public class RxDownload {
      */
     private Observable<DownloadStatus> startNormalDownload(final String savePath, final Response<ResponseBody>
             response) {
-        Log.d("enter start normal", Thread.currentThread().getName());
         return Observable.create(new Observable.OnSubscribe<DownloadStatus>() {
             @Override
             public void call(Subscriber<? super DownloadStatus> subscriber) {
                 try {
-                    Log.d("enter create", Thread.currentThread().getName());
                     specificSaveNormalFile(subscriber, savePath, response);
                 } catch (IOException e) {
                     Log.w(TAG, e);
@@ -197,7 +188,6 @@ public class RxDownload {
 
     private void specificSaveNormalFile(Subscriber<? super DownloadStatus> subscriber, String savePath,
                                         Response<ResponseBody> response) throws IOException {
-        Log.d("enter save normal", Thread.currentThread().getName());
         InputStream inputStream = null;
         OutputStream outputStream = null;
         try {
@@ -241,13 +231,12 @@ public class RxDownload {
      */
     private Observable<DownloadStatus> startMultiThreadDownload(String filePath,
                                                                 String url) throws IOException {
-        Log.d("enter start multi", Thread.currentThread().getName());
         DownloadRange range = getDownloadRange(filePath);
 
-        //        if (MAX_THREADS == 1) {
-        //            return rangeDownloadTask(range.start[0],range.end[0],0,url,filePath);
-        //        }
-        //
+        if (MAX_THREADS == 1) {
+            return rangeDownloadTask(range.start[0], range.end[0], 0, url, filePath);
+        }
+
         List<Observable<DownloadStatus>> tasks = new ArrayList<>();
         for (int i = 0; i < MAX_THREADS; i++) {
             if (range.start[i] <= range.end[i]) {
@@ -255,27 +244,24 @@ public class RxDownload {
             }
         }
 
-        Log.d("before combine", Thread.currentThread().getName());
         return Observable.combineLatestDelayError(tasks, new FuncN<DownloadStatus>() {
             @Override
             public DownloadStatus call(Object... args) {
                 return getDownloadStatus(args);
             }
-        })
-                .doOnError(new Action1<Throwable>() {
-                    @Override
-                    public void call(Throwable throwable) {
-                        Log.w(TAG, throwable);
-                    }
-                });
+        }).doOnError(new Action1<Throwable>() {
+            @Override
+            public void call(Throwable throwable) {
+                Log.w(TAG, throwable);
+            }
+        });
     }
 
     @NonNull
     private DownloadStatus getDownloadStatus(Object[] args) {
-        Log.d("enter combine", Thread.currentThread().getName());
-        DownloadStatus total = (DownloadStatus) args[0];
-        for (int i = 1; i < args.length; i++) {
-            DownloadStatus temp = (DownloadStatus) args[i];
+        DownloadStatus total = new DownloadStatus();
+        for (Object arg : args) {
+            DownloadStatus temp = (DownloadStatus) arg;
             total.downloadSize += temp.downloadSize;
             total.totalSize += temp.totalSize;
         }
@@ -294,14 +280,12 @@ public class RxDownload {
      */
     private Observable<DownloadStatus> rangeDownloadTask(final long start, final long end, final int i,
                                                          final String url, final String filePath) {
-        Log.d("enter create range task", Thread.currentThread().getName());
         String range = "bytes=" + start + "-" + end;
         return mDownloadApi.download(range, url)
                 .subscribeOn(Schedulers.io())
                 .flatMap(new Func1<Response<ResponseBody>, Observable<DownloadStatus>>() {
                     @Override
                     public Observable<DownloadStatus> call(Response<ResponseBody> response) {
-                        Log.d("enter create range flat", Thread.currentThread().getName());
                         return saveRangeFile(start, end, i, filePath, response.body());
                     }
                 }).sample(500, TimeUnit.MILLISECONDS);
@@ -319,12 +303,10 @@ public class RxDownload {
      */
     private Observable<DownloadStatus> saveRangeFile(final long start, final long end, final int i,
                                                      final String filePath, final ResponseBody response) {
-        Log.d("enter save range", Thread.currentThread().getName());
         return Observable.create(new Observable.OnSubscribe<DownloadStatus>() {
             @Override
             public void call(Subscriber<? super DownloadStatus> subscriber) {
                 try {
-                    Log.d("enter create", Thread.currentThread().getName());
                     specificSaveRangeFile(subscriber, start, end, filePath, i, response);
                 } catch (IOException e) {
                     e.printStackTrace();
@@ -338,7 +320,6 @@ public class RxDownload {
     private void specificSaveRangeFile(Subscriber<? super DownloadStatus> subscriber,
                                        long start, long end, String filePath, int i,
                                        ResponseBody response) throws IOException {
-        Log.d("enter save file", Thread.currentThread().getName());
         RandomAccessFile record = null;
         FileChannel recordChannel = null;
 
@@ -366,8 +347,6 @@ public class RxDownload {
                 saveBuffer.put(buffer, 0, readLen);
                 recordBuffer.putLong(0, recordBuffer.getLong(0) + readLen);
                 status.downloadSize += readLen;
-                Log.d("while", Thread.currentThread().getName());
-                Log.d(TAG, "send data" + readLen);
                 subscriber.onNext(status);
             }
             Log.i(TAG, Thread.currentThread().getName() + " complete download! Download size is " +

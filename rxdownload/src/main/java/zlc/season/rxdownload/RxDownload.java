@@ -43,8 +43,7 @@ import static java.nio.channels.FileChannel.MapMode.READ_WRITE;
  * FIXME
  */
 public class RxDownload {
-
-    private static final String TAG = "RxDownloader";
+    private static final String TAG = "RxDownload";
 
     private static final int NORMAL_DOWNLOAD = 0;
     private static final int MULTI_THREAD_DOWNLOAD = 1;
@@ -171,7 +170,6 @@ public class RxDownload {
             } finally {
                 closeUtils(response.body());
             }
-
             switch (type) {
                 case NORMAL_DOWNLOAD:
                     Log.i(TAG, "Normal download start!");
@@ -205,7 +203,6 @@ public class RxDownload {
                     } finally {
                         closeUtils(response.body());
                     }
-
             }
         } catch (IOException e) {
             return Observable.error(e);

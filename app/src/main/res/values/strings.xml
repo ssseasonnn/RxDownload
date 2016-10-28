@@ -1,4 +1,22 @@
 <resources>
     <string name="app_name">RxDownloadProject</string>
     <string name="action_settings">Settings</string>
+
+    <string-array name="image">
+        <item>http://static.yingyonghui.com/icon/128/4200197.png</item>
+        <item>http://static.yingyonghui.com/icon/128/4189733.png</item>
+        <item>http://static.yingyonghui.com/icon/128/4195146.png</item>
+        <item>http://static.yingyonghui.com/icon/128/9999.png</item>
+        <item>http://static.yingyonghui.com/icon/128/4193257.png</item>
+    </string-array>
+
+    <string-array name="url">
+        <item>http://a.gdown.baidu.com/data/wisegame/f4314d752861cf51/WeChat_900.apk</item>
+        <item>http://ws.yingyonghui.com/72c3e5b9c6adb8e8d76f09a37072ef5c/5812bcc3/apk/4189733/359f52e02afbaaa152a9c5f2e63e7086</item>
+        <item>http://a.gdown.baidu.com/data/wisegame/ef4d0290e0e8d431/sougoushurufa_600.apk</item>
+        <item>http://static.yingyonghui.com/apk/yyh/9999/ac.publish.yyh/30059655/com.yingyonghui.market_2987_30059655.apk</item>
+        <item>http://ws.yingyonghui.com/f797a10111943dd1ba4de7cab79441da/5812b656/apk/4193257/d5b73e7153e97c38f44b66845dd6ec72</item>
+    </string-array>
+    <string name="title_activity_test">TestActivity</string>
+
 </resources>

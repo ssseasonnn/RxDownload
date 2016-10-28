@@ -13,12 +13,31 @@ import retrofit2.converter.gson.GsonConverterFactory;
  * Date: 2016/10/19
  * Time: 10:16
  * FIXME
+ * 提供一个默认的,线程安全的Retrofit单例
  */
 public class RetrofitProvider {
+
+    private static String ENDPOINT = "http://example.com/api/";
 
     private RetrofitProvider() {
     }
 
+    /**
+     * 指定endpoint
+     *
+     * @param endpoint endPoint
+     * @return Retrofit
+     */
+    public static Retrofit getInstance(String endpoint) {
+        ENDPOINT = endpoint;
+        return SingletonHolder.INSTANCE;
+    }
+
+    /**
+     * 不指定endPoint
+     *
+     * @return Retrofit
+     */
     public static Retrofit getInstance() {
         return SingletonHolder.INSTANCE;
     }
@@ -37,12 +56,11 @@ public class RetrofitProvider {
                 builder.addInterceptor(interceptor);
             }
 
-            return new Retrofit.Builder().baseUrl(DownloadApi.ENDPOINT)
+            return new Retrofit.Builder().baseUrl(ENDPOINT)
                     .client(builder.build())
                     .addConverterFactory(GsonConverterFactory.create())
                     .addCallAdapterFactory(RxJavaCallAdapterFactory.create())
                     .build();
         }
     }
-
 }

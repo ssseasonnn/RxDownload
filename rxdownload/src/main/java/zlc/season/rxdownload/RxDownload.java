@@ -24,7 +24,6 @@ import retrofit2.Response;
 import retrofit2.Retrofit;
 import rx.Observable;
 import rx.Subscriber;
-import rx.functions.Action0;
 import rx.functions.Func1;
 import rx.schedulers.Schedulers;
 
@@ -91,9 +90,9 @@ public class RxDownload {
     /**
      * 开始下载
      *
-     * @param url             下载文件的Url
-     * @param saveName        下载文件的保存名称, null使用默认的名称(从url或响应头中读取文件名)
-     * @param savePath        下载文件的保存路径, null使用默认的路径,默认保存在/sdcard/Download/目录下
+     * @param url      下载文件的Url
+     * @param saveName 下载文件的保存名称, null使用默认的名称(从url或响应头中读取文件名)
+     * @param savePath 下载文件的保存路径, null使用默认的路径,默认保存在/sdcard/Download/目录下
      * @return Observable
      */
     public Observable<DownloadStatus> download(final String url, final String saveName, final String savePath) {
@@ -177,8 +176,7 @@ public class RxDownload {
 
             }
         } catch (IOException e) {
-            Log.w(TAG, e);
-            return Observable.error(new Throwable(e));
+            return Observable.error(e);
         }
     }
 
@@ -189,8 +187,8 @@ public class RxDownload {
      * @param response Response
      * @return Observable
      */
-    private Observable<DownloadStatus> startNormalDownload(final String savePath, final Response<ResponseBody>
-            response) {
+    private Observable<DownloadStatus> startNormalDownload(final String savePath,
+                                                           final Response<ResponseBody> response) {
         return Observable.create(new Observable.OnSubscribe<DownloadStatus>() {
             @Override
             public void call(Subscriber<? super DownloadStatus> subscriber) {
@@ -199,13 +197,14 @@ public class RxDownload {
         }).onBackpressureLatest();
     }
 
-    private void specificSaveNormalFile(Subscriber<? super DownloadStatus> subscriber, String savePath,
-                                        Response<ResponseBody> response) {
+    private void specificSaveNormalFile(Subscriber<? super DownloadStatus> subscriber,
+                                        String savePath, Response<ResponseBody> response) {
         InputStream inputStream = null;
         OutputStream outputStream = null;
         try {
             try {
                 int readLen;
+                int downloadSize = 0;
                 byte[] buffer = new byte[8192];
                 File file = new File(savePath);
 
@@ -219,11 +218,12 @@ public class RxDownload {
                 if (isChunked || contentLength == -1) {
                     status.isChunked = true;
                 }
-                status.totalSize = contentLength;
+                status.setTotalSize(contentLength);
 
                 while ((readLen = inputStream.read(buffer)) != -1) {
                     outputStream.write(buffer, 0, readLen);
-                    status.downloadSize += readLen;
+                    downloadSize += readLen;
+                    status.setDownloadSize(downloadSize);
                     subscriber.onNext(status);
                 }
                 outputStream.flush(); // This is important!!!
@@ -235,7 +235,6 @@ public class RxDownload {
                 closeUtils(response.body());
             }
         } catch (IOException e) {
-            Log.w(TAG, e);
             subscriber.onError(e);
         }
     }
@@ -248,18 +247,11 @@ public class RxDownload {
      * @return Observable
      * @throws IOException
      */
-    private Observable<DownloadStatus> startMultiThreadDownload(final String filePath,
-                                                                String url) throws IOException {
+    private Observable<DownloadStatus> startMultiThreadDownload(final String filePath, String url) throws IOException {
         DownloadRange range = getDownloadRange(filePath);
 
         if (MAX_THREADS == 1) {
-            return rangeDownloadTask(range.start[0], range.end[0], 0, url, filePath)
-                    .doOnCompleted(new Action0() {
-                        @Override
-                        public void call() {
-                            deleteRecordFileWhenComplete(filePath);
-                        }
-                    });
+            return rangeDownloadTask(range.start[0], range.end[0], 0, url, filePath);
         }
 
         List<Observable<DownloadStatus>> tasks = new ArrayList<>();
@@ -268,25 +260,8 @@ public class RxDownload {
                 tasks.add(rangeDownloadTask(range.start[i], range.end[i], i, url, filePath));
             }
         }
-        return Observable.mergeDelayError(tasks)
-                .doOnCompleted(new Action0() {
-                    @Override
-                    public void call() {
-                        deleteRecordFileWhenComplete(filePath);
-                    }
-                });
+        return Observable.mergeDelayError(tasks);
     }
-
-    private void deleteRecordFileWhenComplete(String filePath) {
-        File record = new File(filePath + SUFFIX);
-        boolean deleted = record.delete();
-        if (deleted) {
-            Log.d(TAG, "record file delete success");
-        } else {
-            Log.d(TAG, "record file delete failed");
-        }
-    }
-
 
     /**
      * 分段下载的任务
@@ -326,13 +301,13 @@ public class RxDownload {
         return Observable.create(new Observable.OnSubscribe<DownloadStatus>() {
             @Override
             public void call(Subscriber<? super DownloadStatus> subscriber) {
-                specificSaveRangeFile(subscriber, start, end, filePath, i, response);
+                specificSaveRangeFile(subscriber, i, start, end, filePath, response);
             }
         });
     }
 
-    private void specificSaveRangeFile(Subscriber<? super DownloadStatus> subscriber,
-                                       long start, long end, String filePath, int i, ResponseBody response) {
+    private void specificSaveRangeFile(Subscriber<? super DownloadStatus> subscriber, int i,
+                                       long start, long end, String filePath, ResponseBody response) {
         RandomAccessFile record = null;
         FileChannel recordChannel = null;
 
@@ -343,14 +318,15 @@ public class RxDownload {
         try {
             try {
                 Log.i(TAG, Thread.currentThread().getName() + " start download from " + start + " to " + end + "!");
-                byte[] buffer = new byte[8192];
                 int readLen;
+                byte[] buffer = new byte[8192];
                 DownloadStatus status = new DownloadStatus();
 
                 record = new RandomAccessFile(filePath + SUFFIX, "rw");
                 recordChannel = record.getChannel();
                 MappedByteBuffer recordBuffer = recordChannel.map(READ_WRITE, 0, RECORD_FILE_TOTAL_SIZE);
-                status.totalSize = recordBuffer.getLong(RECORD_FILE_TOTAL_SIZE - 8) + 1;
+                long totalSize = recordBuffer.getLong(RECORD_FILE_TOTAL_SIZE - 8) + 1;
+                status.setTotalSize(totalSize);
 
                 save = new RandomAccessFile(filePath, "rw");
                 saveChannel = save.getChannel();
@@ -361,11 +337,11 @@ public class RxDownload {
                     saveBuffer.put(buffer, 0, readLen);
                     recordBuffer.putLong(i * EACH_RECORD_SIZE, recordBuffer.getLong(i * EACH_RECORD_SIZE) + readLen);
 
-                    status.downloadSize = status.totalSize - getResidue(recordBuffer);
+                    status.setDownloadSize(totalSize - getResidue(recordBuffer));
                     subscriber.onNext(status);
                 }
                 Log.i(TAG, Thread.currentThread().getName() + " complete download! Download size is " +
-                        status.downloadSize + " bytes");
+                        response.contentLength() + " bytes");
                 subscriber.onCompleted();
             } finally {
                 closeUtils(record);
@@ -376,8 +352,6 @@ public class RxDownload {
                 closeUtils(response);
             }
         } catch (IOException e) {
-            e.printStackTrace();
-            Log.w(TAG, e);
             subscriber.onError(e);
         }
     }
@@ -492,8 +466,7 @@ public class RxDownload {
      * {@link RxDownload#FILE_ALREADY_DOWNLOADED} 文件已经下载成功,无需重新下载
      * @throws IOException
      */
-    private int getDownloadType(Response<ResponseBody> response, String filePath) throws
-            IOException {
+    private int getDownloadType(Response<ResponseBody> response, String filePath) throws IOException {
         //响应头有 "Content-Range: bytes 0-12710467/38131405" 字段, 并且Content-Length 不为 -1, 表示支持断点续传,否则不支持
         //响应头有 "Transfer-Encoding : chunked" 字段,或者Content-Length为-1 , 表示分块传输,不能使用断点续传;
         boolean notSupportRangeDownload = TextUtils.isEmpty(response.headers().get("Content-Range")) ||
@@ -569,6 +542,12 @@ public class RxDownload {
             Matcher m = Pattern.compile(".*filename=(.*)").matcher(temp);
             if (m.find()) {
                 fileName = m.group(1);
+                if (fileName.startsWith("\"")) {
+                    fileName = fileName.substring(1);
+                }
+                if (fileName.endsWith("\"")) {
+                    fileName = fileName.substring(0, fileName.length() - 1);
+                }
             }
         }
 

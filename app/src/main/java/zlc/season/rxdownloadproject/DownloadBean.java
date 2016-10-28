@@ -1,5 +1,6 @@
 package zlc.season.rxdownloadproject;
 
+import rx.Subscription;
 import zlc.season.practicalrecyclerview.ItemType;
 
 /**
@@ -16,6 +17,16 @@ public class DownloadBean implements ItemType {
     String url;
     String image;
     int state;
+    Subscription subscription;
+
+    /**
+     * 取消订阅,否则会内存泄漏
+     */
+    public void unsubscrbe() {
+        if (subscription != null && !subscription.isUnsubscribed()) {
+            subscription.unsubscribe();
+        }
+    }
 
     @Override
     public int itemType() {

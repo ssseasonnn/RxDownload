@@ -67,6 +67,18 @@ public class MainActivity extends AppCompatActivity {
         loadData();
     }
 
+    @Override
+    public void onBackPressed() {
+        super.onBackPressed();
+        finish();
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        unsubscribe();
+    }
+
     private void loadData() {
         Resources res = getResources();
         final String[] images = res.getStringArray(R.array.image);
@@ -80,5 +92,12 @@ public class MainActivity extends AppCompatActivity {
             list.add(temp);
         }
         mAdapter.addAll(list);
+    }
+
+    private void unsubscribe() {
+        List<DownloadBean> list = mAdapter.getData();
+        for (DownloadBean each : list) {
+            each.unsubscrbe();
+        }
     }
 }

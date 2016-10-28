@@ -15,8 +15,6 @@ import rx.Observable;
  * FIXME
  */
 interface DownloadApi {
-    String ENDPOINT = "http://www.taxiaides.com/xyyc/file/version/";
-
     @GET
     @Streaming
     Observable<Response<ResponseBody>> download(@Header("Range") String range, @Url String url);

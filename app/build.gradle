@@ -34,7 +34,7 @@ dependencies {
     compile 'com.squareup.picasso:picasso:2.5.2'
 
     compile 'zlc.season:practicalrecyclerview:1.0.8'
-    
+
     testCompile 'junit:junit:4.12'
     compile project(path: ':rxdownload')
 }

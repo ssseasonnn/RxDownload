@@ -17,5 +17,6 @@
         <item>http://static.yingyonghui.com/apk/yyh/9999/ac.publish.yyh/30059655/com.yingyonghui.market_2987_30059655.apk</item>
         <item>http://ws.yingyonghui.com/f797a10111943dd1ba4de7cab79441da/5812b656/apk/4193257/d5b73e7153e97c38f44b66845dd6ec72</item>
     </string-array>
+    <string name="title_activity_test">TestActivity</string>
 
 </resources>

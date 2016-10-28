@@ -11,6 +11,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.RandomAccessFile;
+import java.net.SocketException;
+import java.net.SocketTimeoutException;
+import java.net.UnknownHostException;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;
@@ -22,9 +25,12 @@ import okhttp3.Headers;
 import okhttp3.ResponseBody;
 import retrofit2.Response;
 import retrofit2.Retrofit;
+import retrofit2.adapter.rxjava.HttpException;
 import rx.Observable;
 import rx.Subscriber;
+import rx.functions.Action1;
 import rx.functions.Func1;
+import rx.functions.Func2;
 import rx.schedulers.Schedulers;
 
 import static java.nio.channels.FileChannel.MapMode.READ_WRITE;
@@ -47,6 +53,8 @@ public class RxDownload {
 
     private static final String TEST_RANGE_SUPPORT = "bytes=0-";
     private static final String SUFFIX = ".tmp";
+
+    private int MAX_RETRY_COUNT = 3;
 
     private final int EACH_RECORD_SIZE = 16; //long + long = 8 + 8
     private int RECORD_FILE_TOTAL_SIZE;
@@ -87,6 +95,11 @@ public class RxDownload {
         return this;
     }
 
+    public RxDownload maxRetryCount(int max) {
+        MAX_RETRY_COUNT = max;
+        return this;
+    }
+
     /**
      * 开始下载
      *
@@ -102,6 +115,25 @@ public class RxDownload {
                     @Override
                     public Observable<DownloadStatus> call(final Response<ResponseBody> response) {
                         return createDownloadObservable(response, saveName, savePath, url);
+                    }
+                }).retry(new Func2<Integer, Throwable, Boolean>() {
+                    @Override
+                    public Boolean call(Integer integer, Throwable throwable) {
+                        if (throwable instanceof UnknownHostException) {
+                            Log.w(TAG, "no network, re-try to download");
+                            return integer < MAX_RETRY_COUNT + 1;
+                        } else if (throwable instanceof HttpException) {
+                            Log.w(TAG, "we had non-2XX http error, re-try to download");
+                            return integer < MAX_RETRY_COUNT + 1;
+                        } else if (throwable instanceof SocketTimeoutException) {
+                            Log.w(TAG, "socket time out,re-try to download");
+                            return integer < MAX_RETRY_COUNT + 1;
+                        } else if (throwable instanceof SocketException) {
+                            Log.w(TAG, "A network or conversion error happened,re-try to download");
+                            return integer < MAX_RETRY_COUNT + 1;
+                        }
+                        Log.w(TAG, throwable);
+                        return false;
                     }
                 });
     }
@@ -194,7 +226,13 @@ public class RxDownload {
             public void call(Subscriber<? super DownloadStatus> subscriber) {
                 specificSaveNormalFile(subscriber, savePath, response);
             }
-        }).onBackpressureLatest();
+        }).onBackpressureLatest()
+                .doOnError(new Action1<Throwable>() {
+                    @Override
+                    public void call(Throwable throwable) {
+                        Log.w(TAG, throwable);
+                    }
+                });
     }
 
     private void specificSaveNormalFile(Subscriber<? super DownloadStatus> subscriber,

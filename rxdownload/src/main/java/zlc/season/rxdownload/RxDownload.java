@@ -1,6 +1,7 @@
 package zlc.season.rxdownload;
 
 import android.os.Environment;
+import android.support.annotation.NonNull;
 import android.text.TextUtils;
 import android.util.Log;
 
@@ -28,7 +29,7 @@ import retrofit2.Retrofit;
 import retrofit2.adapter.rxjava.HttpException;
 import rx.Observable;
 import rx.Subscriber;
-import rx.functions.Action1;
+import rx.exceptions.CompositeException;
 import rx.functions.Func1;
 import rx.functions.Func2;
 import rx.schedulers.Schedulers;
@@ -118,21 +119,7 @@ public class RxDownload {
                 }).retry(new Func2<Integer, Throwable, Boolean>() {
                     @Override
                     public Boolean call(Integer integer, Throwable throwable) {
-                        if (throwable instanceof UnknownHostException) {
-                            Log.w(TAG, "no network, re-try to download");
-                            return integer < MAX_RETRY_COUNT + 1;
-                        } else if (throwable instanceof HttpException) {
-                            Log.w(TAG, "we had non-2XX http error, re-try to download");
-                            return integer < MAX_RETRY_COUNT + 1;
-                        } else if (throwable instanceof SocketTimeoutException) {
-                            Log.w(TAG, "socket time out,re-try to download");
-                            return integer < MAX_RETRY_COUNT + 1;
-                        } else if (throwable instanceof SocketException) {
-                            Log.w(TAG, "A network or conversion error happened,re-try to download");
-                            return integer < MAX_RETRY_COUNT + 1;
-                        }
-                        Log.w(TAG, throwable);
-                        return false;
+                        return retry(integer, throwable);
                     }
                 });
     }
@@ -205,6 +192,7 @@ public class RxDownload {
                     }
             }
         } catch (IOException e) {
+            Log.w(TAG, e);
             return Observable.error(e);
         }
     }
@@ -223,13 +211,7 @@ public class RxDownload {
             public void call(Subscriber<? super DownloadStatus> subscriber) {
                 specificSaveNormalFile(subscriber, savePath, response);
             }
-        }).onBackpressureLatest()
-                .doOnError(new Action1<Throwable>() {
-                    @Override
-                    public void call(Throwable throwable) {
-                        Log.w(TAG, throwable);
-                    }
-                });
+        }).onBackpressureLatest();
     }
 
     private void specificSaveNormalFile(Subscriber<? super DownloadStatus> subscriber,
@@ -284,11 +266,6 @@ public class RxDownload {
      */
     private Observable<DownloadStatus> startMultiThreadDownload(final String filePath, String url) throws IOException {
         DownloadRange range = getDownloadRange(filePath);
-
-        if (MAX_THREADS == 1) {
-            return rangeDownloadTask(range.start[0], range.end[0], 0, url, filePath);
-        }
-
         List<Observable<DownloadStatus>> tasks = new ArrayList<>();
         for (int i = 0; i < MAX_THREADS; i++) {
             if (range.start[i] <= range.end[i]) {
@@ -318,7 +295,49 @@ public class RxDownload {
                     public Observable<DownloadStatus> call(Response<ResponseBody> response) {
                         return saveRangeFile(start, end, i, filePath, response.body());
                     }
-                }).onBackpressureLatest();
+                }).onBackpressureLatest().retry(new Func2<Integer, Throwable, Boolean>() {
+                    @Override
+                    public Boolean call(Integer integer, Throwable throwable) {
+                        return retry(integer, throwable);
+                    }
+                });
+    }
+
+    @NonNull
+    private Boolean retry(Integer integer, Throwable throwable) {
+        if (throwable instanceof UnknownHostException) {
+            if (integer < MAX_RETRY_COUNT + 1) {
+                Log.w(TAG, Thread.currentThread().getName() +
+                        " no network, retry to connect " + integer + " times");
+                return true;
+            }
+            return false;
+        } else if (throwable instanceof HttpException) {
+            if (integer < MAX_RETRY_COUNT + 1) {
+                Log.w(TAG, Thread.currentThread().getName() +
+                        " had non-2XX http error, retry to connect " + integer + " times"); return true;
+            }
+            return false;
+        } else if (throwable instanceof SocketTimeoutException) {
+            if (integer < MAX_RETRY_COUNT + 1) {
+                Log.w(TAG, Thread.currentThread().getName() +
+                        " socket time out,retry to connect " + integer + " times"); return true;
+            }
+            return false;
+        } else if (throwable instanceof SocketException) {
+            if (integer < MAX_RETRY_COUNT + 1) {
+                Log.w(TAG, Thread.currentThread().getName() +
+                        " a network or conversion error happened, retry to connect " + integer + " times");
+                return true;
+            }
+            return false;
+        } else if (throwable instanceof CompositeException) {
+            Log.w(TAG, throwable.getMessage());
+            return false;
+        } else {
+            Log.w(TAG, throwable);
+            return false;
+        }
     }
 
     /**
@@ -357,13 +376,13 @@ public class RxDownload {
                 byte[] buffer = new byte[8192];
                 DownloadStatus status = new DownloadStatus();
 
-                record = new RandomAccessFile(filePath + SUFFIX, "rw");
+                record = new RandomAccessFile(filePath + SUFFIX, "rws");
                 recordChannel = record.getChannel();
                 MappedByteBuffer recordBuffer = recordChannel.map(READ_WRITE, 0, RECORD_FILE_TOTAL_SIZE);
                 long totalSize = recordBuffer.getLong(RECORD_FILE_TOTAL_SIZE - 8) + 1;
                 status.setTotalSize(totalSize);
 
-                save = new RandomAccessFile(filePath, "rw");
+                save = new RandomAccessFile(filePath, "rws");
                 saveChannel = save.getChannel();
                 MappedByteBuffer saveBuffer = saveChannel.map(READ_WRITE, start, end - start + 1);
 
@@ -412,7 +431,7 @@ public class RxDownload {
         RandomAccessFile record = null;
         FileChannel channel = null;
         try {
-            record = new RandomAccessFile(filePath + SUFFIX, "rw");
+            record = new RandomAccessFile(filePath + SUFFIX, "rws");
             channel = record.getChannel();
             MappedByteBuffer buffer = channel.map(READ_WRITE, 0, RECORD_FILE_TOTAL_SIZE);
             long[] startByteArray = new long[MAX_THREADS];
@@ -433,10 +452,10 @@ public class RxDownload {
         RandomAccessFile record = null;
         FileChannel channel = null;
         try {
-            file = new RandomAccessFile(path, "rw");
+            file = new RandomAccessFile(path, "rws");
             file.setLength(contentLength);//设置下载文件的长度
 
-            record = new RandomAccessFile(path + SUFFIX, "rw");
+            record = new RandomAccessFile(path + SUFFIX, "rws");
             record.setLength(RECORD_FILE_TOTAL_SIZE); //设置指针记录文件的大小
 
             channel = record.getChannel();
@@ -502,17 +521,19 @@ public class RxDownload {
      * @throws IOException
      */
     private int getDownloadType(Response<ResponseBody> response, String filePath) throws IOException {
+        long contentLength = response.body().contentLength();
+
         //响应头有 "Content-Range: bytes 0-12710467/38131405" 字段, 并且Content-Length 不为 -1, 表示支持断点续传,否则不支持
         //响应头有 "Transfer-Encoding : chunked" 字段,或者Content-Length为-1 , 表示分块传输,不能使用断点续传;
         boolean notSupportRangeDownload = TextUtils.isEmpty(response.headers().get("Content-Range")) ||
-                response.body().contentLength() == -1;
+                contentLength == -1;
 
         if (notSupportRangeDownload) {
             File file = new File(filePath);
             if (!file.exists()) {
                 return NORMAL_DOWNLOAD;
             }
-            if (file.length() != response.body().contentLength()) {
+            if (file.length() != contentLength) {
                 return NORMAL_DOWNLOAD;
             }
             return FILE_ALREADY_DOWNLOADED;
@@ -523,12 +544,16 @@ public class RxDownload {
         if (!file.exists()) {
             return MULTI_THREAD_DOWNLOAD;
         }
-        if (file.length() != response.body().contentLength()) {
+        if (file.length() != contentLength) {
             return MULTI_THREAD_DOWNLOAD;
         }
         String recordPath = filePath + SUFFIX;
         File recordFile = new File(recordPath);
         if (!recordFile.exists()) {
+            return MULTI_THREAD_DOWNLOAD;
+        }
+
+        if (recordFileDamaged(recordPath, contentLength)) {
             return MULTI_THREAD_DOWNLOAD;
         }
 
@@ -538,11 +563,26 @@ public class RxDownload {
         return FILE_ALREADY_DOWNLOADED;
     }
 
+    private boolean recordFileDamaged(String recordFilePath, long contentLength) throws IOException {
+        RandomAccessFile record = null;
+        FileChannel channel = null;
+        try {
+            record = new RandomAccessFile(recordFilePath, "rws");
+            channel = record.getChannel();
+            MappedByteBuffer buffer = channel.map(READ_WRITE, 0, RECORD_FILE_TOTAL_SIZE);
+            long recordTotalSize = buffer.getLong(RECORD_FILE_TOTAL_SIZE - 8) + 1;
+            return recordTotalSize != contentLength;
+        } finally {
+            closeUtils(channel);
+            closeUtils(record);
+        }
+    }
+
     private boolean downloadNotComplete(String recordFilePath) throws IOException {
         RandomAccessFile record = null;
         FileChannel channel = null;
         try {
-            record = new RandomAccessFile(recordFilePath, "rw");
+            record = new RandomAccessFile(recordFilePath, "rws");
             channel = record.getChannel();
             MappedByteBuffer buffer = channel.map(READ_WRITE, 0, RECORD_FILE_TOTAL_SIZE);
             long startByte;
@@ -550,7 +590,6 @@ public class RxDownload {
             for (int i = 0; i < MAX_THREADS; i++) {
                 startByte = buffer.getLong();
                 endByte = buffer.getLong();
-                Log.d(TAG, "Record: " + startByte + " - " + endByte);
                 if (startByte <= endByte) {
                     return true;
                 }

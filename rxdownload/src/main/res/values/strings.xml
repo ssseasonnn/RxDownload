@@ -1,3 +1,15 @@
 <resources>
     <string name="app_name">RxDownload</string>
+
+    <string name="title">下载</string>
+    <string name="download_prepare">准备下载</string>
+    <string name="download_started">正在下载</string>
+    <string name="download_failed">下载失败</string>
+    <string name="download_completed">下载完成,点击安装</string>
+    <string name="download_paused">下载已暂停</string>
+
+    <string name="re_download">重新下载</string>
+    <string name="cancel_download">取消</string>
+    <string name="pause_download">暂停</string>
+    <string name="continue_download">继续</string>
 </resources>

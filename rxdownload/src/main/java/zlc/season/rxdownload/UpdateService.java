@@ -163,6 +163,7 @@ public class UpdateService extends Service {
     private void onDownloadComplete() {
         mBuilder.mActions.clear();
         mBuilder.setSmallIcon(android.R.drawable.stat_sys_download_done)
+                .setContentText(getString(R.string.download_completed))
                 .setContentIntent(getDefaultIntent())
                 .setProgress(0, 0, false);
         mNotificationManager.notify(NOTIFICATION_ID, mBuilder.build());

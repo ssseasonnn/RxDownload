@@ -8,6 +8,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Environment;
 import android.os.IBinder;
 import android.support.annotation.Nullable;
@@ -83,6 +84,7 @@ public class UpdateService extends Service {
     public void onDestroy() {
         super.onDestroy();
         unregisterReceiver(mDownloadReceiver);
+        cancelDownload();
     }
 
     @Nullable
@@ -154,6 +156,7 @@ public class UpdateService extends Service {
     private void onDownloadFailed() {
         mBuilder.mActions.clear();
         mBuilder.setContentText(getString(R.string.download_failed))
+                .setSmallIcon(android.R.drawable.stat_sys_download_done)
                 .setProgress(0, 0, false)
                 .addAction(retryAction)
                 .addAction(cancelAction);
@@ -167,6 +170,7 @@ public class UpdateService extends Service {
                 .setContentIntent(getDefaultIntent())
                 .setProgress(0, 0, false);
         mNotificationManager.notify(NOTIFICATION_ID, mBuilder.build());
+        stopForeground(true);
         //        stopSelf();
         //
         //        Uri photoURI = FileProvider.getUriForFile(this, getApplicationContext().getPackageName() + "
@@ -182,14 +186,20 @@ public class UpdateService extends Service {
     }
 
     private PendingIntent getDefaultIntent() {
-        Uri photoURI = FileProvider.getUriForFile(this, getApplicationContext().getPackageName() + ".provider",
-                new File(DOWNLOAD_SAVE_PATH + File.separator + mSaveName));
-        Uri uri = Uri.fromFile(new File(DOWNLOAD_SAVE_PATH + File.separator + mSaveName));
+        Uri uri;
+        if (Build.VERSION.SDK_INT >= 24) {
+            uri = FileProvider.getUriForFile(this, getApplicationContext().getPackageName() + ".provider",
+                    new File(DOWNLOAD_SAVE_PATH + File.separator + mSaveName));
+        } else {
+            uri = Uri.fromFile(new File(DOWNLOAD_SAVE_PATH + File.separator + mSaveName));
+        }
+
         Intent intent = new Intent(Intent.ACTION_VIEW);
         intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-        intent.setDataAndType(photoURI, "application/vnd.android.package-archive");
+        intent.setDataAndType(uri, "application/vnd.android.package-archive");
         return PendingIntent.getActivity(this, 1, intent, FLAG_UPDATE_CURRENT);
     }
+
 
     private void pauseDownload() {
         if (mSubscription != null && !mSubscription.isUnsubscribed()) {
@@ -198,6 +208,7 @@ public class UpdateService extends Service {
         first = true;
         mBuilder.mActions.clear();
         mBuilder.setContentText(getString(R.string.download_paused))
+                .setSmallIcon(android.R.drawable.stat_sys_download_done)
                 .setProgress(0, 0, false)
                 .addAction(continueAction)
                 .addAction(cancelAction);
@@ -206,7 +217,7 @@ public class UpdateService extends Service {
 
     private void startDownload() {
         mSubscription = RxDownload.getInstance()
-                .download(mDownloadUrl, null, null)
+                .download(mDownloadUrl, mSaveName, DOWNLOAD_SAVE_PATH)
                 .subscribeOn(Schedulers.io())
                 .sample(1, TimeUnit.SECONDS)
                 .observeOn(AndroidSchedulers.mainThread())

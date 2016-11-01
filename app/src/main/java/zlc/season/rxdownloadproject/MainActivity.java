@@ -1,8 +1,11 @@
 package zlc.season.rxdownloadproject;
 
+import android.content.DialogInterface;
+import android.content.Intent;
 import android.content.res.Resources;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.Toolbar;
@@ -16,6 +19,7 @@ import java.util.List;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import zlc.season.practicalrecyclerview.PracticalRecyclerView;
+import zlc.season.rxdownload.UpdateService;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -52,6 +56,30 @@ public class MainActivity extends AppCompatActivity {
         return super.onOptionsItemSelected(item);
     }
 
+    @Override
+    public void onBackPressed() {
+        super.onBackPressed();
+        finish();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        AlertDialog dialog = new AlertDialog.Builder(this).setTitle("更新")
+                .setMessage("有新版本发布")
+                .setPositiveButton("升级", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        Intent intent = new Intent();
+                        intent.setClass(MainActivity.this, UpdateService.class);
+                        intent.putExtra(UpdateService.INTENT_DOWNLOAD_URL, "http://dldir1.qq" +
+                                ".com/weixin/android/weixin6327android880.apk");
+                        intent.putExtra(UpdateService.INTENT_SAVE_NAME, "weixin.apk");
+                        startService(intent);
+                    }
+                }).create();
+        dialog.show();
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -65,12 +93,6 @@ public class MainActivity extends AppCompatActivity {
         mRecycler.setAdapterWithLoading(mAdapter);
 
         loadData();
-    }
-
-    @Override
-    public void onBackPressed() {
-        super.onBackPressed();
-        finish();
     }
 
     @Override

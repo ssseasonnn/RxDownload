@@ -8,6 +8,7 @@ import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
 import android.widget.RelativeLayout;
 
 import java.util.ArrayList;
@@ -16,6 +17,7 @@ import java.util.List;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import zlc.season.practicalrecyclerview.PracticalRecyclerView;
+import zlc.season.rxdownload.RxDownload;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -65,6 +67,13 @@ public class MainActivity extends AppCompatActivity {
         mRecycler.setAdapterWithLoading(mAdapter);
 
         loadData();
+
+        mFab.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                RxDownload.getInstance().testHead();
+            }
+        });
     }
 
     @Override

@@ -2,6 +2,7 @@ package zlc.season.rxdownload;
 
 import android.os.Environment;
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.text.TextUtils;
 import android.util.Log;
 
@@ -17,18 +18,22 @@ import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.util.Locale;
+import java.util.TimeZone;
 
-import okhttp3.Headers;
 import okhttp3.ResponseBody;
+import okhttp3.internal.http.HttpHeaders;
 import retrofit2.Response;
 import retrofit2.Retrofit;
 import retrofit2.adapter.rxjava.HttpException;
 import rx.Observable;
 import rx.Subscriber;
+import rx.android.schedulers.AndroidSchedulers;
 import rx.exceptions.CompositeException;
 import rx.functions.Func1;
 import rx.functions.Func2;
@@ -50,15 +55,18 @@ public class RxDownload {
     private static final int MULTI_THREAD_DOWNLOAD = 1;
     private static final int CONTINUE_DOWNLOAD = 2;
     private static final int FILE_ALREADY_DOWNLOADED = 3;
+    private static final int IF_MODIFIED_SINCE = 4;
+    private static final int IF_NONE_MATCH = 5;
 
     private static final String TEST_RANGE_SUPPORT = "bytes=0-";
     private static final String SUFFIX = ".tmp";
 
-    private int MAX_RETRY_COUNT = 3;
-
     private final int EACH_RECORD_SIZE = 16; //long + long = 8 + 8
+    private int MAX_RETRY_COUNT = 3;
     private int RECORD_FILE_TOTAL_SIZE;
     private int MAX_THREADS = 3;
+    private boolean mLastModifySupport = false;
+    private boolean mEtagSupport = false;
     //|********************|
     //|*****Record File****|
     //|********************|
@@ -100,6 +108,29 @@ public class RxDownload {
         return this;
     }
 
+    public void testHead() {
+        beforeDownload();
+        mDownloadApi.getHeaders(TEST_RANGE_SUPPORT, "http://dldir1.qq.com/weixin/android/weixin6327android880.apk")
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(new Subscriber<Response<Void>>() {
+                    @Override
+                    public void onCompleted() {
+
+                    }
+
+                    @Override
+                    public void onError(Throwable e) {
+                        Log.w(TAG, e);
+                    }
+
+                    @Override
+                    public void onNext(Response<Void> voidResponse) {
+                        Log.d(TAG, "voidResponse.headers():" + voidResponse.headers());
+                    }
+                });
+    }
+
     /**
      * 开始下载
      *
@@ -108,18 +139,132 @@ public class RxDownload {
      * @param savePath 下载文件的保存路径, null使用默认的路径,默认保存在/sdcard/Download/目录下
      * @return Observable
      */
-    public Observable<DownloadStatus> download(final String url, final String saveName, final String savePath) {
+    public Observable<DownloadStatus> download(@NonNull final String url, @NonNull final String saveName,
+                                               @Nullable final String savePath) {
         beforeDownload();
-        return mDownloadApi.download(TEST_RANGE_SUPPORT, url)
-                .flatMap(new Func1<Response<ResponseBody>, Observable<DownloadStatus>>() {
+        try {
+            return downloadDispatcher(url, saveName, savePath);
+        } catch (IOException e) {
+            e.printStackTrace();
+            return Observable.error(e);
+        }
+    }
+
+    public String lastModifyToGMTStr(long lastModify) {
+        Date d = new Date(lastModify);
+        SimpleDateFormat sdf = new SimpleDateFormat("EEE, d MMM yyyy HH:mm:ss z", Locale.US);
+        sdf.setTimeZone(TimeZone.getTimeZone("GMT"));
+        return sdf.format(d);
+    }
+
+    public long GMTStrToLastModify(String GMT) throws ParseException {
+        SimpleDateFormat sdf = new SimpleDateFormat("EEE, d MMM yyyy HH:mm:ss z", Locale.US);
+        Date date = sdf.parse(GMT);
+        return date.getTime();
+    }
+
+    private Observable<DownloadStatus> downloadDispatcher(@NonNull final String url, @NonNull String saveName,
+                                                          @Nullable String savePath) throws IOException {
+        final String filePath = getFileSavePath(savePath) + File.separator + saveName;
+        final File file = new File(filePath);
+        Observable<Integer> result;
+        if (file.exists()) {
+            result = createFileExistsObservable(url, filePath, file);
+        } else {
+            result = createFileNotExistsObservable(url);
+        }
+        return result.flatMap(new Func1<Integer, Observable<DownloadStatus>>() {
+            @Override
+            public Observable<DownloadStatus> call(Integer integer) {
+                switch (integer) {
+                    case NORMAL_DOWNLOAD:
+                        Log.i(TAG, "Normal download start!");
+                        return startNormalDownload(url, filePath);
+                    case MULTI_THREAD_DOWNLOAD:
+                        Log.i(TAG, "Multi thread download start!");
+                        //                        prepareDownload(filePath, contentLength);
+                        try {
+                            return startMultiThreadDownload(filePath, url);
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                    case IF_MODIFIED_SINCE:
+
+                        return null;
+                    case IF_NONE_MATCH:
+
+                        return null;
+                    case CONTINUE_DOWNLOAD:
+                        Log.i(TAG, "Continue download start!");
+                        try {
+                            return startMultiThreadDownload(filePath, url);
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                    case FILE_ALREADY_DOWNLOADED:
+                        Log.i(TAG, "Already downloaded!");
+                        //                        return Observable.just(new DownloadStatus(contentLength,
+                        // contentLength));
+                    default:
+                        Log.i(TAG, "unknown error!");
+                        return Observable.error(new Throwable("unknown error!"));
+                }
+                //                return null;
+            }
+        });
+    }
+
+    private Observable<Integer> createFileNotExistsObservable(@NonNull String url) {
+        return mDownloadApi.getHeaders(TEST_RANGE_SUPPORT, url)
+                .map(new Func1<Response<Void>, Integer>() {
                     @Override
-                    public Observable<DownloadStatus> call(final Response<ResponseBody> response) {
-                        return createDownloadObservable(response, saveName, savePath, url);
+                    public Integer call(Response<Void> response) {
+                        long contentLength = HttpHeaders.contentLength(response.headers());
+                        String contentRange = response.headers().get("Content-Range");
+                        boolean notSupportRange = TextUtils.isEmpty(contentRange) || contentLength == -1;
+                        if (notSupportRange) {
+                            return NORMAL_DOWNLOAD;
+                        } else {
+                            return MULTI_THREAD_DOWNLOAD;
+                        }
                     }
-                }).retry(new Func2<Integer, Throwable, Boolean>() {
+                });
+    }
+
+    private Observable<Integer> createFileExistsObservable(@NonNull String url, final String filePath,
+                                                           final File file) {
+        return mDownloadApi.getHeadersWithLastModify(file.lastModified(), url)
+                .map(new Func1<Response<Void>, Integer>() {
                     @Override
-                    public Boolean call(Integer integer, Throwable throwable) {
-                        return retry(integer, throwable);
+                    public Integer call(Response<Void> response) {
+
+                        long contentLength = HttpHeaders.contentLength(response.headers());
+                        String contentRange = response.headers().get("Content-Range");
+                        boolean notSupportRange = TextUtils.isEmpty(contentRange) || contentLength == -1;
+                        if (response.code() == 304) {
+                            //server file does't change
+                            if (notSupportRange) {
+                                if (file.length() == contentLength) {
+                                    return FILE_ALREADY_DOWNLOADED;
+                                } else {
+                                    return NORMAL_DOWNLOAD;
+                                }
+                            } else {
+                                String recordPath = filePath + SUFFIX;
+                                File recordFile = new File(recordPath);
+                                if (!recordFile.exists()) {
+                                    return MULTI_THREAD_DOWNLOAD;
+                                }
+                                return CONTINUE_DOWNLOAD;
+                            }
+                        } else {
+                            //server file has changed
+                            if (notSupportRange) {
+                                return NORMAL_DOWNLOAD;
+                            } else {
+                                return MULTI_THREAD_DOWNLOAD;
+                            }
+                        }
                     }
                 });
     }
@@ -132,86 +277,41 @@ public class RxDownload {
             mRetrofit = RetrofitProvider.getInstance();
         }
 
-        RECORD_FILE_TOTAL_SIZE = MAX_THREADS * EACH_RECORD_SIZE;
-
         mDownloadApi = mRetrofit.create(DownloadApi.class);
-    }
-
-    private Observable<DownloadStatus> createDownloadObservable(Response<ResponseBody> response, String saveName,
-                                                                String savePath, String url) {
-        try {
-            String fileName = getFileSaveName(saveName, url, response.headers());
-            String filePath = null;
-            try {
-                filePath = getFileSavePath(savePath) + File.separator + fileName;
-            } finally {
-                closeUtils(response.body());
-            }
-
-            final long contentLength = response.body().contentLength();
-            Log.i(TAG, "Download file size is: " + contentLength + "!");
-
-            int type = -1;
-            try {
-                type = getDownloadType(response, filePath);
-            } finally {
-                closeUtils(response.body());
-            }
-            switch (type) {
-                case NORMAL_DOWNLOAD:
-                    Log.i(TAG, "Normal download start!");
-                    return startNormalDownload(filePath, response);
-                case MULTI_THREAD_DOWNLOAD:
-                    Log.i(TAG, "Multi thread download start!");
-                    try {
-                        prepareDownload(filePath, contentLength);
-                        return startMultiThreadDownload(filePath, url);
-                    } finally {
-                        closeUtils(response.body());
-                    }
-                case CONTINUE_DOWNLOAD:
-                    Log.i(TAG, "Continue download start!");
-                    try {
-                        return startMultiThreadDownload(filePath, url);
-                    } finally {
-                        closeUtils(response.body());
-                    }
-                case FILE_ALREADY_DOWNLOADED:
-                    Log.i(TAG, "Already downloaded!");
-                    try {
-                        return Observable.just(new DownloadStatus(contentLength, contentLength));
-                    } finally {
-                        closeUtils(response.body());
-                    }
-                default:
-                    Log.i(TAG, "unknown error!");
-                    try {
-                        return Observable.error(new Throwable("unknown error!"));
-                    } finally {
-                        closeUtils(response.body());
-                    }
-            }
-        } catch (IOException e) {
-            Log.w(TAG, e);
-            return Observable.error(e);
-        }
+        RECORD_FILE_TOTAL_SIZE = MAX_THREADS * EACH_RECORD_SIZE;
     }
 
     /**
      * 常规下载, 不采用多线程和断点续传
      *
+     * @param url      url
      * @param savePath 下载文件保存路径
-     * @param response Response
      * @return Observable
      */
-    private Observable<DownloadStatus> startNormalDownload(final String savePath,
-                                                           final Response<ResponseBody> response) {
+    private Observable<DownloadStatus> startNormalDownload(final String url, final String savePath) {
+        return mDownloadApi.download(null, url)
+                .subscribeOn(Schedulers.io())
+                .flatMap(new Func1<Response<ResponseBody>, Observable<DownloadStatus>>() {
+                    @Override
+                    public Observable<DownloadStatus> call(final Response<ResponseBody> response) {
+                        return saveNormalFile(savePath, response);
+                    }
+                }).onBackpressureLatest().retry(new Func2<Integer, Throwable, Boolean>() {
+                    @Override
+                    public Boolean call(Integer integer, Throwable throwable) {
+                        return retry(integer, throwable);
+                    }
+                });
+    }
+
+    private Observable<DownloadStatus> saveNormalFile(final String savePath, final Response<ResponseBody>
+            response) {
         return Observable.create(new Observable.OnSubscribe<DownloadStatus>() {
             @Override
             public void call(Subscriber<? super DownloadStatus> subscriber) {
                 specificSaveNormalFile(subscriber, savePath, response);
             }
-        }).onBackpressureLatest();
+        });
     }
 
     private void specificSaveNormalFile(Subscriber<? super DownloadStatus> subscriber,
@@ -223,8 +323,9 @@ public class RxDownload {
                 int readLen;
                 int downloadSize = 0;
                 byte[] buffer = new byte[8192];
-                File file = new File(savePath);
 
+                File file = new File(savePath);
+                //                file.setLastModified()
                 DownloadStatus status = new DownloadStatus();
 
                 inputStream = response.body().byteStream();
@@ -315,13 +416,15 @@ public class RxDownload {
         } else if (throwable instanceof HttpException) {
             if (integer < MAX_RETRY_COUNT + 1) {
                 Log.w(TAG, Thread.currentThread().getName() +
-                        " had non-2XX http error, retry to connect " + integer + " times"); return true;
+                        " had non-2XX http error, retry to connect " + integer + " times");
+                return true;
             }
             return false;
         } else if (throwable instanceof SocketTimeoutException) {
             if (integer < MAX_RETRY_COUNT + 1) {
                 Log.w(TAG, Thread.currentThread().getName() +
-                        " socket time out,retry to connect " + integer + " times"); return true;
+                        " socket time out,retry to connect " + integer + " times");
+                return true;
             }
             return false;
         } else if (throwable instanceof SocketException) {
@@ -501,67 +604,6 @@ public class RxDownload {
         return mDefaultPath;
     }
 
-    private String getFileSaveName(String saveName, String url, Headers headers) {
-        if (!TextUtils.isEmpty(saveName)) {
-            return saveName;
-        }
-        return getDefaultFileName(url, headers);
-    }
-
-    /**
-     * 判断下载类型
-     *
-     * @param response Http Response
-     * @param filePath File Save Path
-     * @return ##
-     * {@link RxDownload#NORMAL_DOWNLOAD}  常规下载,单线程,无断点续传
-     * {@link RxDownload#MULTI_THREAD_DOWNLOAD} 多线程下载+断点续传
-     * {@link RxDownload#CONTINUE_DOWNLOAD} 断点续传
-     * {@link RxDownload#FILE_ALREADY_DOWNLOADED} 文件已经下载成功,无需重新下载
-     * @throws IOException
-     */
-    private int getDownloadType(Response<ResponseBody> response, String filePath) throws IOException {
-        long contentLength = response.body().contentLength();
-
-        //响应头有 "Content-Range: bytes 0-12710467/38131405" 字段, 并且Content-Length 不为 -1, 表示支持断点续传,否则不支持
-        //响应头有 "Transfer-Encoding : chunked" 字段,或者Content-Length为-1 , 表示分块传输,不能使用断点续传;
-        boolean notSupportRangeDownload = TextUtils.isEmpty(response.headers().get("Content-Range")) ||
-                contentLength == -1;
-
-        if (notSupportRangeDownload) {
-            File file = new File(filePath);
-            if (!file.exists()) {
-                return NORMAL_DOWNLOAD;
-            }
-            if (file.length() != contentLength) {
-                return NORMAL_DOWNLOAD;
-            }
-            return FILE_ALREADY_DOWNLOADED;
-        }
-
-
-        File file = new File(filePath);
-        if (!file.exists()) {
-            return MULTI_THREAD_DOWNLOAD;
-        }
-        if (file.length() != contentLength) {
-            return MULTI_THREAD_DOWNLOAD;
-        }
-        String recordPath = filePath + SUFFIX;
-        File recordFile = new File(recordPath);
-        if (!recordFile.exists()) {
-            return MULTI_THREAD_DOWNLOAD;
-        }
-
-        if (recordFileDamaged(recordPath, contentLength)) {
-            return MULTI_THREAD_DOWNLOAD;
-        }
-
-        if (downloadNotComplete(recordPath)) {
-            return CONTINUE_DOWNLOAD;
-        }
-        return FILE_ALREADY_DOWNLOADED;
-    }
 
     private boolean recordFileDamaged(String recordFilePath, long contentLength) throws IOException {
         RandomAccessFile record = null;
@@ -599,36 +641,6 @@ public class RxDownload {
             closeUtils(channel);
             closeUtils(record);
         }
-    }
-
-    /**
-     * 如果content-disposition指定了文件名,则使用它
-     * 若没有则截取URL最后一段为文件名
-     *
-     * @param url     URL
-     * @param headers Response header
-     * @return fileName
-     */
-    private String getDefaultFileName(String url, Headers headers) {
-        String fileName = null;
-        String temp = headers.get("content-disposition");
-        if (!TextUtils.isEmpty(temp)) {
-            Matcher m = Pattern.compile(".*filename=(.*)").matcher(temp);
-            if (m.find()) {
-                fileName = m.group(1);
-                if (fileName.startsWith("\"")) {
-                    fileName = fileName.substring(1);
-                }
-                if (fileName.endsWith("\"")) {
-                    fileName = fileName.substring(0, fileName.length() - 1);
-                }
-            }
-        }
-
-        if (TextUtils.isEmpty(fileName)) {
-            fileName = url.substring(url.lastIndexOf('/') + 1);
-        }
-        return fileName;
     }
 
     private void closeUtils(Closeable closeable) throws IOException {

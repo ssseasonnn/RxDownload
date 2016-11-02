@@ -2,11 +2,21 @@
     <string name="app_name">RxDownloadProject</string>
     <string name="action_settings">Settings</string>
 
+    <string-array name="name">
+        <item>weixin.apk</item>
+        <item>qq.apk</item>
+        <item>sougou.apk</item>
+        <item>yingyonghui.apk</item>
+        <item>youku.apk</item>
+        <item>easypower.apk</item>
+    </string-array>
+
     <string-array name="image">
         <item>http://static.yingyonghui.com/icon/128/4200197.png</item>
         <item>http://static.yingyonghui.com/icon/128/4189733.png</item>
         <item>http://static.yingyonghui.com/icon/128/4195146.png</item>
         <item>http://static.yingyonghui.com/icon/128/9999.png</item>
+        <item>http://static.yingyonghui.com/icon/128/4193257.png</item>
         <item>http://static.yingyonghui.com/icon/128/4193257.png</item>
     </string-array>
 
@@ -16,6 +26,7 @@
         <item>http://a.gdown.baidu.com/data/wisegame/ef4d0290e0e8d431/sougoushurufa_600.apk</item>
         <item>http://static.yingyonghui.com/apk/yyh/9999/ac.publish.yyh/30059655/com.yingyonghui.market_2987_30059655.apk</item>
         <item>http://dl.m.cc.youku.com/android/phone/Youku_Android_zhangkuCPA10.apk</item>
+        <item>http://www.taxiaides.com/xyyc/file/version/android</item>
     </string-array>
     <string name="title_activity_test">TestActivity</string>
 

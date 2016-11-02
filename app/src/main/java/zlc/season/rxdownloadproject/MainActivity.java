@@ -8,7 +8,6 @@ import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.View;
 import android.widget.RelativeLayout;
 
 import java.util.ArrayList;
@@ -17,7 +16,6 @@ import java.util.List;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import zlc.season.practicalrecyclerview.PracticalRecyclerView;
-import zlc.season.rxdownload.RxDownload;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -54,6 +52,11 @@ public class MainActivity extends AppCompatActivity {
         return super.onOptionsItemSelected(item);
     }
 
+    @Override
+    public void onBackPressed() {
+        super.onBackPressed();
+        finish();
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -67,19 +70,6 @@ public class MainActivity extends AppCompatActivity {
         mRecycler.setAdapterWithLoading(mAdapter);
 
         loadData();
-
-        mFab.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                RxDownload.getInstance().testHead();
-            }
-        });
-    }
-
-    @Override
-    public void onBackPressed() {
-        super.onBackPressed();
-        finish();
     }
 
     @Override
@@ -90,11 +80,13 @@ public class MainActivity extends AppCompatActivity {
 
     private void loadData() {
         Resources res = getResources();
+        final String[] names = res.getStringArray(R.array.name);
         final String[] images = res.getStringArray(R.array.image);
         final String[] urls = res.getStringArray(R.array.url);
         List<DownloadBean> list = new ArrayList<>();
         for (int i = 0; i < images.length; i++) {
             DownloadBean temp = new DownloadBean();
+            temp.name = names[i];
             temp.image = images[i];
             temp.url = urls[i];
             temp.state = DownloadBean.START;

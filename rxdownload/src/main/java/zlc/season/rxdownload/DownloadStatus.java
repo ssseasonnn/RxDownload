@@ -1,7 +1,8 @@
 package zlc.season.rxdownload;
 
-import java.text.DecimalFormat;
 import java.text.NumberFormat;
+
+import static zlc.season.rxdownload.Utils.formatSize;
 
 /**
  * User: Season(ssseasonnn@gmail.com)
@@ -11,9 +12,9 @@ import java.text.NumberFormat;
  * 表示下载状态, 如果isChunked为true, totalSize 可能不存在
  */
 public class DownloadStatus {
+    public boolean isChunked = false;
     private long totalSize;
     private long downloadSize;
-    public boolean isChunked = false;
 
     public DownloadStatus() {
     }
@@ -27,8 +28,16 @@ public class DownloadStatus {
         return totalSize;
     }
 
+    public void setTotalSize(long totalSize) {
+        this.totalSize = totalSize;
+    }
+
     public long getDownloadSize() {
         return downloadSize;
+    }
+
+    public void setDownloadSize(long downloadSize) {
+        this.downloadSize = downloadSize;
     }
 
     /**
@@ -70,38 +79,5 @@ public class DownloadStatus {
         nf.setMinimumFractionDigits(2);//控制保留小数点后几位，2：表示保留2位小数点
         percent = nf.format(result);
         return percent;
-    }
-
-    public void setTotalSize(long totalSize) {
-        this.totalSize = totalSize;
-    }
-
-    public void setDownloadSize(long downloadSize) {
-        this.downloadSize = downloadSize;
-    }
-
-    private String formatSize(long size) {
-        String hrSize;
-
-        double b = size;
-        double k = size / 1024.0;
-        double m = ((size / 1024.0) / 1024.0);
-        double g = (((size / 1024.0) / 1024.0) / 1024.0);
-        double t = ((((size / 1024.0) / 1024.0) / 1024.0) / 1024.0);
-
-        DecimalFormat dec = new DecimalFormat("0.00");
-
-        if (t > 1) {
-            hrSize = dec.format(t).concat(" TB");
-        } else if (g > 1) {
-            hrSize = dec.format(g).concat(" GB");
-        } else if (m > 1) {
-            hrSize = dec.format(m).concat(" MB");
-        } else if (k > 1) {
-            hrSize = dec.format(k).concat(" KB");
-        } else {
-            hrSize = dec.format(b).concat(" Bytes");
-        }
-        return hrSize;
     }
 }

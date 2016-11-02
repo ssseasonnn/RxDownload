@@ -2,39 +2,29 @@ package zlc.season.rxdownload;
 
 import android.os.Environment;
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.text.TextUtils;
 import android.util.Log;
 
-import java.io.Closeable;
 import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.io.RandomAccessFile;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
-import java.nio.MappedByteBuffer;
-import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
-import okhttp3.Headers;
 import okhttp3.ResponseBody;
+import okhttp3.internal.http.HttpHeaders;
 import retrofit2.Response;
 import retrofit2.Retrofit;
 import retrofit2.adapter.rxjava.HttpException;
 import rx.Observable;
 import rx.Subscriber;
 import rx.exceptions.CompositeException;
+import rx.functions.Action1;
 import rx.functions.Func1;
 import rx.functions.Func2;
 import rx.schedulers.Schedulers;
-
-import static java.nio.channels.FileChannel.MapMode.READ_WRITE;
 
 
 /**
@@ -52,28 +42,18 @@ public class RxDownload {
     private static final int FILE_ALREADY_DOWNLOADED = 3;
 
     private static final String TEST_RANGE_SUPPORT = "bytes=0-";
-    private static final String SUFFIX = ".tmp";
 
     private int MAX_RETRY_COUNT = 3;
-
-    private final int EACH_RECORD_SIZE = 16; //long + long = 8 + 8
-    private int RECORD_FILE_TOTAL_SIZE;
     private int MAX_THREADS = 3;
-    //|********************|
-    //|*****Record File****|
-    //|********************|
-    //| start   |     end  |
-    //|********************|
-    //|  0L     |     7L   |
-    //|  8L     |     15L  |
-    //|  16L    |     31L  |
-    //|********************|
+
     private DownloadApi mDownloadApi;
     private Retrofit mRetrofit;
     private String mDefaultPath;
 
-    private RxDownload() {
+    private FileHelper mFileHelper;
 
+    private RxDownload() {
+        mFileHelper = new FileHelper();
     }
 
     public static RxDownload getInstance() {
@@ -92,6 +72,7 @@ public class RxDownload {
 
     public RxDownload maxThread(int max) {
         MAX_THREADS = max;
+        mFileHelper.setMaxThreads(max);
         return this;
     }
 
@@ -104,19 +85,146 @@ public class RxDownload {
      * 开始下载
      *
      * @param url      下载文件的Url
-     * @param saveName 下载文件的保存名称, null使用默认的名称(从url或响应头中读取文件名)
+     * @param saveName 下载文件的保存名称
      * @param savePath 下载文件的保存路径, null使用默认的路径,默认保存在/sdcard/Download/目录下
      * @return Observable
      */
-    public Observable<DownloadStatus> download(final String url, final String saveName, final String savePath) {
+    public Observable<DownloadStatus> download(@NonNull final String url, @NonNull final String saveName,
+                                               @Nullable final String savePath) {
         beforeDownload();
-        return mDownloadApi.download(TEST_RANGE_SUPPORT, url)
+        final String filePath = getFileSavePath(savePath) + File.separator + saveName;
+        return downloadDispatcher(url, filePath);
+    }
+
+    private Observable<DownloadStatus> downloadDispatcher(final String url, final String filePath) {
+        return createObservable(url, filePath)
+                .flatMap(new Func1<MapResult, Observable<DownloadStatus>>() {
+                    @Override
+                    public Observable<DownloadStatus> call(MapResult result) {
+                        switch (result.type) {
+                            case NORMAL_DOWNLOAD:
+                                Log.i(TAG, "Normal download start!");
+                                mFileHelper.prepareNormalDownload(filePath, result.fileLength);
+                                mFileHelper.writeLastModify(filePath, result.lastModify);
+                                return startNormalDownload(url, filePath);
+                            case MULTI_THREAD_DOWNLOAD:
+                                Log.i(TAG, "Multi thread download start!");
+                                mFileHelper.prepareMultiThreadDownload(filePath, result.fileLength);
+                                mFileHelper.writeLastModify(filePath, result.lastModify);
+                                return startMultiThreadDownload(url, filePath);
+                            case CONTINUE_DOWNLOAD:
+                                Log.i(TAG, "Continue download start!");
+                                return startMultiThreadDownload(url, filePath);
+                            case FILE_ALREADY_DOWNLOADED:
+                                Log.i(TAG, "Already downloaded!");
+                                return Observable.just(new DownloadStatus(result.fileLength, result.fileLength));
+                            default:
+                                Log.i(TAG, "unknown error!");
+                                return Observable.error(new Throwable("unknown error!"));
+                        }
+                    }
+                }).doOnError(new Action1<Throwable>() {
+                    @Override
+                    public void call(Throwable throwable) {
+                        Log.w(TAG, throwable);
+                    }
+                });
+    }
+
+    private Observable<MapResult> createObservable(String url, String filePath) {
+        final File file = new File(filePath);
+        if (file.exists()) {
+            return createFileExistsObservable(url, filePath, file);
+        } else {
+            return createFileNotExistsObservable(url);
+        }
+    }
+
+    private Observable<MapResult> createFileNotExistsObservable(@NonNull String url) {
+        return mDownloadApi.getHeaders(TEST_RANGE_SUPPORT, url)
+                .map(new Func1<Response<Void>, MapResult>() {
+                    @Override
+                    public MapResult call(Response<Void> response) {
+                        long contentLength = HttpHeaders.contentLength(response.headers());
+                        String contentRange = response.headers().get("Content-Range");
+                        boolean notSupportRange = TextUtils.isEmpty(contentRange) || contentLength == -1;
+                        if (notSupportRange) {
+                            return new MapResult(NORMAL_DOWNLOAD, contentLength);
+                        } else {
+                            MapResult result = new MapResult(MULTI_THREAD_DOWNLOAD, contentLength);
+                            result.lastModify = response.headers().get("Last-Modified");
+                            return result;
+                        }
+                    }
+                });
+    }
+
+    private Observable<MapResult> createFileExistsObservable(String url, final String filePath, final File file) {
+        return mDownloadApi.getHeadersWithIfRange(TEST_RANGE_SUPPORT, mFileHelper.getLastModify(filePath), url)
+                .map(new Func1<Response<Void>, MapResult>() {
+                    @Override
+                    public MapResult call(Response<Void> response) {
+                        long contentLength = HttpHeaders.contentLength(response.headers());
+                        String contentRange = response.headers().get("Content-Range");
+                        boolean notSupportRange = TextUtils.isEmpty(contentRange) || contentLength == -1;
+                        if (response.code() == 206) { //server file no changed
+                            if (notSupportRange) {
+                                if (file.length() == contentLength) {
+                                    return new MapResult(FILE_ALREADY_DOWNLOADED, contentLength);
+                                } else {
+                                    MapResult result = new MapResult(NORMAL_DOWNLOAD, contentLength);
+                                    result.lastModify = response.headers().get("Last-Modified");
+                                    return result;
+                                }
+                            } else {
+                                String recordPath = filePath + mFileHelper.getSuffix();
+                                File recordFile = new File(recordPath);
+                                if (!recordFile.exists()) {
+                                    MapResult result = new MapResult(MULTI_THREAD_DOWNLOAD, contentLength);
+                                    result.lastModify = response.headers().get("Last-Modified");
+                                    return result;
+                                }
+                                if (mFileHelper.recordFileDamaged(filePath, contentLength)) {
+                                    MapResult result = new MapResult(MULTI_THREAD_DOWNLOAD, contentLength);
+                                    result.lastModify = response.headers().get("Last-Modified");
+                                    return result;
+                                }
+                                if (mFileHelper.downloadNotComplete(filePath)) {
+                                    return new MapResult(CONTINUE_DOWNLOAD, contentLength);
+                                }
+                                return new MapResult(FILE_ALREADY_DOWNLOADED, contentLength);
+                            }
+                        } else {  //server file has changed, need re download
+                            if (notSupportRange) {
+                                MapResult result = new MapResult(NORMAL_DOWNLOAD, contentLength);
+                                result.lastModify = response.headers().get("Last-Modified");
+                                return result;
+                            } else {
+                                MapResult result = new MapResult(MULTI_THREAD_DOWNLOAD, contentLength);
+                                result.lastModify = response.headers().get("Last-Modified");
+                                return result;
+                            }
+                        }
+                    }
+                });
+    }
+
+    /**
+     * 常规下载, 不采用多线程和断点续传
+     *
+     * @param url      url
+     * @param savePath 下载文件保存路径
+     * @return Observable
+     */
+    private Observable<DownloadStatus> startNormalDownload(final String url, final String savePath) {
+        return mDownloadApi.download(null, url)
+                .subscribeOn(Schedulers.io())
                 .flatMap(new Func1<Response<ResponseBody>, Observable<DownloadStatus>>() {
                     @Override
                     public Observable<DownloadStatus> call(final Response<ResponseBody> response) {
-                        return createDownloadObservable(response, saveName, savePath, url);
+                        return normalSave(savePath, response);
                     }
-                }).retry(new Func2<Integer, Throwable, Boolean>() {
+                }).onBackpressureLatest().retry(new Func2<Integer, Throwable, Boolean>() {
                     @Override
                     public Boolean call(Integer integer, Throwable throwable) {
                         return retry(integer, throwable);
@@ -124,148 +232,24 @@ public class RxDownload {
                 });
     }
 
-    private void beforeDownload() {
-        if (TextUtils.isEmpty(mDefaultPath)) {
-            mDefaultPath = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).getPath();
-        }
-        if (mRetrofit == null) {
-            mRetrofit = RetrofitProvider.getInstance();
-        }
-
-        RECORD_FILE_TOTAL_SIZE = MAX_THREADS * EACH_RECORD_SIZE;
-
-        mDownloadApi = mRetrofit.create(DownloadApi.class);
-    }
-
-    private Observable<DownloadStatus> createDownloadObservable(Response<ResponseBody> response, String saveName,
-                                                                String savePath, String url) {
-        try {
-            String fileName = getFileSaveName(saveName, url, response.headers());
-            String filePath = null;
-            try {
-                filePath = getFileSavePath(savePath) + File.separator + fileName;
-            } finally {
-                closeUtils(response.body());
-            }
-
-            final long contentLength = response.body().contentLength();
-            Log.i(TAG, "Download file size is: " + contentLength + "!");
-
-            int type = -1;
-            try {
-                type = getDownloadType(response, filePath);
-            } finally {
-                closeUtils(response.body());
-            }
-            switch (type) {
-                case NORMAL_DOWNLOAD:
-                    Log.i(TAG, "Normal download start!");
-                    return startNormalDownload(filePath, response);
-                case MULTI_THREAD_DOWNLOAD:
-                    Log.i(TAG, "Multi thread download start!");
-                    try {
-                        prepareDownload(filePath, contentLength);
-                        return startMultiThreadDownload(filePath, url);
-                    } finally {
-                        closeUtils(response.body());
-                    }
-                case CONTINUE_DOWNLOAD:
-                    Log.i(TAG, "Continue download start!");
-                    try {
-                        return startMultiThreadDownload(filePath, url);
-                    } finally {
-                        closeUtils(response.body());
-                    }
-                case FILE_ALREADY_DOWNLOADED:
-                    Log.i(TAG, "Already downloaded!");
-                    try {
-                        return Observable.just(new DownloadStatus(contentLength, contentLength));
-                    } finally {
-                        closeUtils(response.body());
-                    }
-                default:
-                    Log.i(TAG, "unknown error!");
-                    try {
-                        return Observable.error(new Throwable("unknown error!"));
-                    } finally {
-                        closeUtils(response.body());
-                    }
-            }
-        } catch (IOException e) {
-            Log.w(TAG, e);
-            return Observable.error(e);
-        }
-    }
-
-    /**
-     * 常规下载, 不采用多线程和断点续传
-     *
-     * @param savePath 下载文件保存路径
-     * @param response Response
-     * @return Observable
-     */
-    private Observable<DownloadStatus> startNormalDownload(final String savePath,
-                                                           final Response<ResponseBody> response) {
+    private Observable<DownloadStatus> normalSave(final String savePath, final Response<ResponseBody> response) {
         return Observable.create(new Observable.OnSubscribe<DownloadStatus>() {
             @Override
             public void call(Subscriber<? super DownloadStatus> subscriber) {
-                specificSaveNormalFile(subscriber, savePath, response);
+                mFileHelper.saveNormalFile(subscriber, savePath, response);
             }
-        }).onBackpressureLatest();
-    }
-
-    private void specificSaveNormalFile(Subscriber<? super DownloadStatus> subscriber,
-                                        String savePath, Response<ResponseBody> response) {
-        InputStream inputStream = null;
-        OutputStream outputStream = null;
-        try {
-            try {
-                int readLen;
-                int downloadSize = 0;
-                byte[] buffer = new byte[8192];
-                File file = new File(savePath);
-
-                DownloadStatus status = new DownloadStatus();
-
-                inputStream = response.body().byteStream();
-                outputStream = new FileOutputStream(file);
-
-                long contentLength = response.body().contentLength();
-                boolean isChunked = !TextUtils.isEmpty(response.headers().get("Transfer-Encoding"));
-                if (isChunked || contentLength == -1) {
-                    status.isChunked = true;
-                }
-                status.setTotalSize(contentLength);
-
-                while ((readLen = inputStream.read(buffer)) != -1) {
-                    outputStream.write(buffer, 0, readLen);
-                    downloadSize += readLen;
-                    status.setDownloadSize(downloadSize);
-                    subscriber.onNext(status);
-                }
-                outputStream.flush(); // This is important!!!
-                subscriber.onCompleted();
-                Log.i(TAG, "Normal download completed!");
-            } finally {
-                closeUtils(inputStream);
-                closeUtils(outputStream);
-                closeUtils(response.body());
-            }
-        } catch (IOException e) {
-            subscriber.onError(e);
-        }
+        });
     }
 
     /**
      * 多线程+断点续传
      *
-     * @param filePath filePath
      * @param url      url
+     * @param filePath filePath
      * @return Observable
-     * @throws IOException
      */
-    private Observable<DownloadStatus> startMultiThreadDownload(final String filePath, String url) throws IOException {
-        DownloadRange range = getDownloadRange(filePath);
+    private Observable<DownloadStatus> startMultiThreadDownload(String url, final String filePath) {
+        DownloadRange range = mFileHelper.getDownloadRange(filePath);
         List<Observable<DownloadStatus>> tasks = new ArrayList<>();
         for (int i = 0; i < MAX_THREADS; i++) {
             if (range.start[i] <= range.end[i]) {
@@ -293,7 +277,7 @@ public class RxDownload {
                 .flatMap(new Func1<Response<ResponseBody>, Observable<DownloadStatus>>() {
                     @Override
                     public Observable<DownloadStatus> call(Response<ResponseBody> response) {
-                        return saveRangeFile(start, end, i, filePath, response.body());
+                        return rangeSave(start, end, i, filePath, response.body());
                     }
                 }).onBackpressureLatest().retry(new Func2<Integer, Throwable, Boolean>() {
                     @Override
@@ -301,6 +285,36 @@ public class RxDownload {
                         return retry(integer, throwable);
                     }
                 });
+    }
+
+    /**
+     * 保存断点下载的文件,以及下载进度
+     *
+     * @param start    从start开始
+     * @param end      到end结束
+     * @param i        下载编号
+     * @param filePath 保存路径
+     * @param response 响应值
+     * @return Observable
+     */
+    private Observable<DownloadStatus> rangeSave(final long start, final long end, final int i,
+                                                 final String filePath, final ResponseBody response) {
+        return Observable.create(new Observable.OnSubscribe<DownloadStatus>() {
+            @Override
+            public void call(Subscriber<? super DownloadStatus> subscriber) {
+                mFileHelper.saveRangeFile(subscriber, i, start, end, filePath, response);
+            }
+        });
+    }
+
+    private void beforeDownload() {
+        if (TextUtils.isEmpty(mDefaultPath)) {
+            mDefaultPath = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).getPath();
+        }
+        if (mRetrofit == null) {
+            mRetrofit = RetrofitProvider.getInstance();
+        }
+        mDownloadApi = mRetrofit.create(DownloadApi.class);
     }
 
     @NonNull
@@ -315,13 +329,15 @@ public class RxDownload {
         } else if (throwable instanceof HttpException) {
             if (integer < MAX_RETRY_COUNT + 1) {
                 Log.w(TAG, Thread.currentThread().getName() +
-                        " had non-2XX http error, retry to connect " + integer + " times"); return true;
+                        " had non-2XX http error, retry to connect " + integer + " times");
+                return true;
             }
             return false;
         } else if (throwable instanceof SocketTimeoutException) {
             if (integer < MAX_RETRY_COUNT + 1) {
                 Log.w(TAG, Thread.currentThread().getName() +
-                        " socket time out,retry to connect " + integer + " times"); return true;
+                        " socket time out,retry to connect " + integer + " times");
+                return true;
             }
             return false;
         } else if (throwable instanceof SocketException) {
@@ -340,300 +356,32 @@ public class RxDownload {
         }
     }
 
-    /**
-     * 保存断点下载的文件,以及下载进度
-     *
-     * @param start    从start开始
-     * @param end      到end结束
-     * @param i        下载编号
-     * @param filePath 保存路径
-     * @param response 响应值
-     * @return Observable
-     */
-    private Observable<DownloadStatus> saveRangeFile(final long start, final long end, final int i,
-                                                     final String filePath, final ResponseBody response) {
-        return Observable.create(new Observable.OnSubscribe<DownloadStatus>() {
-            @Override
-            public void call(Subscriber<? super DownloadStatus> subscriber) {
-                specificSaveRangeFile(subscriber, i, start, end, filePath, response);
-            }
-        });
-    }
-
-    private void specificSaveRangeFile(Subscriber<? super DownloadStatus> subscriber, int i,
-                                       long start, long end, String filePath, ResponseBody response) {
-        RandomAccessFile record = null;
-        FileChannel recordChannel = null;
-
-        RandomAccessFile save = null;
-        FileChannel saveChannel = null;
-
-        InputStream inStream = null;
-        try {
-            try {
-                Log.i(TAG, Thread.currentThread().getName() + " start download from " + start + " to " + end + "!");
-                int readLen;
-                byte[] buffer = new byte[8192];
-                DownloadStatus status = new DownloadStatus();
-
-                record = new RandomAccessFile(filePath + SUFFIX, "rws");
-                recordChannel = record.getChannel();
-                MappedByteBuffer recordBuffer = recordChannel.map(READ_WRITE, 0, RECORD_FILE_TOTAL_SIZE);
-                long totalSize = recordBuffer.getLong(RECORD_FILE_TOTAL_SIZE - 8) + 1;
-                status.setTotalSize(totalSize);
-
-                save = new RandomAccessFile(filePath, "rws");
-                saveChannel = save.getChannel();
-                MappedByteBuffer saveBuffer = saveChannel.map(READ_WRITE, start, end - start + 1);
-
-                inStream = response.byteStream();
-                while ((readLen = inStream.read(buffer)) != -1) {
-                    saveBuffer.put(buffer, 0, readLen);
-                    recordBuffer.putLong(i * EACH_RECORD_SIZE, recordBuffer.getLong(i * EACH_RECORD_SIZE) + readLen);
-
-                    status.setDownloadSize(totalSize - getResidue(recordBuffer));
-                    subscriber.onNext(status);
-                }
-                Log.i(TAG, Thread.currentThread().getName() + " complete download! Download size is " +
-                        response.contentLength() + " bytes");
-                subscriber.onCompleted();
-            } finally {
-                closeUtils(record);
-                closeUtils(recordChannel);
-                closeUtils(save);
-                closeUtils(saveChannel);
-                closeUtils(inStream);
-                closeUtils(response);
-            }
-        } catch (IOException e) {
-            subscriber.onError(e);
-        }
-    }
-
-    /**
-     * 还剩多少字节没有下载
-     *
-     * @param recordBuffer buffer
-     * @return 剩余的字节
-     */
-    private long getResidue(MappedByteBuffer recordBuffer) {
-        long residue = 0;
-        for (int j = 0; j < MAX_THREADS; j++) {
-            long startTemp = recordBuffer.getLong(j * EACH_RECORD_SIZE);
-            long endTemp = recordBuffer.getLong(j * EACH_RECORD_SIZE + 8);
-            long temp = endTemp - startTemp + 1;
-            residue += temp;
-        }
-        return residue;
-    }
-
-    private DownloadRange getDownloadRange(String filePath) throws IOException {
-        RandomAccessFile record = null;
-        FileChannel channel = null;
-        try {
-            record = new RandomAccessFile(filePath + SUFFIX, "rws");
-            channel = record.getChannel();
-            MappedByteBuffer buffer = channel.map(READ_WRITE, 0, RECORD_FILE_TOTAL_SIZE);
-            long[] startByteArray = new long[MAX_THREADS];
-            long[] endByteArray = new long[MAX_THREADS];
-            for (int i = 0; i < MAX_THREADS; i++) {
-                startByteArray[i] = buffer.getLong();
-                endByteArray[i] = buffer.getLong();
-            }
-            return new DownloadRange(startByteArray, endByteArray);
-        } finally {
-            closeUtils(channel);
-            closeUtils(record);
-        }
-    }
-
-    private void prepareDownload(String path, long contentLength) throws IOException {
-        RandomAccessFile file = null;
-        RandomAccessFile record = null;
-        FileChannel channel = null;
-        try {
-            file = new RandomAccessFile(path, "rws");
-            file.setLength(contentLength);//设置下载文件的长度
-
-            record = new RandomAccessFile(path + SUFFIX, "rws");
-            record.setLength(RECORD_FILE_TOTAL_SIZE); //设置指针记录文件的大小
-
-            channel = record.getChannel();
-            MappedByteBuffer buffer = channel.map(READ_WRITE, 0, RECORD_FILE_TOTAL_SIZE);
-
-            long start;
-            long end;
-            int eachSize = (int) (contentLength / MAX_THREADS);
-            for (int i = 0; i < MAX_THREADS; i++) {
-                if (i == MAX_THREADS - 1) {
-                    start = i * eachSize;
-                    end = contentLength - 1;
-                } else {
-                    start = i * eachSize;
-                    end = (i + 1) * eachSize - 1;
-                }
-                buffer.putLong(start);
-                buffer.putLong(end);
-            }
-        } finally {
-            closeUtils(channel);
-            closeUtils(record);
-            closeUtils(file);
-        }
-    }
-
-    private String getFileSavePath(String savePath) throws IOException {
+    private String getFileSavePath(String savePath) {
         if (!TextUtils.isEmpty(savePath)) {
             File file = new File(savePath);
-            boolean create = file.createNewFile();
-            if (create) {
-                Log.i(TAG, "create file save path success");
-            } else {
-                Log.i(TAG, "file save path already exists");
-            }
-            if (file.isDirectory()) {
+            if (file.exists() && file.isDirectory()) {
                 return savePath;
             } else {
-                throw new IllegalArgumentException("Are you kidding me? You give me a file path, But I need a " +
-                        "directory path");
+                boolean flag = file.mkdir();
+                if (flag) {
+                    Log.i(TAG, "create file save path success");
+                    return savePath;
+                } else {
+                    Log.i(TAG, "create file save path failed , now use default save path");
+                }
             }
         }
         return mDefaultPath;
     }
 
-    private String getFileSaveName(String saveName, String url, Headers headers) {
-        if (!TextUtils.isEmpty(saveName)) {
-            return saveName;
-        }
-        return getDefaultFileName(url, headers);
-    }
+    private class MapResult {
+        Integer type;
+        long fileLength;
+        String lastModify;
 
-    /**
-     * 判断下载类型
-     *
-     * @param response Http Response
-     * @param filePath File Save Path
-     * @return ##
-     * {@link RxDownload#NORMAL_DOWNLOAD}  常规下载,单线程,无断点续传
-     * {@link RxDownload#MULTI_THREAD_DOWNLOAD} 多线程下载+断点续传
-     * {@link RxDownload#CONTINUE_DOWNLOAD} 断点续传
-     * {@link RxDownload#FILE_ALREADY_DOWNLOADED} 文件已经下载成功,无需重新下载
-     * @throws IOException
-     */
-    private int getDownloadType(Response<ResponseBody> response, String filePath) throws IOException {
-        long contentLength = response.body().contentLength();
-
-        //响应头有 "Content-Range: bytes 0-12710467/38131405" 字段, 并且Content-Length 不为 -1, 表示支持断点续传,否则不支持
-        //响应头有 "Transfer-Encoding : chunked" 字段,或者Content-Length为-1 , 表示分块传输,不能使用断点续传;
-        boolean notSupportRangeDownload = TextUtils.isEmpty(response.headers().get("Content-Range")) ||
-                contentLength == -1;
-
-        if (notSupportRangeDownload) {
-            File file = new File(filePath);
-            if (!file.exists()) {
-                return NORMAL_DOWNLOAD;
-            }
-            if (file.length() != contentLength) {
-                return NORMAL_DOWNLOAD;
-            }
-            return FILE_ALREADY_DOWNLOADED;
-        }
-
-
-        File file = new File(filePath);
-        if (!file.exists()) {
-            return MULTI_THREAD_DOWNLOAD;
-        }
-        if (file.length() != contentLength) {
-            return MULTI_THREAD_DOWNLOAD;
-        }
-        String recordPath = filePath + SUFFIX;
-        File recordFile = new File(recordPath);
-        if (!recordFile.exists()) {
-            return MULTI_THREAD_DOWNLOAD;
-        }
-
-        if (recordFileDamaged(recordPath, contentLength)) {
-            return MULTI_THREAD_DOWNLOAD;
-        }
-
-        if (downloadNotComplete(recordPath)) {
-            return CONTINUE_DOWNLOAD;
-        }
-        return FILE_ALREADY_DOWNLOADED;
-    }
-
-    private boolean recordFileDamaged(String recordFilePath, long contentLength) throws IOException {
-        RandomAccessFile record = null;
-        FileChannel channel = null;
-        try {
-            record = new RandomAccessFile(recordFilePath, "rws");
-            channel = record.getChannel();
-            MappedByteBuffer buffer = channel.map(READ_WRITE, 0, RECORD_FILE_TOTAL_SIZE);
-            long recordTotalSize = buffer.getLong(RECORD_FILE_TOTAL_SIZE - 8) + 1;
-            return recordTotalSize != contentLength;
-        } finally {
-            closeUtils(channel);
-            closeUtils(record);
-        }
-    }
-
-    private boolean downloadNotComplete(String recordFilePath) throws IOException {
-        RandomAccessFile record = null;
-        FileChannel channel = null;
-        try {
-            record = new RandomAccessFile(recordFilePath, "rws");
-            channel = record.getChannel();
-            MappedByteBuffer buffer = channel.map(READ_WRITE, 0, RECORD_FILE_TOTAL_SIZE);
-            long startByte;
-            long endByte;
-            for (int i = 0; i < MAX_THREADS; i++) {
-                startByte = buffer.getLong();
-                endByte = buffer.getLong();
-                if (startByte <= endByte) {
-                    return true;
-                }
-            }
-            return false;
-        } finally {
-            closeUtils(channel);
-            closeUtils(record);
-        }
-    }
-
-    /**
-     * 如果content-disposition指定了文件名,则使用它
-     * 若没有则截取URL最后一段为文件名
-     *
-     * @param url     URL
-     * @param headers Response header
-     * @return fileName
-     */
-    private String getDefaultFileName(String url, Headers headers) {
-        String fileName = null;
-        String temp = headers.get("content-disposition");
-        if (!TextUtils.isEmpty(temp)) {
-            Matcher m = Pattern.compile(".*filename=(.*)").matcher(temp);
-            if (m.find()) {
-                fileName = m.group(1);
-                if (fileName.startsWith("\"")) {
-                    fileName = fileName.substring(1);
-                }
-                if (fileName.endsWith("\"")) {
-                    fileName = fileName.substring(0, fileName.length() - 1);
-                }
-            }
-        }
-
-        if (TextUtils.isEmpty(fileName)) {
-            fileName = url.substring(url.lastIndexOf('/') + 1);
-        }
-        return fileName;
-    }
-
-    private void closeUtils(Closeable closeable) throws IOException {
-        if (closeable != null) {
-            closeable.close();
+        MapResult(Integer type, long fileLength) {
+            this.type = type;
+            this.fileLength = fileLength;
         }
     }
 }

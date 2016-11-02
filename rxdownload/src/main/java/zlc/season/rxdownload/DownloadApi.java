@@ -3,6 +3,7 @@ package zlc.season.rxdownload;
 import okhttp3.ResponseBody;
 import retrofit2.Response;
 import retrofit2.http.GET;
+import retrofit2.http.HEAD;
 import retrofit2.http.Header;
 import retrofit2.http.Streaming;
 import retrofit2.http.Url;
@@ -18,4 +19,12 @@ interface DownloadApi {
     @GET
     @Streaming
     Observable<Response<ResponseBody>> download(@Header("Range") String range, @Url String url);
+
+    @HEAD
+    Observable<Response<Void>> getHeaders(@Header("Range") String range, @Url String url);
+
+    @HEAD
+    Observable<Response<Void>> getHeadersWithIfRange(@Header("Range") String range,
+                                                     @Header("If-Range") String lastModify,
+                                                     @Url String url);
 }

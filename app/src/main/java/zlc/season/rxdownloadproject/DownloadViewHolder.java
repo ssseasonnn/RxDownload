@@ -63,7 +63,7 @@ public class DownloadViewHolder extends AbstractViewHolder<DownloadBean> {
             data.state = DownloadBean.PAUSE;
             mStatus.setText("暂停");
             data.subscription = RxDownload.getInstance()
-                    .download(data.url, null, null)
+                    .download(data.url, data.name, null)
                     .subscribeOn(Schedulers.io())
                     .observeOn(AndroidSchedulers.mainThread())
                     .subscribe(new Subscriber<DownloadStatus>() {

@@ -103,11 +103,13 @@ public class MainActivity extends AppCompatActivity {
 
     private void loadData() {
         Resources res = getResources();
+        final String[] names = res.getStringArray(R.array.name);
         final String[] images = res.getStringArray(R.array.image);
         final String[] urls = res.getStringArray(R.array.url);
         List<DownloadBean> list = new ArrayList<>();
         for (int i = 0; i < images.length; i++) {
             DownloadBean temp = new DownloadBean();
+            temp.name = names[i];
             temp.image = images[i];
             temp.url = urls[i];
             temp.state = DownloadBean.START;

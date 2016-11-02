@@ -9,6 +9,8 @@ import java.util.Date;
 import java.util.Locale;
 import java.util.TimeZone;
 
+import retrofit2.Response;
+
 /**
  * Author: Season(ssseasonnn@gmail.com)
  * Date: 2016/11/2
@@ -37,6 +39,10 @@ class Utils {
         if (closeable != null) {
             closeable.close();
         }
+    }
+
+    static String lastModify(Response<?> response) {
+        return response.headers().get("Last-Modified");
     }
 
     static String formatSize(long size) {

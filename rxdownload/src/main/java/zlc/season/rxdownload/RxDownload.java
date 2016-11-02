@@ -7,9 +7,11 @@ import android.text.TextUtils;
 import android.util.Log;
 
 import java.io.File;
+import java.io.IOException;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
+import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -97,24 +99,45 @@ public class RxDownload {
     }
 
     private Observable<DownloadStatus> downloadDispatcher(final String url, final String filePath) {
-        return createObservable(url, filePath)
+        Observable<MapResult> result;
+        try {
+            result = createObservable(url, filePath);
+        } catch (IOException e) {
+            Log.w(TAG, e);
+            return Observable.error(new Throwable("create download observable failed", e));
+        }
+        return result
                 .flatMap(new Func1<MapResult, Observable<DownloadStatus>>() {
                     @Override
                     public Observable<DownloadStatus> call(MapResult result) {
                         switch (result.type) {
                             case NORMAL_DOWNLOAD:
                                 Log.i(TAG, "Normal download start!");
-                                mFileHelper.prepareNormalDownload(filePath, result.fileLength);
-                                mFileHelper.writeLastModify(filePath, result.lastModify);
-                                return startNormalDownload(url, filePath);
+                                try {
+                                    mFileHelper.prepareNormalDownload(filePath, result.fileLength);
+                                    mFileHelper.writeLastModify(filePath, result.lastModify);
+                                    return startNormalDownload(url, filePath);
+                                } catch (IOException | ParseException e) {
+                                    return Observable.error(new Throwable("start normal download failed", e));
+                                }
+
                             case MULTI_THREAD_DOWNLOAD:
                                 Log.i(TAG, "Multi thread download start!");
-                                mFileHelper.prepareMultiThreadDownload(filePath, result.fileLength);
-                                mFileHelper.writeLastModify(filePath, result.lastModify);
-                                return startMultiThreadDownload(url, filePath);
+                                try {
+                                    mFileHelper.prepareMultiThreadDownload(filePath, result.fileLength);
+                                    mFileHelper.writeLastModify(filePath, result.lastModify);
+                                    return startMultiThreadDownload(url, filePath);
+                                } catch (IOException | ParseException e) {
+                                    return Observable.error(new Throwable("start multi thread download failed", e));
+                                }
+
                             case CONTINUE_DOWNLOAD:
                                 Log.i(TAG, "Continue download start!");
-                                return startMultiThreadDownload(url, filePath);
+                                try {
+                                    return startMultiThreadDownload(url, filePath);
+                                } catch (IOException e) {
+                                    return Observable.error(new Throwable("continue multi thread download failed", e));
+                                }
                             case FILE_ALREADY_DOWNLOADED:
                                 Log.i(TAG, "Already downloaded!");
                                 return Observable.just(new DownloadStatus(result.fileLength, result.fileLength));
@@ -131,7 +154,7 @@ public class RxDownload {
                 });
     }
 
-    private Observable<MapResult> createObservable(String url, String filePath) {
+    private Observable<MapResult> createObservable(String url, String filePath) throws IOException {
         final File file = new File(filePath);
         if (file.exists()) {
             return createFileExistsObservable(url, filePath, file);
@@ -159,7 +182,8 @@ public class RxDownload {
                 });
     }
 
-    private Observable<MapResult> createFileExistsObservable(String url, final String filePath, final File file) {
+    private Observable<MapResult> createFileExistsObservable(String url, final String filePath,
+                                                             final File file) throws IOException {
         return mDownloadApi.getHeadersWithIfRange(TEST_RANGE_SUPPORT, mFileHelper.getLastModify(filePath), url)
                 .map(new Func1<Response<Void>, MapResult>() {
                     @Override
@@ -168,45 +192,63 @@ public class RxDownload {
                         String contentRange = response.headers().get("Content-Range");
                         boolean notSupportRange = TextUtils.isEmpty(contentRange) || contentLength == -1;
                         if (response.code() == 206) { //server file no changed
-                            if (notSupportRange) {
-                                if (file.length() == contentLength) {
-                                    return new MapResult(FILE_ALREADY_DOWNLOADED, contentLength);
-                                } else {
-                                    MapResult result = new MapResult(NORMAL_DOWNLOAD, contentLength);
-                                    result.lastModify = response.headers().get("Last-Modified");
-                                    return result;
-                                }
-                            } else {
-                                String recordPath = filePath + mFileHelper.getSuffix();
-                                File recordFile = new File(recordPath);
-                                if (!recordFile.exists()) {
-                                    MapResult result = new MapResult(MULTI_THREAD_DOWNLOAD, contentLength);
-                                    result.lastModify = response.headers().get("Last-Modified");
-                                    return result;
-                                }
-                                if (mFileHelper.recordFileDamaged(filePath, contentLength)) {
-                                    MapResult result = new MapResult(MULTI_THREAD_DOWNLOAD, contentLength);
-                                    result.lastModify = response.headers().get("Last-Modified");
-                                    return result;
-                                }
-                                if (mFileHelper.downloadNotComplete(filePath)) {
-                                    return new MapResult(CONTINUE_DOWNLOAD, contentLength);
-                                }
-                                return new MapResult(FILE_ALREADY_DOWNLOADED, contentLength);
-                            }
+                            return getMapResultWhen206(response, contentLength, notSupportRange, file, filePath);
                         } else {  //server file has changed, need re download
-                            if (notSupportRange) {
-                                MapResult result = new MapResult(NORMAL_DOWNLOAD, contentLength);
-                                result.lastModify = response.headers().get("Last-Modified");
-                                return result;
-                            } else {
-                                MapResult result = new MapResult(MULTI_THREAD_DOWNLOAD, contentLength);
-                                result.lastModify = response.headers().get("Last-Modified");
-                                return result;
-                            }
+                            return getMapResultWhen200(response, contentLength, notSupportRange);
                         }
                     }
                 });
+    }
+
+    @NonNull
+    private MapResult getMapResultWhen200(Response<Void> response, long contentLength, boolean notSupportRange) {
+        if (notSupportRange) {
+            return new MapResult(NORMAL_DOWNLOAD, contentLength, Utils.lastModify(response));
+        } else {
+            return new MapResult(MULTI_THREAD_DOWNLOAD, contentLength, Utils.lastModify(response));
+        }
+    }
+
+    @NonNull
+    private MapResult getMapResultWhen206(Response<Void> response, long contentLength, boolean notSupportRange,
+                                          File file, String filePath) {
+        if (notSupportRange) {
+            return getMapResultWhenNotRange(response, contentLength, file);
+        } else {
+            return getResultWhenRange(response, contentLength, filePath);
+        }
+    }
+
+    @NonNull
+    private MapResult getResultWhenRange(Response<Void> response, long contentLength, String filePath) {
+        try {
+            String recordPath = filePath + mFileHelper.getSuffix();
+            File recordFile = new File(recordPath);
+            if (!recordFile.exists()) {
+                return new MapResult(MULTI_THREAD_DOWNLOAD, contentLength,
+                        Utils.lastModify(response));
+            }
+            if (mFileHelper.recordFileDamaged(filePath, contentLength)) {
+                return new MapResult(MULTI_THREAD_DOWNLOAD, contentLength,
+                        Utils.lastModify(response));
+            }
+            if (mFileHelper.downloadNotComplete(filePath)) {
+                return new MapResult(CONTINUE_DOWNLOAD, contentLength);
+            }
+        } catch (IOException e) {
+            return new MapResult(MULTI_THREAD_DOWNLOAD, contentLength,
+                    Utils.lastModify(response));
+        }
+        return new MapResult(FILE_ALREADY_DOWNLOADED, contentLength);
+    }
+
+    @NonNull
+    private MapResult getMapResultWhenNotRange(Response<Void> response, long contentLength, File file) {
+        if (file.length() == contentLength) {
+            return new MapResult(FILE_ALREADY_DOWNLOADED, contentLength);
+        } else {
+            return new MapResult(NORMAL_DOWNLOAD, contentLength, Utils.lastModify(response));
+        }
     }
 
     /**
@@ -248,7 +290,7 @@ public class RxDownload {
      * @param filePath filePath
      * @return Observable
      */
-    private Observable<DownloadStatus> startMultiThreadDownload(String url, final String filePath) {
+    private Observable<DownloadStatus> startMultiThreadDownload(String url, final String filePath) throws IOException {
         DownloadRange range = mFileHelper.getDownloadRange(filePath);
         List<Observable<DownloadStatus>> tasks = new ArrayList<>();
         for (int i = 0; i < MAX_THREADS; i++) {
@@ -382,6 +424,12 @@ public class RxDownload {
         MapResult(Integer type, long fileLength) {
             this.type = type;
             this.fileLength = fileLength;
+        }
+
+        public MapResult(Integer type, long fileLength, String lastModify) {
+            this.type = type;
+            this.fileLength = fileLength;
+            this.lastModify = lastModify;
         }
     }
 }

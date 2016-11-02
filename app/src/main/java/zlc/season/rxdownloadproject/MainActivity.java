@@ -33,6 +33,7 @@ public class MainActivity extends AppCompatActivity {
     FloatingActionButton mFab;
 
     private DownloadAdapter mAdapter;
+    private String weixin = "http://dldir1.qq.com/weixin/android/weixin6327android880.apk";
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -49,7 +50,20 @@ public class MainActivity extends AppCompatActivity {
         int id = item.getItemId();
 
         //noinspection SimplifiableIfStatement
-        if (id == R.id.action_settings) {
+        if (id == R.id.action_check_update) {
+            AlertDialog dialog = new AlertDialog.Builder(this).setTitle("更新")
+                    .setMessage("有新版本发布")
+                    .setPositiveButton("升级", new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            Intent intent = new Intent();
+                            intent.setClass(MainActivity.this, UpdateService.class);
+                            intent.putExtra(UpdateService.INTENT_DOWNLOAD_URL, weixin);
+                            intent.putExtra(UpdateService.INTENT_SAVE_NAME, "weixin.apk");
+                            startService(intent);
+                        }
+                    }).create();
+            dialog.show();
             return true;
         }
 
@@ -62,24 +76,6 @@ public class MainActivity extends AppCompatActivity {
         finish();
     }
 
-    @Override
-    protected void onResume() {
-        super.onResume();
-        AlertDialog dialog = new AlertDialog.Builder(this).setTitle("更新")
-                .setMessage("有新版本发布")
-                .setPositiveButton("升级", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        Intent intent = new Intent();
-                        intent.setClass(MainActivity.this, UpdateService.class);
-                        intent.putExtra(UpdateService.INTENT_DOWNLOAD_URL, "http://dldir1.qq" +
-                                ".com/weixin/android/weixin6327android880.apk");
-                        intent.putExtra(UpdateService.INTENT_SAVE_NAME, "weixin.apk");
-                        startService(intent);
-                    }
-                }).create();
-        dialog.show();
-    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {

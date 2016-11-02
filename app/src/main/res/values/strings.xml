@@ -1,6 +1,6 @@
 <resources>
     <string name="app_name">RxDownloadProject</string>
-    <string name="action_settings">Settings</string>
+    <string name="action_check_update">检查新版本</string>
 
     <string-array name="name">
         <item>weixin.apk</item>

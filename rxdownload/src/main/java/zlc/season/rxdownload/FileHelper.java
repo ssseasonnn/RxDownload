@@ -62,9 +62,9 @@ class FileHelper {
         RECORD_FILE_TOTAL_SIZE = EACH_RECORD_SIZE * MAX_THREADS;
     }
 
-    void writeLastModify(String filePath, String lastModify) {
+    void writeLastModify(String filePath, String lastModify) throws IOException, ParseException {
         RandomAccessFile file = null;
-        try {
+//        try {
             try {
                 file = new RandomAccessFile(filePath + LAST_MODIFY_SUFFIX, "rw");
                 file.seek(0);
@@ -72,18 +72,18 @@ class FileHelper {
             } finally {
                 Utils.close(file);
             }
-        } catch (FileNotFoundException e) {
-            throw new IllegalStateException("Last Modify File is not found", e);
-        } catch (ParseException e) {
-            throw new IllegalArgumentException("Failed to parse String last modify to long", e);
-        } catch (IOException e) {
-            throw new IllegalStateException("Failed to write last modify", e);
-        }
+//        } catch (FileNotFoundException e) {
+//            throw new IllegalStateException("Last Modify File is not found", e);
+//        } catch (ParseException e) {
+//            throw new IllegalArgumentException("Failed to parse String last modify to long", e);
+//        } catch (IOException e) {
+//            throw new IllegalStateException("Failed to write last modify", e);
+//        }
     }
 
-    String getLastModify(String filePath) {
+    String getLastModify(String filePath) throws IOException {
         RandomAccessFile file = null;
-        try {
+//        try {
             try {
                 file = new RandomAccessFile(filePath + LAST_MODIFY_SUFFIX, "r");
                 file.seek(0);
@@ -92,34 +92,34 @@ class FileHelper {
             } finally {
                 Utils.close(file);
             }
-        } catch (FileNotFoundException e) {
-            throw new IllegalStateException("Last Modify File is not found", e);
-        } catch (IOException e) {
-            throw new IllegalStateException("Failed to write last modify", e);
-        }
+//        } catch (FileNotFoundException e) {
+//            throw new IllegalStateException("Last Modify File is not found", e);
+//        } catch (IOException e) {
+//            throw new IllegalStateException("Failed to write last modify", e);
+//        }
     }
 
-    void prepareNormalDownload(String filePath, long fileLength) {
+    void prepareNormalDownload(String filePath, long fileLength) throws IOException {
         RandomAccessFile file = null;
-        try {
+//        try {
             try {
                 file = new RandomAccessFile(filePath, "rw");
                 file.setLength(fileLength);//设置下载文件的长度
             } finally {
                 Utils.close(file);
             }
-        } catch (FileNotFoundException e) {
-            throw new IllegalStateException("Failed to create normal save file", e);
-        } catch (IOException e) {
-            throw new IllegalStateException("Failed to prepare normal download", e);
-        }
+//        } catch (FileNotFoundException e) {
+//            throw new IllegalStateException("Failed to create normal save file", e);
+//        } catch (IOException e) {
+//            throw new IllegalStateException("Failed to prepare normal download", e);
+//        }
     }
 
-    void prepareMultiThreadDownload(String filePath, long fileLength) {
+    void prepareMultiThreadDownload(String filePath, long fileLength) throws IOException {
         RandomAccessFile file = null;
         RandomAccessFile record = null;
         FileChannel channel = null;
-        try {
+//        try {
             try {
                 file = new RandomAccessFile(filePath, "rw");
                 file.setLength(fileLength);//设置下载文件的长度
@@ -149,17 +149,17 @@ class FileHelper {
                 Utils.close(record);
                 Utils.close(file);
             }
-        } catch (FileNotFoundException e) {
-            throw new IllegalStateException("Save File  or Record File is not found", e);
-        } catch (IOException e) {
-            throw new IllegalStateException("Failed to prepare multi thread download", e);
-        }
+//        } catch (FileNotFoundException e) {
+//            throw new IllegalStateException("Save File  or Record File is not found", e);
+//        } catch (IOException e) {
+//            throw new IllegalStateException("Failed to prepare multi thread download", e);
+//        }
     }
 
-    DownloadRange getDownloadRange(String filePath) {
+    DownloadRange getDownloadRange(String filePath) throws IOException {
         RandomAccessFile record = null;
         FileChannel channel = null;
-        try {
+//        try {
             try {
                 record = new RandomAccessFile(filePath + RECORD_SUFFIX, "rw");
                 channel = record.getChannel();
@@ -175,15 +175,15 @@ class FileHelper {
                 Utils.close(channel);
                 Utils.close(record);
             }
-        } catch (FileNotFoundException e) {
-            throw new IllegalStateException("Record File is not found", e);
-        } catch (IOException e) {
-            throw new IllegalStateException("Failed to get download range", e);
-        }
+//        } catch (FileNotFoundException e) {
+//            throw new IllegalStateException("Record File is not found", e);
+//        } catch (IOException e) {
+//            throw new IllegalStateException("Failed to get download range", e);
+//        }
     }
 
     void saveRangeFile(Subscriber<? super DownloadStatus> subscriber, int i, long start, long end,
-                       String filePath, ResponseBody response) {
+                       String filePath, ResponseBody response)  {
         RandomAccessFile record = null;
         FileChannel recordChannel = null;
 
@@ -278,10 +278,10 @@ class FileHelper {
         }
     }
 
-    boolean recordFileDamaged(String filePath, long fileLength) {
+    boolean recordFileDamaged(String filePath, long fileLength) throws IOException {
         RandomAccessFile record = null;
         FileChannel channel = null;
-        try {
+//        try {
             try {
                 record = new RandomAccessFile(filePath + RECORD_SUFFIX, "rw");
                 channel = record.getChannel();
@@ -292,17 +292,17 @@ class FileHelper {
                 Utils.close(channel);
                 Utils.close(record);
             }
-        } catch (FileNotFoundException e) {
-            throw new IllegalStateException("Record File is not found", e);
-        } catch (IOException e) {
-            throw new IllegalStateException("Failed to check whether the record file is damaged", e);
-        }
+//        } catch (FileNotFoundException e) {
+//            throw new IllegalStateException("Record File is not found", e);
+//        } catch (IOException e) {
+//            throw new IllegalStateException("Failed to check whether the record file is damaged", e);
+//        }
     }
 
-    boolean downloadNotComplete(String filePath) {
+    boolean downloadNotComplete(String filePath) throws IOException {
         RandomAccessFile record = null;
         FileChannel channel = null;
-        try {
+//        try {
             try {
                 record = new RandomAccessFile(filePath + RECORD_SUFFIX, "rw");
                 channel = record.getChannel();
@@ -321,11 +321,11 @@ class FileHelper {
                 Utils.close(channel);
                 Utils.close(record);
             }
-        } catch (FileNotFoundException e) {
-            throw new IllegalStateException("Record File is not found", e);
-        } catch (IOException e) {
-            throw new IllegalStateException("Failed to check whether downloaded", e);
-        }
+//        } catch (FileNotFoundException e) {
+//            throw new IllegalStateException("Record File is not found", e);
+//        } catch (IOException e) {
+//            throw new IllegalStateException("Failed to check whether downloaded", e);
+//        }
     }
 
     /**

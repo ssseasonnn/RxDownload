@@ -28,9 +28,12 @@ import static java.nio.channels.FileChannel.MapMode.READ_WRITE;
  */
 class FileHelper {
     private static final String TAG = "RxDownload";
+
     private final String RECORD_SUFFIX = ".tmp";
-    private final String LAST_MODIFY_SUFFIX = ".last";
+    private final String LAST_MODIFY_SUFFIX = ".lms";
+
     private final int EACH_RECORD_SIZE = 16; //long + long = 8 + 8
+
     private int MAX_THREADS = 3;
     private int RECORD_FILE_TOTAL_SIZE;
 
@@ -41,6 +44,8 @@ class FileHelper {
     //|  8L      |     15L  | 1
     //|  16L     |     31L  | 2
     //|  ...     |     ...  | MAX_THREADS-1
+    //|*********************|
+    //|LastModify|    keep  |
     //|*********************|
 
     FileHelper() {

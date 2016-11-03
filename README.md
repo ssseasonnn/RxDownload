@@ -22,12 +22,24 @@
 - 使用Retrofit+OKHTTP来进行网络请求
 - 基于RxJava打造, 支持RxJava各种操作符链式调用
 - 断点续传, 根据服务端响应值自动判断是否支持断点续传
-- 若不支持断点续传,则使用单线程进行传统下载
+- 若不支持断点续传,则进行传统下载
 - 多线程下载, 可以设置最大线程, 默认值为3
 - 检测到网络连接失败自动尝试重连, 并可配置最大重试次数,默认值为3
 
 
+2016-11-03 更新:
 
+* 代码重构, 逻辑更简洁,代码更清晰
+
+* 支持根据Last-Modified字段判断服务端文件是否变化
+
+* 仍不支持Etag
+
+* 与服务器进行验证过程中,使用更轻便的HEAD请求方式仅获取响应头,减轻服务端负担
+
+* 上一版本中保存文件名是可选参数, 本次更新改为必传参数, 这样在与服务器进行文件校验时可少发起一次请求
+
+  ​
 
 
 ### 使用方式
@@ -38,7 +50,7 @@
 
 ```groovy
 	dependencies{
-   		 compile 'zlc.season:rxdownload:1.0.0'
+   		 compile 'zlc.season:rxdownload:1.1.0'
 	}
 ```
 
@@ -46,7 +58,7 @@
 
 ```java
 Subscription subscription = RxDownload.getInstance()
-                .download(url, null, null)
+                .download(url, "weixin.apk", null)
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(new Subscriber<DownloadStatus>() {
@@ -69,13 +81,9 @@ Subscription subscription = RxDownload.getInstance()
 
 > download(String url, String  saveName, String savePath)参数说明:
 >
-> 参数分别为下载地址,保存文件名,保存地址, 文件名和保存地址传null,则使用默认的文件名和默认的下载地址.
+> 参数分别为下载地址,保存文件名,保存地址.
 >
-> 默认的文件名先从响应头的content-disposition字段中获取, 若没有该字段,则截取url的最后一段当作文件名.
->
-> 例如下载地址为: http://a.gdown.baidu.com/data/wisegame/f4314d752861cf51/WeChat_900.apK , 若content-disposition字段不存在, 则截取WeChat_900.apk作为文件名. 若都获取不到,则会抛出异常提示, 需要手动指定文件名.
->
-> 默认的下载地址为/SdCard/Download/目录
+> url与saveName为必传参数, savePath为可选参数, 默认的下载地址为/storage/emulated/0/Download/目录下, 也就是内置存储的Download目录
 
 3.参数配置
 
@@ -103,7 +111,7 @@ Subscription subscription = RxDownload.getInstance()
 
                     @Override
                     public void onNext(DownloadStatus status) {
-
+					//Status表示的是当前的下载进度
                     }
                 });
 ```
@@ -134,28 +142,20 @@ class DownloadStatus {
     //返回下载的百分比, 保留两位小数,如:5.25%
     public String getPercent() {}
 }
-
 ```
 
-> onNext 中的DownloadStatus表示的就是当前的下载进度
-
-5.注意事项
-
-- 调用下载后会返回Subscription, 一定要在Activity或者Fragment销毁之前取消订阅,否则会造成内存泄漏, 与平常RxJava的使用方式一致.
+5.取消或暂停下载
 
 ```java
 Subscription subscription = RxDownload.getInstance()
                 .download(url, null, null)
   				//...
 
-//取消订阅
+//取消订阅, 即可暂停下载, 若服务端不支持断点续传,下一次下载会重新下载,反之会继续下载
 if (subscription != null && !subscription.isUnsubscribed()) {
             subscription.unsubscribe();
 }
 ```
-
-- 关于判断是否支持断点续传, 首先在第一次请求头中加上Range:bytes=0- , 然后根据服务端的响应头判断是否有Content-Range: bytes 0-38786195/38786196字段, 若有则使用多线程+断点续传下载,反之使用单线程下载
-- 关于断点续传判断服务端文件改变的情况, 由于许多服务器并不返回ETAG和LastModify字段, 所以为了更通用一点,没有采用这种方式进行判断,而是采用了一种简单粗暴的方法:  根据文件大小来进行判断,  这种方法可能会导致bug,但几率很小.
 
 6.更多功能后续将会逐步完善
 
@@ -172,7 +172,7 @@ Gmail: ssseasonnn@gmail.com
 ### License
 
 > ```
-> Copyright 2015 Season.Zlc
+> Copyright 2016 Season.Zlc
 >
 > Licensed under the Apache License, Version 2.0 (the "License");
 > you may not use this file except in compliance with the License.

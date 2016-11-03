@@ -14,13 +14,14 @@ public class DownloadBean implements ItemType {
     public static final int PAUSE = 1;
     public static final int DONE = 2;
 
+    String name;
     String url;
     String image;
     int state;
     Subscription subscription;
 
     /**
-     * 取消订阅,否则会内存泄漏
+     * 取消订阅
      */
     public void unsubscrbe() {
         if (subscription != null && !subscription.isUnsubscribed()) {

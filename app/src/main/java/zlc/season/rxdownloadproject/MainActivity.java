@@ -1,8 +1,11 @@
 package zlc.season.rxdownloadproject;
 
+import android.content.DialogInterface;
+import android.content.Intent;
 import android.content.res.Resources;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.Toolbar;
@@ -16,6 +19,7 @@ import java.util.List;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import zlc.season.practicalrecyclerview.PracticalRecyclerView;
+import zlc.season.rxdownload.UpdateService;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -29,6 +33,7 @@ public class MainActivity extends AppCompatActivity {
     FloatingActionButton mFab;
 
     private DownloadAdapter mAdapter;
+    private String weixin = "http://dldir1.qq.com/weixin/android/weixin6327android880.apk";
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -45,11 +50,30 @@ public class MainActivity extends AppCompatActivity {
         int id = item.getItemId();
 
         //noinspection SimplifiableIfStatement
-        if (id == R.id.action_settings) {
+        if (id == R.id.action_check_update) {
+            AlertDialog dialog = new AlertDialog.Builder(this).setTitle("更新")
+                    .setMessage("有新版本发布")
+                    .setPositiveButton("升级", new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            Intent intent = new Intent();
+                            intent.setClass(MainActivity.this, UpdateService.class);
+                            intent.putExtra(UpdateService.INTENT_DOWNLOAD_URL, weixin);
+                            intent.putExtra(UpdateService.INTENT_SAVE_NAME, "weixin.apk");
+                            startService(intent);
+                        }
+                    }).create();
+            dialog.show();
             return true;
         }
 
         return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    public void onBackPressed() {
+        super.onBackPressed();
+        finish();
     }
 
 
@@ -68,12 +92,6 @@ public class MainActivity extends AppCompatActivity {
     }
 
     @Override
-    public void onBackPressed() {
-        super.onBackPressed();
-        finish();
-    }
-
-    @Override
     protected void onDestroy() {
         super.onDestroy();
         unsubscribe();
@@ -81,11 +99,13 @@ public class MainActivity extends AppCompatActivity {
 
     private void loadData() {
         Resources res = getResources();
+        final String[] names = res.getStringArray(R.array.name);
         final String[] images = res.getStringArray(R.array.image);
         final String[] urls = res.getStringArray(R.array.url);
         List<DownloadBean> list = new ArrayList<>();
         for (int i = 0; i < images.length; i++) {
             DownloadBean temp = new DownloadBean();
+            temp.name = names[i];
             temp.image = images[i];
             temp.url = urls[i];
             temp.state = DownloadBean.START;

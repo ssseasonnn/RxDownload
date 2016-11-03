@@ -12,7 +12,7 @@ import retrofit2.converter.gson.GsonConverterFactory;
  * Author: Season(ssseasonnn@gmail.com)
  * Date: 2016/10/19
  * Time: 10:16
- * FIXME
+ * <p>
  * 提供一个默认的,线程安全的Retrofit单例
  */
 public class RetrofitProvider {

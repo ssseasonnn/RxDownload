@@ -3,24 +3,20 @@ package zlc.season.rxdownload;
 import android.util.Log;
 
 import java.io.IOException;
-import java.net.SocketException;
-import java.net.SocketTimeoutException;
-import java.net.UnknownHostException;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.List;
 
 import okhttp3.ResponseBody;
 import retrofit2.Response;
-import retrofit2.adapter.rxjava.HttpException;
 import rx.Observable;
 import rx.Subscriber;
-import rx.exceptions.CompositeException;
 import rx.functions.Func1;
 import rx.functions.Func2;
 import rx.schedulers.Schedulers;
 
-import static android.content.ContentValues.TAG;
+import static zlc.season.rxdownload.DownloadHelper.TAG;
+
 
 /**
  * Author: Season(ssseasonnn@gmail.com)
@@ -38,44 +34,6 @@ abstract class DownloadType {
 
     abstract Observable<DownloadStatus> startDownload() throws IOException;
 
-    Boolean retry(Integer integer, Throwable throwable) {
-        int MAX_RETRY_COUNT = mDownloadHelper.getMaxRetryCount();
-        if (throwable instanceof UnknownHostException) {
-            if (integer < MAX_RETRY_COUNT + 1) {
-                Log.w(TAG, Thread.currentThread().getName() +
-                        " no network, retry to connect " + integer + " times");
-                return true;
-            }
-            return false;
-        } else if (throwable instanceof HttpException) {
-            if (integer < MAX_RETRY_COUNT + 1) {
-                Log.w(TAG, Thread.currentThread().getName() +
-                        " had non-2XX http error, retry to connect " + integer + " times");
-                return true;
-            }
-            return false;
-        } else if (throwable instanceof SocketTimeoutException) {
-            if (integer < MAX_RETRY_COUNT + 1) {
-                Log.w(TAG, Thread.currentThread().getName() +
-                        " socket time out,retry to connect " + integer + " times");
-                return true;
-            }
-            return false;
-        } else if (throwable instanceof SocketException) {
-            if (integer < MAX_RETRY_COUNT + 1) {
-                Log.w(TAG, Thread.currentThread().getName() +
-                        " a network or conversion error happened, retry to connect " + integer + " times");
-                return true;
-            }
-            return false;
-        } else if (throwable instanceof CompositeException) {
-            Log.w(TAG, throwable.getMessage());
-            return false;
-        } else {
-            Log.w(TAG, throwable);
-            return false;
-        }
-    }
 
     static class NormalDownload extends DownloadType {
 
@@ -95,6 +53,7 @@ abstract class DownloadType {
 
         @Override
         Observable<DownloadStatus> startDownload() {
+            Log.i(TAG, "Normal download start!!");
             return mDownloadHelper.getDownloadApi().download(null, mUrl)
                     .subscribeOn(Schedulers.io())
                     .flatMap(new Func1<Response<ResponseBody>, Observable<DownloadStatus>>() {
@@ -105,7 +64,7 @@ abstract class DownloadType {
                     }).onBackpressureLatest().retry(new Func2<Integer, Throwable, Boolean>() {
                         @Override
                         public Boolean call(Integer integer, Throwable throwable) {
-                            return retry(integer, throwable);
+                            return mDownloadHelper.retry(integer, throwable);
                         }
                     });
         }
@@ -133,7 +92,7 @@ abstract class DownloadType {
                     }).onBackpressureLatest().retry(new Func2<Integer, Throwable, Boolean>() {
                         @Override
                         public Boolean call(Integer integer, Throwable throwable) {
-                            return retry(integer, throwable);
+                            return mDownloadHelper.retry(integer, throwable);
                         }
                     });
         }
@@ -159,6 +118,7 @@ abstract class DownloadType {
 
         @Override
         void prepareDownload() throws IOException, ParseException {
+            Log.i(TAG, "Continue download start!!");
         }
 
         @Override
@@ -183,6 +143,7 @@ abstract class DownloadType {
 
         @Override
         Observable<DownloadStatus> startDownload() throws IOException {
+            Log.i(TAG, "Multi Thread download start!!");
             return super.startDownload();
         }
     }
@@ -191,7 +152,7 @@ abstract class DownloadType {
 
         @Override
         void prepareDownload() throws IOException, ParseException {
-
+            Log.i(TAG, "File Already downloaded!!");
         }
 
         @Override

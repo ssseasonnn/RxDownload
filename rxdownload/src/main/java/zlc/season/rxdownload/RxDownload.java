@@ -15,6 +15,7 @@ import rx.Observable;
 import rx.functions.Action0;
 import rx.functions.Action1;
 import rx.functions.Func1;
+import rx.functions.Func2;
 
 import static zlc.season.rxdownload.DownloadHelper.TAG;
 import static zlc.season.rxdownload.DownloadHelper.TEST_RANGE_SUPPORT;
@@ -98,6 +99,12 @@ public class RxDownload {
                         mDownloadHelper.deleteDownloadRecord(url);
                     }
                 })
+                .doOnUnsubscribe(new Action0() {
+                    @Override
+                    public void call() {
+                        mDownloadHelper.deleteDownloadRecord(url);
+                    }
+                })
                 .doOnError(new Action1<Throwable>() {
                     @Override
                     public void call(Throwable throwable) {
@@ -134,6 +141,11 @@ public class RxDownload {
                                     .buildMultiDownload();
                         }
                     }
+                }).retry(new Func2<Integer, Throwable, Boolean>() {
+                    @Override
+                    public Boolean call(Integer integer, Throwable throwable) {
+                        return mDownloadHelper.retry(integer, throwable);
+                    }
                 });
     }
 
@@ -149,6 +161,11 @@ public class RxDownload {
                             //server file has changed, need re download
                             return getWhen200(resp, url);
                         }
+                    }
+                }).retry(new Func2<Integer, Throwable, Boolean>() {
+                    @Override
+                    public Boolean call(Integer integer, Throwable throwable) {
+                        return mDownloadHelper.retry(integer, throwable);
                     }
                 });
     }

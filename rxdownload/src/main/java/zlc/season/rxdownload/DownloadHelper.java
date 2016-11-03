@@ -9,6 +9,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.RandomAccessFile;
+import java.net.ConnectException;
+import java.net.SocketException;
+import java.net.SocketTimeoutException;
+import java.net.UnknownHostException;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.text.ParseException;
@@ -17,7 +21,9 @@ import java.util.Map;
 
 import okhttp3.ResponseBody;
 import retrofit2.Response;
+import retrofit2.adapter.rxjava.HttpException;
 import rx.Subscriber;
+import rx.exceptions.CompositeException;
 
 import static android.text.TextUtils.concat;
 import static java.io.File.separator;
@@ -357,6 +363,51 @@ class DownloadHelper {
 
     File getFileBy(String url) {
         return new File(mDownloadRecord.get(url)[0]);
+    }
+
+    Boolean retry(Integer integer, Throwable throwable) {
+        if (throwable instanceof UnknownHostException) {
+            if (integer < MAX_RETRY_COUNT + 1) {
+                Log.w(TAG, Thread.currentThread().getName() +
+                        " no network, retry to connect " + integer + " times");
+                return true;
+            }
+            return false;
+        } else if (throwable instanceof HttpException) {
+            if (integer < MAX_RETRY_COUNT + 1) {
+                Log.w(TAG, Thread.currentThread().getName() +
+                        " had non-2XX http error, retry to connect " + integer + " times");
+                return true;
+            }
+            return false;
+        } else if (throwable instanceof SocketTimeoutException) {
+            if (integer < MAX_RETRY_COUNT + 1) {
+                Log.w(TAG, Thread.currentThread().getName() +
+                        " socket time out,retry to connect " + integer + " times");
+                return true;
+            }
+            return false;
+        } else if (throwable instanceof ConnectException) {
+            if (integer < MAX_RETRY_COUNT + 1) {
+                Log.w(TAG, concat(Thread.currentThread().getName(), " ", throwable.getMessage(),
+                        ". retry to connect ", String.valueOf(integer), " times").toString());
+                return true;
+            }
+            return false;
+        } else if (throwable instanceof SocketException) {
+            if (integer < MAX_RETRY_COUNT + 1) {
+                Log.w(TAG, Thread.currentThread().getName() +
+                        " a network or conversion error happened, retry to connect " + integer + " times");
+                return true;
+            }
+            return false;
+        } else if (throwable instanceof CompositeException) {
+            Log.w(TAG, throwable.getMessage());
+            return false;
+        } else {
+            Log.w(TAG, throwable);
+            return false;
+        }
     }
 
     private File getTempFileBy(String url) {

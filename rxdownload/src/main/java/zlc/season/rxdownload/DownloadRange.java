@@ -4,7 +4,7 @@ package zlc.season.rxdownload;
  * Author: Season(ssseasonnn@gmail.com)
  * Date: 2016/10/21
  * Time: 15:28
- * FIXME
+ * Download Range
  */
 class DownloadRange {
     long[] start;

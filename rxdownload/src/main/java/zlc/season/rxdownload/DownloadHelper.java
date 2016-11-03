@@ -19,19 +19,24 @@ import okhttp3.ResponseBody;
 import retrofit2.Response;
 import rx.Subscriber;
 
+import static android.text.TextUtils.concat;
+import static java.io.File.separator;
 import static java.nio.channels.FileChannel.MapMode.READ_WRITE;
 
 /**
  * Author: Season(ssseasonnn@gmail.com)
  * Date: 2016/11/2
  * Time: 09:39
- * FIXME
+ * Download helper 类
  */
-class FileHelper {
-    private static final String TAG = "RxDownload";
+class DownloadHelper {
+    static final String TAG = "RxDownload";
+    static final String TEST_RANGE_SUPPORT = "bytes=0-";
 
-    private static final String RECORD_FILE_SUFFIX = ".tmp";
-    private static final String RECORD_FILE_DIRECTORY = ".cache";
+    private static final String TMP_SUFFIX = ".tmp";  //temp file
+    private static final String LMF_SUFFIX = ".lmf";  //last modify file
+
+    private static final String CACHE = ".cache";
 
     private static final int EACH_RECORD_SIZE = 16; //long + long = 8 + 8
     private int RECORD_FILE_TOTAL_SIZE;
@@ -48,18 +53,30 @@ class FileHelper {
     private int MAX_RETRY_COUNT = 3;
     private int MAX_THREADS = 3;
 
-    private String mDefaultPath;
-    private String mDefaultRecordPath;
+    private String mFilePath;
+    private String mCachePath;
 
     private DownloadApi mDownloadApi;
 
-    //Record : { "url" : new String[] { "file path" , "temp file path" }}
+    //Record : { "url" : new String[] { "file path" , "temp file path" , "last modify file path" }}
     private Map<String, String[]> mDownloadRecord;
 
-
-    FileHelper() {
+    DownloadHelper() {
         mDownloadRecord = new HashMap<>();
         RECORD_FILE_TOTAL_SIZE = EACH_RECORD_SIZE * MAX_THREADS;
+    }
+
+    String getFilePath() {
+        return mFilePath;
+    }
+
+    void setFilePath(String filePath) {
+        mFilePath = filePath;
+        mCachePath = filePath + separator + CACHE;
+        File file = new File(mFilePath);
+        file.mkdir();
+        File record = new File(mCachePath);
+        record.mkdir();
     }
 
     int getMaxThreads() {
@@ -87,31 +104,18 @@ class FileHelper {
         this.mDownloadApi = downloadApi;
     }
 
-    String getDefaultPath() {
-        return mDefaultPath;
-    }
-
-    void setDefaultPath(String defaultPath) {
-        mDefaultPath = defaultPath;
-        mDefaultRecordPath = defaultPath + File.separator + RECORD_FILE_DIRECTORY;
-        File file = new File(mDefaultPath);
-        file.mkdir();
-        File record = new File(mDefaultRecordPath);
-        record.mkdir();
-    }
-
-
     void addDownloadRecord(String url, String saveName, String savePath) {
-        String mFilePath;
-        String mRecordFilePath;
+        String mPath;
+        String mTMPPath;
+        String mLMFPath;
 
         if (!TextUtils.isEmpty(savePath)) {
             File file = new File(savePath);
             if (file.exists()) {
                 if (file.isDirectory()) {
-                    mFilePath = savePath + File.separator + saveName;
-                    mRecordFilePath = savePath + File.separator + RECORD_FILE_DIRECTORY + File.separator +
-                            saveName + RECORD_FILE_SUFFIX;
+                    mPath = concat(savePath, separator, saveName).toString();
+                    mTMPPath = concat(savePath, separator, CACHE, separator, saveName, TMP_SUFFIX).toString();
+                    mLMFPath = concat(savePath, separator, CACHE, separator, saveName, LMF_SUFFIX).toString();
                 } else {
                     throw new IllegalArgumentException("Please give me a Directory path, not file path!");
                 }
@@ -119,27 +123,33 @@ class FileHelper {
                 boolean flag = file.mkdir();
                 if (!flag) {
                     Log.i(TAG, "create file save path success");
-                    mFilePath = savePath + File.separator + saveName;
-                    mRecordFilePath = savePath + File.separator + RECORD_FILE_DIRECTORY + File.separator +
-                            saveName + RECORD_FILE_SUFFIX;
+                    mPath = concat(savePath, separator, saveName).toString();
+                    mTMPPath = concat(savePath, separator, CACHE, separator, saveName, TMP_SUFFIX).toString();
+                    mLMFPath = concat(savePath, separator, CACHE, separator, saveName, LMF_SUFFIX).toString();
                 } else {
                     Log.i(TAG, "create file save path failed , now use default save path");
-                    mFilePath = mDefaultPath + File.separator + saveName;
-                    mRecordFilePath = mDefaultRecordPath + File.separator + saveName + RECORD_FILE_SUFFIX;
+                    mPath = concat(mFilePath, separator, saveName).toString();
+                    mTMPPath = concat(mCachePath, separator, saveName, TMP_SUFFIX).toString();
+                    mLMFPath = concat(mCachePath, separator, saveName, LMF_SUFFIX).toString();
                 }
             }
         } else {
-            mFilePath = mDefaultPath + File.separator + saveName;
-            mRecordFilePath = mDefaultRecordPath + File.separator + saveName + RECORD_FILE_SUFFIX;
+            mPath = concat(mFilePath, separator, saveName).toString();
+            mTMPPath = concat(mCachePath, separator, saveName, TMP_SUFFIX).toString();
+            mLMFPath = concat(mCachePath, separator, saveName, LMF_SUFFIX).toString();
         }
 
-        mDownloadRecord.put(url, new String[]{mFilePath, mRecordFilePath});
+        mDownloadRecord.put(url, new String[]{mPath, mTMPPath, mLMFPath});
+    }
+
+    void deleteDownloadRecord(String url) {
+        mDownloadRecord.remove(url);
     }
 
     String getLastModify(String url) throws IOException {
         RandomAccessFile record = null;
         try {
-            record = new RandomAccessFile(getRecordFile(url), "rws");
+            record = new RandomAccessFile(getLastModifyFileBy(url), "rws");
             record.seek(0);
             return Utils.longToGMT(record.readLong());
         } finally {
@@ -151,7 +161,7 @@ class FileHelper {
         writeLastModify(url, lastModify);
         RandomAccessFile file = null;
         try {
-            file = new RandomAccessFile(getFile(url), "rws");
+            file = new RandomAccessFile(getFileBy(url), "rws");
             file.setLength(fileLength);//设置下载文件的长度
         } finally {
             Utils.close(file);
@@ -164,10 +174,10 @@ class FileHelper {
         RandomAccessFile rRecord = null;
         FileChannel channel = null;
         try {
-            rFile = new RandomAccessFile(getFile(url), "rws");
+            rFile = new RandomAccessFile(getFileBy(url), "rws");
             rFile.setLength(fileLength);//设置下载文件的长度
 
-            rRecord = new RandomAccessFile(getRecordFile(url), "rws");
+            rRecord = new RandomAccessFile(getTempFileBy(url), "rws");
             rRecord.setLength(RECORD_FILE_TOTAL_SIZE); //设置指针记录文件的大小
 
             channel = rRecord.getChannel();
@@ -198,7 +208,7 @@ class FileHelper {
         RandomAccessFile record = null;
         FileChannel channel = null;
         try {
-            record = new RandomAccessFile(mDownloadRecord.get(url)[1], "rws");
+            record = new RandomAccessFile(getTempFileBy(url), "rws");
             channel = record.getChannel();
             MappedByteBuffer buffer = channel.map(READ_WRITE, 0, RECORD_FILE_TOTAL_SIZE);
             long[] startByteArray = new long[MAX_THREADS];
@@ -230,13 +240,13 @@ class FileHelper {
                 byte[] buffer = new byte[8192];
                 DownloadStatus status = new DownloadStatus();
 
-                record = new RandomAccessFile(getRecordFile(url), "rws");
+                record = new RandomAccessFile(getTempFileBy(url), "rws");
                 recordChannel = record.getChannel();
                 MappedByteBuffer recordBuffer = recordChannel.map(READ_WRITE, 0, RECORD_FILE_TOTAL_SIZE);
                 long totalSize = recordBuffer.getLong(RECORD_FILE_TOTAL_SIZE - 8) + 1;
                 status.setTotalSize(totalSize);
 
-                save = new RandomAccessFile(getFile(url), "rws");
+                save = new RandomAccessFile(getFileBy(url), "rws");
                 saveChannel = save.getChannel();
                 MappedByteBuffer saveBuffer = saveChannel.map(READ_WRITE, start, end - start + 1);
 
@@ -275,7 +285,7 @@ class FileHelper {
 
                 DownloadStatus status = new DownloadStatus();
                 inputStream = resp.body().byteStream();
-                outputStream = new FileOutputStream(getFile(url));
+                outputStream = new FileOutputStream(getFileBy(url));
 
                 long contentLength = resp.body().contentLength();
                 boolean isChunked = !TextUtils.isEmpty(Utils.transferEncoding(resp));
@@ -307,7 +317,7 @@ class FileHelper {
         RandomAccessFile record = null;
         FileChannel channel = null;
         try {
-            record = new RandomAccessFile(getRecordFile(url), "rws");
+            record = new RandomAccessFile(getTempFileBy(url), "rws");
             channel = record.getChannel();
             MappedByteBuffer buffer = channel.map(READ_WRITE, 0, RECORD_FILE_TOTAL_SIZE);
             long recordTotalSize = buffer.getLong(RECORD_FILE_TOTAL_SIZE - 8) + 1;
@@ -322,7 +332,7 @@ class FileHelper {
         RandomAccessFile record = null;
         FileChannel channel = null;
         try {
-            record = new RandomAccessFile(getRecordFile(url), "rws");
+            record = new RandomAccessFile(getTempFileBy(url), "rws");
             channel = record.getChannel();
             MappedByteBuffer buffer = channel.map(READ_WRITE, 0, RECORD_FILE_TOTAL_SIZE);
             long startByte;
@@ -342,58 +352,31 @@ class FileHelper {
     }
 
     boolean recordFileNotExists(String url) {
-        return !getRecordFile(url).exists();
+        return !getTempFileBy(url).exists();
     }
 
-    File getFile(String url) {
+    File getFileBy(String url) {
         return new File(mDownloadRecord.get(url)[0]);
     }
 
-    void subtractRecord(String url) {
-        mDownloadRecord.remove(url);
+    private File getTempFileBy(String url) {
+        return new File(mDownloadRecord.get(url)[1]);
     }
 
-    private File getRecordFile(String url) {
-        return new File(mDownloadRecord.get(url)[1]);
+    private File getLastModifyFileBy(String url) {
+        return new File(mDownloadRecord.get(url)[2]);
     }
 
     private void writeLastModify(String url, String lastModify) throws IOException, ParseException {
         RandomAccessFile record = null;
         try {
-            record = new RandomAccessFile(getRecordFile(url), "rws");
+            record = new RandomAccessFile(getLastModifyFileBy(url), "rws");
             record.setLength(8);
             record.seek(0);
             record.writeLong(Utils.GMTToLong(lastModify));
         } finally {
             Utils.close(record);
         }
-    }
-
-    private File createFileAndSet(String filePath, String lastModify) throws IOException, ParseException {
-        File file = new File(filePath);
-        if (file.exists()) {
-            boolean delete = file.delete();
-            if (!delete) {
-                throw new IOException("delete download file failed");
-            }
-        }
-        boolean create = file.createNewFile();
-        if (!create) {
-            throw new IOException("create download file failed");
-        }
-        boolean read = file.setReadable(true);
-        if (!read) {
-            throw new IOException("set download file read permission failed");
-        }
-        boolean write = file.setWritable(true);
-        if (!write) {
-            throw new IOException("set download file write permission failed");
-        }
-        boolean writeLM = file.setLastModified(Utils.GMTToLong(lastModify));
-        if (!writeLM) {
-            throw new IOException("set download file last modify failed");
-        }
-        return file;
     }
 
     /**

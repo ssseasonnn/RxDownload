@@ -18,7 +18,7 @@ import retrofit2.Response;
  * Author: Season(ssseasonnn@gmail.com)
  * Date: 2016/11/2
  * Time: 09:07
- * FIXME
+ * 工具类
  */
 class Utils {
     static String longToGMT(long lastModify) {
@@ -52,10 +52,6 @@ class Utils {
         return HttpHeaders.contentLength(response.headers());
     }
 
-    static String contentRange(Response<?> response) {
-        return response.headers().get("Content-Range");
-    }
-
     static String transferEncoding(Response<?> response) {
         return response.headers().get("Transfer-Encoding");
     }
@@ -87,5 +83,9 @@ class Utils {
             hrSize = dec.format(b).concat(" Bytes");
         }
         return hrSize;
+    }
+
+    private static String contentRange(Response<?> response) {
+        return response.headers().get("Content-Range");
     }
 }

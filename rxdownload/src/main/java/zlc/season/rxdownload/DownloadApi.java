@@ -13,7 +13,7 @@ import rx.Observable;
  * Author: Season(ssseasonnn@gmail.com)
  * Date: 2016/10/19
  * Time: 10:02
- * FIXME
+ * Download Api
  */
 interface DownloadApi {
     @GET

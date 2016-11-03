@@ -34,7 +34,7 @@ import static zlc.season.rxdownload.UpdateService.DownloadReceiver.INTENT_ACTION
  * Author: Season(ssseasonnn@gmail.com)
  * Date: 2016-08-11
  * Time: 11:24
- * FIXME
+ * 自动升级Service
  */
 public class UpdateService extends Service {
     public static final String INTENT_SAVE_NAME = "zlc.season.rxdownload.service.intent.save_name";

@@ -6,7 +6,6 @@ import android.support.annotation.Nullable;
 import android.text.TextUtils;
 import android.util.Log;
 
-import java.io.File;
 import java.io.IOException;
 import java.text.ParseException;
 
@@ -30,11 +29,12 @@ public class RxDownload {
     private DownloadApi mDownloadApi;
     private Retrofit mRetrofit;
 
-    private FileHelper mHelper;
+    private FileHelper mFileHelper;
     private DownloadType.Builder mBuilder;
 
     private RxDownload() {
-        mHelper = new FileHelper();
+        mFileHelper = new FileHelper();
+        mBuilder = new DownloadType.Builder(mFileHelper);
     }
 
     public static RxDownload getInstance() {
@@ -42,7 +42,7 @@ public class RxDownload {
     }
 
     public RxDownload defaultSavePath(String savePath) {
-        mHelper.setDefaultPath(savePath);
+        mFileHelper.setDefaultPath(savePath);
         return this;
     }
 
@@ -52,12 +52,12 @@ public class RxDownload {
     }
 
     public RxDownload maxThread(int max) {
-        mHelper.setMaxThreads(max);
+        mFileHelper.setMaxThreads(max);
         return this;
     }
 
     public RxDownload maxRetryCount(int max) {
-        mHelper.setMaxRetryCount(max);
+        mFileHelper.setMaxRetryCount(max);
         return this;
     }
 
@@ -71,26 +71,23 @@ public class RxDownload {
      */
     public Observable<DownloadStatus> download(@NonNull final String url, @NonNull final String saveName,
                                                @Nullable final String savePath) {
-        beforeDownload();
-        return downloadDispatcher(url, mHelper.getFilePath(saveName, savePath));
+        beforeDownload(url, saveName, savePath);
+        return downloadDispatcher(url);
     }
 
-
-    private Observable<DownloadStatus> downloadDispatcher(final String url, final String filePath) {
-        return getDownloadType(url, filePath)
+    private Observable<DownloadStatus> downloadDispatcher(final String url) {
+        return getDownloadType(url)
                 .flatMap(new Func1<DownloadType, Observable<DownloadStatus>>() {
                     @Override
                     public Observable<DownloadStatus> call(DownloadType type) {
                         try {
                             type.prepareDownload();
                         } catch (IOException | ParseException e) {
-                            Log.w(TAG, e);
                             return Observable.error(e);
                         }
                         try {
                             return type.startDownload();
                         } catch (IOException e) {
-                            Log.w(TAG, e);
                             return Observable.error(e);
                         }
                     }
@@ -102,110 +99,110 @@ public class RxDownload {
                 });
     }
 
-    private Observable<DownloadType> getDownloadType(String url, String filePath) {
-        final File file = new File(filePath);
-        if (file.exists()) {
-            return getWhenFileExists(filePath, file.length(), url);
+    private Observable<DownloadType> getDownloadType(String url) {
+        if (mFileHelper.getFile(url).exists()) {
+            try {
+                return getWhenFileExists(url);
+            } catch (IOException e) {
+                return getWhenFileNotExists(url);
+            }
         } else {
-            return getWhenFileNotExists(url, filePath);
+            return getWhenFileNotExists(url);
         }
     }
 
-    private Observable<DownloadType> getWhenFileNotExists(@NonNull final String url, final String filePath) {
+    private Observable<DownloadType> getWhenFileNotExists(@NonNull final String url) {
         return mDownloadApi.getHttpHeader(TEST_RANGE_SUPPORT, url)
                 .map(new Func1<Response<Void>, DownloadType>() {
                     @Override
                     public DownloadType call(Response<Void> response) {
                         if (Utils.notSupportRange(response)) {
-                            return mBuilder.url(url).filePath(filePath).fileLength(Utils.contentLength(response))
+                            return mBuilder.url(url).fileLength(Utils.contentLength(response))
                                     .lastModify(Utils.lastModify(response))
                                     .buildNormalDownload();
                         } else {
                             return mBuilder.url(url).lastModify(Utils.lastModify(response))
-                                    .filePath(filePath).fileLength(Utils.contentLength(response))
+                                    .fileLength(Utils.contentLength(response))
                                     .buildMultiDownload();
                         }
                     }
                 });
     }
 
-    private Observable<DownloadType> getWhenFileExists(final String filePath, final long fileLength, final String url) {
-        return mDownloadApi.getHttpHeaderWithIfRange(TEST_RANGE_SUPPORT, mHelper.getLastModify(filePath), url)
+    private Observable<DownloadType> getWhenFileExists(final String url) throws IOException {
+        return mDownloadApi.getHttpHeaderWithIfRange(TEST_RANGE_SUPPORT, mFileHelper.getLastModify(url), url)
                 .map(new Func1<Response<Void>, DownloadType>() {
                     @Override
                     public DownloadType call(Response<Void> resp) {
                         if (resp.code() == 206) {
                             //server file no changed
-                            return getWhen206(resp, fileLength, filePath, url);
+                            return getWhen206(resp, url);
                         } else {
                             //server file has changed, need re download
-                            return getWhen200(resp, filePath, url);
+                            return getWhen200(resp, url);
                         }
                     }
                 });
     }
 
-    @NonNull
-    private DownloadType getWhen200(Response<Void> resp, String filePath, String url) {
+    private DownloadType getWhen200(Response<Void> resp, String url) {
         if (Utils.notSupportRange(resp)) {
-            return mBuilder.url(url).filePath(filePath).fileLength(Utils.contentLength(resp))
+            return mBuilder.url(url).fileLength(Utils.contentLength(resp))
                     .lastModify(Utils.lastModify(resp)).buildNormalDownload();
         } else {
-            return mBuilder.url(url).filePath(filePath).fileLength(Utils.contentLength(resp))
+            return mBuilder.url(url).fileLength(Utils.contentLength(resp))
                     .lastModify(Utils.lastModify(resp)).buildMultiDownload();
         }
     }
 
-    @NonNull
-    private DownloadType getWhen206(Response<Void> resp, long fileLength, String filePath, String url) {
+    private DownloadType getWhen206(Response<Void> resp, String url) {
         if (Utils.notSupportRange(resp)) {
-            return getWhenNotSupportRange(resp, fileLength, filePath, url);
+            return getWhenNotSupportRange(resp, url);
         } else {
-            return getWhenSupportRange(resp, filePath, url);
+            return getWhenSupportRange(resp, url);
         }
     }
 
-    @NonNull
-    private DownloadType getWhenSupportRange(Response<Void> resp, String filePath, String url) {
+    private DownloadType getWhenSupportRange(Response<Void> resp, String url) {
         long contentLength = Utils.contentLength(resp);
         try {
-            if (mHelper.recordFileNotExists(filePath) || mHelper.recordFileDamaged(filePath, contentLength)) {
-                return mBuilder.url(url).filePath(filePath).fileLength(contentLength)
-                        .lastModify(Utils.lastModify(resp)).buildMultiDownload();
+            if (mFileHelper.recordFileNotExists(url) || mFileHelper.recordFileDamaged(url, contentLength)) {
+                return mBuilder.url(url).fileLength(contentLength).lastModify(Utils.lastModify(resp))
+                        .buildMultiDownload();
             }
-            if (mHelper.downloadNotComplete(filePath)) {
-                return mBuilder.url(url).filePath(filePath).fileLength(contentLength)
-                        .lastModify(Utils.lastModify(resp)).buildContinueDownload();
+            if (mFileHelper.downloadNotComplete(url)) {
+                return mBuilder.url(url).fileLength(contentLength).lastModify(Utils.lastModify(resp))
+                        .buildContinueDownload();
             }
         } catch (IOException e) {
             Log.w(TAG, "download record file may be damaged,so we will re download");
-            return mBuilder.url(url).filePath(filePath).fileLength(contentLength)
-                    .lastModify(Utils.lastModify(resp)).buildMultiDownload();
+            return mBuilder.url(url).fileLength(contentLength).lastModify(Utils.lastModify(resp)).buildMultiDownload();
         }
         return mBuilder.fileLength(contentLength).buildAlreadyDownload();
     }
 
-    @NonNull
-    private DownloadType getWhenNotSupportRange(Response<Void> resp, long fileLength, String filePath, String url) {
+    private DownloadType getWhenNotSupportRange(Response<Void> resp, String url) {
         long contentLength = Utils.contentLength(resp);
-        if (fileLength == contentLength) {
+        if (mFileHelper.getFile(url).length() == contentLength) {
             return mBuilder.fileLength(contentLength).buildAlreadyDownload();
         } else {
-            return mBuilder.url(url).filePath(filePath).fileLength(contentLength)
-                    .lastModify(Utils.lastModify(resp)).buildNormalDownload();
+            return mBuilder.url(url).fileLength(contentLength).lastModify(Utils.lastModify(resp)).buildNormalDownload();
         }
     }
 
-
-    private void beforeDownload() {
-        if (TextUtils.isEmpty(mHelper.getDefaultPath())) {
-            mHelper.setDefaultPath(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
-                    .getPath());
+    private void beforeDownload(String url, String saveName, String savePath) {
+        if (TextUtils.isEmpty(mFileHelper.getDefaultPath())) {
+            mFileHelper.setDefaultPath(Environment.getExternalStoragePublicDirectory(
+                    Environment.DIRECTORY_DOWNLOADS).getPath());
         }
         if (mRetrofit == null) {
             mRetrofit = RetrofitProvider.getInstance();
         }
-        mDownloadApi = mRetrofit.create(DownloadApi.class);
-        mBuilder = new DownloadType.Builder(mDownloadApi, mHelper);
+        if (mDownloadApi == null) {
+            mDownloadApi = mRetrofit.create(DownloadApi.class);
+            mFileHelper.setDownloadApi(mDownloadApi);
+        }
+
+        mFileHelper.addDownloadRecord(url, saveName, savePath);
     }
 }

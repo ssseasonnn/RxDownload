@@ -22,11 +22,9 @@ import static android.content.ContentValues.TAG;
  */
 abstract class DownloadType {
     String mUrl;
-    String mFilePath;
     long mFileLength;
     String mLastModify;
     FileHelper mFileHelper;
-    DownloadApi mDownloadApi;
 
     abstract void prepareDownload() throws IOException, ParseException;
 
@@ -73,24 +71,16 @@ abstract class DownloadType {
 
     static class Builder {
         private String mUrl;
-        private String mFilePath;
         private long mFileLength;
         private String mLastModify;
         private FileHelper mFileHelper;
-        private DownloadApi mDownloadApi;
 
-        Builder(DownloadApi downloadApi, FileHelper fileHelper) {
-            this.mDownloadApi = downloadApi;
+        Builder(FileHelper fileHelper) {
             this.mFileHelper = fileHelper;
         }
 
         Builder url(String url) {
             this.mUrl = url;
-            return this;
-        }
-
-        Builder filePath(String filePath) {
-            this.mFilePath = filePath;
             return this;
         }
 
@@ -107,44 +97,36 @@ abstract class DownloadType {
         DownloadType buildNormalDownload() {
             DownloadType type = new NormalDownload();
             type.mUrl = this.mUrl;
-            type.mFilePath = this.mFilePath;
             type.mFileLength = this.mFileLength;
             type.mLastModify = this.mLastModify;
             type.mFileHelper = this.mFileHelper;
-            type.mDownloadApi = this.mDownloadApi;
             return type;
         }
 
         DownloadType buildContinueDownload() {
             DownloadType type = new ContinueDownload();
             type.mUrl = this.mUrl;
-            type.mFilePath = this.mFilePath;
             type.mFileLength = this.mFileLength;
             type.mLastModify = this.mLastModify;
             type.mFileHelper = this.mFileHelper;
-            type.mDownloadApi = this.mDownloadApi;
             return type;
         }
 
         DownloadType buildMultiDownload() {
             DownloadType type = new MultiThreadDownload();
             type.mUrl = this.mUrl;
-            type.mFilePath = this.mFilePath;
             type.mFileLength = this.mFileLength;
             type.mLastModify = this.mLastModify;
             type.mFileHelper = this.mFileHelper;
-            type.mDownloadApi = this.mDownloadApi;
             return type;
         }
 
         DownloadType buildAlreadyDownload() {
             DownloadType type = new AlreadyDownloaded();
             type.mUrl = this.mUrl;
-            type.mFilePath = this.mFilePath;
             type.mFileLength = this.mFileLength;
             type.mLastModify = this.mLastModify;
             type.mFileHelper = this.mFileHelper;
-            type.mDownloadApi = this.mDownloadApi;
             return type;
         }
     }

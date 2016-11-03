@@ -15,7 +15,7 @@ class MultiThreadDownload extends ContinueDownload {
 
     @Override
     void prepareDownload() throws IOException, ParseException {
-        mFileHelper.prepareMultiThreadDownload(mFilePath, mFileLength, mLastModify);
+        mFileHelper.prepareMultiThreadDownload(mUrl, mFileLength, mLastModify);
     }
 
     @Override

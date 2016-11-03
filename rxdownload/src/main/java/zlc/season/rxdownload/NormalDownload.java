@@ -21,12 +21,12 @@ class NormalDownload extends DownloadType {
 
     @Override
     void prepareDownload() throws IOException, ParseException {
-        mFileHelper.prepareNormalDownload(mFilePath, mFileLength, mLastModify);
+        mFileHelper.prepareNormalDownload(mUrl, mFileLength, mLastModify);
     }
 
     @Override
     Observable<DownloadStatus> startDownload() {
-        return mDownloadApi.download(null, mUrl)
+        return mFileHelper.getDownloadApi().download(null, mUrl)
                 .subscribeOn(Schedulers.io())
                 .flatMap(new Func1<Response<ResponseBody>, Observable<DownloadStatus>>() {
                     @Override
@@ -45,10 +45,8 @@ class NormalDownload extends DownloadType {
         return Observable.create(new Observable.OnSubscribe<DownloadStatus>() {
             @Override
             public void call(Subscriber<? super DownloadStatus> subscriber) {
-                mFileHelper.saveNormalFile(subscriber, mFilePath, response);
+                mFileHelper.saveNormalFile(subscriber, mUrl, response);
             }
         });
     }
-
-
 }

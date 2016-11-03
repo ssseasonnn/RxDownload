@@ -27,7 +27,7 @@ class ContinueDownload extends DownloadType {
 
     @Override
     Observable<DownloadStatus> startDownload() throws IOException {
-        DownloadRange range = mFileHelper.getDownloadRange(mFilePath);
+        DownloadRange range = mFileHelper.getDownloadRange(mUrl);
         List<Observable<DownloadStatus>> tasks = new ArrayList<>();
         for (int i = 0; i < mFileHelper.getMaxThreads(); i++) {
             if (range.start[i] <= range.end[i]) {
@@ -47,7 +47,7 @@ class ContinueDownload extends DownloadType {
      */
     private Observable<DownloadStatus> rangeDownloadTask(final long start, final long end, final int i) {
         String range = "bytes=" + start + "-" + end;
-        return mDownloadApi.download(range, mUrl)
+        return mFileHelper.getDownloadApi().download(range, mUrl)
                 .subscribeOn(Schedulers.io())
                 .flatMap(new Func1<Response<ResponseBody>, Observable<DownloadStatus>>() {
                     @Override
@@ -76,7 +76,7 @@ class ContinueDownload extends DownloadType {
         return Observable.create(new Observable.OnSubscribe<DownloadStatus>() {
             @Override
             public void call(Subscriber<? super DownloadStatus> subscriber) {
-                mFileHelper.saveRangeFile(subscriber, i, start, end, mFilePath, response);
+                mFileHelper.saveRangeFile(subscriber, i, start, end, mUrl, response);
             }
         });
     }

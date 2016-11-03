@@ -1,5 +1,7 @@
 package zlc.season.rxdownload;
 
+import android.text.TextUtils;
+
 import java.io.Closeable;
 import java.io.IOException;
 import java.text.DecimalFormat;
@@ -9,6 +11,7 @@ import java.util.Date;
 import java.util.Locale;
 import java.util.TimeZone;
 
+import okhttp3.internal.http.HttpHeaders;
 import retrofit2.Response;
 
 /**
@@ -43,6 +46,22 @@ class Utils {
 
     static String lastModify(Response<?> response) {
         return response.headers().get("Last-Modified");
+    }
+
+    static long contentLength(Response<?> response) {
+        return HttpHeaders.contentLength(response.headers());
+    }
+
+    static String contentRange(Response<?> response) {
+        return response.headers().get("Content-Range");
+    }
+
+    static String transferEncoding(Response<?> response) {
+        return response.headers().get("Transfer-Encoding");
+    }
+
+    static boolean notSupportRange(Response<?> response) {
+        return TextUtils.isEmpty(contentRange(response)) || contentLength(response) == -1;
     }
 
     static String formatSize(long size) {

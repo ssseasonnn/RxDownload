@@ -33,7 +33,7 @@
 
 ### 下载流程图
 
-![流程图](http://github.com/ssseasonnn/RxDownload/blob/master/download.png)
+![流程图](https://github.com/ssseasonnn/RxDownload/blob/master/download.png)
 
 
 ### 使用方式

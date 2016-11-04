@@ -46,6 +46,7 @@
 
 1.添加Gradle依赖
 
+[![Download](https://api.bintray.com/packages/ssseasonnn/android/PracticalRecyclerView/images/download.svg)]
 (https://bintray.com/ssseasonnn/android/RxDownload/_latestVersion)
 
 ```groovy

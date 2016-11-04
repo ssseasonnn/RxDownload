@@ -15,7 +15,13 @@
 
 ![demo](https://github.com/ssseasonnn/RxDownload/blob/master/demo.gif)
 
+### 大文件下载测试
 
+![王者荣耀下载测试](https://github.com/ssseasonnn/RxDownload/blob/master/王者荣耀下载测试.gif)
+
+![内存占用图](https://github.com/ssseasonnn/RxDownload/blob/master/memory.png)
+
+> 大文件下载测试中，内存占用一直趋于平稳
 
 ### 主要功能:
 

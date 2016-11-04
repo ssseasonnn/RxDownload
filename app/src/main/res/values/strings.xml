@@ -8,7 +8,7 @@
         <item>sougou.apk</item>
         <item>yingyonghui.apk</item>
         <item>youku.apk</item>
-        <item>easypower.apk</item>
+        <item>王者荣耀(300M大文件测试).apk</item>
     </string-array>
 
     <string-array name="image">
@@ -17,7 +17,7 @@
         <item>http://static.yingyonghui.com/icon/128/4195146.png</item>
         <item>http://static.yingyonghui.com/icon/128/9999.png</item>
         <item>http://static.yingyonghui.com/icon/128/4193257.png</item>
-        <item>http://static.yingyonghui.com/icon/128/4193257.png</item>
+        <item>http://static.yingyonghui.com/icon/128/4196396.png</item>
     </string-array>
 
     <string-array name="url">
@@ -26,7 +26,7 @@
         <item>http://a.gdown.baidu.com/data/wisegame/ef4d0290e0e8d431/sougoushurufa_600.apk</item>
         <item>http://static.yingyonghui.com/apk/yyh/9999/ac.publish.yyh/30059655/com.yingyonghui.market_2987_30059655.apk</item>
         <item>http://dl.m.cc.youku.com/android/phone/Youku_Android_zhangkuCPA10.apk</item>
-        <item>http://www.taxiaides.com/xyyc/file/version/android</item>
+        <item>http://120.192.69.163/dlied5.myapp.com/myapp/1104466820/1104466820/sgame/10024163_com.tencent.tmgp.sgame_u131_1.15.2.13.apk</item>
     </string-array>
     <string name="title_activity_test">TestActivity</string>
 

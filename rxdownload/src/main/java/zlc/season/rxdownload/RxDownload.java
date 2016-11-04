@@ -1,9 +1,7 @@
 package zlc.season.rxdownload;
 
-import android.os.Environment;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
-import android.text.TextUtils;
 import android.util.Log;
 
 import java.io.IOException;
@@ -31,8 +29,6 @@ public class RxDownload {
     private DownloadHelper mDownloadHelper;
     private DownloadFactory mFactory;
 
-    private DownloadApi mDownloadApi;
-    private Retrofit mRetrofit;
 
     private RxDownload() {
         mDownloadHelper = new DownloadHelper();
@@ -44,12 +40,12 @@ public class RxDownload {
     }
 
     public RxDownload defaultSavePath(String savePath) {
-        mDownloadHelper.setFilePath(savePath);
+        mDownloadHelper.setDefaultSavePath(savePath);
         return this;
     }
 
     public RxDownload retrofit(Retrofit retrofit) {
-        this.mRetrofit = retrofit;
+        mDownloadHelper.setRetrofit(retrofit);
         return this;
     }
 
@@ -73,11 +69,12 @@ public class RxDownload {
      */
     public Observable<DownloadStatus> download(@NonNull final String url, @NonNull final String saveName,
                                                @Nullable final String savePath) {
-        beforeDownload(url, saveName, savePath);
-        return downloadDispatcher(url);
+        return downloadDispatcher(url, saveName, savePath);
     }
 
-    private Observable<DownloadStatus> downloadDispatcher(final String url) {
+    private Observable<DownloadStatus> downloadDispatcher(final String url, final String saveName,
+                                                          final String savePath) {
+        mDownloadHelper.addDownloadRecord(url, saveName, savePath);
         return getDownloadType(url)
                 .flatMap(new Func1<DownloadType, Observable<DownloadStatus>>() {
                     @Override
@@ -93,7 +90,8 @@ public class RxDownload {
                             return Observable.error(e);
                         }
                     }
-                }).doOnCompleted(new Action0() {
+                })
+                .doOnCompleted(new Action0() {
                     @Override
                     public void call() {
                         mDownloadHelper.deleteDownloadRecord(url);
@@ -127,7 +125,7 @@ public class RxDownload {
     }
 
     private Observable<DownloadType> getWhenFileNotExists(@NonNull final String url) {
-        return mDownloadApi.getHttpHeader(TEST_RANGE_SUPPORT, url)
+        return mDownloadHelper.getDownloadApi().getHttpHeader(TEST_RANGE_SUPPORT, url)
                 .map(new Func1<Response<Void>, DownloadType>() {
                     @Override
                     public DownloadType call(Response<Void> response) {
@@ -150,7 +148,8 @@ public class RxDownload {
     }
 
     private Observable<DownloadType> getWhenFileExists(final String url) throws IOException {
-        return mDownloadApi.getHttpHeaderWithIfRange(TEST_RANGE_SUPPORT, mDownloadHelper.getLastModify(url), url)
+        return mDownloadHelper.getDownloadApi()
+                .getHttpHeaderWithIfRange(TEST_RANGE_SUPPORT, mDownloadHelper.getLastModify(url), url)
                 .map(new Func1<Response<Void>, DownloadType>() {
                     @Override
                     public DownloadType call(Response<Void> resp) {
@@ -191,7 +190,7 @@ public class RxDownload {
     private DownloadType getWhenSupportRange(Response<Void> resp, String url) {
         long contentLength = Utils.contentLength(resp);
         try {
-            if (mDownloadHelper.recordFileNotExists(url) || mDownloadHelper.recordFileDamaged(url, contentLength)) {
+            if (mDownloadHelper.tempFileNotExists(url) || mDownloadHelper.tempFileDamaged(url, contentLength)) {
                 return mFactory.url(url).fileLength(contentLength).lastModify(Utils.lastModify(resp))
                         .buildMultiDownload();
             }
@@ -213,21 +212,5 @@ public class RxDownload {
         } else {
             return mFactory.url(url).fileLength(contentLength).lastModify(Utils.lastModify(resp)).buildNormalDownload();
         }
-    }
-
-    private void beforeDownload(String url, String saveName, String savePath) {
-        if (TextUtils.isEmpty(mDownloadHelper.getFilePath())) {
-            mDownloadHelper.setFilePath(Environment.getExternalStoragePublicDirectory(
-                    Environment.DIRECTORY_DOWNLOADS).getPath());
-        }
-        if (mRetrofit == null) {
-            mRetrofit = RetrofitProvider.getInstance();
-        }
-        if (mDownloadApi == null) {
-            mDownloadApi = mRetrofit.create(DownloadApi.class);
-            mDownloadHelper.setDownloadApi(mDownloadApi);
-        }
-
-        mDownloadHelper.addDownloadRecord(url, saveName, savePath);
     }
 }

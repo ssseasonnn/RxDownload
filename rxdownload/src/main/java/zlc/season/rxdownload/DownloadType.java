@@ -34,7 +34,6 @@ abstract class DownloadType {
 
     abstract Observable<DownloadStatus> startDownload() throws IOException;
 
-
     static class NormalDownload extends DownloadType {
 
         @Override

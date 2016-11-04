@@ -21,10 +21,13 @@ import java.util.Map;
 
 import okhttp3.ResponseBody;
 import retrofit2.Response;
+import retrofit2.Retrofit;
 import retrofit2.adapter.rxjava.HttpException;
 import rx.Subscriber;
 import rx.exceptions.CompositeException;
 
+import static android.os.Environment.DIRECTORY_DOWNLOADS;
+import static android.os.Environment.getExternalStoragePublicDirectory;
 import static android.text.TextUtils.concat;
 import static java.io.File.separator;
 import static java.nio.channels.FileChannel.MapMode.READ_WRITE;
@@ -41,12 +44,10 @@ class DownloadHelper {
 
     private static final String TMP_SUFFIX = ".tmp";  //temp file
     private static final String LMF_SUFFIX = ".lmf";  //last modify file
-
-    private static final String CACHE = ".cache";
+    private static final String CACHE = ".cache";    //cache directory
 
     private static final int EACH_RECORD_SIZE = 16; //long + long = 8 + 8
     private int RECORD_FILE_TOTAL_SIZE;
-
     //|*********************|
     //|*****Record  File****|
     //|*********************|
@@ -55,12 +56,12 @@ class DownloadHelper {
     //|  16L     |     31L  | 2
     //|  ...     |     ...  | MAX_THREADS-1
     //|*********************|
-
-    private int MAX_RETRY_COUNT = 3;
     private int MAX_THREADS = 3;
 
-    private String mFilePath;
-    private String mCachePath;
+    private int MAX_RETRY_COUNT = 3;
+
+    private String mDefaultSavePath;
+    private String mDefaultCachePath;
 
     private DownloadApi mDownloadApi;
 
@@ -70,18 +71,20 @@ class DownloadHelper {
     DownloadHelper() {
         mDownloadRecord = new HashMap<>();
         RECORD_FILE_TOTAL_SIZE = EACH_RECORD_SIZE * MAX_THREADS;
+        mDownloadApi = RetrofitProvider.getInstance().create(DownloadApi.class);
+        setDefaultSavePath(getExternalStoragePublicDirectory(DIRECTORY_DOWNLOADS).getPath());
     }
 
-    String getFilePath() {
-        return mFilePath;
+    void setRetrofit(Retrofit retrofit) {
+        mDownloadApi = retrofit.create(DownloadApi.class);
     }
 
-    void setFilePath(String filePath) {
-        mFilePath = filePath;
-        mCachePath = filePath + separator + CACHE;
-        File file = new File(mFilePath);
+    void setDefaultSavePath(String defaultSavePath) {
+        mDefaultSavePath = defaultSavePath;
+        mDefaultCachePath = concat(defaultSavePath, separator, CACHE).toString();
+        File file = new File(mDefaultSavePath);
         file.mkdir();
-        File record = new File(mCachePath);
+        File record = new File(mDefaultCachePath);
         record.mkdir();
     }
 
@@ -94,20 +97,12 @@ class DownloadHelper {
         RECORD_FILE_TOTAL_SIZE = EACH_RECORD_SIZE * MAX_THREADS;
     }
 
-    int getMaxRetryCount() {
-        return MAX_RETRY_COUNT;
-    }
-
     void setMaxRetryCount(int MAX_RETRY_COUNT) {
         this.MAX_RETRY_COUNT = MAX_RETRY_COUNT;
     }
 
     DownloadApi getDownloadApi() {
         return mDownloadApi;
-    }
-
-    void setDownloadApi(DownloadApi downloadApi) {
-        this.mDownloadApi = downloadApi;
     }
 
     void addDownloadRecord(String url, String saveName, String savePath) {
@@ -134,15 +129,15 @@ class DownloadHelper {
                     mLMFPath = concat(savePath, separator, CACHE, separator, saveName, LMF_SUFFIX).toString();
                 } else {
                     Log.i(TAG, "create file save path failed , now use default save path");
-                    mPath = concat(mFilePath, separator, saveName).toString();
-                    mTMPPath = concat(mCachePath, separator, saveName, TMP_SUFFIX).toString();
-                    mLMFPath = concat(mCachePath, separator, saveName, LMF_SUFFIX).toString();
+                    mPath = concat(mDefaultSavePath, separator, saveName).toString();
+                    mTMPPath = concat(mDefaultCachePath, separator, saveName, TMP_SUFFIX).toString();
+                    mLMFPath = concat(mDefaultCachePath, separator, saveName, LMF_SUFFIX).toString();
                 }
             }
         } else {
-            mPath = concat(mFilePath, separator, saveName).toString();
-            mTMPPath = concat(mCachePath, separator, saveName, TMP_SUFFIX).toString();
-            mLMFPath = concat(mCachePath, separator, saveName, LMF_SUFFIX).toString();
+            mPath = concat(mDefaultSavePath, separator, saveName).toString();
+            mTMPPath = concat(mDefaultCachePath, separator, saveName, TMP_SUFFIX).toString();
+            mLMFPath = concat(mDefaultCachePath, separator, saveName, LMF_SUFFIX).toString();
         }
 
         mDownloadRecord.put(url, new String[]{mPath, mTMPPath, mLMFPath});
@@ -171,6 +166,65 @@ class DownloadHelper {
             file.setLength(fileLength);//设置下载文件的长度
         } finally {
             Utils.close(file);
+        }
+    }
+
+    void saveNormalFile(Subscriber<? super DownloadStatus> sub, String url, Response<ResponseBody> resp) {
+        InputStream inputStream = null;
+        OutputStream outputStream = null;
+        try {
+            try {
+                int readLen;
+                int downloadSize = 0;
+                byte[] buffer = new byte[8192];
+
+                DownloadStatus status = new DownloadStatus();
+                inputStream = resp.body().byteStream();
+                outputStream = new FileOutputStream(getFileBy(url));
+
+                long contentLength = resp.body().contentLength();
+                boolean isChunked = !TextUtils.isEmpty(Utils.transferEncoding(resp));
+                if (isChunked || contentLength == -1) {
+                    status.isChunked = true;
+                }
+                status.setTotalSize(contentLength);
+
+                while ((readLen = inputStream.read(buffer)) != -1) {
+                    outputStream.write(buffer, 0, readLen);
+                    downloadSize += readLen;
+                    status.setDownloadSize(downloadSize);
+                    sub.onNext(status);
+                }
+                outputStream.flush(); // This is important!!!
+                sub.onCompleted();
+                Log.i(TAG, "Normal download completed!");
+            } finally {
+                Utils.close(inputStream);
+                Utils.close(outputStream);
+                Utils.close(resp.body());
+            }
+        } catch (IOException e) {
+            sub.onError(new Throwable("Normal download stopped! Failed to save normal file!", e));
+        }
+    }
+
+    DownloadRange getDownloadRange(String url) throws IOException {
+        RandomAccessFile record = null;
+        FileChannel channel = null;
+        try {
+            record = new RandomAccessFile(getTempFileBy(url), "rws");
+            channel = record.getChannel();
+            MappedByteBuffer buffer = channel.map(READ_WRITE, 0, RECORD_FILE_TOTAL_SIZE);
+            long[] startByteArray = new long[MAX_THREADS];
+            long[] endByteArray = new long[MAX_THREADS];
+            for (int i = 0; i < MAX_THREADS; i++) {
+                startByteArray[i] = buffer.getLong();
+                endByteArray[i] = buffer.getLong();
+            }
+            return new DownloadRange(startByteArray, endByteArray);
+        } finally {
+            Utils.close(channel);
+            Utils.close(record);
         }
     }
 
@@ -207,26 +261,6 @@ class DownloadHelper {
             Utils.close(channel);
             Utils.close(rRecord);
             Utils.close(rFile);
-        }
-    }
-
-    DownloadRange getDownloadRange(String url) throws IOException {
-        RandomAccessFile record = null;
-        FileChannel channel = null;
-        try {
-            record = new RandomAccessFile(getTempFileBy(url), "rws");
-            channel = record.getChannel();
-            MappedByteBuffer buffer = channel.map(READ_WRITE, 0, RECORD_FILE_TOTAL_SIZE);
-            long[] startByteArray = new long[MAX_THREADS];
-            long[] endByteArray = new long[MAX_THREADS];
-            for (int i = 0; i < MAX_THREADS; i++) {
-                startByteArray[i] = buffer.getLong();
-                endByteArray[i] = buffer.getLong();
-            }
-            return new DownloadRange(startByteArray, endByteArray);
-        } finally {
-            Utils.close(channel);
-            Utils.close(record);
         }
     }
 
@@ -280,46 +314,7 @@ class DownloadHelper {
         }
     }
 
-    void saveNormalFile(Subscriber<? super DownloadStatus> sub, String url, Response<ResponseBody> resp) {
-        InputStream inputStream = null;
-        OutputStream outputStream = null;
-        try {
-            try {
-                int readLen;
-                int downloadSize = 0;
-                byte[] buffer = new byte[8192];
-
-                DownloadStatus status = new DownloadStatus();
-                inputStream = resp.body().byteStream();
-                outputStream = new FileOutputStream(getFileBy(url));
-
-                long contentLength = resp.body().contentLength();
-                boolean isChunked = !TextUtils.isEmpty(Utils.transferEncoding(resp));
-                if (isChunked || contentLength == -1) {
-                    status.isChunked = true;
-                }
-                status.setTotalSize(contentLength);
-
-                while ((readLen = inputStream.read(buffer)) != -1) {
-                    outputStream.write(buffer, 0, readLen);
-                    downloadSize += readLen;
-                    status.setDownloadSize(downloadSize);
-                    sub.onNext(status);
-                }
-                outputStream.flush(); // This is important!!!
-                sub.onCompleted();
-                Log.i(TAG, "Normal download completed!");
-            } finally {
-                Utils.close(inputStream);
-                Utils.close(outputStream);
-                Utils.close(resp.body());
-            }
-        } catch (IOException e) {
-            sub.onError(new Throwable("Normal download stopped! Failed to save normal file!", e));
-        }
-    }
-
-    boolean recordFileDamaged(String url, long fileLength) throws IOException {
+    boolean tempFileDamaged(String url, long fileLength) throws IOException {
         RandomAccessFile record = null;
         FileChannel channel = null;
         try {
@@ -357,7 +352,7 @@ class DownloadHelper {
         }
     }
 
-    boolean recordFileNotExists(String url) {
+    boolean tempFileNotExists(String url) {
         return !getTempFileBy(url).exists();
     }
 

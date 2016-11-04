@@ -50,7 +50,7 @@
 
 ```groovy
 	dependencies{
-   		 compile 'zlc.season:rxdownload:1.1.1'
+   		 compile 'zlc.season:rxdownload:1.1.2'
 	}
 ```
 

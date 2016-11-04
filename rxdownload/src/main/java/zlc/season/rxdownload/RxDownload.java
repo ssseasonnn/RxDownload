@@ -29,7 +29,6 @@ public class RxDownload {
     private DownloadHelper mDownloadHelper;
     private DownloadFactory mFactory;
 
-
     private RxDownload() {
         mDownloadHelper = new DownloadHelper();
         mFactory = new DownloadFactory(mDownloadHelper);

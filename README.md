@@ -13,13 +13,13 @@
 
 ### 效果图
 
-![demo](https://github.com/ssseasonnn/RxDownload/blob/master/demo.gif)
+![demo](https://github.com/ssseasonnn/RxDownload/blob/master/demo.gif?raw=true)
 
 ### 大文件下载测试
 
-![王者荣耀下载测试](https://github.com/ssseasonnn/RxDownload/blob/master/王者荣耀下载测试.gif)
+![王者荣耀下载测试](https://github.com/ssseasonnn/RxDownload/blob/master/王者荣耀下载测试.gif?raw=true)
 
-![内存占用图](https://github.com/ssseasonnn/RxDownload/blob/master/memory.png)
+![内存占用图](https://github.com/ssseasonnn/RxDownload/blob/master/memory.png?raw=true)
 
 > 大文件下载测试中，内存占用一直趋于平稳
 
@@ -39,14 +39,14 @@
 
 ### 下载流程图
 
-![流程图](https://github.com/ssseasonnn/RxDownload/blob/master/download.png)
+![流程图](https://github.com/ssseasonnn/RxDownload/blob/master/download.png?raw=true)
 
 
 ### 使用方式
 
 1.添加Gradle依赖
 
-[![Download](https://api.bintray.com/packages/ssseasonnn/android/RxDownload/images/download.svg)](https://bintray.com/ssseasonnn/android/RxDownload/_latestVersion)
+(https://bintray.com/ssseasonnn/android/RxDownload/_latestVersion)
 
 ```groovy
 	dependencies{

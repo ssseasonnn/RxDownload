@@ -14,6 +14,7 @@ import android.os.IBinder;
 import android.support.annotation.Nullable;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.content.FileProvider;
+import android.util.Log;
 
 import java.io.File;
 import java.util.UUID;
@@ -164,25 +165,13 @@ public class UpdateService extends Service {
     }
 
     private void onDownloadComplete() {
+        stopForeground(true);
         mBuilder.mActions.clear();
         mBuilder.setSmallIcon(android.R.drawable.stat_sys_download_done)
                 .setContentText(getString(R.string.download_completed))
                 .setContentIntent(getDefaultIntent())
                 .setProgress(0, 0, false);
         mNotificationManager.notify(NOTIFICATION_ID, mBuilder.build());
-        stopForeground(true);
-        //        stopSelf();
-        //
-        //        Uri photoURI = FileProvider.getUriForFile(this, getApplicationContext().getPackageName() + "
-        // .provider",
-        //                new File(DOWNLOAD_SAVE_PATH + File.separator + mSaveName));
-        //
-        //        Uri uri = Uri.fromFile(new File(DOWNLOAD_SAVE_PATH + File.separator + mSaveName));
-        //        Intent intent = new Intent(Intent.ACTION_VIEW);
-        //        intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-        //        intent.setDataAndType(uri, "application/vnd.android.package-archive");
-        //        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        //        startActivity(intent);
     }
 
     private PendingIntent getDefaultIntent() {
@@ -235,6 +224,7 @@ public class UpdateService extends Service {
 
                     @Override
                     public void onError(Throwable e) {
+                        Log.w("error", e);
                         onDownloadFailed();
                     }
 

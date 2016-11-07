@@ -37,6 +37,4 @@ dependencies {
 
     testCompile 'junit:junit:4.12'
     compile project(path: ':rxdownload')
-
-    compile 'com.github.anrwatchdog:anrwatchdog:1.3.0'
 }

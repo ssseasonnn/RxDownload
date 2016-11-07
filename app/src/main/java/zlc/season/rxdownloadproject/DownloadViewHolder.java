@@ -1,6 +1,7 @@
 package zlc.season.rxdownloadproject;
 
 import android.content.Context;
+import android.os.Environment;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.ImageView;
@@ -64,7 +65,8 @@ public class DownloadViewHolder extends AbstractViewHolder<DownloadBean> {
             mStatus.setText("暂停");
 
             data.subscription = RxDownload.getInstance()
-                    .download(data.url, data.name, null)
+                    .download(data.url, data.name, Environment.getExternalStorageDirectory().getAbsolutePath() +
+                            "/CustomDirectory")
                     .subscribeOn(Schedulers.io())
                     .observeOn(AndroidSchedulers.mainThread())
                     .subscribe(new Subscriber<DownloadStatus>() {

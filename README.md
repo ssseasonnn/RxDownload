@@ -37,6 +37,10 @@
 - 与服务器进行验证过程中,使用更轻便的HEAD请求方式仅获取响应头,减轻通信数据量
 
 
+2016-11-7更新:
+
+- 修复自定义路径不能下载的bug
+
 ### 下载流程图
 
 ![流程图](https://github.com/ssseasonnn/RxDownload/blob/master/download.png?raw=true)
@@ -50,7 +54,7 @@
 
 ```groovy
 	dependencies{
-   		 compile 'zlc.season:rxdownload:1.1.2'
+   		 compile 'zlc.season:rxdownload:1.1.3'
 	}
 ```
 

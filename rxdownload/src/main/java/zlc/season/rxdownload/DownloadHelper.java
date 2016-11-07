@@ -84,8 +84,8 @@ class DownloadHelper {
         mDefaultCachePath = concat(defaultSavePath, separator, CACHE).toString();
         File file = new File(mDefaultSavePath);
         file.mkdir();
-        File record = new File(mDefaultCachePath);
-        record.mkdir();
+        File cache = new File(mDefaultCachePath);
+        cache.mkdir();
     }
 
     int getMaxThreads() {
@@ -106,41 +106,29 @@ class DownloadHelper {
     }
 
     void addDownloadRecord(String url, String saveName, String savePath) {
-        String mPath;
-        String mTMPPath;
-        String mLMFPath;
+        String cachePath;
+
+        String filePath;
+        String tempPath;
+        String lmfPath;
 
         if (!TextUtils.isEmpty(savePath)) {
+            cachePath = concat(savePath, separator, CACHE).toString();
             File file = new File(savePath);
-            if (file.exists()) {
-                if (file.isDirectory()) {
-                    mPath = concat(savePath, separator, saveName).toString();
-                    mTMPPath = concat(savePath, separator, CACHE, separator, saveName, TMP_SUFFIX).toString();
-                    mLMFPath = concat(savePath, separator, CACHE, separator, saveName, LMF_SUFFIX).toString();
-                } else {
-                    throw new IllegalArgumentException("Please give me a Directory path, not file path!");
-                }
-            } else {
-                boolean flag = file.mkdir();
-                if (!flag) {
-                    Log.i(TAG, "create file save path success");
-                    mPath = concat(savePath, separator, saveName).toString();
-                    mTMPPath = concat(savePath, separator, CACHE, separator, saveName, TMP_SUFFIX).toString();
-                    mLMFPath = concat(savePath, separator, CACHE, separator, saveName, LMF_SUFFIX).toString();
-                } else {
-                    Log.i(TAG, "create file save path failed , now use default save path");
-                    mPath = concat(mDefaultSavePath, separator, saveName).toString();
-                    mTMPPath = concat(mDefaultCachePath, separator, saveName, TMP_SUFFIX).toString();
-                    mLMFPath = concat(mDefaultCachePath, separator, saveName, LMF_SUFFIX).toString();
-                }
-            }
+            File cache = new File(cachePath);
+            file.mkdir();
+            cache.mkdir();
+
+            filePath = concat(savePath, separator, saveName).toString();
+            tempPath = concat(cachePath, separator, saveName, TMP_SUFFIX).toString();
+            lmfPath = concat(cachePath, separator, saveName, LMF_SUFFIX).toString();
         } else {
-            mPath = concat(mDefaultSavePath, separator, saveName).toString();
-            mTMPPath = concat(mDefaultCachePath, separator, saveName, TMP_SUFFIX).toString();
-            mLMFPath = concat(mDefaultCachePath, separator, saveName, LMF_SUFFIX).toString();
+            filePath = concat(mDefaultSavePath, separator, saveName).toString();
+            tempPath = concat(mDefaultCachePath, separator, saveName, TMP_SUFFIX).toString();
+            lmfPath = concat(mDefaultCachePath, separator, saveName, LMF_SUFFIX).toString();
         }
 
-        mDownloadRecord.put(url, new String[]{mPath, mTMPPath, mLMFPath});
+        mDownloadRecord.put(url, new String[]{filePath, tempPath, lmfPath});
     }
 
     void deleteDownloadRecord(String url) {

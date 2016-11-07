@@ -1,4 +1,4 @@
-package zlc.season.rxdownload;
+package zlc.season.rxdownloadproject;
 
 import android.app.NotificationManager;
 import android.app.PendingIntent;
@@ -14,6 +14,7 @@ import android.os.IBinder;
 import android.support.annotation.Nullable;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.content.FileProvider;
+import android.util.Log;
 
 import java.io.File;
 import java.util.UUID;
@@ -23,12 +24,14 @@ import rx.Subscriber;
 import rx.Subscription;
 import rx.android.schedulers.AndroidSchedulers;
 import rx.schedulers.Schedulers;
+import zlc.season.rxdownload.DownloadStatus;
+import zlc.season.rxdownload.RxDownload;
 
 import static android.app.PendingIntent.FLAG_UPDATE_CURRENT;
-import static zlc.season.rxdownload.UpdateService.DownloadReceiver.INTENT_ACTION_CANCEL;
-import static zlc.season.rxdownload.UpdateService.DownloadReceiver.INTENT_ACTION_CONTINUE;
-import static zlc.season.rxdownload.UpdateService.DownloadReceiver.INTENT_ACTION_PAUSE;
-import static zlc.season.rxdownload.UpdateService.DownloadReceiver.INTENT_ACTION_RETRY;
+import static zlc.season.rxdownloadproject.UpdateService.DownloadReceiver.INTENT_ACTION_CANCEL;
+import static zlc.season.rxdownloadproject.UpdateService.DownloadReceiver.INTENT_ACTION_CONTINUE;
+import static zlc.season.rxdownloadproject.UpdateService.DownloadReceiver.INTENT_ACTION_PAUSE;
+import static zlc.season.rxdownloadproject.UpdateService.DownloadReceiver.INTENT_ACTION_RETRY;
 
 /**
  * Author: Season(ssseasonnn@gmail.com)
@@ -37,8 +40,8 @@ import static zlc.season.rxdownload.UpdateService.DownloadReceiver.INTENT_ACTION
  * 自动升级Service
  */
 public class UpdateService extends Service {
-    public static final String INTENT_SAVE_NAME = "zlc.season.rxdownload.service.intent.save_name";
-    public static final String INTENT_DOWNLOAD_URL = "zlc.season.rxdownload.service.intent.download_url";
+    public static final String INTENT_SAVE_NAME = "service.intent.save_name";
+    public static final String INTENT_DOWNLOAD_URL = "service.intent.download_url";
 
     private static final int NOTIFICATION_ID = UUID.randomUUID().hashCode();
     private static final String DOWNLOAD_SAVE_PATH =
@@ -94,16 +97,16 @@ public class UpdateService extends Service {
     }
 
     private void createActions() {
-        cancelAction = new NotificationCompat.Action(R.drawable.ic_cancel, getString(R.string.cancel_download),
+        cancelAction = new NotificationCompat.Action(R.mipmap.ic_cancel, getString(R.string.cancel_download),
                 PendingIntent.getBroadcast(this, 0, new Intent(INTENT_ACTION_CANCEL), FLAG_UPDATE_CURRENT));
 
-        pauseAction = new NotificationCompat.Action(R.drawable.ic_pause, getString(R.string.pause_download),
+        pauseAction = new NotificationCompat.Action(R.mipmap.ic_pause, getString(R.string.pause_download),
                 PendingIntent.getBroadcast(this, 0, new Intent(INTENT_ACTION_PAUSE), FLAG_UPDATE_CURRENT));
 
-        continueAction = new NotificationCompat.Action(R.drawable.ic_continue, getString(R.string.continue_download),
+        continueAction = new NotificationCompat.Action(R.mipmap.ic_continue, getString(R.string.continue_download),
                 PendingIntent.getBroadcast(this, 0, new Intent(INTENT_ACTION_CONTINUE), FLAG_UPDATE_CURRENT));
 
-        retryAction = new NotificationCompat.Action(R.drawable.ic_action_reload, getString(R.string.re_download),
+        retryAction = new NotificationCompat.Action(R.mipmap.ic_action_reload, getString(R.string.re_download),
                 PendingIntent.getBroadcast(this, 0, new Intent(INTENT_ACTION_RETRY), FLAG_UPDATE_CURRENT));
     }
 
@@ -164,25 +167,13 @@ public class UpdateService extends Service {
     }
 
     private void onDownloadComplete() {
+        stopForeground(true);
         mBuilder.mActions.clear();
         mBuilder.setSmallIcon(android.R.drawable.stat_sys_download_done)
                 .setContentText(getString(R.string.download_completed))
                 .setContentIntent(getDefaultIntent())
                 .setProgress(0, 0, false);
         mNotificationManager.notify(NOTIFICATION_ID, mBuilder.build());
-        stopForeground(true);
-        //        stopSelf();
-        //
-        //        Uri photoURI = FileProvider.getUriForFile(this, getApplicationContext().getPackageName() + "
-        // .provider",
-        //                new File(DOWNLOAD_SAVE_PATH + File.separator + mSaveName));
-        //
-        //        Uri uri = Uri.fromFile(new File(DOWNLOAD_SAVE_PATH + File.separator + mSaveName));
-        //        Intent intent = new Intent(Intent.ACTION_VIEW);
-        //        intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-        //        intent.setDataAndType(uri, "application/vnd.android.package-archive");
-        //        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        //        startActivity(intent);
     }
 
     private PendingIntent getDefaultIntent() {
@@ -235,6 +226,7 @@ public class UpdateService extends Service {
 
                     @Override
                     public void onError(Throwable e) {
+                        Log.w("error", e);
                         onDownloadFailed();
                     }
 
@@ -247,10 +239,10 @@ public class UpdateService extends Service {
 
     public class DownloadReceiver extends BroadcastReceiver {
 
-        public static final String INTENT_ACTION_PAUSE = "zlc.season.rxdownload.service.pauseDownload";
-        public static final String INTENT_ACTION_CONTINUE = "zlc.season.rxdownload.service.continue";
-        public static final String INTENT_ACTION_CANCEL = "zlc.season.rxdownload.service.cancel";
-        public static final String INTENT_ACTION_RETRY = "zlc.season.rxdownload.service.retry";
+        public static final String INTENT_ACTION_PAUSE = "service.pauseDownload";
+        public static final String INTENT_ACTION_CONTINUE = "service.continue";
+        public static final String INTENT_ACTION_CANCEL = "service.cancel";
+        public static final String INTENT_ACTION_RETRY = "service.retry";
 
         @Override
         public void onReceive(Context context, Intent intent) {

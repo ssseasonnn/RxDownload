@@ -37,7 +37,7 @@
 - 与服务器进行验证过程中,使用更轻便的HEAD请求方式仅获取响应头,减轻通信数据量
 
 
-2016-11-7更新:
+### 2016-11-7更新:
 
 - 修复自定义路径不能下载的bug
 
@@ -58,7 +58,18 @@
 	}
 ```
 
-2.代码调用
+2.配置权限
+
+```xml
+ 	<!-- 在XML中设置权限 -->
+	<uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="android.permission.MOUNT_UNMOUNT_FILESYSTEMS"/>
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+```
+
+> 注意: Android 6.0 以上还必须申请运行时权限, 如果遇到不能下载, 请先检查权限
+
+3.代码调用
 
 ```java
 Subscription subscription = RxDownload.getInstance()
@@ -68,17 +79,17 @@ Subscription subscription = RxDownload.getInstance()
                 .subscribe(new Subscriber<DownloadStatus>() {
                      @Override
                     public void onCompleted() {
-
+					//下载完成
                     }
 
                     @Override
                     public void onError(Throwable e) {
-
+					//下载出错
                     }
 
                     @Override
                     public void onNext(final DownloadStatus status) {
-
+					//下载状态
                     }
                 });
 ```
@@ -89,7 +100,7 @@ Subscription subscription = RxDownload.getInstance()
 >
 > url与saveName为必传参数, savePath为可选参数, 默认的下载地址为/storage/emulated/0/Download/目录下, 也就是内置存储的Download目录
 
-3.参数配置
+4.参数配置
 
 可以配置的参数如下:
 
@@ -133,7 +144,7 @@ Subscription subscription1 = rxDownload.download(url1,name1,null)...
 Subscription subscription2 = rxDownload.download(url2,name2,null)...  
 ```
 
-4.DownloadStatus 下载状态
+5.DownloadStatus 下载状态
 
 ```java
 class DownloadStatus {
@@ -161,7 +172,7 @@ class DownloadStatus {
 }
 ```
 
-5.取消或暂停下载
+6.取消或暂停下载
 
 ```java
 Subscription subscription = RxDownload.getInstance()
@@ -174,7 +185,7 @@ if (subscription != null && !subscription.isUnsubscribed()) {
 }
 ```
 
-6.更多功能后续将会逐步完善
+7.更多功能后续将会逐步完善
 
 若您对此项目有疑问,欢迎来提issues.
 

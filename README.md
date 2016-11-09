@@ -41,6 +41,10 @@
 
 - 修复自定义路径不能下载的bug
 
+### 2016-11-9 更新
+
+- 新增transform方法, 可使用RxJava的compose操作符组合调用下载,具体使用方式请看文章底部
+
 ### 下载流程图
 
 ![流程图](https://github.com/ssseasonnn/RxDownload/blob/master/download.png?raw=true)
@@ -54,7 +58,7 @@
 
 ```groovy
 	dependencies{
-   		 compile 'zlc.season:rxdownload:1.1.4'
+   		 compile 'zlc.season:rxdownload:1.1.5'
 	}
 ```
 
@@ -67,7 +71,7 @@
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
 ```
 
-> 注意: Android 6.0 以上还必须申请运行时权限, 如果遇到不能下载, 请先检查权限
+> **注意: Android 6.0 以上还必须申请运行时权限, 如果遇到不能下载, 请先检查权限**
 
 3.代码调用
 
@@ -185,7 +189,44 @@ if (subscription != null && !subscription.isUnsubscribed()) {
 }
 ```
 
-7.更多功能后续将会逐步完善
+7.与RxPermission结合使用
+
+RxPermission是为Android 6.0解决运行时权限的一个库, 这里是该库的地址: [RxPermission](https://github.com/tbruyelle/RxPermissions)
+
+```java
+ subscription =  RxPermissions.getInstance(mContext)
+                    .request(Manifest.permission.WRITE_EXTERNAL_STORAGE) //申请存储卡权限
+                    .doOnNext(new Action1<Boolean>() {
+                        @Override
+                        public void call(Boolean granted) {
+                            if (!granted) {  //权限被拒绝
+                                throw new RuntimeException("no permission");
+                            }
+                        }
+                    })
+                    .observeOn(Schedulers.io())
+                    .compose(RxDownload.getInstance().transform(data.url, data.name, null))
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .subscribe(new Subscriber<DownloadStatus>() {
+                        @Override
+                        public void onCompleted() {
+                           //下载完成
+                        }
+
+                        @Override
+                        public void onError(Throwable e) {
+                            Log.w("TAG", e);
+                         //下载出错
+                        }
+
+                        @Override
+                        public void onNext(final DownloadStatus status) {
+                           //Status表示的是当前的下载进度
+                        }
+                    });
+```
+
+8.更多功能后续将会逐步完善
 
 若您对此项目有疑问,欢迎来提issues.
 

@@ -1,7 +1,8 @@
 package zlc.season.rxdownloadproject;
 
+import android.Manifest;
 import android.content.Context;
-import android.os.Environment;
+import android.util.Log;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.ImageView;
@@ -9,12 +10,14 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import com.squareup.picasso.Picasso;
+import com.tbruyelle.rxpermissions.RxPermissions;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
 import rx.Subscriber;
 import rx.android.schedulers.AndroidSchedulers;
+import rx.functions.Action1;
 import rx.schedulers.Schedulers;
 import zlc.season.practicalrecyclerview.AbstractViewHolder;
 import zlc.season.rxdownload.DownloadStatus;
@@ -64,10 +67,18 @@ public class DownloadViewHolder extends AbstractViewHolder<DownloadBean> {
             data.state = DownloadBean.PAUSE;
             mStatus.setText("暂停");
 
-            data.subscription = RxDownload.getInstance()
-                    .download(data.url, data.name, Environment.getExternalStorageDirectory().getAbsolutePath() +
-                            "/CustomDirectory")
-                    .subscribeOn(Schedulers.io())
+            data.subscription = RxPermissions.getInstance(mContext)
+                    .request(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                    .doOnNext(new Action1<Boolean>() {
+                        @Override
+                        public void call(Boolean granted) {
+                            if (!granted) {
+                                throw new RuntimeException("no permission");
+                            }
+                        }
+                    })
+                    .observeOn(Schedulers.io())
+                    .compose(RxDownload.getInstance().transform(data.url, data.name, null))
                     .observeOn(AndroidSchedulers.mainThread())
                     .subscribe(new Subscriber<DownloadStatus>() {
                         @Override
@@ -79,6 +90,7 @@ public class DownloadViewHolder extends AbstractViewHolder<DownloadBean> {
 
                         @Override
                         public void onError(Throwable e) {
+                            Log.w("TAG", e);
                             data.state = DownloadBean.START;
                             mStatus.setText("继续");
                             data.unsubscrbe();

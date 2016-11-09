@@ -54,7 +54,7 @@
 
 ```groovy
 	dependencies{
-   		 compile 'zlc.season:rxdownload:1.1.3'
+   		 compile 'zlc.season:rxdownload:1.1.4'
 	}
 ```
 
@@ -118,6 +118,19 @@ Subscription subscription = RxDownload.getInstance()
 					//Status表示的是当前的下载进度
                     }
                 });
+```
+
+ **Tips:  RxDownload.getInstance() 每次返回的是一个全新的对象, 因此创建多个下载任务时应该避免多次创建实例:**   
+
+```java
+RxDownload rxDownload = RxDownload.getInstance()
+  					   .maxThread(10)
+  					   .maxRetryCount(10)
+  					   .defaultSavePath(defaultPath);
+//download task 1: 
+Subscription subscription1 = rxDownload.download(url1,name1,null)...
+//download task 2:  
+Subscription subscription2 = rxDownload.download(url2,name2,null)...  
 ```
 
 4.DownloadStatus 下载状态

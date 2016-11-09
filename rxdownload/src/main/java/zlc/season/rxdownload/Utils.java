@@ -60,6 +60,14 @@ class Utils {
         return TextUtils.isEmpty(contentRange(response)) || contentLength(response) == -1;
     }
 
+    static boolean serverFileChanged(Response<Void> resp) {
+        return resp.code() == 200;
+    }
+
+    static boolean serverFileNotChange(Response<Void> resp) {
+        return resp.code() == 206;
+    }
+
     static String formatSize(long size) {
         String hrSize;
 

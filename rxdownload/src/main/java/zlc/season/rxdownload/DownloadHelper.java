@@ -302,21 +302,6 @@ class DownloadHelper {
         }
     }
 
-    boolean tempFileDamaged(String url, long fileLength) throws IOException {
-        RandomAccessFile record = null;
-        FileChannel channel = null;
-        try {
-            record = new RandomAccessFile(getTempFileBy(url), "rws");
-            channel = record.getChannel();
-            MappedByteBuffer buffer = channel.map(READ_WRITE, 0, RECORD_FILE_TOTAL_SIZE);
-            long recordTotalSize = buffer.getLong(RECORD_FILE_TOTAL_SIZE - 8) + 1;
-            return recordTotalSize != fileLength;
-        } finally {
-            Utils.close(channel);
-            Utils.close(record);
-        }
-    }
-
     boolean downloadNotComplete(String url) throws IOException {
         RandomAccessFile record = null;
         FileChannel channel = null;
@@ -340,12 +325,16 @@ class DownloadHelper {
         }
     }
 
-    boolean tempFileNotExists(String url) {
-        return !getTempFileBy(url).exists();
+    boolean downloadNotComplete(String url, long contentLength) {
+        return getFileBy(url).length() != contentLength;
     }
 
-    File getFileBy(String url) {
-        return new File(mDownloadRecord.get(url)[0]);
+    boolean needReDownload(String url, long contentLength) throws IOException {
+        return tempFileNotExists(url) || tempFileDamaged(url, contentLength);
+    }
+
+    boolean downloadFileExists(String url) {
+        return getFileBy(url).exists();
     }
 
     Boolean retry(Integer integer, Throwable throwable) {
@@ -391,6 +380,29 @@ class DownloadHelper {
             Log.w(TAG, throwable);
             return false;
         }
+    }
+
+    private File getFileBy(String url) {
+        return new File(mDownloadRecord.get(url)[0]);
+    }
+
+    private boolean tempFileDamaged(String url, long fileLength) throws IOException {
+        RandomAccessFile record = null;
+        FileChannel channel = null;
+        try {
+            record = new RandomAccessFile(getTempFileBy(url), "rws");
+            channel = record.getChannel();
+            MappedByteBuffer buffer = channel.map(READ_WRITE, 0, RECORD_FILE_TOTAL_SIZE);
+            long recordTotalSize = buffer.getLong(RECORD_FILE_TOTAL_SIZE - 8) + 1;
+            return recordTotalSize != fileLength;
+        } finally {
+            Utils.close(channel);
+            Utils.close(record);
+        }
+    }
+
+    private boolean tempFileNotExists(String url) {
+        return !getTempFileBy(url).exists();
     }
 
     private File getTempFileBy(String url) {

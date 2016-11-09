@@ -35,6 +35,8 @@ dependencies {
 
     compile 'zlc.season:practicalrecyclerview:1.0.8'
 
+    compile 'com.tbruyelle.rxpermissions:rxpermissions:0.8.2@aar'
+
     testCompile 'junit:junit:4.12'
     compile project(path: ':rxdownload')
 }

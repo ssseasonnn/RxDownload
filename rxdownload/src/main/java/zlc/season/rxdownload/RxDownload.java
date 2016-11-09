@@ -59,7 +59,6 @@ public class RxDownload {
         return this;
     }
 
-
     /**
      * 开始下载
      *
@@ -71,6 +70,31 @@ public class RxDownload {
     public Observable<DownloadStatus> download(@NonNull final String url, @NonNull final String saveName,
                                                @Nullable final String savePath) {
         return downloadDispatcher(url, saveName, savePath);
+    }
+
+    /**
+     * 提供给RxJava Compose操作符使用
+     *
+     * @param url      下载文件的Url
+     * @param saveName 下载文件的保存名称
+     * @param savePath 下载文件的保存路径, null使用默认的路径,默认保存在/storage/emulated/0/Download/目录下
+     * @param <T>      T
+     * @return Transformer
+     */
+    public <T> Observable.Transformer<T, DownloadStatus> transform(@NonNull final String url,
+                                                                   @NonNull final String saveName,
+                                                                   @Nullable final String savePath) {
+        return new Observable.Transformer<T, DownloadStatus>() {
+            @Override
+            public Observable<DownloadStatus> call(Observable<T> observable) {
+                return observable.flatMap(new Func1<T, Observable<DownloadStatus>>() {
+                    @Override
+                    public Observable<DownloadStatus> call(T t) {
+                        return download(url, saveName, savePath);
+                    }
+                });
+            }
+        };
     }
 
     private Observable<DownloadStatus> downloadDispatcher(final String url, final String saveName,

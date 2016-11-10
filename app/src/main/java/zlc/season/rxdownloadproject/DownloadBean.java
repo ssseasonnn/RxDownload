@@ -1,7 +1,10 @@
 package zlc.season.rxdownloadproject;
 
+import android.content.Context;
+
 import rx.Subscription;
 import zlc.season.practicalrecyclerview.ItemType;
+import zlc.season.rxdownload.DownloadReceiver;
 
 /**
  * Author: Season(ssseasonnn@gmail.com)
@@ -19,6 +22,7 @@ public class DownloadBean implements ItemType {
     String image;
     int state;
     Subscription subscription;
+    DownloadReceiver mReceiver;
 
     /**
      * 取消订阅
@@ -27,6 +31,10 @@ public class DownloadBean implements ItemType {
         if (subscription != null && !subscription.isUnsubscribed()) {
             subscription.unsubscribe();
         }
+    }
+
+    public void unregisterReceiver(Context context) {
+        context.unregisterReceiver(mReceiver);
     }
 
     @Override

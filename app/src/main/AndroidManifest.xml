@@ -35,8 +35,13 @@
                 android:resource="@xml/provider_paths"/>
         </provider>
 
-        <service android:name="zlc.season.rxdownloadproject.UpdateService"/>
+        <service android:name=".UpdateService"/>
 
+        <activity
+            android:name=".MenuActivity"
+            android:label="@string/title_activity_menu"
+            android:theme="@style/AppTheme.NoActionBar">
+        </activity>
     </application>
 
 </manifest>

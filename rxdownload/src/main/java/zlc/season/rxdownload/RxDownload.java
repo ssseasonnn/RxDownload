@@ -1,5 +1,10 @@
 package zlc.season.rxdownload;
 
+import android.content.ComponentName;
+import android.content.Context;
+import android.content.Intent;
+import android.content.ServiceConnection;
+import android.os.IBinder;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.util.Log;
@@ -30,9 +35,12 @@ public class RxDownload {
     private DownloadHelper mDownloadHelper;
     private DownloadFactory mFactory;
 
+    private boolean alreadyBind = false;
+
     private RxDownload() {
         mDownloadHelper = new DownloadHelper();
         mFactory = new DownloadFactory(mDownloadHelper);
+
     }
 
     public static RxDownload getInstance() {
@@ -57,6 +65,21 @@ public class RxDownload {
     public RxDownload maxRetryCount(int max) {
         mDownloadHelper.setMaxRetryCount(max);
         return this;
+    }
+
+    public void serviceDownload(@NonNull final Context context, @NonNull final String url,
+                                @NonNull final String saveName, @Nullable final String savePath) {
+        final Intent intent = new Intent(context, DownloadService.class);
+        intent.setAction(DownloadService.RX_SERVICE_DOWNLOAD);
+        intent.putExtra(DownloadService.RX_INTENT_SAVE_NAME, saveName);
+        intent.putExtra(DownloadService.RX_INTENT_SAVE_PATH, savePath);
+        intent.putExtra(DownloadService.RX_INTENT_DOWNLOAD_URL, url);
+
+        if (alreadyBind) {
+            context.startService(intent);
+        } else {
+            context.bindService(intent, new DownloadServiceConnection(context, intent), Context.BIND_AUTO_CREATE);
+        }
     }
 
     /**
@@ -258,6 +281,32 @@ public class RxDownload {
                     .buildNormalDownload();
         } else {
             return mFactory.fileLength(contentLength).buildAlreadyDownload();
+        }
+    }
+
+    private class DownloadServiceConnection implements ServiceConnection {
+        private Context mContext;
+        private Intent mIntent;
+
+        DownloadServiceConnection(Context context, Intent intent) {
+            mContext = context;
+            mIntent = intent;
+        }
+
+        @Override
+        public void onServiceConnected(ComponentName name, IBinder binder) {
+            DownloadService.DownloadBinder downloadBinder = (DownloadService.DownloadBinder) binder;
+            DownloadService service = downloadBinder.getService();
+            service.setRxDownload(RxDownload.this);
+            mContext.startService(mIntent);
+            mContext.unbindService(this);
+            alreadyBind = true;
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName name) {
+            //注意!!这个方法只会在系统杀掉Service时才会调用!!
+            alreadyBind = false;
         }
     }
 }

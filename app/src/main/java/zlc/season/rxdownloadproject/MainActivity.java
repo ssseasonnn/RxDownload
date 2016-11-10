@@ -117,6 +117,7 @@ public class MainActivity extends AppCompatActivity {
         List<DownloadBean> list = mAdapter.getData();
         for (DownloadBean each : list) {
             each.unsubscrbe();
+            each.unregisterReceiver(this);
         }
     }
 }

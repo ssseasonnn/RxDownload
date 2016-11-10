@@ -114,6 +114,7 @@ public class DownloadService extends Service {
                         Intent intent = new Intent(RX_BROADCAST_DOWNLOAD_COMPLETE);
                         intent.putExtra(RX_BROADCAST_KEY_URL, url);
                         sendBroadcast(intent);
+                        Utils.unSubscribe(mRecord.get(url));
                         mRecord.remove(url);
                     }
 
@@ -124,6 +125,7 @@ public class DownloadService extends Service {
                         intent.putExtra(RX_BROADCAST_KEY_URL, url);
                         intent.putExtra(RX_BROADCAST_KEY_EXCEPTION, e);
                         sendBroadcast(intent);
+                        Utils.unSubscribe(mRecord.get(url));
                         mRecord.remove(url);
                     }
 
@@ -135,13 +137,13 @@ public class DownloadService extends Service {
                         sendBroadcast(intent);
                     }
                 });
-        mSubscriptions.add(temp);
         mRecord.put(url, temp);
     }
 
     private boolean isRecordEmpty() {
         return false;
     }
+
 
     public class DownloadBinder extends Binder {
 

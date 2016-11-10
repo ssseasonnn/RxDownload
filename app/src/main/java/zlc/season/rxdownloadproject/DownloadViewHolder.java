@@ -61,7 +61,7 @@ public class DownloadViewHolder extends AbstractViewHolder<DownloadBean> {
         Picasso.with(mContext).load(param.image).into(mImg);
         mStatus.setText("开始");
 
-        data.mReceiver = new DownloadReceiver(new DownloadReceiver.CallBack() {
+        data.mReceiver = new DownloadReceiver(data.url, new DownloadReceiver.CallBack() {
             @Override
             public void onDownloadStart() {
                 data.state = DownloadBean.PAUSE;
@@ -69,13 +69,14 @@ public class DownloadViewHolder extends AbstractViewHolder<DownloadBean> {
             }
 
             @Override
-            public void onDownloadNext() {
-                //                mProgress.setIndeterminate(status.isChunked);
-                //                mProgress.setMax((int) status.getTotalSize());
-                //                mProgress.setProgress((int) status.getDownloadSize());
-                //                mPercent.setText(status.getPercent());
-                //                mSize.setText(status.getFormatStatusString());
+            public void onDownloadNext(DownloadStatus status) {
+                mProgress.setIndeterminate(status.isChunked);
+                mProgress.setMax((int) status.getTotalSize());
+                mProgress.setProgress((int) status.getDownloadSize());
+                mPercent.setText(status.getPercent());
+                mSize.setText(status.getFormatStatusString());
             }
+
 
             @Override
             public void onDownloadComplete() {
@@ -84,7 +85,7 @@ public class DownloadViewHolder extends AbstractViewHolder<DownloadBean> {
             }
 
             @Override
-            public void onDownloadError() {
+            public void onDownloadError(Throwable e) {
                 data.state = DownloadBean.START;
                 mStatus.setText("继续");
             }

@@ -18,9 +18,16 @@ public class DownloadReceiver extends BroadcastReceiver {
     public static final String RX_BROADCAST_DOWNLOAD_COMPLETE = "zlc.season.rxdownload.broadcast.intent.complete";
     public static final String RX_BROADCAST_DOWNLOAD_ERROR = "zlc.season.rxdownload.broadcast.intent.error";
 
-    private CallBack mCallBack;
+    public static final String RX_BROADCAST_KEY_EXCEPTION = "zlc.season.rxdownload.broadcast.key.exception";
+    public static final String RX_BROADCAST_KEY_STATUS = "zlc.season.rxdownload.broadcast.key.status";
+    public static final String RX_BROADCAST_KEY_URL = "zlc.season.rxdownload.broadcast.key.url";
 
-    public DownloadReceiver(CallBack callBack) {
+    private CallBack mCallBack;
+    private String mKeyUrl;
+
+
+    public DownloadReceiver(String keyUrl, CallBack callBack) {
+        mKeyUrl = keyUrl;
         mCallBack = callBack;
     }
 
@@ -36,18 +43,28 @@ public class DownloadReceiver extends BroadcastReceiver {
     @Override
     public void onReceive(Context context, Intent intent) {
         String action = intent.getAction();
+        String key = intent.getStringExtra(RX_BROADCAST_KEY_URL);
         switch (action) {
             case RX_BROADCAST_DOWNLOAD_START:
-                mCallBack.onDownloadStart();
+                if (key.compareTo(mKeyUrl) == 0) {
+                    mCallBack.onDownloadStart();
+                }
                 break;
             case RX_BROADCAST_DOWNLOAD_NEXT:
-                mCallBack.onDownloadNext();
+                if (key.compareTo(mKeyUrl) == 0) {
+                    mCallBack.onDownloadNext((DownloadStatus) intent.getParcelableExtra(RX_BROADCAST_KEY_STATUS));
+                }
                 break;
             case RX_BROADCAST_DOWNLOAD_COMPLETE:
-                mCallBack.onDownloadComplete();
+                if (key.compareTo(mKeyUrl) == 0) {
+                    mCallBack.onDownloadComplete();
+                }
                 break;
             case RX_BROADCAST_DOWNLOAD_ERROR:
-                mCallBack.onDownloadError();
+                if (key.compareTo(mKeyUrl) == 0) {
+                    Throwable e = (Throwable) intent.getSerializableExtra(RX_BROADCAST_KEY_EXCEPTION);
+                    mCallBack.onDownloadError(e);
+                }
                 break;
         }
     }
@@ -55,10 +72,10 @@ public class DownloadReceiver extends BroadcastReceiver {
     public interface CallBack {
         void onDownloadStart();
 
-        void onDownloadNext();
+        void onDownloadNext(DownloadStatus status);
 
         void onDownloadComplete();
 
-        void onDownloadError();
+        void onDownloadError(Throwable e);
     }
 }

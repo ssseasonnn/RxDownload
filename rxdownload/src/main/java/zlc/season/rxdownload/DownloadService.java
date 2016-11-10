@@ -7,6 +7,8 @@ import android.os.IBinder;
 import android.support.annotation.Nullable;
 import android.util.Log;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import rx.Subscriber;
@@ -18,6 +20,9 @@ import static zlc.season.rxdownload.DownloadReceiver.RX_BROADCAST_DOWNLOAD_COMPL
 import static zlc.season.rxdownload.DownloadReceiver.RX_BROADCAST_DOWNLOAD_ERROR;
 import static zlc.season.rxdownload.DownloadReceiver.RX_BROADCAST_DOWNLOAD_NEXT;
 import static zlc.season.rxdownload.DownloadReceiver.RX_BROADCAST_DOWNLOAD_START;
+import static zlc.season.rxdownload.DownloadReceiver.RX_BROADCAST_KEY_EXCEPTION;
+import static zlc.season.rxdownload.DownloadReceiver.RX_BROADCAST_KEY_STATUS;
+import static zlc.season.rxdownload.DownloadReceiver.RX_BROADCAST_KEY_URL;
 
 /**
  * Author: Season(ssseasonnn@gmail.com)
@@ -36,12 +41,9 @@ public class DownloadService extends Service {
 
     private RxDownload mRxDownload;
 
-    private String mDownloadUrl;
-    private String mSaveName;
-    private String mSavePath;
-    private DownloadBinder mBinder = new DownloadBinder();
+    private DownloadBinder mBinder;
     private CompositeSubscription mSubscriptions;
-
+    private Map<String, Subscription> mRecord;
 
     public void setRxDownload(RxDownload rxDownload) {
         mRxDownload = rxDownload;
@@ -51,7 +53,9 @@ public class DownloadService extends Service {
     public void onCreate() {
         super.onCreate();
         Log.d(TAG, "onCreate");
+        mBinder = new DownloadBinder();
         mSubscriptions = new CompositeSubscription();
+        mRecord = new HashMap<>();
     }
 
     @Override
@@ -60,10 +64,10 @@ public class DownloadService extends Service {
         if (intent != null) {
             final String action = intent.getAction();
             if (RX_SERVICE_DOWNLOAD.equals(action)) {
-                mDownloadUrl = intent.getStringExtra(RX_INTENT_DOWNLOAD_URL);
-                mSaveName = intent.getStringExtra(RX_INTENT_SAVE_NAME);
-                mSavePath = intent.getStringExtra(RX_INTENT_SAVE_PATH);
-                startDownload(mDownloadUrl, mSaveName, mSavePath);
+                String downloadUrl = intent.getStringExtra(RX_INTENT_DOWNLOAD_URL);
+                String saveName = intent.getStringExtra(RX_INTENT_SAVE_NAME);
+                String savePath = intent.getStringExtra(RX_INTENT_SAVE_PATH);
+                startDownload(downloadUrl, saveName, savePath);
             }
         }
         return super.onStartCommand(intent, flags, startId);
@@ -83,14 +87,13 @@ public class DownloadService extends Service {
         return mBinder;
     }
 
-
     @Override
     public boolean onUnbind(Intent intent) {
         Log.d(TAG, "onUnBind");
         return super.onUnbind(intent);
     }
 
-    private void startDownload(String url, String saveName, String savePath) {
+    private void startDownload(final String url, String saveName, String savePath) {
         if (mRxDownload == null) {
             throw new NullPointerException("Some bad things happened! I can't download ...");
         }
@@ -102,29 +105,42 @@ public class DownloadService extends Service {
                     public void onStart() {
                         super.onStart();
                         Intent intent = new Intent(RX_BROADCAST_DOWNLOAD_START);
+                        intent.putExtra(RX_BROADCAST_KEY_URL, url);
                         sendBroadcast(intent);
                     }
 
                     @Override
                     public void onCompleted() {
                         Intent intent = new Intent(RX_BROADCAST_DOWNLOAD_COMPLETE);
+                        intent.putExtra(RX_BROADCAST_KEY_URL, url);
                         sendBroadcast(intent);
+                        mRecord.remove(url);
                     }
 
                     @Override
                     public void onError(Throwable e) {
                         Log.w("error", e);
                         Intent intent = new Intent(RX_BROADCAST_DOWNLOAD_ERROR);
+                        intent.putExtra(RX_BROADCAST_KEY_URL, url);
+                        intent.putExtra(RX_BROADCAST_KEY_EXCEPTION, e);
                         sendBroadcast(intent);
+                        mRecord.remove(url);
                     }
 
                     @Override
                     public void onNext(DownloadStatus status) {
                         Intent intent = new Intent(RX_BROADCAST_DOWNLOAD_NEXT);
+                        intent.putExtra(RX_BROADCAST_KEY_URL, url);
+                        intent.putExtra(RX_BROADCAST_KEY_STATUS, status);
                         sendBroadcast(intent);
                     }
                 });
         mSubscriptions.add(temp);
+        mRecord.put(url, temp);
+    }
+
+    private boolean isRecordEmpty() {
+        return false;
     }
 
     public class DownloadBinder extends Binder {

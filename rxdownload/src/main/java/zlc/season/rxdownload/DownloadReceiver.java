@@ -69,14 +69,4 @@ public class DownloadReceiver extends BroadcastReceiver {
                 break;
         }
     }
-
-    public interface CallBack {
-        void onDownloadStart();
-
-        void onDownloadNext(DownloadStatus status);
-
-        void onDownloadComplete();
-
-        void onDownloadError(Throwable e);
-    }
 }

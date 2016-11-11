@@ -15,7 +15,6 @@ import java.text.ParseException;
 import retrofit2.Response;
 import retrofit2.Retrofit;
 import rx.Observable;
-import rx.Subscription;
 import rx.exceptions.CompositeException;
 import rx.functions.Action0;
 import rx.functions.Action1;
@@ -45,13 +44,18 @@ public class RxDownload {
     private RxDownload() {
         mDownloadHelper = new DownloadHelper();
         mFactory = new DownloadFactory(mDownloadHelper);
-
     }
 
     public static RxDownload getInstance() {
         return new RxDownload();
     }
 
+    /**
+     * 当使用Service进行下载时调用
+     *
+     * @param context context
+     * @return RxDownload
+     */
     public RxDownload context(Context context) {
         this.mContext = context;
         //startService不管调用多少次, 只会启动一个Service.
@@ -81,20 +85,33 @@ public class RxDownload {
         return this;
     }
 
-
+    /**
+     * 暂停下载地址为url的下载任务
+     *
+     * @param url 下载文件的url
+     */
     public void pauseServiceDownload(String url) {
         if (!bound) {
             Log.w(TAG, "Download Service is not bind...");
             return;
         }
-        Subscription subscription = mDownloadService.getSubscription(url);
-        Utils.unSubscribe(subscription);
+        Utils.unSubscribe(mDownloadService.getSubscription(url));
     }
 
+    /**
+     * 注册下载地址为url的广播接收器
+     * <p>
+     * 用于使用Service下载时,Activity退出后重新打开,接受后台下载的进度
+     * <p>
+     * 注意只接收下载地址为url的下载进度!!!
+     *
+     * @param url 下载文件的url
+     * @return Observable<DownloadStatus>
+     */
     public Observable<DownloadStatus> registerReceiver(final String url) {
         if (mContext == null) {
             return Observable.error(new Throwable("Context is NULL! You should call " +
-                    "##RxDownload.context(Context context)## first!"));
+                    "#RxDownload.context(Context context)# first!"));
         }
 
         Observable<DownloadStatus> observable;
@@ -115,12 +132,20 @@ public class RxDownload {
         return observable;
     }
 
-    public Observable<DownloadStatus> downloadWithService(@NonNull final String url,
-                                                          @NonNull final String saveName,
-                                                          @Nullable final String savePath) {
+    /**
+     * 使用Service下载, 提供了后台下载能力
+     *
+     * @param url      下载文件的Url
+     * @param saveName 下载文件的保存名称
+     * @param savePath 下载文件的保存路径, null使用默认的路径,默认保存在/storage/emulated/0/Download/目录下
+     * @return Observable<DownloadStatus>
+     */
+    public Observable<DownloadStatus> downloadByService(@NonNull final String url,
+                                                        @NonNull final String saveName,
+                                                        @Nullable final String savePath) {
         if (mContext == null) {
             return Observable.error(new Throwable("Context is NULL! You should call " +
-                    "##RxDownload.context(Context context)## first!"));
+                    "#RxDownload.context(Context context)# first!"));
         }
         Observable<DownloadStatus> observable;
 
@@ -143,14 +168,15 @@ public class RxDownload {
     }
 
     /**
-     * 开始下载
+     * 普通下载
      *
      * @param url      下载文件的Url
      * @param saveName 下载文件的保存名称
      * @param savePath 下载文件的保存路径, null使用默认的路径,默认保存在/storage/emulated/0/Download/目录下
-     * @return Observable
+     * @return Observable<DownloadStatus>
      */
-    public Observable<DownloadStatus> download(@NonNull final String url, @NonNull final String saveName,
+    public Observable<DownloadStatus> download(@NonNull final String url,
+                                               @NonNull final String saveName,
                                                @Nullable final String savePath) {
         return downloadDispatcher(url, saveName, savePath);
     }
@@ -180,7 +206,8 @@ public class RxDownload {
         };
     }
 
-    private Observable<DownloadStatus> downloadDispatcher(final String url, final String saveName,
+    private Observable<DownloadStatus> downloadDispatcher(final String url,
+                                                          final String saveName,
                                                           final String savePath) {
         mDownloadHelper.addDownloadRecord(url, saveName, savePath);
         return getDownloadType(url)

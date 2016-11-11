@@ -14,7 +14,6 @@ import java.util.concurrent.TimeUnit;
 import rx.Subscriber;
 import rx.Subscription;
 import rx.schedulers.Schedulers;
-import rx.subscriptions.CompositeSubscription;
 
 import static zlc.season.rxdownload.DownloadReceiver.RX_BROADCAST_DOWNLOAD_COMPLETE;
 import static zlc.season.rxdownload.DownloadReceiver.RX_BROADCAST_DOWNLOAD_ERROR;
@@ -33,7 +32,6 @@ import static zlc.season.rxdownload.DownloadReceiver.RX_BROADCAST_KEY_URL;
 public class DownloadService extends Service {
     private static final String TAG = "DownloadService";
     private DownloadBinder mBinder;
-    private CompositeSubscription mSubscriptions;
     private Map<String, Subscription> mRecord;
 
     @Override
@@ -41,7 +39,6 @@ public class DownloadService extends Service {
         super.onCreate();
         Log.d(TAG, "onCreate");
         mBinder = new DownloadBinder();
-        mSubscriptions = new CompositeSubscription();
         mRecord = new HashMap<>();
     }
 
@@ -55,7 +52,6 @@ public class DownloadService extends Service {
     public void onDestroy() {
         super.onDestroy();
         Log.d(TAG, "onDestroy");
-        mSubscriptions.clear();
     }
 
     @Nullable
@@ -118,37 +114,6 @@ public class DownloadService extends Service {
                     }
                 });
         mRecord.put(url, temp);
-    }
-
-    private boolean isRecordEmpty() {
-        return false;
-    }
-
-    static class RecordValue {
-        private Subscription subscription;
-        private DownloadReceiver receiver;
-
-        static class Builder {
-            Subscription subscription;
-            DownloadReceiver receiver;
-
-            Builder setSubscription(Subscription subscription) {
-                this.subscription = subscription;
-                return this;
-            }
-
-            Builder setReceiver(DownloadReceiver receiver) {
-                this.receiver = receiver;
-                return this;
-            }
-
-            RecordValue build() {
-                RecordValue result = new RecordValue();
-                result.subscription = subscription;
-                result.receiver = receiver;
-                return result;
-            }
-        }
     }
 
     public class DownloadBinder extends Binder {

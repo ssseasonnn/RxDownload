@@ -5,6 +5,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 
+import rx.subjects.Subject;
+
 /**
  * Author: Season(ssseasonnn@gmail.com)
  * Date: 2016/11/10
@@ -22,14 +24,14 @@ public class DownloadReceiver extends BroadcastReceiver {
     public static final String RX_BROADCAST_KEY_STATUS = "zlc.season.rxdownload.broadcast.key.status";
     public static final String RX_BROADCAST_KEY_URL = "zlc.season.rxdownload.broadcast.key.url";
 
-    private CallBack mCallBack;
     private String mKeyUrl;
+    private Subject<DownloadStatus, DownloadStatus> mSubject;
 
-
-    public DownloadReceiver(String keyUrl, CallBack callBack) {
+    public DownloadReceiver(String keyUrl, Subject<DownloadStatus, DownloadStatus> subject) {
+        mSubject = subject;
         mKeyUrl = keyUrl;
-        mCallBack = callBack;
     }
+
 
     public IntentFilter getFilter() {
         IntentFilter intentFilter = new IntentFilter();
@@ -47,23 +49,22 @@ public class DownloadReceiver extends BroadcastReceiver {
         switch (action) {
             case RX_BROADCAST_DOWNLOAD_START:
                 if (key.compareTo(mKeyUrl) == 0) {
-                    mCallBack.onDownloadStart();
                 }
                 break;
             case RX_BROADCAST_DOWNLOAD_NEXT:
                 if (key.compareTo(mKeyUrl) == 0) {
-                    mCallBack.onDownloadNext((DownloadStatus) intent.getParcelableExtra(RX_BROADCAST_KEY_STATUS));
+                    mSubject.onNext((DownloadStatus) intent.getParcelableExtra(RX_BROADCAST_KEY_STATUS));
                 }
                 break;
             case RX_BROADCAST_DOWNLOAD_COMPLETE:
                 if (key.compareTo(mKeyUrl) == 0) {
-                    mCallBack.onDownloadComplete();
+                    mSubject.onCompleted();
                 }
                 break;
             case RX_BROADCAST_DOWNLOAD_ERROR:
                 if (key.compareTo(mKeyUrl) == 0) {
                     Throwable e = (Throwable) intent.getSerializableExtra(RX_BROADCAST_KEY_EXCEPTION);
-                    mCallBack.onDownloadError(e);
+                    mSubject.onError(e);
                 }
                 break;
         }

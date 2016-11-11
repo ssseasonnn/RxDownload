@@ -20,6 +20,7 @@ import rx.functions.Action0;
 import rx.functions.Action1;
 import rx.functions.Func1;
 import rx.functions.Func2;
+import rx.subjects.PublishSubject;
 
 import static zlc.season.rxdownload.DownloadHelper.TAG;
 import static zlc.season.rxdownload.DownloadHelper.TEST_RANGE_SUPPORT;
@@ -35,6 +36,7 @@ public class RxDownload {
     private DownloadHelper mDownloadHelper;
     private DownloadFactory mFactory;
 
+    private DownloadService mDownloadService;
     private boolean alreadyBind = false;
 
     private RxDownload() {
@@ -74,12 +76,53 @@ public class RxDownload {
         intent.putExtra(DownloadService.RX_INTENT_SAVE_NAME, saveName);
         intent.putExtra(DownloadService.RX_INTENT_SAVE_PATH, savePath);
         intent.putExtra(DownloadService.RX_INTENT_DOWNLOAD_URL, url);
-        
+
         if (alreadyBind) {
             context.startService(intent);
         } else {
             context.bindService(intent, new DownloadServiceConnection(context, intent), Context.BIND_AUTO_CREATE);
         }
+    }
+
+    public void pauseServiceDownload() {
+
+    }
+
+    public void resumeServiceDownload() {
+
+    }
+
+    public Observable<DownloadStatus> downloadWithService(@NonNull final Context context,
+                                                          @NonNull final String url,
+                                                          @NonNull final String saveName,
+                                                          @Nullable final String savePath) {
+        Observable<DownloadStatus> observable;
+        PublishSubject<DownloadStatus> subject = PublishSubject.create();
+        final DownloadReceiver receiver = new DownloadReceiver(url, subject);
+        observable = subject.doOnSubscribe(new Action0() {
+            @Override
+            public void call() {
+                context.registerReceiver(receiver, receiver.getFilter());
+                final Intent intent = new Intent(context, DownloadService.class);
+                intent.setAction(DownloadService.RX_SERVICE_DOWNLOAD);
+                intent.putExtra(DownloadService.RX_INTENT_SAVE_NAME, saveName);
+                intent.putExtra(DownloadService.RX_INTENT_SAVE_PATH, savePath);
+                intent.putExtra(DownloadService.RX_INTENT_DOWNLOAD_URL, url);
+
+                if (alreadyBind) {
+                    context.startService(intent);
+                } else {
+                    context.bindService(intent, new DownloadServiceConnection(context, intent), Context
+                            .BIND_AUTO_CREATE);
+                }
+            }
+        }).doOnUnsubscribe(new Action0() {
+            @Override
+            public void call() {
+                context.unregisterReceiver(receiver);
+            }
+        });
+        return observable;
     }
 
     /**
@@ -296,8 +339,8 @@ public class RxDownload {
         @Override
         public void onServiceConnected(ComponentName name, IBinder binder) {
             DownloadService.DownloadBinder downloadBinder = (DownloadService.DownloadBinder) binder;
-            DownloadService service = downloadBinder.getService();
-            service.setRxDownload(RxDownload.this);
+            mDownloadService = downloadBinder.getService();
+            mDownloadService.setRxDownload(RxDownload.this);
             mContext.startService(mIntent);
             mContext.unbindService(this);
             alreadyBind = true;

@@ -3,6 +3,7 @@
     <string name="title_activity_main">DOWNLOAD DEMO</string>
     <string name="title_activity_basic_download">BASIC DOWNLOAD</string>
     <string name="title_activity_service_download">SERVICE DOWNLOAD</string>
+    <string name="title_activity_download_manager">下载管理</string>
     <string name="action_check_update">检查新版本</string>
 
     <string name="title">下载</string>
@@ -44,5 +45,4 @@
         <item>http://dl.m.cc.youku.com/android/phone/Youku_Android_zhangkuCPA10.apk</item>
         <item>http://120.192.69.163/dlied5.myapp.com/myapp/1104466820/1104466820/sgame/10024163_com.tencent.tmgp.sgame_u131_1.15.2.13.apk</item>
     </string-array>
-
 </resources>

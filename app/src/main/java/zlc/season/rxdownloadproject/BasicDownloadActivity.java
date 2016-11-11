@@ -27,11 +27,6 @@ import zlc.season.rxdownload.DownloadStatus;
 import zlc.season.rxdownload.RxDownload;
 
 public class BasicDownloadActivity extends AppCompatActivity {
-
-    public static final int START = 0;
-    public static final int PAUSE = 1;
-    public static final int DONE = 2;
-
     @BindView(R.id.toolbar)
     Toolbar mToolbar;
     @BindView(R.id.img)
@@ -51,19 +46,19 @@ public class BasicDownloadActivity extends AppCompatActivity {
     @BindView(R.id.fab)
     FloatingActionButton mFab;
 
-    private int downloadStatus = START;
+    private int downloadStatus = State.START.getValue();
 
     private Subscription subscription;
 
     @OnClick(R.id.status)
     public void onClick() {
-        if (downloadStatus == START) {
-            downloadStatus = PAUSE;
+        if (downloadStatus == State.START.getValue()) {
+            downloadStatus = State.PAUSE.getValue();
             mStatus.setText("暂停");
             startDownload();
-        } else if (downloadStatus == PAUSE) {
+        } else if (downloadStatus == State.PAUSE.getValue()) {
             BasicDownloadActivity.this.unSubscribe(subscription);
-            downloadStatus = START;
+            downloadStatus = State.START.getValue();
             mStatus.setText("继续");
         }
     }
@@ -115,7 +110,7 @@ public class BasicDownloadActivity extends AppCompatActivity {
                 .subscribe(new Subscriber<DownloadStatus>() {
                     @Override
                     public void onCompleted() {
-                        downloadStatus = DONE;
+                        downloadStatus = State.DONE.getValue();
                         mStatus.setText("已完成");
                         BasicDownloadActivity.this.unSubscribe(subscription);
                     }
@@ -123,7 +118,7 @@ public class BasicDownloadActivity extends AppCompatActivity {
                     @Override
                     public void onError(Throwable e) {
                         Log.w("TAG", e);
-                        downloadStatus = START;
+                        downloadStatus = State.START.getValue();
                         mStatus.setText("继续");
                         BasicDownloadActivity.this.unSubscribe(subscription);
                     }

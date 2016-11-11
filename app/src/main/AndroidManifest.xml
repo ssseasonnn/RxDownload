@@ -15,11 +15,10 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
         <activity
-            android:name=".ServiceDownloadActivity"
-            android:label="@string/title_activity_service_download"
+            android:name=".DownloadManagerActivity"
+            android:label="@string/title_activity_download_manager"
             android:theme="@style/AppTheme.NoActionBar">
         </activity>
-
         <activity
             android:name=".MainActivity"
             android:label="@string/title_activity_main"
@@ -30,7 +29,6 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
-
         <activity
             android:name=".BasicDownloadActivity"
             android:label="@string/title_activity_basic_download"
@@ -48,6 +46,12 @@
         </provider>
 
         <service android:name=".UpdateService"/>
+
+        <activity
+            android:name=".ServiceDownloadActivity"
+            android:label="@string/title_activity_service_download"
+            android:theme="@style/AppTheme.NoActionBar">
+        </activity>
     </application>
 
 </manifest>

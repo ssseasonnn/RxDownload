@@ -146,7 +146,6 @@ public class DownloadService extends Service {
 
 
     public class DownloadBinder extends Binder {
-
         DownloadService getService() {
             return DownloadService.this;
         }

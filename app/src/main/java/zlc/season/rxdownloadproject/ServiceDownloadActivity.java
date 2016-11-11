@@ -18,10 +18,14 @@ import rx.Subscriber;
 import rx.Subscription;
 import rx.android.schedulers.AndroidSchedulers;
 import rx.schedulers.Schedulers;
+import rx.subscriptions.CompositeSubscription;
 import zlc.season.rxdownload.DownloadStatus;
 import zlc.season.rxdownload.RxDownload;
 
 public class ServiceDownloadActivity extends AppCompatActivity {
+    final String url = "http://120.192.69.163/dlied5.myapp.com/myapp/1104466820/1104466820/sgame/10024163_com.tencent" +
+            ".tmgp.sgame_u131_1.15.2.13.apk";
+
     @BindView(R.id.toolbar)
     Toolbar mToolbar;
     @BindView(R.id.img)
@@ -36,7 +40,8 @@ public class ServiceDownloadActivity extends AppCompatActivity {
     Button mStatus;
 
     private int downloadStatus = State.START.getValue();
-    private Subscription subscription;
+    private CompositeSubscription mSubscriptions;
+    private RxDownload mRxDownload;
 
     @OnClick(R.id.status)
     public void onClick() {
@@ -45,22 +50,17 @@ public class ServiceDownloadActivity extends AppCompatActivity {
             mStatus.setText("暂停");
             startDownload();
         } else if (downloadStatus == State.PAUSE.getValue()) {
-            ServiceDownloadActivity.this.unSubscribe(subscription);
             downloadStatus = State.START.getValue();
             mStatus.setText("继续");
+            mRxDownload.pauseServiceDownload(url);
         }
     }
 
     @OnClick(R.id.finish)
-    public void onClickFinsh() {
+    public void onClickFinish() {
         ServiceDownloadActivity.this.finish();
     }
 
-    void unSubscribe(Subscription subscription) {
-        if (subscription != null && !subscription.isUnsubscribed()) {
-            subscription.unsubscribe();
-        }
-    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -72,18 +72,26 @@ public class ServiceDownloadActivity extends AppCompatActivity {
         String icon = "http://static.yingyonghui.com/icon/128/4196396.png";
         Picasso.with(this).load(icon).into(mImg);
         mStatus.setText("开始");
+
+        mRxDownload = RxDownload.getInstance();
+        mSubscriptions = new CompositeSubscription();
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        unSubscribe(subscription);
+        mSubscriptions.clear();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        Subscription temp = mRxDownload.registerReceiver(this, url).subscribe();
+        mSubscriptions.add(temp);
     }
 
     private void startDownload() {
-        String url = "http://120.192.69.163/dlied5.myapp.com/myapp/1104466820/1104466820/sgame/10024163_com.tencent" +
-                ".tmgp.sgame_u131_1.15.2.13.apk";
-        subscription = RxDownload.getInstance().downloadWithService(this, url, "王者荣耀.apk", null)
+        Subscription temp = mRxDownload.downloadWithService(this, url, "王者荣耀.apk", null)
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(new Subscriber<DownloadStatus>() {
@@ -91,7 +99,6 @@ public class ServiceDownloadActivity extends AppCompatActivity {
                     public void onCompleted() {
                         downloadStatus = State.DONE.getValue();
                         mStatus.setText("已完成");
-                        ServiceDownloadActivity.this.unSubscribe(subscription);
                     }
 
                     @Override
@@ -99,7 +106,6 @@ public class ServiceDownloadActivity extends AppCompatActivity {
                         Log.w("TAG", e);
                         downloadStatus = State.START.getValue();
                         mStatus.setText("继续");
-                        ServiceDownloadActivity.this.unSubscribe(subscription);
                     }
 
                     @Override
@@ -111,5 +117,6 @@ public class ServiceDownloadActivity extends AppCompatActivity {
                         mSize.setText(status.getFormatStatusString());
                     }
                 });
+        mSubscriptions.add(temp);
     }
 }

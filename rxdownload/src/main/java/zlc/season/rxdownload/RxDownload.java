@@ -15,6 +15,7 @@ import java.text.ParseException;
 import retrofit2.Response;
 import retrofit2.Retrofit;
 import rx.Observable;
+import rx.Subscription;
 import rx.exceptions.CompositeException;
 import rx.functions.Action0;
 import rx.functions.Action1;
@@ -33,11 +34,14 @@ import static zlc.season.rxdownload.DownloadHelper.TEST_RANGE_SUPPORT;
  * RxDownload
  */
 public class RxDownload {
+    private static DownloadService mDownloadService;
+    private static boolean bound = false;
+
     private DownloadHelper mDownloadHelper;
     private DownloadFactory mFactory;
 
-    private DownloadService mDownloadService;
-    private boolean alreadyBind = false;
+    private Observable<?> mObservable;
+
 
     private RxDownload() {
         mDownloadHelper = new DownloadHelper();
@@ -46,6 +50,14 @@ public class RxDownload {
     }
 
     public static RxDownload getInstance() {
+        return new RxDownload();
+    }
+
+    public static RxDownload getInstanceByContext(Context context) {
+        //startService不管调用多少次, 只会启动一个Service.
+        Intent intent = new Intent(context, DownloadService.class);
+        context.startService(intent);
+        context.bindService(intent, new DownloadServiceConnection(context), Context.BIND_AUTO_CREATE);
         return new RxDownload();
     }
 
@@ -69,27 +81,30 @@ public class RxDownload {
         return this;
     }
 
-    public void serviceDownload(@NonNull final Context context, @NonNull final String url,
-                                @NonNull final String saveName, @Nullable final String savePath) {
-        final Intent intent = new Intent(context, DownloadService.class);
-        intent.setAction(DownloadService.RX_SERVICE_DOWNLOAD);
-        intent.putExtra(DownloadService.RX_INTENT_SAVE_NAME, saveName);
-        intent.putExtra(DownloadService.RX_INTENT_SAVE_PATH, savePath);
-        intent.putExtra(DownloadService.RX_INTENT_DOWNLOAD_URL, url);
 
-        if (alreadyBind) {
-            context.startService(intent);
-        } else {
-            context.bindService(intent, new DownloadServiceConnection(context, intent), Context.BIND_AUTO_CREATE);
+    public void pauseServiceDownload(String url) {
+        if (!bound) {
+            Log.w(TAG, "Download Service is not bind...");
+            return;
         }
+        Subscription subscription = mDownloadService.getSubscription(url);
+        Utils.unSubscribe(subscription);
     }
 
-    public void pauseServiceDownload() {
-
-    }
-
-    public void resumeServiceDownload() {
-
+    public Observable<?> registerReceiver(final Context context, final String url) {
+        final DownloadReceiver receiver = mDownloadService.getReceiver(url);
+        return Observable.just(null)
+                .doOnSubscribe(new Action0() {
+                    @Override
+                    public void call() {
+                        context.registerReceiver(receiver, receiver.getFilter());
+                    }
+                }).doOnUnsubscribe(new Action0() {
+                    @Override
+                    public void call() {
+                        context.unregisterReceiver(receiver);
+                    }
+                });
     }
 
     public Observable<DownloadStatus> downloadWithService(@NonNull final Context context,
@@ -103,17 +118,30 @@ public class RxDownload {
             @Override
             public void call() {
                 context.registerReceiver(receiver, receiver.getFilter());
-                final Intent intent = new Intent(context, DownloadService.class);
-                intent.setAction(DownloadService.RX_SERVICE_DOWNLOAD);
-                intent.putExtra(DownloadService.RX_INTENT_SAVE_NAME, saveName);
-                intent.putExtra(DownloadService.RX_INTENT_SAVE_PATH, savePath);
-                intent.putExtra(DownloadService.RX_INTENT_DOWNLOAD_URL, url);
 
-                if (alreadyBind) {
-                    context.startService(intent);
+                Intent intent = new Intent(context, DownloadService.class);
+                context.startService(intent);
+
+                if (bound) {
+                    mDownloadService.startDownload(RxDownload.this, url, saveName, savePath, receiver);
                 } else {
-                    context.bindService(intent, new DownloadServiceConnection(context, intent), Context
-                            .BIND_AUTO_CREATE);
+                    context.bindService(intent, new ServiceConnection() {
+                        @Override
+                        public void onServiceConnected(ComponentName name, IBinder binder) {
+                            Log.d(TAG, "connected");
+                            mDownloadService = ((DownloadService.DownloadBinder) binder).getService();
+                            context.unbindService(this);
+                            bound = true;
+                            mDownloadService.startDownload(RxDownload.this, url, saveName, savePath, receiver);
+                        }
+
+                        @Override
+                        public void onServiceDisconnected(ComponentName name) {
+                            Log.d(TAG, "dis-connected");
+                            //注意!!这个方法只会在系统杀掉Service时才会调用!!
+                            bound = false;
+                        }
+                    }, Context.BIND_AUTO_CREATE);
                 }
             }
         }).doOnUnsubscribe(new Action0() {
@@ -327,29 +355,25 @@ public class RxDownload {
         }
     }
 
-    private class DownloadServiceConnection implements ServiceConnection {
+    private static class DownloadServiceConnection implements ServiceConnection {
         private Context mContext;
-        private Intent mIntent;
 
-        DownloadServiceConnection(Context context, Intent intent) {
+        DownloadServiceConnection(Context context) {
             mContext = context;
-            mIntent = intent;
         }
 
         @Override
         public void onServiceConnected(ComponentName name, IBinder binder) {
             DownloadService.DownloadBinder downloadBinder = (DownloadService.DownloadBinder) binder;
             mDownloadService = downloadBinder.getService();
-            mDownloadService.setRxDownload(RxDownload.this);
-            mContext.startService(mIntent);
             mContext.unbindService(this);
-            alreadyBind = true;
+            bound = true;
         }
 
         @Override
         public void onServiceDisconnected(ComponentName name) {
             //注意!!这个方法只会在系统杀掉Service时才会调用!!
-            alreadyBind = false;
+            bound = false;
         }
     }
 }

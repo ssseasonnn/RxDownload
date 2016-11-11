@@ -74,7 +74,7 @@ public class RxDownload {
         intent.putExtra(DownloadService.RX_INTENT_SAVE_NAME, saveName);
         intent.putExtra(DownloadService.RX_INTENT_SAVE_PATH, savePath);
         intent.putExtra(DownloadService.RX_INTENT_DOWNLOAD_URL, url);
-
+        
         if (alreadyBind) {
             context.startService(intent);
         } else {

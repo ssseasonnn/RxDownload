@@ -1,8 +1,6 @@
 package zlc.season.rxdownloadproject;
 
-import android.Manifest;
 import android.content.Context;
-import android.util.Log;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.ImageView;
@@ -10,15 +8,10 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import com.squareup.picasso.Picasso;
-import com.tbruyelle.rxpermissions.RxPermissions;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
-import rx.Subscriber;
-import rx.android.schedulers.AndroidSchedulers;
-import rx.functions.Action1;
-import rx.schedulers.Schedulers;
 import zlc.season.practicalrecyclerview.AbstractViewHolder;
 import zlc.season.rxdownload.DownloadReceiver;
 import zlc.season.rxdownload.DownloadStatus;
@@ -50,7 +43,7 @@ public class DownloadViewHolder extends AbstractViewHolder<DownloadBean> {
     private Context mContext;
 
     public DownloadViewHolder(ViewGroup parent) {
-        super(parent, R.layout.download_item);
+        super(parent, R.layout.service_download_item);
         ButterKnife.bind(this, itemView);
         mContext = parent.getContext();
     }
@@ -97,53 +90,7 @@ public class DownloadViewHolder extends AbstractViewHolder<DownloadBean> {
 
     //    @OnClick(R.id.status)
     public void onClick() {
-        if (data.state == DownloadBean.START) {
-            data.state = DownloadBean.PAUSE;
-            mStatus.setText("暂停");
 
-            data.subscription = RxPermissions.getInstance(mContext)
-                    .request(Manifest.permission.WRITE_EXTERNAL_STORAGE)
-                    .doOnNext(new Action1<Boolean>() {
-                        @Override
-                        public void call(Boolean granted) {
-                            if (!granted) {
-                                throw new RuntimeException("no permission");
-                            }
-                        }
-                    })
-                    .observeOn(Schedulers.io())
-                    .compose(RxDownload.getInstance().transform(data.url, data.name, null))
-                    .observeOn(AndroidSchedulers.mainThread())
-                    .subscribe(new Subscriber<DownloadStatus>() {
-                        @Override
-                        public void onCompleted() {
-                            data.state = DownloadBean.DONE;
-                            mStatus.setText("已完成");
-                            data.unsubscrbe();
-                        }
-
-                        @Override
-                        public void onError(Throwable e) {
-                            Log.w("TAG", e);
-                            data.state = DownloadBean.START;
-                            mStatus.setText("继续");
-                            data.unsubscrbe();
-                        }
-
-                        @Override
-                        public void onNext(final DownloadStatus status) {
-                            mProgress.setIndeterminate(status.isChunked);
-                            mProgress.setMax((int) status.getTotalSize());
-                            mProgress.setProgress((int) status.getDownloadSize());
-                            mPercent.setText(status.getPercent());
-                            mSize.setText(status.getFormatStatusString());
-                        }
-                    });
-        } else if (data.state == DownloadBean.PAUSE) {
-            data.unsubscrbe();
-            data.state = DownloadBean.START;
-            mStatus.setText("继续");
-        }
     }
 
     @OnClick(status)

@@ -1,5 +1,8 @@
 <resources>
-    <string name="app_name">RxDownloadProject</string>
+    <string name="app_name">RxDownload</string>
+    <string name="title_activity_main">DOWNLOAD DEMO</string>
+    <string name="title_activity_basic_download">BASIC DOWNLOAD</string>
+    <string name="title_activity_service_download">SERVICE DOWNLOAD</string>
     <string name="action_check_update">检查新版本</string>
 
     <string name="title">下载</string>
@@ -13,6 +16,7 @@
     <string name="cancel_download">取消</string>
     <string name="pause_download">暂停</string>
     <string name="continue_download">继续</string>
+
 
     <string-array name="name">
         <item>weixin.apk</item>
@@ -40,7 +44,5 @@
         <item>http://dl.m.cc.youku.com/android/phone/Youku_Android_zhangkuCPA10.apk</item>
         <item>http://120.192.69.163/dlied5.myapp.com/myapp/1104466820/1104466820/sgame/10024163_com.tencent.tmgp.sgame_u131_1.15.2.13.apk</item>
     </string-array>
-    <string name="title_activity_test">TestActivity</string>
-    <string name="title_activity_menu">MenuActivity</string>
 
 </resources>

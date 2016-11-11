@@ -32,7 +32,7 @@ public class MainActivity extends AppCompatActivity {
 
     private String weixin = "http://dldir1.qq.com/weixin/android/weixin6327android880.apk";
 
-    @OnClick({R.id.basic_download, R.id.service_download})
+    @OnClick({R.id.basic_download, R.id.service_download, R.id.download_manager})
     public void onClick(View view) {
         switch (view.getId()) {
             case R.id.basic_download:
@@ -41,6 +41,8 @@ public class MainActivity extends AppCompatActivity {
             case R.id.service_download:
                 startActivity(new Intent(this, ServiceDownloadActivity.class));
                 break;
+            case R.id.download_manager:
+                startActivity(new Intent(this, DownloadManagerActivity.class));
         }
     }
 

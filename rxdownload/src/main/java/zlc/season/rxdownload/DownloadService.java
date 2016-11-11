@@ -31,23 +31,10 @@ import static zlc.season.rxdownload.DownloadReceiver.RX_BROADCAST_KEY_URL;
  * FIXME
  */
 public class DownloadService extends Service {
-    static final String RX_SERVICE_DOWNLOAD = "zlc.season.rxdownload.service.intent.action.serviceDownload";
-
-    static final String RX_INTENT_SAVE_NAME = "zlc.season.rxdownload.service.intent.save_name";
-    static final String RX_INTENT_SAVE_PATH = "zlc.season.rxdownload.service.intent.save_path";
-    static final String RX_INTENT_DOWNLOAD_URL = "zlc.season.rxdownload.service.intent.download_url";
-
     private static final String TAG = "DownloadService";
-
-    private RxDownload mRxDownload;
-
     private DownloadBinder mBinder;
     private CompositeSubscription mSubscriptions;
-    private Map<String, RecordValue> mRecord;
-
-    public void setRxDownload(RxDownload rxDownload) {
-        mRxDownload = rxDownload;
-    }
+    private Map<String, Subscription> mRecord;
 
     @Override
     public void onCreate() {
@@ -84,16 +71,12 @@ public class DownloadService extends Service {
         return super.onUnbind(intent);
     }
 
-    public DownloadReceiver getReceiver(String url) {
-        return mRecord.get(url).receiver;
-    }
 
     public Subscription getSubscription(String url) {
-        return mRecord.get(url).subscription;
+        return mRecord.get(url);
     }
 
-    public void startDownload(RxDownload rxDownload, final String url, String saveName, String savePath,
-                              DownloadReceiver receiver) {
+    public void startDownload(RxDownload rxDownload, final String url, String saveName, String savePath) {
         Subscription temp = rxDownload.download(url, saveName, savePath)
                 .subscribeOn(Schedulers.io())
                 .sample(1, TimeUnit.SECONDS)
@@ -111,7 +94,7 @@ public class DownloadService extends Service {
                         Intent intent = new Intent(RX_BROADCAST_DOWNLOAD_COMPLETE);
                         intent.putExtra(RX_BROADCAST_KEY_URL, url);
                         sendBroadcast(intent);
-                        Utils.unSubscribe(mRecord.get(url).subscription);
+                        Utils.unSubscribe(mRecord.get(url));
                         mRecord.remove(url);
                     }
 
@@ -122,7 +105,7 @@ public class DownloadService extends Service {
                         intent.putExtra(RX_BROADCAST_KEY_URL, url);
                         intent.putExtra(RX_BROADCAST_KEY_EXCEPTION, e);
                         sendBroadcast(intent);
-                        Utils.unSubscribe(mRecord.get(url).subscription);
+                        Utils.unSubscribe(mRecord.get(url));
                         mRecord.remove(url);
                     }
 
@@ -134,52 +117,7 @@ public class DownloadService extends Service {
                         sendBroadcast(intent);
                     }
                 });
-        mRecord.put(url, new RecordValue.Builder().setSubscription(temp).setReceiver(receiver).build());
-    }
-
-    private void startDownload(final String url, String saveName, String savePath) {
-        if (mRxDownload == null) {
-            throw new NullPointerException("Some bad things happened! I can't download ...");
-        }
-        Subscription temp = mRxDownload.download(url, saveName, savePath)
-                .subscribeOn(Schedulers.io())
-                .sample(1, TimeUnit.SECONDS)
-                .subscribe(new Subscriber<DownloadStatus>() {
-                    @Override
-                    public void onStart() {
-                        super.onStart();
-                        Intent intent = new Intent(RX_BROADCAST_DOWNLOAD_START);
-                        intent.putExtra(RX_BROADCAST_KEY_URL, url);
-                        sendBroadcast(intent);
-                    }
-
-                    @Override
-                    public void onCompleted() {
-                        Intent intent = new Intent(RX_BROADCAST_DOWNLOAD_COMPLETE);
-                        intent.putExtra(RX_BROADCAST_KEY_URL, url);
-                        sendBroadcast(intent);
-                        mRecord.remove(url);
-                    }
-
-                    @Override
-                    public void onError(Throwable e) {
-                        Log.w("error", e);
-                        Intent intent = new Intent(RX_BROADCAST_DOWNLOAD_ERROR);
-                        intent.putExtra(RX_BROADCAST_KEY_URL, url);
-                        intent.putExtra(RX_BROADCAST_KEY_EXCEPTION, e);
-                        sendBroadcast(intent);
-                        mRecord.remove(url);
-                    }
-
-                    @Override
-                    public void onNext(DownloadStatus status) {
-                        Intent intent = new Intent(RX_BROADCAST_DOWNLOAD_NEXT);
-                        intent.putExtra(RX_BROADCAST_KEY_URL, url);
-                        intent.putExtra(RX_BROADCAST_KEY_STATUS, status);
-                        sendBroadcast(intent);
-                    }
-                });
-        //        mRecord.put(url, new RecordValue.Builder().setSubscription(temp).setReceiver());
+        mRecord.put(url, temp);
     }
 
     private boolean isRecordEmpty() {

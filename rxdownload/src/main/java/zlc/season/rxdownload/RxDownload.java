@@ -40,8 +40,7 @@ public class RxDownload {
     private DownloadHelper mDownloadHelper;
     private DownloadFactory mFactory;
 
-    private Observable<?> mObservable;
-
+    private Context mContext;
 
     private RxDownload() {
         mDownloadHelper = new DownloadHelper();
@@ -53,12 +52,13 @@ public class RxDownload {
         return new RxDownload();
     }
 
-    public static RxDownload getInstanceByContext(Context context) {
+    public RxDownload context(Context context) {
+        this.mContext = context;
         //startService不管调用多少次, 只会启动一个Service.
         Intent intent = new Intent(context, DownloadService.class);
         context.startService(intent);
         context.bindService(intent, new DownloadServiceConnection(context), Context.BIND_AUTO_CREATE);
-        return new RxDownload();
+        return this;
     }
 
     public RxDownload defaultSavePath(String savePath) {
@@ -91,63 +91,52 @@ public class RxDownload {
         Utils.unSubscribe(subscription);
     }
 
-    public Observable<?> registerReceiver(final Context context, final String url) {
-        final DownloadReceiver receiver = mDownloadService.getReceiver(url);
-        return Observable.just(null)
-                .doOnSubscribe(new Action0() {
-                    @Override
-                    public void call() {
-                        context.registerReceiver(receiver, receiver.getFilter());
-                    }
-                }).doOnUnsubscribe(new Action0() {
-                    @Override
-                    public void call() {
-                        context.unregisterReceiver(receiver);
-                    }
-                });
-    }
+    public Observable<DownloadStatus> registerReceiver(final String url) {
+        if (mContext == null) {
+            return Observable.error(new Throwable("Context is NULL! You should call " +
+                    "##RxDownload.context(Context context)## first!"));
+        }
 
-    public Observable<DownloadStatus> downloadWithService(@NonNull final Context context,
-                                                          @NonNull final String url,
-                                                          @NonNull final String saveName,
-                                                          @Nullable final String savePath) {
         Observable<DownloadStatus> observable;
         PublishSubject<DownloadStatus> subject = PublishSubject.create();
         final DownloadReceiver receiver = new DownloadReceiver(url, subject);
+
         observable = subject.doOnSubscribe(new Action0() {
             @Override
             public void call() {
-                context.registerReceiver(receiver, receiver.getFilter());
-
-                Intent intent = new Intent(context, DownloadService.class);
-                context.startService(intent);
-
-                if (bound) {
-                    mDownloadService.startDownload(RxDownload.this, url, saveName, savePath, receiver);
-                } else {
-                    context.bindService(intent, new ServiceConnection() {
-                        @Override
-                        public void onServiceConnected(ComponentName name, IBinder binder) {
-                            Log.d(TAG, "connected");
-                            mDownloadService = ((DownloadService.DownloadBinder) binder).getService();
-                            context.unbindService(this);
-                            bound = true;
-                            mDownloadService.startDownload(RxDownload.this, url, saveName, savePath, receiver);
-                        }
-
-                        @Override
-                        public void onServiceDisconnected(ComponentName name) {
-                            Log.d(TAG, "dis-connected");
-                            //注意!!这个方法只会在系统杀掉Service时才会调用!!
-                            bound = false;
-                        }
-                    }, Context.BIND_AUTO_CREATE);
-                }
+                mContext.registerReceiver(receiver, receiver.getFilter());
             }
         }).doOnUnsubscribe(new Action0() {
             @Override
             public void call() {
-                context.unregisterReceiver(receiver);
+                mContext.unregisterReceiver(receiver);
+            }
+        });
+        return observable;
+    }
+
+    public Observable<DownloadStatus> downloadWithService(@NonNull final String url,
+                                                          @NonNull final String saveName,
+                                                          @Nullable final String savePath) {
+        if (mContext == null) {
+            return Observable.error(new Throwable("Context is NULL! You should call " +
+                    "##RxDownload.context(Context context)## first!"));
+        }
+        Observable<DownloadStatus> observable;
+
+        PublishSubject<DownloadStatus> subject = PublishSubject.create();
+        final DownloadReceiver receiver = new DownloadReceiver(url, subject);
+
+        observable = subject.doOnSubscribe(new Action0() {
+            @Override
+            public void call() {
+                mContext.registerReceiver(receiver, receiver.getFilter());
+                mDownloadService.startDownload(RxDownload.this, url, saveName, savePath);
+            }
+        }).doOnUnsubscribe(new Action0() {
+            @Override
+            public void call() {
+                mContext.unregisterReceiver(receiver);
             }
         });
         return observable;

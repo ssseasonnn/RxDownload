@@ -73,7 +73,7 @@ public class ServiceDownloadActivity extends AppCompatActivity {
         Picasso.with(this).load(icon).into(mImg);
         mStatus.setText("开始");
 
-        mRxDownload = RxDownload.getInstance();
+        mRxDownload = RxDownload.getInstance().context(this);
         mSubscriptions = new CompositeSubscription();
     }
 
@@ -86,12 +86,35 @@ public class ServiceDownloadActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        Subscription temp = mRxDownload.registerReceiver(this, url).subscribe();
+        Subscription temp = mRxDownload.registerReceiver(url)
+                .subscribe(new Subscriber<DownloadStatus>() {
+                    @Override
+                    public void onCompleted() {
+                        downloadStatus = State.DONE.getValue();
+                        mStatus.setText("已完成");
+                    }
+
+                    @Override
+                    public void onError(Throwable e) {
+                        Log.w("TAG", e);
+                        downloadStatus = State.START.getValue();
+                        mStatus.setText("继续");
+                    }
+
+                    @Override
+                    public void onNext(final DownloadStatus status) {
+                        mProgress.setIndeterminate(status.isChunked);
+                        mProgress.setMax((int) status.getTotalSize());
+                        mProgress.setProgress((int) status.getDownloadSize());
+                        mPercent.setText(status.getPercent());
+                        mSize.setText(status.getFormatStatusString());
+                    }
+                });
         mSubscriptions.add(temp);
     }
 
     private void startDownload() {
-        Subscription temp = mRxDownload.downloadWithService(this, url, "王者荣耀.apk", null)
+        Subscription temp = mRxDownload.downloadWithService(url, "王者荣耀.apk", null)
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(new Subscriber<DownloadStatus>() {

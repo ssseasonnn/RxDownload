@@ -29,8 +29,8 @@
 
 
     <Button
-        android:id="@+id/download_manager"
+        android:id="@+id/app_market"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Download Manager"/>
+        android:text="APP MARKET"/>
 </LinearLayout>

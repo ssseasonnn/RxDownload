@@ -1,4 +1,4 @@
-package zlc.season.rxdownloadproject;
+package zlc.season.rxdownloadproject.download_manager;
 
 import rx.Subscription;
 import zlc.season.practicalrecyclerview.ItemType;

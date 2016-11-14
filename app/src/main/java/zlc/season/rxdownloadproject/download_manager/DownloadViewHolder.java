@@ -1,4 +1,4 @@
-package zlc.season.rxdownloadproject;
+package zlc.season.rxdownloadproject.download_manager;
 
 import android.content.Context;
 import android.view.ViewGroup;
@@ -18,6 +18,7 @@ import rx.schedulers.Schedulers;
 import zlc.season.practicalrecyclerview.AbstractViewHolder;
 import zlc.season.rxdownload.DownloadStatus;
 import zlc.season.rxdownload.RxDownload;
+import zlc.season.rxdownloadproject.R;
 
 import static zlc.season.rxdownloadproject.R.id.percent;
 import static zlc.season.rxdownloadproject.R.id.status;

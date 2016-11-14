@@ -1,4 +1,4 @@
-package zlc.season.rxdownloadproject;
+package zlc.season.rxdownloadproject.service_download;
 
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
@@ -21,6 +21,8 @@ import rx.schedulers.Schedulers;
 import rx.subscriptions.CompositeSubscription;
 import zlc.season.rxdownload.DownloadStatus;
 import zlc.season.rxdownload.RxDownload;
+import zlc.season.rxdownloadproject.R;
+import zlc.season.rxdownloadproject.State;
 
 public class ServiceDownloadActivity extends AppCompatActivity {
     final String url = "http://120.192.69.163/dlied5.myapp.com/myapp/1104466820/1104466820/sgame/10024163_com.tencent" +

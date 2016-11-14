@@ -1,4 +1,4 @@
-package zlc.season.rxdownloadproject;
+package zlc.season.rxdownloadproject.download_manager;
 
 import android.content.res.Resources;
 import android.os.Bundle;
@@ -19,6 +19,7 @@ import butterknife.ButterKnife;
 import butterknife.OnClick;
 import zlc.season.practicalrecyclerview.PracticalRecyclerView;
 import zlc.season.practicalrecyclerview.SectionItem;
+import zlc.season.rxdownloadproject.R;
 
 public class DownloadManagerActivity extends AppCompatActivity {
 
@@ -61,7 +62,7 @@ public class DownloadManagerActivity extends AppCompatActivity {
 
     private void loadData() {
         Resources res = getResources();
-        final String[] names = res.getStringArray(R.array.name);
+        final String[] names = res.getStringArray(R.array.save_name);
         final String[] images = res.getStringArray(R.array.image);
         final String[] urls = res.getStringArray(R.array.url);
         List<DownloadBean> list = new ArrayList<>();

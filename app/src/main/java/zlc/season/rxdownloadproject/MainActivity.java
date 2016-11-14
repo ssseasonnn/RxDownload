@@ -16,6 +16,9 @@ import android.widget.LinearLayout;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
+import zlc.season.rxdownloadproject.basic_download.BasicDownloadActivity;
+import zlc.season.rxdownloadproject.download_manager.AppMarketActivity;
+import zlc.season.rxdownloadproject.service_download.ServiceDownloadActivity;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -32,7 +35,7 @@ public class MainActivity extends AppCompatActivity {
 
     private String weixin = "http://dldir1.qq.com/weixin/android/weixin6327android880.apk";
 
-    @OnClick({R.id.basic_download, R.id.service_download, R.id.download_manager})
+    @OnClick({R.id.basic_download, R.id.service_download, R.id.app_market})
     public void onClick(View view) {
         switch (view.getId()) {
             case R.id.basic_download:
@@ -41,8 +44,8 @@ public class MainActivity extends AppCompatActivity {
             case R.id.service_download:
                 startActivity(new Intent(this, ServiceDownloadActivity.class));
                 break;
-            case R.id.download_manager:
-                startActivity(new Intent(this, DownloadManagerActivity.class));
+            case R.id.app_market:
+                startActivity(new Intent(this, AppMarketActivity.class));
         }
     }
 

@@ -1,4 +1,4 @@
-package zlc.season.rxdownloadproject;
+package zlc.season.rxdownloadproject.basic_download;
 
 import android.Manifest;
 import android.os.Bundle;
@@ -25,6 +25,8 @@ import rx.functions.Action1;
 import rx.schedulers.Schedulers;
 import zlc.season.rxdownload.DownloadStatus;
 import zlc.season.rxdownload.RxDownload;
+import zlc.season.rxdownloadproject.R;
+import zlc.season.rxdownloadproject.State;
 
 public class BasicDownloadActivity extends AppCompatActivity {
     @BindView(R.id.toolbar)

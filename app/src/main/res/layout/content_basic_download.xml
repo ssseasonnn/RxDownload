@@ -11,7 +11,7 @@
     android:paddingRight="@dimen/activity_horizontal_margin"
     android:paddingTop="@dimen/activity_vertical_margin"
     app:layout_behavior="@string/appbar_scrolling_view_behavior"
-    tools:context="zlc.season.rxdownloadproject.BasicDownloadActivity"
+    tools:context="zlc.season.rxdownloadproject.basic_download.BasicDownloadActivity"
     tools:showIn="@layout/activity_basic_download">
 
     <LinearLayout

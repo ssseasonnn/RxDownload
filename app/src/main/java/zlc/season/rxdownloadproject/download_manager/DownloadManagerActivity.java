@@ -17,8 +17,11 @@ import java.util.List;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
+import rx.functions.Func1;
 import zlc.season.practicalrecyclerview.PracticalRecyclerView;
 import zlc.season.practicalrecyclerview.SectionItem;
+import zlc.season.rxdownload.DownloadRecord;
+import zlc.season.rxdownload.RxDownload;
 import zlc.season.rxdownloadproject.R;
 
 public class DownloadManagerActivity extends AppCompatActivity {
@@ -61,6 +64,14 @@ public class DownloadManagerActivity extends AppCompatActivity {
     }
 
     private void loadData() {
+        RxDownload.getInstance().context(this).getDownloadRecords()
+                .map(new Func1<List<DownloadRecord>, List<DownloadBean>>() {
+                    @Override
+                    public List<DownloadBean> call(List<DownloadRecord> downloadRecords) {
+
+                        return null;
+                    }
+                });
         Resources res = getResources();
         final String[] names = res.getStringArray(R.array.save_name);
         final String[] images = res.getStringArray(R.array.image);
@@ -71,7 +82,6 @@ public class DownloadManagerActivity extends AppCompatActivity {
             temp.name = names[i];
             temp.image = images[i];
             temp.url = urls[i];
-            temp.state = DownloadBean.START;
             list.add(temp);
         }
         mAdapter.addAll(list);

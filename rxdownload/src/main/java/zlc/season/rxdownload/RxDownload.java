@@ -11,6 +11,7 @@ import android.util.Log;
 
 import java.io.IOException;
 import java.text.ParseException;
+import java.util.List;
 
 import retrofit2.Response;
 import retrofit2.Retrofit;
@@ -111,6 +112,35 @@ public class RxDownload {
             }
         });
         return observable;
+    }
+
+    /**
+     * 获取正在下载的任务
+     *
+     * @return Observable<List<DownloadRecord>>
+     */
+    public Observable<List<DownloadRecord>> getDownloadRecords() {
+        if (mContext == null) {
+            return Observable.error(new Throwable("Context is NULL! You should call " +
+                    "#RxDownload.context(Context context)# first!"));
+        }
+        DataBaseHelper dataBaseHelper = new DataBaseHelper(new DbOpenHelper(mContext));
+        return dataBaseHelper.queryDownloadRecords();
+    }
+
+    /**
+     * 获取下载地址为url的下载状态
+     *
+     * @param url 下载地址
+     * @return Observable<DownloadStatus>
+     */
+    public Observable<DownloadStatus> getDownloadStatus(String url) {
+        if (mContext == null) {
+            return Observable.error(new Throwable("Context is NULL! You should call " +
+                    "#RxDownload.context(Context context)# first!"));
+        }
+        DataBaseHelper dataBaseHelper = new DataBaseHelper(new DbOpenHelper(mContext));
+        return dataBaseHelper.queryDownloadStatus(url);
     }
 
     /**

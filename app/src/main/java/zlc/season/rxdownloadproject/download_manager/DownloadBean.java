@@ -10,10 +10,6 @@ import zlc.season.practicalrecyclerview.ItemType;
  * FIXME
  */
 public class DownloadBean implements ItemType {
-    public static final int START = 0;
-    public static final int PAUSE = 1;
-    public static final int DONE = 2;
-
     String name;
     String url;
     String image;

@@ -89,7 +89,7 @@
         android:layout_alignParentLeft="true"
         android:layout_alignParentStart="true"
         android:layout_centerVertical="true"
-        android:text="Service download demo. 使用Service进行下载的示例程序, 点击开始即开始下载,退出Activity之后仍然会继续下载, 下次进入Activity仍可看见当前下载进度. "/>
+        android:text="Service download demo. 使用Service进行下载的示例程序, 点击开始即开始下载,取消订阅不会暂停下载,下次进入Activity仍可看见当前下载进度. "/>
 
     <Button
         android:id="@+id/finish"

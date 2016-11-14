@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-              xmlns:tools="http://schemas.android.com/tools"
               android:layout_width="match_parent"
               android:layout_height="?android:attr/listPreferredItemHeight"
               android:clickable="true"
@@ -56,14 +55,30 @@
             android:text="0.0KB/0.0KB"/>
     </LinearLayout>
 
-
-    <Button
-        android:id="@+id/status"
+    <LinearLayout
         android:layout_width="50dp"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center_vertical"
-        android:background="@null"
-        android:textColor="@color/colorAccent"
-        tools:text="已完成"/>
+        android:layout_height="match_parent"
+        android:gravity="center"
+        android:orientation="vertical">
+
+        <Button
+            android:id="@+id/status"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:background="@null"
+            android:text="开始"
+            android:textColor="@color/colorAccent"/>
+
+        <Button
+            android:id="@+id/delete"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:background="@null"
+            android:text="删除"
+            android:textColor="@color/colorAccent"/>
+    </LinearLayout>
+
 
 </LinearLayout>

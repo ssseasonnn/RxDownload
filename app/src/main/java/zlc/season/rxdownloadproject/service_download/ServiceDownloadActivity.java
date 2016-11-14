@@ -17,6 +17,7 @@ import butterknife.OnClick;
 import rx.Subscriber;
 import rx.Subscription;
 import rx.android.schedulers.AndroidSchedulers;
+import rx.functions.Action1;
 import rx.schedulers.Schedulers;
 import rx.subscriptions.CompositeSubscription;
 import zlc.season.rxdownload.DownloadStatus;
@@ -42,8 +43,9 @@ public class ServiceDownloadActivity extends AppCompatActivity {
     Button mStatus;
 
     private int downloadStatus = State.START.getValue();
-    private CompositeSubscription mSubscriptions;
     private RxDownload mRxDownload;
+
+    private CompositeSubscription mSubscriptions;
 
     @OnClick(R.id.status)
     public void onClick() {
@@ -54,6 +56,9 @@ public class ServiceDownloadActivity extends AppCompatActivity {
         } else if (downloadStatus == State.PAUSE.getValue()) {
             downloadStatus = State.START.getValue();
             mStatus.setText("继续");
+            /**
+             * 暂停下载
+             */
             mRxDownload.pauseServiceDownload(url);
         }
     }
@@ -82,32 +87,22 @@ public class ServiceDownloadActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        /**
+         * 取消订阅,不会暂停下载
+         */
         mSubscriptions.clear();
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        Subscription temp = mRxDownload.registerReceiver(url)
-                .subscribe(new Subscriber<DownloadStatus>() {
+        /**
+         * 读取下载状态
+         */
+        Subscription query = mRxDownload.getDownloadStatus(url)
+                .subscribe(new Action1<DownloadStatus>() {
                     @Override
-                    public void onCompleted() {
-                        downloadStatus = State.DONE.getValue();
-                        mStatus.setText("已完成");
-                    }
-
-                    @Override
-                    public void onError(Throwable e) {
-                        Log.w("TAG", e);
-                        downloadStatus = State.START.getValue();
-                        mStatus.setText("继续");
-                    }
-
-                    @Override
-                    public void onNext(final DownloadStatus status) {
-                        downloadStatus = State.PAUSE.getValue();
-                        mStatus.setText("暂停");
-
+                    public void call(DownloadStatus status) {
                         mProgress.setIndeterminate(status.isChunked);
                         mProgress.setMax((int) status.getTotalSize());
                         mProgress.setProgress((int) status.getDownloadSize());
@@ -115,36 +110,46 @@ public class ServiceDownloadActivity extends AppCompatActivity {
                         mSize.setText(status.getFormatStatusString());
                     }
                 });
+
+        /**
+         * 注册广播接收器, 用于接收下载进度
+         */
+        Subscription temp = mRxDownload.registerReceiver(url).subscribe(new CustomSubscriber());
+
         mSubscriptions.add(temp);
+        mSubscriptions.add(query);
     }
 
     private void startDownload() {
         Subscription temp = mRxDownload.downloadThroughService(url, "王者荣耀.apk", null)
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(new Subscriber<DownloadStatus>() {
-                    @Override
-                    public void onCompleted() {
-                        downloadStatus = State.DONE.getValue();
-                        mStatus.setText("已完成");
-                    }
-
-                    @Override
-                    public void onError(Throwable e) {
-                        Log.w("TAG", e);
-                        downloadStatus = State.START.getValue();
-                        mStatus.setText("继续");
-                    }
-
-                    @Override
-                    public void onNext(final DownloadStatus status) {
-                        mProgress.setIndeterminate(status.isChunked);
-                        mProgress.setMax((int) status.getTotalSize());
-                        mProgress.setProgress((int) status.getDownloadSize());
-                        mPercent.setText(status.getPercent());
-                        mSize.setText(status.getFormatStatusString());
-                    }
-                });
+                .subscribe(new CustomSubscriber());
         mSubscriptions.add(temp);
+    }
+
+    class CustomSubscriber extends Subscriber<DownloadStatus> {
+
+        @Override
+        public void onCompleted() {
+            downloadStatus = State.DONE.getValue();
+            mStatus.setText("已完成");
+        }
+
+        @Override
+        public void onError(Throwable e) {
+            Log.w("TAG", e);
+            downloadStatus = State.START.getValue();
+            mStatus.setText("继续");
+        }
+
+        @Override
+        public void onNext(final DownloadStatus status) {
+            mProgress.setIndeterminate(status.isChunked);
+            mProgress.setMax((int) status.getTotalSize());
+            mProgress.setProgress((int) status.getDownloadSize());
+            mPercent.setText(status.getPercent());
+            mSize.setText(status.getFormatStatusString());
+        }
     }
 }

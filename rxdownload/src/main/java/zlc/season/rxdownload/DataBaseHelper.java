@@ -18,21 +18,21 @@ import rx.schedulers.Schedulers;
  * Time: 10:02
  * FIXME
  */
-public class DataBaseHelper {
+class DataBaseHelper {
     private final BriteDatabase db;
 
-    public DataBaseHelper(DbOpenHelper dbOpenHelper) {
+    DataBaseHelper(DbOpenHelper dbOpenHelper) {
         this.db = new SqlBrite.Builder().build().wrapDatabaseHelper(dbOpenHelper, Schedulers.io());
     }
 
-    public Observable<List<DownloadRecord>> queryAllDownloadRecord() {
+    Observable<List<DownloadRecord>> queryDownloadRecords() {
         return Observable.create(new Observable.OnSubscribe<List<DownloadRecord>>() {
             @Override
             public void call(Subscriber<? super List<DownloadRecord>> subscriber) {
                 Cursor cursor = db.query("select * from " + Db.DownloadRecordTable.TABLE_NAME);
                 List<DownloadRecord> result = new ArrayList<>();
                 while (cursor.moveToNext()) {
-                    result.add(Db.DownloadRecordTable.parseCursor(cursor));
+                    result.add(Db.DownloadRecordTable.getDownloadRecord(cursor));
                 }
                 subscriber.onNext(result);
                 subscriber.onCompleted();
@@ -41,21 +41,35 @@ public class DataBaseHelper {
         });
     }
 
-    public boolean checkDownloadRecordNotExists(String url) {
+    Observable<DownloadStatus> queryDownloadStatus(final String url) {
+        return Observable.create(new Observable.OnSubscribe<DownloadStatus>() {
+            @Override
+            public void call(Subscriber<? super DownloadStatus> subscriber) {
+                Cursor cursor = db.query("select * from " + Db.DownloadRecordTable.TABLE_NAME + " where url=?", url);
+                while (cursor.moveToNext()) {
+                    subscriber.onNext(Db.DownloadRecordTable.getDownloadStatus(cursor));
+                }
+                subscriber.onCompleted();
+                cursor.close();
+            }
+        });
+    }
+
+    boolean checkDownloadRecordNotExists(String url) {
         Cursor cursor = db.query("select " + Db.DownloadRecordTable.COLUMN_ID + " from "
                 + Db.DownloadRecordTable.TABLE_NAME + " where url=?", url);
         return cursor.getCount() == 0;
     }
 
-    public long insertDownloadRecord(String url) {
+    long insertDownloadRecord(String url) {
         return db.insert(Db.DownloadRecordTable.TABLE_NAME, Db.DownloadRecordTable.createRecordThroughUrl(url));
     }
 
-    public long updateDownloadRecord(String url, DownloadStatus status) {
+    long updateDownloadRecord(String url, DownloadStatus status) {
         return db.update(Db.DownloadRecordTable.TABLE_NAME, Db.DownloadRecordTable.createRecord(status), "url=?", url);
     }
 
-    public int deleteDownloadRecord(String url) {
+    int deleteDownloadRecord(String url) {
         return db.delete(Db.DownloadRecordTable.TABLE_NAME, "url=?", url);
     }
 }

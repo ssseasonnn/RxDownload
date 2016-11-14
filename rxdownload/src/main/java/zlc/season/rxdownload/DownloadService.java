@@ -9,7 +9,6 @@ import android.util.Log;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 import rx.Subscriber;
 import rx.Subscription;
@@ -37,36 +36,35 @@ public class DownloadService extends Service {
     @Override
     public void onCreate() {
         super.onCreate();
-        Log.d(TAG, "onCreate");
+        Log.d(TAG, "Create Download Service...");
         mBinder = new DownloadBinder();
         mRecord = new HashMap<>();
     }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        Log.d(TAG, "onStart");
+        Log.d(TAG, "Start Download Service...");
         return super.onStartCommand(intent, flags, startId);
     }
 
     @Override
     public void onDestroy() {
         super.onDestroy();
-        Log.d(TAG, "onDestroy");
+        Log.d(TAG, "Destroy Download Service...");
     }
 
     @Nullable
     @Override
     public IBinder onBind(Intent intent) {
-        Log.d(TAG, "onBind");
+        Log.d(TAG, "Bind Download Service...");
         return mBinder;
     }
 
     @Override
     public boolean onUnbind(Intent intent) {
-        Log.d(TAG, "onUnBind");
+        Log.d(TAG, "Unbind Download Service...");
         return super.onUnbind(intent);
     }
-
 
     public Subscription getSubscription(String url) {
         return mRecord.get(url);
@@ -75,7 +73,6 @@ public class DownloadService extends Service {
     public void startDownload(RxDownload rxDownload, final String url, String saveName, String savePath) {
         Subscription temp = rxDownload.download(url, saveName, savePath)
                 .subscribeOn(Schedulers.io())
-                .sample(1, TimeUnit.SECONDS)
                 .subscribe(new Subscriber<DownloadStatus>() {
                     @Override
                     public void onStart() {

@@ -51,17 +51,13 @@ public class RxDownload {
     }
 
     /**
-     * 当使用Service进行下载时调用
+     * 普通下载时不需要context, 使用Service下载时需要context;
      *
      * @param context context
      * @return RxDownload
      */
     public RxDownload context(Context context) {
         this.mContext = context;
-        //startService不管调用多少次, 只会启动一个Service.
-        Intent intent = new Intent(context, DownloadService.class);
-        context.startService(intent);
-        context.bindService(intent, new DownloadServiceConnection(context), Context.BIND_AUTO_CREATE);
         return this;
     }
 
@@ -86,24 +82,9 @@ public class RxDownload {
     }
 
     /**
-     * 暂停下载地址为url的下载任务
-     *
-     * @param url 下载文件的url
-     */
-    public void pauseServiceDownload(String url) {
-        if (!bound) {
-            Log.w(TAG, "Download Service is not bind...");
-            return;
-        }
-        Utils.unSubscribe(mDownloadService.getSubscription(url));
-    }
-
-    /**
-     * 注册下载地址为url的广播接收器
+     * 注册Service中下载地址为url的广播接收器,用于接收Service下载进度
      * <p>
-     * 用于使用Service下载时,Activity退出后重新打开,接受后台下载的进度
-     * <p>
-     * 注意只接收下载地址为url的下载进度!!!
+     * 注意只接收下载地址为url的下载进度, 取消订阅即取消注册广播接收器
      *
      * @param url 下载文件的url
      * @return Observable<DownloadStatus>
@@ -133,16 +114,31 @@ public class RxDownload {
     }
 
     /**
-     * 使用Service下载, 提供了后台下载能力
+     * 暂停Service中下载地址为url的下载任务
+     *
+     * @param url 下载文件的url
+     */
+    public void pauseServiceDownload(String url) {
+        if (!bound) {
+            Log.w(TAG, "Download Service is not Bind...");
+            return;
+        }
+        Utils.unSubscribe(mDownloadService.getSubscription(url));
+    }
+
+    /**
+     * 使用Service下载,同时注册广播接收器
+     * <p>
+     * 取消订阅时会取消注册广播接收器, 但不会暂停下载
      *
      * @param url      下载文件的Url
      * @param saveName 下载文件的保存名称
      * @param savePath 下载文件的保存路径, null使用默认的路径,默认保存在/storage/emulated/0/Download/目录下
      * @return Observable<DownloadStatus>
      */
-    public Observable<DownloadStatus> downloadByService(@NonNull final String url,
-                                                        @NonNull final String saveName,
-                                                        @Nullable final String savePath) {
+    public Observable<DownloadStatus> downloadThroughService(@NonNull final String url,
+                                                             @NonNull final String saveName,
+                                                             @Nullable final String savePath) {
         if (mContext == null) {
             return Observable.error(new Throwable("Context is NULL! You should call " +
                     "#RxDownload.context(Context context)# first!"));
@@ -156,7 +152,26 @@ public class RxDownload {
             @Override
             public void call() {
                 mContext.registerReceiver(receiver, receiver.getFilter());
-                mDownloadService.startDownload(RxDownload.this, url, saveName, savePath);
+                //startService不管调用多少次, 只会启动一个Service.
+                Intent intent = new Intent(mContext, DownloadService.class);
+                mContext.startService(intent);
+                mContext.bindService(intent, new ServiceConnection() {
+                    @Override
+                    public void onServiceConnected(ComponentName name, IBinder binder) {
+                        DownloadService.DownloadBinder downloadBinder = (DownloadService.DownloadBinder) binder;
+                        mDownloadService = downloadBinder.getService();
+                        mContext.unbindService(this);
+                        bound = true;
+
+                        mDownloadService.startDownload(RxDownload.this, url, saveName, savePath);
+                    }
+
+                    @Override
+                    public void onServiceDisconnected(ComponentName name) {
+                        //注意!!这个方法只会在系统杀掉Service时才会调用!!
+                        bound = false;
+                    }
+                }, Context.BIND_AUTO_CREATE);
             }
         }).doOnUnsubscribe(new Action0() {
             @Override
@@ -168,7 +183,9 @@ public class RxDownload {
     }
 
     /**
-     * 普通下载
+     * 普通下载, 不使用Service
+     * <p>
+     * 取消订阅则暂停下载
      *
      * @param url      下载文件的Url
      * @param saveName 下载文件的保存名称
@@ -182,7 +199,7 @@ public class RxDownload {
     }
 
     /**
-     * 提供给RxJava Compose操作符使用
+     * 提供给RxJava Compose操作符使用, Normal Download
      *
      * @param url      下载文件的Url
      * @param saveName 下载文件的保存名称
@@ -200,6 +217,31 @@ public class RxDownload {
                     @Override
                     public Observable<DownloadStatus> call(T t) {
                         return download(url, saveName, savePath);
+                    }
+                });
+            }
+        };
+    }
+
+    /**
+     * 提供给RxJava Compose操作符使用, Download Through Service
+     *
+     * @param url      下载文件的Url
+     * @param saveName 下载文件的保存名称
+     * @param savePath 下载文件的保存路径, null使用默认的路径,默认保存在/storage/emulated/0/Download/目录下
+     * @param <T>      T
+     * @return Transformer
+     */
+    public <T> Observable.Transformer<T, DownloadStatus> transformService(@NonNull final String url,
+                                                                          @NonNull final String saveName,
+                                                                          @Nullable final String savePath) {
+        return new Observable.Transformer<T, DownloadStatus>() {
+            @Override
+            public Observable<DownloadStatus> call(Observable<T> observable) {
+                return observable.flatMap(new Func1<T, Observable<DownloadStatus>>() {
+                    @Override
+                    public Observable<DownloadStatus> call(T t) {
+                        return downloadThroughService(url, saveName, savePath);
                     }
                 });
             }
@@ -264,7 +306,7 @@ public class RxDownload {
         }
     }
 
-    private Observable<DownloadType> getWhenFileNotExists(@NonNull final String url) {
+    private Observable<DownloadType> getWhenFileNotExists(final String url) {
         return mDownloadHelper.getDownloadApi()
                 .getHttpHeader(TEST_RANGE_SUPPORT, url)
                 .map(new Func1<Response<Void>, DownloadType>() {
@@ -368,28 +410,6 @@ public class RxDownload {
                     .buildNormalDownload();
         } else {
             return mFactory.fileLength(contentLength).buildAlreadyDownload();
-        }
-    }
-
-    private static class DownloadServiceConnection implements ServiceConnection {
-        private Context mContext;
-
-        DownloadServiceConnection(Context context) {
-            mContext = context;
-        }
-
-        @Override
-        public void onServiceConnected(ComponentName name, IBinder binder) {
-            DownloadService.DownloadBinder downloadBinder = (DownloadService.DownloadBinder) binder;
-            mDownloadService = downloadBinder.getService();
-            mContext.unbindService(this);
-            bound = true;
-        }
-
-        @Override
-        public void onServiceDisconnected(ComponentName name) {
-            //注意!!这个方法只会在系统杀掉Service时才会调用!!
-            bound = false;
         }
     }
 }

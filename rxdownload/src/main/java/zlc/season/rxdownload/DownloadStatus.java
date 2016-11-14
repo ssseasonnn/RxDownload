@@ -38,6 +38,12 @@ public class DownloadStatus implements Parcelable {
         this.totalSize = totalSize;
     }
 
+    public DownloadStatus(boolean isChunked, long downloadSize, long totalSize) {
+        this.isChunked = isChunked;
+        this.downloadSize = downloadSize;
+        this.totalSize = totalSize;
+    }
+
     protected DownloadStatus(Parcel in) {
         this.isChunked = in.readByte() != 0;
         this.totalSize = in.readLong();

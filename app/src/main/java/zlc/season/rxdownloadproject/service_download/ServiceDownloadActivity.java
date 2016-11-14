@@ -105,6 +105,9 @@ public class ServiceDownloadActivity extends AppCompatActivity {
 
                     @Override
                     public void onNext(final DownloadStatus status) {
+                        downloadStatus = State.PAUSE.getValue();
+                        mStatus.setText("暂停");
+
                         mProgress.setIndeterminate(status.isChunked);
                         mProgress.setMax((int) status.getTotalSize());
                         mProgress.setProgress((int) status.getDownloadSize());

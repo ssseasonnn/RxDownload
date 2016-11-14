@@ -9,6 +9,7 @@ import android.util.Log;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import rx.Subscriber;
 import rx.Subscription;
@@ -17,7 +18,6 @@ import rx.schedulers.Schedulers;
 import static zlc.season.rxdownload.DownloadReceiver.RX_BROADCAST_DOWNLOAD_COMPLETE;
 import static zlc.season.rxdownload.DownloadReceiver.RX_BROADCAST_DOWNLOAD_ERROR;
 import static zlc.season.rxdownload.DownloadReceiver.RX_BROADCAST_DOWNLOAD_NEXT;
-import static zlc.season.rxdownload.DownloadReceiver.RX_BROADCAST_DOWNLOAD_START;
 import static zlc.season.rxdownload.DownloadReceiver.RX_BROADCAST_KEY_EXCEPTION;
 import static zlc.season.rxdownload.DownloadReceiver.RX_BROADCAST_KEY_STATUS;
 import static zlc.season.rxdownload.DownloadReceiver.RX_BROADCAST_KEY_URL;
@@ -31,14 +31,16 @@ import static zlc.season.rxdownload.DownloadReceiver.RX_BROADCAST_KEY_URL;
 public class DownloadService extends Service {
     private static final String TAG = "DownloadService";
     private DownloadBinder mBinder;
-    private Map<String, Subscription> mRecord;
+    private DataBaseHelper mDataBaseHelper;
+    private Map<String, Subscription> mRecordMap;
 
     @Override
     public void onCreate() {
         super.onCreate();
         Log.d(TAG, "Create Download Service...");
         mBinder = new DownloadBinder();
-        mRecord = new HashMap<>();
+        mRecordMap = new HashMap<>();
+        mDataBaseHelper = new DataBaseHelper(new DbOpenHelper(this));
     }
 
     @Override
@@ -51,6 +53,9 @@ public class DownloadService extends Service {
     public void onDestroy() {
         super.onDestroy();
         Log.d(TAG, "Destroy Download Service...");
+        for (Subscription each : mRecordMap.values()) {
+            Utils.unSubscribe(each);
+        }
     }
 
     @Nullable
@@ -66,29 +71,23 @@ public class DownloadService extends Service {
         return super.onUnbind(intent);
     }
 
-    public Subscription getSubscription(String url) {
-        return mRecord.get(url);
-    }
-
     public void startDownload(RxDownload rxDownload, final String url, String saveName, String savePath) {
+        if (mRecordMap.get(url) != null) {
+            Log.w(TAG, "This url download task already exists! So do nothing.");
+            return;
+        }
         Subscription temp = rxDownload.download(url, saveName, savePath)
                 .subscribeOn(Schedulers.io())
+                .sample(500, TimeUnit.MILLISECONDS)
                 .subscribe(new Subscriber<DownloadStatus>() {
-                    @Override
-                    public void onStart() {
-                        super.onStart();
-                        Intent intent = new Intent(RX_BROADCAST_DOWNLOAD_START);
-                        intent.putExtra(RX_BROADCAST_KEY_URL, url);
-                        sendBroadcast(intent);
-                    }
-
                     @Override
                     public void onCompleted() {
                         Intent intent = new Intent(RX_BROADCAST_DOWNLOAD_COMPLETE);
                         intent.putExtra(RX_BROADCAST_KEY_URL, url);
                         sendBroadcast(intent);
-                        Utils.unSubscribe(mRecord.get(url));
-                        mRecord.remove(url);
+                        Utils.unSubscribe(mRecordMap.get(url));
+                        mRecordMap.remove(url);
+                        mDataBaseHelper.deleteDownloadRecord(url);
                     }
 
                     @Override
@@ -98,8 +97,8 @@ public class DownloadService extends Service {
                         intent.putExtra(RX_BROADCAST_KEY_URL, url);
                         intent.putExtra(RX_BROADCAST_KEY_EXCEPTION, e);
                         sendBroadcast(intent);
-                        Utils.unSubscribe(mRecord.get(url));
-                        mRecord.remove(url);
+                        Utils.unSubscribe(mRecordMap.get(url));
+                        mRecordMap.remove(url);
                     }
 
                     @Override
@@ -108,9 +107,24 @@ public class DownloadService extends Service {
                         intent.putExtra(RX_BROADCAST_KEY_URL, url);
                         intent.putExtra(RX_BROADCAST_KEY_STATUS, status);
                         sendBroadcast(intent);
+                        mDataBaseHelper.updateDownloadRecord(url, status);
                     }
                 });
-        mRecord.put(url, temp);
+        mRecordMap.put(url, temp);
+        if (mDataBaseHelper.checkDownloadRecordNotExists(url)) {
+            mDataBaseHelper.insertDownloadRecord(url);
+        }
+    }
+
+    public void pauseDownload(String url) {
+        Utils.unSubscribe(mRecordMap.get(url));
+        mRecordMap.remove(url);
+    }
+
+    public void cancelDownload(String url) {
+        Utils.unSubscribe(mRecordMap.get(url));
+        mRecordMap.remove(url);
+        mDataBaseHelper.deleteDownloadRecord(url);
     }
 
     public class DownloadBinder extends Binder {

@@ -123,7 +123,20 @@ public class RxDownload {
             Log.w(TAG, "Download Service is not Bind...");
             return;
         }
-        Utils.unSubscribe(mDownloadService.getSubscription(url));
+        mDownloadService.pauseDownload(url);
+    }
+
+    /**
+     * 删除Service中下载地址为url的下载任务
+     *
+     * @param url 下载文件的url
+     */
+    public void cancelServiceDownload(String url) {
+        if (!bound) {
+            Log.w(TAG, "Download Service is not Bind...");
+            return;
+        }
+        mDownloadService.cancelDownload(url);
     }
 
     /**

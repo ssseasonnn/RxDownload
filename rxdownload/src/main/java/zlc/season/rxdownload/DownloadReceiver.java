@@ -13,9 +13,7 @@ import rx.subjects.Subject;
  * Time: 11:28
  * FIXME
  */
-public class DownloadReceiver extends BroadcastReceiver {
-
-    public static final String RX_BROADCAST_DOWNLOAD_START = "zlc.season.rxdownload.broadcast.intent.action.start";
+class DownloadReceiver extends BroadcastReceiver {
     public static final String RX_BROADCAST_DOWNLOAD_NEXT = "zlc.season.rxdownload.broadcast.intent.action.next";
     public static final String RX_BROADCAST_DOWNLOAD_COMPLETE = "zlc.season.rxdownload.broadcast.intent.complete";
     public static final String RX_BROADCAST_DOWNLOAD_ERROR = "zlc.season.rxdownload.broadcast.intent.error";
@@ -27,19 +25,9 @@ public class DownloadReceiver extends BroadcastReceiver {
     private String mKeyUrl;
     private Subject<DownloadStatus, DownloadStatus> mSubject;
 
-    public DownloadReceiver(String keyUrl, Subject<DownloadStatus, DownloadStatus> subject) {
+    DownloadReceiver(String keyUrl, Subject<DownloadStatus, DownloadStatus> subject) {
         mSubject = subject;
         mKeyUrl = keyUrl;
-    }
-
-
-    public IntentFilter getFilter() {
-        IntentFilter intentFilter = new IntentFilter();
-        intentFilter.addAction(RX_BROADCAST_DOWNLOAD_START);
-        intentFilter.addAction(RX_BROADCAST_DOWNLOAD_NEXT);
-        intentFilter.addAction(RX_BROADCAST_DOWNLOAD_COMPLETE);
-        intentFilter.addAction(RX_BROADCAST_DOWNLOAD_ERROR);
-        return intentFilter;
     }
 
     @Override
@@ -47,10 +35,6 @@ public class DownloadReceiver extends BroadcastReceiver {
         String action = intent.getAction();
         String key = intent.getStringExtra(RX_BROADCAST_KEY_URL);
         switch (action) {
-            case RX_BROADCAST_DOWNLOAD_START:
-                if (key.compareTo(mKeyUrl) == 0) {
-                }
-                break;
             case RX_BROADCAST_DOWNLOAD_NEXT:
                 if (key.compareTo(mKeyUrl) == 0) {
                     mSubject.onNext((DownloadStatus) intent.getParcelableExtra(RX_BROADCAST_KEY_STATUS));
@@ -68,5 +52,13 @@ public class DownloadReceiver extends BroadcastReceiver {
                 }
                 break;
         }
+    }
+
+    IntentFilter getFilter() {
+        IntentFilter intentFilter = new IntentFilter();
+        intentFilter.addAction(RX_BROADCAST_DOWNLOAD_NEXT);
+        intentFilter.addAction(RX_BROADCAST_DOWNLOAD_COMPLETE);
+        intentFilter.addAction(RX_BROADCAST_DOWNLOAD_ERROR);
+        return intentFilter;
     }
 }

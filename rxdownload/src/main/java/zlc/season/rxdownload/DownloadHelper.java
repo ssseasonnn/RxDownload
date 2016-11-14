@@ -192,7 +192,8 @@ class DownloadHelper {
                 Utils.close(resp.body());
             }
         } catch (IOException e) {
-            sub.onError(new Throwable("Normal download stopped! Failed to save normal file!", e));
+            Log.i(TAG, "Normal download failed or cancel!");
+            sub.onError(new Throwable(e));
         }
     }
 
@@ -298,7 +299,8 @@ class DownloadHelper {
                 Utils.close(response);
             }
         } catch (IOException e) {
-            subscriber.onError(new Throwable("Range download stopped! Failed to save range file!", e));
+            Log.i(TAG, Thread.currentThread().getName() + " download failed or cancel!");
+            subscriber.onError(new Throwable(e));
         }
     }
 

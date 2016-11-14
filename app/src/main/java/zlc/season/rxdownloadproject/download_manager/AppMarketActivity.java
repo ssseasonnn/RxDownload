@@ -39,7 +39,6 @@ public class AppMarketActivity extends AppCompatActivity {
             startActivity(new Intent(this, DownloadManagerActivity.class));
             return true;
         }
-
         return super.onOptionsItemSelected(item);
     }
 

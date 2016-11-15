@@ -25,7 +25,7 @@ class DataBaseHelper {
         this.db = new SqlBrite.Builder().build().wrapDatabaseHelper(dbOpenHelper, Schedulers.io());
     }
 
-    Observable<List<DownloadRecord>> readRecords() {
+    Observable<List<DownloadRecord>> readAllRecords() {
         return Observable.create(new Observable.OnSubscribe<List<DownloadRecord>>() {
             @Override
             public void call(Subscriber<? super List<DownloadRecord>> subscriber) {
@@ -41,13 +41,13 @@ class DataBaseHelper {
         });
     }
 
-    Observable<DownloadStatus> queryDownloadStatus(final String url) {
-        return Observable.create(new Observable.OnSubscribe<DownloadStatus>() {
+    Observable<DownloadRecord> readRecord(final String url) {
+        return Observable.create(new Observable.OnSubscribe<DownloadRecord>() {
             @Override
-            public void call(Subscriber<? super DownloadStatus> subscriber) {
+            public void call(Subscriber<? super DownloadRecord> subscriber) {
                 Cursor cursor = db.query("select * from " + Db.RecordTable.TABLE_NAME + " where url=?", url);
                 while (cursor.moveToNext()) {
-                    subscriber.onNext(Db.RecordTable.getDownloadStatus(cursor));
+                    subscriber.onNext(Db.RecordTable.read(cursor));
                 }
                 subscriber.onCompleted();
                 cursor.close();

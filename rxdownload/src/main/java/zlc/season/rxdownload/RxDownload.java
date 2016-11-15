@@ -119,28 +119,28 @@ public class RxDownload {
      *
      * @return Observable<List<DownloadRecord>>
      */
-    public Observable<List<DownloadRecord>> getDownloadRecords() {
+    public Observable<List<DownloadRecord>> getTotalDownloadRecords() {
         if (mContext == null) {
             return Observable.error(new Throwable("Context is NULL! You should call " +
                     "#RxDownload.context(Context context)# first!"));
         }
         DataBaseHelper dataBaseHelper = new DataBaseHelper(new DbOpenHelper(mContext));
-        return dataBaseHelper.readRecords();
+        return dataBaseHelper.readAllRecords();
     }
 
     /**
-     * 获取下载地址为url的下载状态
+     * 获取下载地址为url的下载记录
      *
      * @param url 下载地址
      * @return Observable<DownloadStatus>
      */
-    public Observable<DownloadStatus> getDownloadStatus(String url) {
+    public Observable<DownloadRecord> getSingleDownloadRecord(String url) {
         if (mContext == null) {
             return Observable.error(new Throwable("Context is NULL! You should call " +
                     "#RxDownload.context(Context context)# first!"));
         }
         DataBaseHelper dataBaseHelper = new DataBaseHelper(new DbOpenHelper(mContext));
-        return dataBaseHelper.queryDownloadStatus(url);
+        return dataBaseHelper.readRecord(url);
     }
 
     /**

@@ -7,11 +7,12 @@ package zlc.season.rxdownload;
  * FIXME
  */
 public class DownloadRecord {
-    public static final int FLAG_STARTED = 9990;
-    public static final int FLAG_PAUSED = 9991;
-    public static final int FLAG_CANCELED = 9992;
-    public static final int FLAG_COMPLETED = 9993;
-    public static final int FLAG_FAILED = 9994;
+    public static final int FLAG_NORMAL = 9990;
+    public static final int FLAG_STARTED = 9991;
+    public static final int FLAG_PAUSED = 9992;
+    public static final int FLAG_CANCELED = 9993;
+    public static final int FLAG_COMPLETED = 9994;
+    public static final int FLAG_FAILED = 9995;
 
     private String url;
     private String name;
@@ -19,8 +20,8 @@ public class DownloadRecord {
     private String saveName;
     private String savePath;
     private DownloadStatus mStatus;
-    private int downloadFlag;
-    private long date;//格林威治时间,毫秒
+    private int downloadFlag = FLAG_NORMAL;
+    private long date; //格林威治时间,毫秒
 
     public DownloadRecord() {
     }

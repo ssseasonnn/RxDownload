@@ -92,13 +92,5 @@ class Db {
             record.setDate(cursor.getLong(cursor.getColumnIndexOrThrow(COLUMN_DATE)));
             return record;
         }
-
-        static DownloadStatus getDownloadStatus(Cursor cursor) {
-            DownloadStatus downloadStatus = new DownloadStatus();
-            downloadStatus.isChunked = cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_IS_CHUNKED)) > 0;
-            downloadStatus.setDownloadSize(cursor.getLong(cursor.getColumnIndexOrThrow(COLUMN_DOWNLOAD_SIZE)));
-            downloadStatus.setTotalSize(cursor.getLong(cursor.getColumnIndexOrThrow(COLUMN_TOTAL_SIZE)));
-            return downloadStatus;
-        }
     }
 }

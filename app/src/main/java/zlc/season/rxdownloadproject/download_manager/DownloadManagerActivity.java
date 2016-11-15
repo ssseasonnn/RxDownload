@@ -61,7 +61,7 @@ public class DownloadManagerActivity extends AppCompatActivity {
     }
 
     private void loadData() {
-        mSubscription = RxDownload.getInstance().context(this).getDownloadRecords()
+        mSubscription = RxDownload.getInstance().context(this).getTotalDownloadRecords()
                 .map(new Func1<List<DownloadRecord>, List<DownloadBean>>() {
                     @Override
                     public List<DownloadBean> call(List<DownloadRecord> downloadRecords) {

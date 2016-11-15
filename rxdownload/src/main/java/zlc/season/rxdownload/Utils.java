@@ -95,7 +95,7 @@ class Utils {
         } else if (k > 1) {
             hrSize = dec.format(k).concat(" KB");
         } else {
-            hrSize = dec.format(b).concat(" Bytes");
+            hrSize = dec.format(b).concat(" B");
         }
         return hrSize;
     }

@@ -115,7 +115,7 @@ public class RxDownload {
     }
 
     /**
-     * 获取正在下载的任务
+     * 获取所有的下载任务,包括成功的失败的和暂停的
      *
      * @return Observable<List<DownloadRecord>>
      */
@@ -125,7 +125,7 @@ public class RxDownload {
                     "#RxDownload.context(Context context)# first!"));
         }
         DataBaseHelper dataBaseHelper = new DataBaseHelper(new DbOpenHelper(mContext));
-        return dataBaseHelper.queryDownloadRecords();
+        return dataBaseHelper.readRecords();
     }
 
     /**
@@ -148,40 +148,55 @@ public class RxDownload {
      *
      * @param url 下载文件的url
      */
-    public void pauseServiceDownload(String url) {
+    public Observable<?> pauseServiceDownload(final String url) {
         if (!bound) {
             Log.w(TAG, "Download Service is not Bind...");
-            return;
+            return Observable.error(new Throwable("Download Service is not Bind..."));
         }
-        mDownloadService.pauseDownload(url);
+        return Observable.just(null).doOnNext(new Action1<Object>() {
+            @Override
+            public void call(Object o) {
+                mDownloadService.pauseDownload(url);
+            }
+        });
     }
 
     /**
-     * 删除Service中下载地址为url的下载任务
+     * 取消Service中下载地址为url的下载任务,不会删除已经下载的文件
      *
      * @param url 下载文件的url
      */
-    public void cancelServiceDownload(String url) {
+    public Observable<?> cancelServiceDownload(final String url) {
         if (!bound) {
             Log.w(TAG, "Download Service is not Bind...");
-            return;
+            return Observable.error(new Throwable("Download Service is not Bind..."));
         }
-        mDownloadService.cancelDownload(url);
+        return Observable.just(null).doOnNext(new Action1<Object>() {
+            @Override
+            public void call(Object o) {
+                mDownloadService.cancelDownload(url);
+            }
+        });
     }
+
 
     /**
      * 使用Service下载,同时注册广播接收器
      * <p>
      * 取消订阅时会取消注册广播接收器, 但不会暂停下载
      *
-     * @param url      下载文件的Url
-     * @param saveName 下载文件的保存名称
-     * @param savePath 下载文件的保存路径, null使用默认的路径,默认保存在/storage/emulated/0/Download/目录下
+     * @param url          下载文件的Url
+     * @param saveName     下载文件的保存名称
+     * @param savePath     下载文件的保存路径, null使用默认的路径,默认保存在/storage/emulated/0/Download/目录下
+     * @param displayName  下载记录显示的名称
+     * @param displayImage 下载记录显示的图片
      * @return Observable<DownloadStatus>
      */
     public Observable<DownloadStatus> downloadThroughService(@NonNull final String url,
                                                              @NonNull final String saveName,
-                                                             @Nullable final String savePath) {
+                                                             @Nullable final String savePath,
+                                                             @Nullable final String displayName,
+                                                             @Nullable final String displayImage) {
         if (mContext == null) {
             return Observable.error(new Throwable("Context is NULL! You should call " +
                     "#RxDownload.context(Context context)# first!"));
@@ -206,7 +221,8 @@ public class RxDownload {
                         mContext.unbindService(this);
                         bound = true;
 
-                        mDownloadService.startDownload(RxDownload.this, url, saveName, savePath);
+                        mDownloadService.startDownload(RxDownload.this, url, saveName, savePath, displayName,
+                                displayImage);
                     }
 
                     @Override
@@ -284,7 +300,7 @@ public class RxDownload {
                 return observable.flatMap(new Func1<T, Observable<DownloadStatus>>() {
                     @Override
                     public Observable<DownloadStatus> call(T t) {
-                        return downloadThroughService(url, saveName, savePath);
+                        return downloadThroughService(url, saveName, savePath, "", "");
                     }
                 });
             }

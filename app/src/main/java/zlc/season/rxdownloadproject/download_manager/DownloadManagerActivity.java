@@ -1,14 +1,9 @@
 package zlc.season.rxdownloadproject.download_manager;
 
-import android.content.res.Resources;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.Toolbar;
-import android.view.LayoutInflater;
-import android.view.View;
-import android.view.ViewGroup;
-import android.widget.Button;
 import android.widget.RelativeLayout;
 
 import java.util.ArrayList;
@@ -16,10 +11,10 @@ import java.util.List;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
-import butterknife.OnClick;
+import rx.Subscription;
+import rx.functions.Action1;
 import rx.functions.Func1;
 import zlc.season.practicalrecyclerview.PracticalRecyclerView;
-import zlc.season.practicalrecyclerview.SectionItem;
 import zlc.season.rxdownload.DownloadRecord;
 import zlc.season.rxdownload.RxDownload;
 import zlc.season.rxdownloadproject.R;
@@ -34,6 +29,7 @@ public class DownloadManagerActivity extends AppCompatActivity {
     RelativeLayout mContentMain;
 
     private DownloadAdapter mAdapter;
+    private Subscription mSubscription;
 
     @Override
     public void onBackPressed() {
@@ -52,8 +48,6 @@ public class DownloadManagerActivity extends AppCompatActivity {
         mAdapter = new DownloadAdapter();
         mRecycler.setLayoutManager(new LinearLayoutManager(this));
         mRecycler.setAdapterWithLoading(mAdapter);
-
-        mAdapter.addFooter(new Footer());
         loadData();
     }
 
@@ -61,59 +55,37 @@ public class DownloadManagerActivity extends AppCompatActivity {
     protected void onDestroy() {
         super.onDestroy();
         unsubscribe();
+        if (mSubscription != null && !mSubscription.isUnsubscribed()) {
+            mSubscription.unsubscribe();
+        }
     }
 
     private void loadData() {
-        RxDownload.getInstance().context(this).getDownloadRecords()
+        mSubscription = RxDownload.getInstance().context(this).getDownloadRecords()
                 .map(new Func1<List<DownloadRecord>, List<DownloadBean>>() {
                     @Override
                     public List<DownloadBean> call(List<DownloadRecord> downloadRecords) {
-
-                        return null;
+                        List<DownloadBean> result = new ArrayList<>();
+                        for (DownloadRecord each : downloadRecords) {
+                            DownloadBean bean = new DownloadBean();
+                            bean.mRecord = each;
+                            result.add(bean);
+                        }
+                        return result;
+                    }
+                })
+                .subscribe(new Action1<List<DownloadBean>>() {
+                    @Override
+                    public void call(List<DownloadBean> downloadBeen) {
+                        mAdapter.addAll(downloadBeen);
                     }
                 });
-        Resources res = getResources();
-        final String[] names = res.getStringArray(R.array.save_name);
-        final String[] images = res.getStringArray(R.array.image);
-        final String[] urls = res.getStringArray(R.array.url);
-        List<DownloadBean> list = new ArrayList<>();
-        for (int i = 0; i < images.length; i++) {
-            DownloadBean temp = new DownloadBean();
-            temp.name = names[i];
-            temp.image = images[i];
-            temp.url = urls[i];
-            list.add(temp);
-        }
-        mAdapter.addAll(list);
     }
 
     private void unsubscribe() {
         List<DownloadBean> list = mAdapter.getData();
         for (DownloadBean each : list) {
             each.unsubscrbe();
-        }
-    }
-
-    class Footer implements SectionItem {
-
-        @BindView(R.id.finish)
-        Button mFinish;
-
-        @Override
-        public View createView(ViewGroup parent) {
-            View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.foot_layout, parent, false);
-            ButterKnife.bind(this, view);
-            return view;
-        }
-
-        @Override
-        public void onBind() {
-
-        }
-
-        @OnClick(R.id.finish)
-        public void onClick() {
-            DownloadManagerActivity.this.finish();
         }
     }
 }

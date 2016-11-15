@@ -7,25 +7,62 @@ package zlc.season.rxdownload;
  * FIXME
  */
 public class DownloadRecord {
-    private String mDownloadUrl;
+    public static final int FLAG_STARTED = 9990;
+    public static final int FLAG_PAUSED = 9991;
+    public static final int FLAG_CANCELED = 9992;
+    public static final int FLAG_COMPLETED = 9993;
+    public static final int FLAG_FAILED = 9994;
+
+    private String url;
+    private String name;
+    private String image;
+    private String saveName;
+    private String savePath;
     private DownloadStatus mStatus;
-    private String mDate;
+    private int downloadFlag;
+    private long date;//格林威治时间,毫秒
 
     public DownloadRecord() {
     }
 
-    public DownloadRecord(String downloadUrl, DownloadStatus status, String date) {
-        mDownloadUrl = downloadUrl;
-        mStatus = status;
-        mDate = date;
+    public String getUrl() {
+        return url;
     }
 
-    public String getDownloadUrl() {
-        return mDownloadUrl;
+    public void setUrl(String url) {
+        this.url = url;
     }
 
-    public void setDownloadUrl(String downloadUrl) {
-        mDownloadUrl = downloadUrl;
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getImage() {
+        return image;
+    }
+
+    public void setImage(String image) {
+        this.image = image;
+    }
+
+    public String getSaveName() {
+        return saveName;
+    }
+
+    public void setSaveName(String saveName) {
+        this.saveName = saveName;
+    }
+
+    public String getSavePath() {
+        return savePath;
+    }
+
+    public void setSavePath(String savePath) {
+        this.savePath = savePath;
     }
 
     public DownloadStatus getStatus() {
@@ -36,11 +73,19 @@ public class DownloadRecord {
         mStatus = status;
     }
 
-    public String getDate() {
-        return mDate;
+    public int getDownloadFlag() {
+        return downloadFlag;
     }
 
-    public void setDate(String date) {
-        mDate = date;
+    public void setDownloadFlag(int downloadFlag) {
+        this.downloadFlag = downloadFlag;
+    }
+
+    public long getDate() {
+        return date;
+    }
+
+    public void setDate(long date) {
+        this.date = date;
     }
 }

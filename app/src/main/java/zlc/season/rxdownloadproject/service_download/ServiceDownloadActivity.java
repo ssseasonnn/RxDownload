@@ -121,7 +121,7 @@ public class ServiceDownloadActivity extends AppCompatActivity {
     }
 
     private void startDownload() {
-        Subscription temp = mRxDownload.downloadThroughService(url, "王者荣耀.apk", null)
+        Subscription temp = mRxDownload.downloadThroughService(url, "王者荣耀.apk", null, "", "")
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(new CustomSubscriber());

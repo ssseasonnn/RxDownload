@@ -1,7 +1,8 @@
 package zlc.season.rxdownloadproject.download_manager;
 
-import rx.Subscription;
+import rx.subscriptions.CompositeSubscription;
 import zlc.season.practicalrecyclerview.ItemType;
+import zlc.season.rxdownload.DownloadRecord;
 
 /**
  * Author: Season(ssseasonnn@gmail.com)
@@ -10,19 +11,14 @@ import zlc.season.practicalrecyclerview.ItemType;
  * FIXME
  */
 public class DownloadBean implements ItemType {
-    String name;
-    String url;
-    String image;
-    int state;
-    Subscription subscription;
+    DownloadRecord mRecord;
+    CompositeSubscription mSubscriptions = new CompositeSubscription();
 
     /**
      * 取消订阅
      */
     public void unsubscrbe() {
-        if (subscription != null && !subscription.isUnsubscribed()) {
-            subscription.unsubscribe();
-        }
+        mSubscriptions.clear();
     }
 
     @Override

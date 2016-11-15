@@ -184,12 +184,32 @@ public class RxDownload {
      * 使用Service下载,同时注册广播接收器
      * <p>
      * 取消订阅时会取消注册广播接收器, 但不会暂停下载
+     * <p>
+     * 同时会在数据库中保存下载记录,之后可以用 {@link #getSingleDownloadRecord(String)} 获取下载记录
+     *
+     * @param url      下载文件的Url
+     * @param saveName 下载文件的保存名称
+     * @param savePath 下载文件的保存路径, null使用默认的路径,默认保存在/storage/emulated/0/Download/目录下
+     * @return Observable<DownloadStatus>
+     */
+    public Observable<DownloadStatus> downloadThroughService(@NonNull final String url,
+                                                             @NonNull final String saveName,
+                                                             @Nullable final String savePath) {
+        return downloadThroughService(url, saveName, savePath, null, null);
+    }
+
+    /**
+     * 使用Service下载,同时注册广播接收器
+     * <p>
+     * 取消订阅时会取消注册广播接收器, 但不会暂停下载
+     * <p>
+     * 同时会在数据库中保存下载记录,之后可以用 {@link #getSingleDownloadRecord(String)} 获取下载记录
      *
      * @param url          下载文件的Url
      * @param saveName     下载文件的保存名称
      * @param savePath     下载文件的保存路径, null使用默认的路径,默认保存在/storage/emulated/0/Download/目录下
-     * @param displayName  下载记录显示的名称
-     * @param displayImage 下载记录显示的图片
+     * @param displayName  显示在下载记录中的名称. 如需要在下载记录中显示名称,传入此参数保存到下载记录中
+     * @param displayImage 显示在下载记录中的图片. 如需要在下载记录中显示图片或图标,传入此参数保存到下载记录中
      * @return Observable<DownloadStatus>
      */
     public Observable<DownloadStatus> downloadThroughService(@NonNull final String url,
@@ -245,6 +265,8 @@ public class RxDownload {
      * 普通下载, 不使用Service
      * <p>
      * 取消订阅则暂停下载
+     * <p>
+     * 不会在数据库中保存下载记录
      *
      * @param url      下载文件的Url
      * @param saveName 下载文件的保存名称
@@ -258,7 +280,7 @@ public class RxDownload {
     }
 
     /**
-     * 提供给RxJava Compose操作符使用, Normal Download
+     * 提供给RxJava Compose操作符使用, 普通下载
      *
      * @param url      下载文件的Url
      * @param saveName 下载文件的保存名称
@@ -283,7 +305,7 @@ public class RxDownload {
     }
 
     /**
-     * 提供给RxJava Compose操作符使用, Download Through Service
+     * 提供给RxJava Compose操作符使用, 使用Service下载
      *
      * @param url      下载文件的Url
      * @param saveName 下载文件的保存名称
@@ -301,6 +323,24 @@ public class RxDownload {
                     @Override
                     public Observable<DownloadStatus> call(T t) {
                         return downloadThroughService(url, saveName, savePath, "", "");
+                    }
+                });
+            }
+        };
+    }
+    
+    public <T> Observable.Transformer<T, DownloadStatus> transformService(@NonNull final String url,
+                                                                          @NonNull final String saveName,
+                                                                          @Nullable final String savePath,
+                                                                          @Nullable final String displayName,
+                                                                          @Nullable final String displayImage) {
+        return new Observable.Transformer<T, DownloadStatus>() {
+            @Override
+            public Observable<DownloadStatus> call(Observable<T> observable) {
+                return observable.flatMap(new Func1<T, Observable<DownloadStatus>>() {
+                    @Override
+                    public Observable<DownloadStatus> call(T t) {
+                        return downloadThroughService(url, saveName, savePath, displayName, displayImage);
                     }
                 });
             }

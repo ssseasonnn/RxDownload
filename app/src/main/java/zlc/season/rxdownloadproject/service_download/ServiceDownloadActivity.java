@@ -96,7 +96,7 @@ public class ServiceDownloadActivity extends AppCompatActivity {
                     }
                 });
 
-        //注册广播接收器, 用于接收下载进度
+        //注册广播接收器, 用于接收下载进度, 此处注册广播是为了Activity退出之后重新进入依然能够接收到下载进度
         Subscription temp = mRxDownload.registerReceiver(url)
                 .subscribe(new Subscriber<DownloadStatus>() {
                     @Override
@@ -153,6 +153,7 @@ public class ServiceDownloadActivity extends AppCompatActivity {
     }
 
     private void start() {
+        //开始下载,先检查权限,同时注册广播接收器用于接收下载进度
         Subscription temp = RxPermissions.getInstance(this)
                 .request(Manifest.permission.WRITE_EXTERNAL_STORAGE)
                 .doOnNext(new Action1<Boolean>() {

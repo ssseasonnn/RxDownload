@@ -25,6 +25,7 @@ import rx.subscriptions.CompositeSubscription;
 import zlc.season.rxdownload.DownloadRecord;
 import zlc.season.rxdownload.DownloadStatus;
 import zlc.season.rxdownload.RxDownload;
+import zlc.season.rxdownloadproject.DownloadStateContext;
 import zlc.season.rxdownloadproject.R;
 
 public class ServiceDownloadActivity extends AppCompatActivity {
@@ -137,7 +138,7 @@ public class ServiceDownloadActivity extends AppCompatActivity {
 
             @Override
             public void cancelDownload() {
-                cancel();
+//                cancel();
             }
 
             @Override

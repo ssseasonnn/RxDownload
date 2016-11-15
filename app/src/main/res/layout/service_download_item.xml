@@ -2,6 +2,7 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
               android:layout_width="match_parent"
               android:layout_height="?android:attr/listPreferredItemHeight"
+              xmlns:tools="http://schemas.android.com/tools"
               android:clickable="true"
               android:foreground="?android:attr/selectableItemBackground"
               android:orientation="horizontal"
@@ -27,24 +28,6 @@
         android:layout_weight="1"
         android:orientation="vertical">
 
-
-        <TextView
-            android:id="@+id/percent"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="end"
-            android:layout_marginEnd="10dp"
-            android:layout_marginRight="10dp"
-            android:gravity="center"
-            android:text="0.00%"/>
-
-        <ProgressBar
-            android:id="@+id/progress"
-            style="?android:attr/progressBarStyleHorizontal"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center"/>
-
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -60,18 +43,38 @@
                 android:layout_marginRight="20dp"
                 android:layout_weight="1"
                 android:gravity="start"
-                android:text="正在下载中"/>
+                tools:text="正在下载中"/>
 
             <TextView
-                android:id="@+id/size"
+                android:id="@+id/percent"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="end"
                 android:layout_marginEnd="10dp"
                 android:layout_marginRight="10dp"
                 android:gravity="center"
-                android:text="0.0KB/0.0KB"/>
+                android:text="0.00%"/>
         </LinearLayout>
+
+
+        <ProgressBar
+            android:id="@+id/progress"
+            style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"/>
+
+
+        <TextView
+            android:id="@+id/size"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="end"
+            android:layout_marginEnd="10dp"
+            android:layout_marginRight="10dp"
+            android:gravity="center"
+            android:text="0.0KB/0.0KB"/>
+
 
     </LinearLayout>
 

@@ -1,4 +1,4 @@
-package zlc.season.rxdownloadproject.service_download;
+package zlc.season.rxdownloadproject;
 
 import android.widget.Button;
 import android.widget.TextView;
@@ -57,7 +57,7 @@ public class DownloadStateContext {
         state.nextState(mStatusText, mActionButton, callback);
     }
 
-    interface Callback {
+    public interface Callback {
 
         void startDownload();
 

@@ -26,7 +26,6 @@ import zlc.season.rxdownload.RxDownload;
 import zlc.season.rxdownloadproject.R;
 
 import static zlc.season.rxdownloadproject.R.id.percent;
-import static zlc.season.rxdownloadproject.R.id.status;
 
 /**
  * Author: Season(ssseasonnn@gmail.com)
@@ -44,8 +43,8 @@ public class DownloadViewHolder extends AbstractViewHolder<DownloadBean> {
     ProgressBar mProgress;
     @BindView(R.id.size)
     TextView mSize;
-    @BindView(status)
-    Button mStatusText;
+    @BindView(R.id.status)
+    TextView mStatusText;
     @BindView(R.id.delete)
     Button mDelete;
     @BindView(R.id.start)

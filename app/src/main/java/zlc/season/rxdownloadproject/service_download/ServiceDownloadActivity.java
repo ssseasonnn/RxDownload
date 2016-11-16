@@ -1,6 +1,8 @@
 package zlc.season.rxdownloadproject.service_download;
 
 import android.Manifest;
+import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
@@ -13,11 +15,14 @@ import android.widget.TextView;
 import com.squareup.picasso.Picasso;
 import com.tbruyelle.rxpermissions.RxPermissions;
 
+import java.io.File;
+
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
 import rx.Subscriber;
 import rx.Subscription;
+import rx.android.schedulers.AndroidSchedulers;
 import rx.functions.Action1;
 import rx.schedulers.Schedulers;
 import rx.subscriptions.CompositeSubscription;
@@ -27,7 +32,12 @@ import zlc.season.rxdownload.RxDownload;
 import zlc.season.rxdownloadproject.DownloadStateContext;
 import zlc.season.rxdownloadproject.R;
 
+import static android.os.Environment.DIRECTORY_DOWNLOADS;
+import static android.os.Environment.getExternalStoragePublicDirectory;
+
 public class ServiceDownloadActivity extends AppCompatActivity {
+    final String saveName = "王者荣耀.apk";
+    final String defaultPath = getExternalStoragePublicDirectory(DIRECTORY_DOWNLOADS).getPath();
     final String url = "http://120.192.69.163/dlied5.myapp.com/myapp/1104466820/1104466820/sgame/10024163_com.tencent" +
             ".tmgp.sgame_u131_1.15.2.13.apk";
 
@@ -71,7 +81,7 @@ public class ServiceDownloadActivity extends AppCompatActivity {
 
             @Override
             public void install() {
-
+                installApk();
             }
         });
     }
@@ -154,6 +164,14 @@ public class ServiceDownloadActivity extends AppCompatActivity {
         mSubscriptions.add(query);
     }
 
+    private void installApk() {
+        mStateContext.setStateAndDisplay(DownloadRecord.FLAG_INSTALL);
+        Uri uri = Uri.fromFile(new File(defaultPath + File.separator + saveName));
+        Intent intent = new Intent(Intent.ACTION_VIEW);
+        intent.setDataAndType(uri, "application/vnd.android.package-archive");
+        startActivity(intent);
+    }
+
     private void start() {
         //开始下载, 先检查权限
         Subscription temp = RxPermissions.getInstance(this)
@@ -167,8 +185,14 @@ public class ServiceDownloadActivity extends AppCompatActivity {
                     }
                 })
                 .observeOn(Schedulers.io())
-                .compose(mRxDownload.transformServiceNoReceiver(url, "weixin.apk", null))
-                .subscribe();
+                .compose(mRxDownload.transformServiceNoReceiver(url, saveName, defaultPath))
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(new Action1<Object>() {
+                    @Override
+                    public void call(Object o) {
+                        mStateContext.setStateAndDisplay(DownloadRecord.FLAG_STARTED);
+                    }
+                });
         mSubscriptions.add(temp);
     }
 

@@ -9,6 +9,7 @@ import zlc.season.rxdownload.DownloadRecord;
  * Author: Season(ssseasonnn@gmail.com)
  * Date: 2016/11/15
  * Time: 15:26
+ * 状态模式
  */
 public class DownloadStateContext {
     private DownloadState state;
@@ -46,6 +47,9 @@ public class DownloadStateContext {
             case DownloadRecord.FLAG_COMPLETED:
                 this.state = new CompletedState(this);
                 break;
+            case DownloadRecord.FLAG_INSTALL:
+                this.state = new InstallState(this);
+                break;
         }
 
         displayNowState();
@@ -57,7 +61,7 @@ public class DownloadStateContext {
      * @param callback Callback
      */
     public void performClick(Callback callback) {
-        state.changeStateAndDisplay(mStatusText, mActionButton, callback);
+        state.handle(mStatusText, mActionButton, callback);
     }
 
     private void displayNowState() {
@@ -91,7 +95,7 @@ public class DownloadStateContext {
 
         abstract void displayNowState(TextView status, Button action);
 
-        abstract void changeStateAndDisplay(TextView status, Button action, Callback callback);
+        abstract void handle(TextView status, Button action, Callback callback);
 
     }
 
@@ -108,10 +112,7 @@ public class DownloadStateContext {
         }
 
         @Override
-        void changeStateAndDisplay(TextView status, Button action, Callback callback) {
-            status.setText("正在下载...");
-            action.setText("暂停");
-            mContext.setState(new StartedState(mContext));
+        void handle(TextView status, Button action, Callback callback) {
             callback.startDownload();
         }
     }
@@ -129,10 +130,7 @@ public class DownloadStateContext {
         }
 
         @Override
-        void changeStateAndDisplay(TextView status, Button action, Callback callback) {
-            status.setText("下载已暂停...");
-            action.setText("继续");
-            mContext.setState(new PausedState(mContext));
+        void handle(TextView status, Button action, Callback callback) {
             callback.pauseDownload();
         }
     }
@@ -150,10 +148,7 @@ public class DownloadStateContext {
         }
 
         @Override
-        void changeStateAndDisplay(TextView status, Button action, Callback callback) {
-            status.setText("正在下载...");
-            action.setText("暂停");
-            mContext.setState(new StartedState(mContext));
+        void handle(TextView status, Button action, Callback callback) {
             callback.startDownload();
         }
     }
@@ -171,10 +166,7 @@ public class DownloadStateContext {
         }
 
         @Override
-        void changeStateAndDisplay(TextView status, Button action, Callback callback) {
-            status.setText("开始下载");
-            action.setText("暂停");
-            mContext.setState(new StartedState(mContext));
+        void handle(TextView status, Button action, Callback callback) {
             callback.startDownload();
         }
     }
@@ -192,10 +184,7 @@ public class DownloadStateContext {
         }
 
         @Override
-        void changeStateAndDisplay(TextView status, Button action, Callback callback) {
-            status.setText("开始下载");
-            action.setText("暂停");
-            mContext.setState(new StartedState(mContext));
+        void handle(TextView status, Button action, Callback callback) {
             callback.startDownload();
         }
     }
@@ -213,10 +202,26 @@ public class DownloadStateContext {
         }
 
         @Override
-        void changeStateAndDisplay(TextView status, Button action, Callback callback) {
-            status.setText("正在安装");
-            action.setText("...");
+        void handle(TextView status, Button action, Callback callback) {
             callback.install();
+        }
+    }
+
+    private static class InstallState extends DownloadState {
+
+        InstallState(DownloadStateContext context) {
+            super(context);
+        }
+
+        @Override
+        void displayNowState(TextView status, Button action) {
+            status.setText("正在安装...");
+            action.setText("安装中");
+        }
+
+        @Override
+        void handle(TextView status, Button action, Callback callback) {
+            //doNothing..
         }
     }
 }

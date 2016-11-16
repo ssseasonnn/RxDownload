@@ -11,7 +11,7 @@ import android.database.sqlite.SQLiteOpenHelper;
  * FIXME
  */
 class DbOpenHelper extends SQLiteOpenHelper {
-    private static final String DATABASE_NAME = "database.db";
+    private static final String DATABASE_NAME = "zlc_season_rxdownload_download.db";
     private static final int DATABASE_VERSION = 1;
 
     DbOpenHelper(Context context) {

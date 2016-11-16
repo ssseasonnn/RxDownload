@@ -150,32 +150,25 @@ public class RxDownload {
      * @param url download url
      */
     public Observable<?> pauseServiceDownload(final String url) {
-        if (!bound) {
-            Log.w(TAG, "Download Service is not Start or Bind. So start Service and Bind.");
-            PublishSubject<?> subject = PublishSubject.create();
-            Observable<?> observable;
-            observable = subject.doOnSubscribe(new Action0() {
-                @Override
-                public void call() {
-                    Intent intent = new Intent(mContext, DownloadService.class);
-                    mContext.startService(intent);
-                    mContext.bindService(intent, new DownloadServiceConnection(new ConnectedCallback() {
+        if (mContext == null) {
+            return Observable.error(new Throwable("Context is NULL! You should call " +
+                    "#RxDownload.context(Context context)# first!"));
+        }
+        return Observable.just(null).doOnSubscribe(new Action0() {
+            @Override
+            public void call() {
+                if (!bound) {
+                    startBindServiceAndDo(new ServiceConnectedCallback() {
                         @Override
                         public void call() {
                             mDownloadService.pauseDownload(url);
                         }
-                    }), Context.BIND_AUTO_CREATE);
-                }
-            });
-            return observable;
-        } else {
-            return Observable.just(null).doOnNext(new Action1<Object>() {
-                @Override
-                public void call(Object o) {
+                    });
+                } else {
                     mDownloadService.cancelDownload(url);
                 }
-            });
-        }
+            }
+        });
     }
 
     /**
@@ -186,32 +179,25 @@ public class RxDownload {
      * @param url download url
      */
     public Observable<?> cancelServiceDownload(final String url) {
-        if (!bound) {
-            Log.w(TAG, "Download Service is not Start or Bind. So start Service and Bind.");
-            PublishSubject<?> subject = PublishSubject.create();
-            Observable<?> observable;
-            observable = subject.doOnSubscribe(new Action0() {
-                @Override
-                public void call() {
-                    Intent intent = new Intent(mContext, DownloadService.class);
-                    mContext.startService(intent);
-                    mContext.bindService(intent, new DownloadServiceConnection(new ConnectedCallback() {
+        if (mContext == null) {
+            return Observable.error(new Throwable("Context is NULL! You should call " +
+                    "#RxDownload.context(Context context)# first!"));
+        }
+        return Observable.just(null).doOnSubscribe(new Action0() {
+            @Override
+            public void call() {
+                if (!bound) {
+                    startBindServiceAndDo(new ServiceConnectedCallback() {
                         @Override
                         public void call() {
                             mDownloadService.cancelDownload(url);
                         }
-                    }), Context.BIND_AUTO_CREATE);
-                }
-            });
-            return observable;
-        } else {
-            return Observable.just(null).doOnNext(new Action1<Object>() {
-                @Override
-                public void call(Object o) {
+                    });
+                } else {
                     mDownloadService.cancelDownload(url);
                 }
-            });
-        }
+            }
+        });
     }
 
     /**
@@ -261,25 +247,27 @@ public class RxDownload {
             return Observable.error(new Throwable("Context is NULL! You should call " +
                     "#RxDownload.context(Context context)# first!"));
         }
-        Observable<DownloadStatus> observable;
 
         PublishSubject<DownloadStatus> subject = PublishSubject.create();
         final DownloadReceiver receiver = new DownloadReceiver(url, subject);
 
+        Observable<DownloadStatus> observable;
         observable = subject.doOnSubscribe(new Action0() {
             @Override
             public void call() {
                 mContext.registerReceiver(receiver, receiver.getFilter());
-                //startService不管调用多少次, 只会启动一个Service.
-                Intent intent = new Intent(mContext, DownloadService.class);
-                mContext.startService(intent);
-                mContext.bindService(intent, new DownloadServiceConnection(new ConnectedCallback() {
-                    @Override
-                    public void call() {
-                        mDownloadService.startDownload(RxDownload.this, url, saveName, savePath, displayName,
-                                displayImage);
-                    }
-                }), Context.BIND_AUTO_CREATE);
+                if (!bound) {
+                    startBindServiceAndDo(new ServiceConnectedCallback() {
+                        @Override
+                        public void call() {
+                            mDownloadService.startDownload(RxDownload.this,
+                                    url, saveName, savePath, displayName, displayImage);
+                        }
+                    });
+                } else {
+                    mDownloadService.startDownload(RxDownload.this,
+                            url, saveName, savePath, displayName, displayImage);
+                }
             }
         }).doOnUnsubscribe(new Action0() {
             @Override
@@ -336,16 +324,18 @@ public class RxDownload {
         return Observable.just(null).doOnSubscribe(new Action0() {
             @Override
             public void call() {
-                //startService不管调用多少次, 只会启动一个Service.
-                Intent intent = new Intent(mContext, DownloadService.class);
-                mContext.startService(intent);
-                mContext.bindService(intent, new DownloadServiceConnection(new ConnectedCallback() {
-                    @Override
-                    public void call() {
-                        mDownloadService.startDownload(RxDownload.this, url, saveName, savePath, displayName,
-                                displayImage);
-                    }
-                }), Context.BIND_AUTO_CREATE);
+                if (!bound) {
+                    startBindServiceAndDo(new ServiceConnectedCallback() {
+                        @Override
+                        public void call() {
+                            mDownloadService.startDownload(RxDownload.this,
+                                    url, saveName, savePath, displayName, displayImage);
+                        }
+                    });
+                } else {
+                    mDownloadService.startDownload(RxDownload.this,
+                            url, saveName, savePath, displayName, displayImage);
+                }
             }
         });
     }
@@ -367,8 +357,8 @@ public class RxDownload {
     }
 
     /**
+     * 普通下载的Transformer版本.
      * 提供给RxJava Compose操作符使用.
-     * 普通下载
      *
      * @param url      下载文件的Url
      * @param saveName 下载文件的保存名称
@@ -393,8 +383,8 @@ public class RxDownload {
     }
 
     /**
+     * ServiceDownload的Transformer版本.
      * 提供给RxJava Compose操作符使用.
-     * 使用Service下载,同时注册广播接收器
      *
      * @param url      下载文件的Url
      * @param saveName 下载文件的保存名称
@@ -448,8 +438,8 @@ public class RxDownload {
     }
 
     /**
+     * ServiceDownloadNoReceiver的Transformer版本
      * 提供给RxJava Compose操作符使用.
-     * 使用Service下载,不注册广播接收器
      *
      * @param url      下载文件的Url
      * @param saveName 下载文件的保存名称
@@ -667,31 +657,29 @@ public class RxDownload {
         }
     }
 
-    private interface ConnectedCallback {
-        void call();
+    private void startBindServiceAndDo(final ServiceConnectedCallback callback) {
+        Log.w(TAG, "Download Service is not Start or Bind. So start Service and Bind.");
+        Intent intent = new Intent(mContext, DownloadService.class);
+        mContext.startService(intent);
+        mContext.bindService(intent, new ServiceConnection() {
+            @Override
+            public void onServiceConnected(ComponentName name, IBinder binder) {
+                DownloadService.DownloadBinder downloadBinder = (DownloadService.DownloadBinder) binder;
+                mDownloadService = downloadBinder.getService();
+                mContext.unbindService(this);
+                bound = true;
+                callback.call();
+            }
+
+            @Override
+            public void onServiceDisconnected(ComponentName name) {
+                //注意!!这个方法只会在系统杀掉Service时才会调用!!
+                bound = false;
+            }
+        }, Context.BIND_AUTO_CREATE);
     }
 
-    private class DownloadServiceConnection implements ServiceConnection {
-
-        private ConnectedCallback mCallback;
-
-        DownloadServiceConnection(ConnectedCallback callback) {
-            mCallback = callback;
-        }
-
-        @Override
-        public void onServiceConnected(ComponentName name, IBinder binder) {
-            DownloadService.DownloadBinder downloadBinder = (DownloadService.DownloadBinder) binder;
-            mDownloadService = downloadBinder.getService();
-            mContext.unbindService(this);
-            bound = true;
-            mCallback.call();
-        }
-
-        @Override
-        public void onServiceDisconnected(ComponentName name) {
-            //注意!!这个方法只会在系统杀掉Service时才会调用!!
-            bound = false;
-        }
+    private interface ServiceConnectedCallback {
+        void call();
     }
 }

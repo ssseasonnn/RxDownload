@@ -34,6 +34,7 @@ class Db {
         static final String COLUMN_DOWNLOAD_FLAG = "download_flag";
         static final String COLUMN_DATE = "date";
 
+        //编译器会自动优化为StringBuild方式,不用担心效率问题
         static final String CREATE =
                 "CREATE TABLE " + TABLE_NAME + " (" +
                         COLUMN_ID + " INTEGER PRIMARY KEY AUTOINCREMENT," +
@@ -48,6 +49,7 @@ class Db {
                         COLUMN_DOWNLOAD_FLAG + " INTEGER," +
                         COLUMN_DATE + " INTEGER NOT NULL " +
                         " )";
+
 
         static ContentValues insert(String url, String saveName, String savePath,
                                     String name, String image) {

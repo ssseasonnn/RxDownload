@@ -13,6 +13,8 @@ public class DownloadRecord {
     public static final int FLAG_CANCELED = 9993;
     public static final int FLAG_COMPLETED = 9994;
     public static final int FLAG_FAILED = 9995;
+    public static final int FLAG_INSTALL = 9996;
+    public static final int FLAG_INSTALLED = 9997;
 
     private String url;
     private String name;

@@ -1,18 +1,37 @@
 package zlc.season.rxdownloadproject.download_manager;
 
+import android.Manifest;
 import android.content.Context;
+import android.content.Intent;
+import android.net.Uri;
+import android.util.Log;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.squareup.picasso.Picasso;
+import com.tbruyelle.rxpermissions.RxPermissions;
+
+import java.io.File;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
+import rx.Subscriber;
+import rx.Subscription;
+import rx.android.schedulers.AndroidSchedulers;
+import rx.functions.Action1;
+import rx.schedulers.Schedulers;
 import zlc.season.practicalrecyclerview.AbstractViewHolder;
+import zlc.season.rxdownload.DownloadRecord;
+import zlc.season.rxdownload.DownloadStatus;
+import zlc.season.rxdownload.RxDownload;
+import zlc.season.rxdownloadproject.DownloadStateContext;
 import zlc.season.rxdownloadproject.R;
+
+import static android.os.Environment.DIRECTORY_DOWNLOADS;
+import static android.os.Environment.getExternalStoragePublicDirectory;
 
 /**
  * Author: Season(ssseasonnn@gmail.com)
@@ -30,13 +49,22 @@ public class AppInfoViewHolder extends AbstractViewHolder<AppInfoBean> {
     @BindView(R.id.status)
     Button mStatus;
 
+    private String defaultPath = getExternalStoragePublicDirectory(DIRECTORY_DOWNLOADS).getPath();
+
     private AppInfoBean mData;
     private Context mContext;
+    private RxDownload mRxDownload;
+    private DownloadStateContext mStateContext;
 
     public AppInfoViewHolder(ViewGroup parent) {
         super(parent, R.layout.app_info_item);
         ButterKnife.bind(this, itemView);
         mContext = parent.getContext();
+
+        mRxDownload = RxDownload.getInstance().context(mContext);
+
+        mStateContext = new DownloadStateContext(null, mStatus);
+        mStateContext.setStateAndDisplay(DownloadRecord.FLAG_NORMAL);
     }
 
     @Override
@@ -45,9 +73,105 @@ public class AppInfoViewHolder extends AbstractViewHolder<AppInfoBean> {
         Picasso.with(mContext).load(data.img).into(mHead);
         mTitle.setText(data.name);
         mContent.setText(data.info);
+
+        // 读取下载状态, 如果存在下载记录,则初始化为上次下载的状态
+        Subscription query = mRxDownload.getDownloadRecord(data.downloadUrl)
+                .subscribe(new Action1<DownloadRecord>() {
+                    @Override
+                    public void call(DownloadRecord record) {
+                        //如果有下载记录才会执行到这里, 如果没有下载记录不会执行这里
+                        int flag = record.getDownloadFlag();
+                        //设置下载状态
+                        mStateContext.setStateAndDisplay(flag);
+                    }
+                });
+
+        //注册广播接收器, 用于接收下载进度
+        Subscription temp = mRxDownload.registerReceiver(data.downloadUrl)
+                .subscribe(new Subscriber<DownloadStatus>() {
+                    @Override
+                    public void onCompleted() {
+                        mStateContext.setStateAndDisplay(DownloadRecord.FLAG_COMPLETED);
+                    }
+
+                    @Override
+                    public void onError(Throwable e) {
+                        Log.w("TAG", e);
+                        mStateContext.setStateAndDisplay(DownloadRecord.FLAG_FAILED);
+                    }
+
+                    @Override
+                    public void onNext(final DownloadStatus status) {
+                    }
+                });
+        //将subscription收集起来,在Activity销毁的时候取消订阅,以免内存泄漏
+        mData.mSubscriptions.add(temp);
+        mData.mSubscriptions.add(query);
     }
 
     @OnClick(R.id.status)
     public void onClick() {
+        mStateContext.performClick(new DownloadStateContext.Callback() {
+            @Override
+            public void startDownload() {
+                start();
+            }
+
+            @Override
+            public void pauseDownload() {
+                pause();
+            }
+
+            @Override
+            public void install() {
+                installApk();
+            }
+        });
+    }
+
+    private void installApk() {
+        mStateContext.setStateAndDisplay(DownloadRecord.FLAG_INSTALL);
+        Uri uri = Uri.fromFile(new File(defaultPath + File.separator + mData.saveName));
+        Intent intent = new Intent(Intent.ACTION_VIEW);
+        intent.setDataAndType(uri, "application/vnd.android.package-archive");
+        mContext.startActivity(intent);
+    }
+
+    private void start() {
+        //开始下载, 先检查权限
+        Subscription temp = RxPermissions.getInstance(mContext)
+                .request(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                .doOnNext(new Action1<Boolean>() {
+                    @Override
+                    public void call(Boolean granted) {
+                        if (!granted) {
+                            throw new RuntimeException("no permission");
+                        }
+                    }
+                })
+                .observeOn(Schedulers.io())
+                .compose(mRxDownload.transformServiceNoReceiver(mData.downloadUrl, mData.saveName, null))
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(new Action1<Object>() {
+                    @Override
+                    public void call(Object o) {
+                        mStateContext.setStateAndDisplay(DownloadRecord.FLAG_STARTED);
+                    }
+                });
+        mData.mSubscriptions.add(temp);
+    }
+
+    /**
+     * 暂停下载
+     */
+    private void pause() {
+        Subscription subscription = mRxDownload.pauseServiceDownload(mData.downloadUrl)
+                .subscribe(new Action1<Object>() {
+                    @Override
+                    public void call(Object o) {
+                        mStateContext.setStateAndDisplay(DownloadRecord.FLAG_PAUSED);
+                    }
+                });
+        mData.mSubscriptions.add(subscription);
     }
 }

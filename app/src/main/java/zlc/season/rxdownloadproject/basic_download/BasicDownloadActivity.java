@@ -70,11 +70,6 @@ public class BasicDownloadActivity extends AppCompatActivity {
                     }
 
                     @Override
-                    public void cancelDownload() {
-
-                    }
-
-                    @Override
                     public void pauseDownload() {
                         pause();
                     }

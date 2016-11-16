@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              xmlns:tools="http://schemas.android.com/tools"
               android:layout_width="match_parent"
               android:layout_height="?android:attr/listPreferredItemHeight"
-              xmlns:tools="http://schemas.android.com/tools"
               android:clickable="true"
               android:foreground="?android:attr/selectableItemBackground"
               android:orientation="horizontal"
@@ -35,7 +35,7 @@
             android:orientation="horizontal">
 
             <TextView
-                android:id="@+id/status"
+                android:id="@+id/name"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_gravity="start"
@@ -43,7 +43,9 @@
                 android:layout_marginRight="20dp"
                 android:layout_weight="1"
                 android:gravity="start"
-                tools:text="正在下载中"/>
+                android:textSize="15sp"
+                android:textStyle="bold"
+                tools:text="微信"/>
 
             <TextView
                 android:id="@+id/percent"
@@ -65,16 +67,34 @@
             android:layout_gravity="center"/>
 
 
-        <TextView
-            android:id="@+id/size"
-            android:layout_width="wrap_content"
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_gravity="end"
-            android:layout_marginEnd="10dp"
-            android:layout_marginRight="10dp"
-            android:gravity="center"
-            android:text="0.0KB/0.0KB"/>
+            android:layout_gravity="center"
+            android:orientation="horizontal">
 
+            <TextView
+                android:id="@+id/status"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_gravity="start"
+                android:layout_marginEnd="20dp"
+                android:layout_marginRight="20dp"
+                android:layout_weight="1"
+                android:gravity="start"
+                tools:text="正在下载中"/>
+
+            <TextView
+                android:id="@+id/size"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="end"
+                android:layout_marginEnd="10dp"
+                android:layout_marginRight="10dp"
+                android:gravity="center"
+                android:text="0.0KB/0.0KB"
+                android:textSize="11sp"/>
+        </LinearLayout>
 
     </LinearLayout>
 
@@ -85,7 +105,7 @@
         android:orientation="vertical">
 
         <Button
-            android:id="@+id/start"
+            android:id="@+id/action"
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:layout_weight="1"
@@ -94,12 +114,12 @@
             android:textColor="@color/colorAccent"/>
 
         <Button
-            android:id="@+id/delete"
+            android:id="@+id/cancel"
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:layout_weight="1"
             android:background="@null"
-            android:text="删除"
+            android:text="取消"
             android:textColor="@color/colorAccent"/>
     </LinearLayout>
 

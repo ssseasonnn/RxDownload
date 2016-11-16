@@ -79,8 +79,6 @@ public class DownloadStateContext {
 
         void startDownload();
 
-        void cancelDownload();
-
         void pauseDownload();
 
         void install();
@@ -107,8 +105,8 @@ public class DownloadStateContext {
 
         @Override
         void displayNowState(TextView status, Button action) {
-            status.setText("");
-            action.setText("开始");
+            if (status != null) status.setText("");
+            if (action != null) action.setText("开始");
         }
 
         @Override
@@ -125,8 +123,8 @@ public class DownloadStateContext {
 
         @Override
         void displayNowState(TextView status, Button action) {
-            status.setText("正在下载...");
-            action.setText("暂停");
+            if (status != null) status.setText("正在下载...");
+            if (action != null) action.setText("暂停");
         }
 
         @Override
@@ -143,8 +141,8 @@ public class DownloadStateContext {
 
         @Override
         void displayNowState(TextView status, Button action) {
-            status.setText("下载已暂停");
-            action.setText("继续");
+            if (status != null) status.setText("下载已暂停");
+            if (action != null) action.setText("继续");
         }
 
         @Override
@@ -161,8 +159,8 @@ public class DownloadStateContext {
 
         @Override
         void displayNowState(TextView status, Button action) {
-            status.setText("下载失败");
-            action.setText("开始");
+            if (status != null) status.setText("下载失败");
+            if (action != null) action.setText("开始");
         }
 
         @Override
@@ -179,8 +177,8 @@ public class DownloadStateContext {
 
         @Override
         void displayNowState(TextView status, Button action) {
-            status.setText("下载取消");
-            action.setText("开始");
+            if (status != null) status.setText("下载已取消");
+            if (action != null) action.setText("开始");
         }
 
         @Override
@@ -197,8 +195,8 @@ public class DownloadStateContext {
 
         @Override
         void displayNowState(TextView status, Button action) {
-            status.setText("下载已完成");
-            action.setText("安装");
+            if (status != null) status.setText("下载已完成");
+            if (action != null) action.setText("安装");
         }
 
         @Override
@@ -215,8 +213,8 @@ public class DownloadStateContext {
 
         @Override
         void displayNowState(TextView status, Button action) {
-            status.setText("正在安装...");
-            action.setText("安装中");
+            if (status != null) status.setText("正在安装...");
+            if (action != null) action.setText("安装中");
         }
 
         @Override

@@ -58,6 +58,7 @@ public class AppMarketActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        unsubscribe();
     }
 
     private void loadData() {
@@ -72,5 +73,12 @@ public class AppMarketActivity extends AppCompatActivity {
             list.add(temp);
         }
         mAdapter.addAll(list);
+    }
+
+    private void unsubscribe() {
+        List<AppInfoBean> list = mAdapter.getData();
+        for (AppInfoBean each : list) {
+            each.mSubscriptions.clear();
+        }
     }
 }

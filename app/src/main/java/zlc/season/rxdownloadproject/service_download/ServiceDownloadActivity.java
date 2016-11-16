@@ -70,11 +70,6 @@ public class ServiceDownloadActivity extends AppCompatActivity {
             }
 
             @Override
-            public void cancelDownload() {
-                //                cancel();
-            }
-
-            @Override
             public void pauseDownload() {
                 pause();
             }
@@ -160,6 +155,8 @@ public class ServiceDownloadActivity extends AppCompatActivity {
                         mSize.setText(status.getFormatStatusString());
                     }
                 });
+
+        //将subscription收集起来,在Activity销毁的时候取消订阅,以免内存泄漏
         mSubscriptions.add(temp);
         mSubscriptions.add(query);
     }

@@ -151,15 +151,31 @@ public class RxDownload {
      */
     public Observable<?> pauseServiceDownload(final String url) {
         if (!bound) {
-            Log.w(TAG, "Download Service is not Bind...");
-            return Observable.error(new Throwable("Download Service is not Bind..."));
+            Log.w(TAG, "Download Service is not Start or Bind. So start Service and Bind.");
+            PublishSubject<?> subject = PublishSubject.create();
+            Observable<?> observable;
+            observable = subject.doOnSubscribe(new Action0() {
+                @Override
+                public void call() {
+                    Intent intent = new Intent(mContext, DownloadService.class);
+                    mContext.startService(intent);
+                    mContext.bindService(intent, new DownloadServiceConnection(new ConnectedCallback() {
+                        @Override
+                        public void call() {
+                            mDownloadService.pauseDownload(url);
+                        }
+                    }), Context.BIND_AUTO_CREATE);
+                }
+            });
+            return observable;
+        } else {
+            return Observable.just(null).doOnNext(new Action1<Object>() {
+                @Override
+                public void call(Object o) {
+                    mDownloadService.cancelDownload(url);
+                }
+            });
         }
-        return Observable.just(null).doOnNext(new Action1<Object>() {
-            @Override
-            public void call(Object o) {
-                mDownloadService.pauseDownload(url);
-            }
-        });
     }
 
     /**
@@ -171,15 +187,31 @@ public class RxDownload {
      */
     public Observable<?> cancelServiceDownload(final String url) {
         if (!bound) {
-            Log.w(TAG, "Download Service is not Bind...");
-            return Observable.error(new Throwable("Download Service is not Bind..."));
+            Log.w(TAG, "Download Service is not Start or Bind. So start Service and Bind.");
+            PublishSubject<?> subject = PublishSubject.create();
+            Observable<?> observable;
+            observable = subject.doOnSubscribe(new Action0() {
+                @Override
+                public void call() {
+                    Intent intent = new Intent(mContext, DownloadService.class);
+                    mContext.startService(intent);
+                    mContext.bindService(intent, new DownloadServiceConnection(new ConnectedCallback() {
+                        @Override
+                        public void call() {
+                            mDownloadService.cancelDownload(url);
+                        }
+                    }), Context.BIND_AUTO_CREATE);
+                }
+            });
+            return observable;
+        } else {
+            return Observable.just(null).doOnNext(new Action1<Object>() {
+                @Override
+                public void call(Object o) {
+                    mDownloadService.cancelDownload(url);
+                }
+            });
         }
-        return Observable.just(null).doOnNext(new Action1<Object>() {
-            @Override
-            public void call(Object o) {
-                mDownloadService.cancelDownload(url);
-            }
-        });
     }
 
     /**
@@ -241,24 +273,13 @@ public class RxDownload {
                 //startService不管调用多少次, 只会启动一个Service.
                 Intent intent = new Intent(mContext, DownloadService.class);
                 mContext.startService(intent);
-                mContext.bindService(intent, new ServiceConnection() {
+                mContext.bindService(intent, new DownloadServiceConnection(new ConnectedCallback() {
                     @Override
-                    public void onServiceConnected(ComponentName name, IBinder binder) {
-                        DownloadService.DownloadBinder downloadBinder = (DownloadService.DownloadBinder) binder;
-                        mDownloadService = downloadBinder.getService();
-                        mContext.unbindService(this);
-                        bound = true;
-
+                    public void call() {
                         mDownloadService.startDownload(RxDownload.this, url, saveName, savePath, displayName,
                                 displayImage);
                     }
-
-                    @Override
-                    public void onServiceDisconnected(ComponentName name) {
-                        //注意!!这个方法只会在系统杀掉Service时才会调用!!
-                        bound = false;
-                    }
-                }, Context.BIND_AUTO_CREATE);
+                }), Context.BIND_AUTO_CREATE);
             }
         }).doOnUnsubscribe(new Action0() {
             @Override
@@ -318,24 +339,13 @@ public class RxDownload {
                 //startService不管调用多少次, 只会启动一个Service.
                 Intent intent = new Intent(mContext, DownloadService.class);
                 mContext.startService(intent);
-                mContext.bindService(intent, new ServiceConnection() {
+                mContext.bindService(intent, new DownloadServiceConnection(new ConnectedCallback() {
                     @Override
-                    public void onServiceConnected(ComponentName name, IBinder binder) {
-                        DownloadService.DownloadBinder downloadBinder = (DownloadService.DownloadBinder) binder;
-                        mDownloadService = downloadBinder.getService();
-                        mContext.unbindService(this);
-                        bound = true;
-
+                    public void call() {
                         mDownloadService.startDownload(RxDownload.this, url, saveName, savePath, displayName,
                                 displayImage);
                     }
-
-                    @Override
-                    public void onServiceDisconnected(ComponentName name) {
-                        //注意!!这个方法只会在系统杀掉Service时才会调用!!
-                        bound = false;
-                    }
-                }, Context.BIND_AUTO_CREATE);
+                }), Context.BIND_AUTO_CREATE);
             }
         });
     }
@@ -654,6 +664,34 @@ public class RxDownload {
                     .buildNormalDownload();
         } else {
             return mFactory.fileLength(contentLength).buildAlreadyDownload();
+        }
+    }
+
+    private interface ConnectedCallback {
+        void call();
+    }
+
+    private class DownloadServiceConnection implements ServiceConnection {
+
+        private ConnectedCallback mCallback;
+
+        DownloadServiceConnection(ConnectedCallback callback) {
+            mCallback = callback;
+        }
+
+        @Override
+        public void onServiceConnected(ComponentName name, IBinder binder) {
+            DownloadService.DownloadBinder downloadBinder = (DownloadService.DownloadBinder) binder;
+            mDownloadService = downloadBinder.getService();
+            mContext.unbindService(this);
+            bound = true;
+            mCallback.call();
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName name) {
+            //注意!!这个方法只会在系统杀掉Service时才会调用!!
+            bound = false;
         }
     }
 }

@@ -61,6 +61,7 @@ public class DownloadService extends Service {
         for (Subscription each : mRecordMap.values()) {
             Utils.unSubscribe(each);
         }
+        mDataBaseHelper.closeDataBase();
     }
 
     @Nullable

@@ -134,7 +134,7 @@ public class RxDownload {
      * @param url 下载地址
      * @return Observable<DownloadStatus>
      */
-    public Observable<DownloadRecord> getSingleDownloadRecord(String url) {
+    public Observable<DownloadRecord> getDownloadRecord(String url) {
         if (mContext == null) {
             return Observable.error(new Throwable("Context is NULL! You should call " +
                     "#RxDownload.context(Context context)# first!"));
@@ -185,7 +185,7 @@ public class RxDownload {
      * <p>
      * 取消订阅时会取消注册广播接收器, 但不会暂停下载
      * <p>
-     * 同时会在数据库中保存下载记录,之后可以用 {@link #getSingleDownloadRecord(String)} 获取下载记录
+     * 同时会在数据库中保存下载记录,之后可以用 {@link #getDownloadRecord(String)} 获取下载记录
      *
      * @param url      下载文件的Url
      * @param saveName 下载文件的保存名称
@@ -203,7 +203,7 @@ public class RxDownload {
      * <p>
      * 取消订阅时会取消注册广播接收器, 但不会暂停下载
      * <p>
-     * 同时会在数据库中保存下载记录,之后可以用 {@link #getSingleDownloadRecord(String)} 获取下载记录
+     * 同时会在数据库中保存下载记录,之后可以用 {@link #getDownloadRecord(String)} 获取下载记录
      *
      * @param url          下载文件的Url
      * @param saveName     下载文件的保存名称

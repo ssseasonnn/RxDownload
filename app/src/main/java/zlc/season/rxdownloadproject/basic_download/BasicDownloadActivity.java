@@ -1,6 +1,8 @@
 package zlc.season.rxdownloadproject.basic_download;
 
 import android.Manifest;
+import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
@@ -13,6 +15,8 @@ import android.widget.TextView;
 
 import com.squareup.picasso.Picasso;
 import com.tbruyelle.rxpermissions.RxPermissions;
+
+import java.io.File;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -27,6 +31,9 @@ import zlc.season.rxdownload.DownloadStatus;
 import zlc.season.rxdownload.RxDownload;
 import zlc.season.rxdownloadproject.DownloadStateContext;
 import zlc.season.rxdownloadproject.R;
+
+import static android.os.Environment.DIRECTORY_DOWNLOADS;
+import static android.os.Environment.getExternalStoragePublicDirectory;
 
 public class BasicDownloadActivity extends AppCompatActivity {
 
@@ -47,36 +54,16 @@ public class BasicDownloadActivity extends AppCompatActivity {
     @BindView(R.id.finish)
     Button mFinish;
 
+    private String saveName = "weixin.apk";
+    private String url = "http://dldir1.qq.com/weixin/android/weixin6330android920.apk";
     private Subscription subscription;
     private DownloadStateContext mStateContext;
-
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_basic_download);
-        ButterKnife.bind(this);
-        setSupportActionBar(mToolbar);
-
-        String icon = "http://static.yingyonghui.com/icon/128/4200197.png";
-        Picasso.with(this).load(icon).into(mImg);
-        mStatus.setText("开始");
-
-        mStateContext = new DownloadStateContext(mStatus, mAction);
-        mStateContext.setState(DownloadRecord.FLAG_NORMAL);
-        mStateContext.displayNowState();
-    }
-
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        unSubscribe(subscription);
-    }
 
     @OnClick({R.id.action, R.id.finish})
     public void onClick(View view) {
         switch (view.getId()) {
             case R.id.action:
-                mStateContext.nextState(new DownloadStateContext.Callback() {
+                mStateContext.performClick(new DownloadStateContext.Callback() {
                     @Override
                     public void startDownload() {
                         start();
@@ -90,6 +77,11 @@ public class BasicDownloadActivity extends AppCompatActivity {
                     @Override
                     public void pauseDownload() {
                         pause();
+                    }
+
+                    @Override
+                    public void install() {
+                        installApk();
                     }
                 });
                 break;
@@ -105,8 +97,28 @@ public class BasicDownloadActivity extends AppCompatActivity {
         }
     }
 
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_basic_download);
+        ButterKnife.bind(this);
+        setSupportActionBar(mToolbar);
+
+        String icon = "http://static.yingyonghui.com/icon/128/4200197.png";
+        Picasso.with(this).load(icon).into(mImg);
+        mStatus.setText("开始");
+
+        mStateContext = new DownloadStateContext(mStatus, mAction);
+        mStateContext.setStateAndDisplay(DownloadRecord.FLAG_NORMAL);
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        unSubscribe(subscription);
+    }
+
     private void start() {
-        String url = "http://a.gdown.baidu.com/data/wisegame/f4314d752861cf51/WeChat_900.apk";
         subscription = RxPermissions.getInstance(this)
                 .request(Manifest.permission.WRITE_EXTERNAL_STORAGE)
                 .doOnNext(new Action1<Boolean>() {
@@ -118,20 +130,18 @@ public class BasicDownloadActivity extends AppCompatActivity {
                     }
                 })
                 .observeOn(Schedulers.io())
-                .compose(RxDownload.getInstance().transform(url, "weixin.apk", null))
+                .compose(RxDownload.getInstance().transform(url, saveName, null))
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(new Subscriber<DownloadStatus>() {
                     @Override
                     public void onCompleted() {
-                        mStateContext.setState(DownloadRecord.FLAG_COMPLETED);
-                        mStateContext.displayNowState();
+                        mStateContext.setStateAndDisplay(DownloadRecord.FLAG_COMPLETED);
                     }
 
                     @Override
                     public void onError(Throwable e) {
                         Log.w("TAG", e);
-                        mStateContext.setState(DownloadRecord.FLAG_FAILED);
-                        mStateContext.displayNowState();
+                        mStateContext.setStateAndDisplay(DownloadRecord.FLAG_FAILED);
                     }
 
                     @Override
@@ -147,5 +157,14 @@ public class BasicDownloadActivity extends AppCompatActivity {
 
     private void pause() {
         BasicDownloadActivity.this.unSubscribe(subscription);
+        mStateContext.setStateAndDisplay(DownloadRecord.FLAG_PAUSED);
+    }
+
+    private void installApk() {
+        Uri uri = Uri.fromFile(new File(getExternalStoragePublicDirectory(DIRECTORY_DOWNLOADS).getPath() +
+                File.separator + saveName));
+        Intent intent = new Intent(Intent.ACTION_VIEW);
+        intent.setDataAndType(uri, "application/vnd.android.package-archive");
+        startActivity(intent);
     }
 }

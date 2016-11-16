@@ -52,6 +52,36 @@ public class ServiceDownloadActivity extends AppCompatActivity {
 
     private DownloadStateContext mStateContext;
 
+    @OnClick(R.id.action)
+    public void onClick() {
+        mStateContext.performClick(new DownloadStateContext.Callback() {
+            @Override
+            public void startDownload() {
+                start();
+            }
+
+            @Override
+            public void cancelDownload() {
+                //                cancel();
+            }
+
+            @Override
+            public void pauseDownload() {
+                pause();
+            }
+
+            @Override
+            public void install() {
+
+            }
+        });
+    }
+
+    @OnClick(R.id.finish)
+    public void onClickFinish() {
+        ServiceDownloadActivity.this.finish();
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -67,7 +97,7 @@ public class ServiceDownloadActivity extends AppCompatActivity {
         mSubscriptions = new CompositeSubscription();
 
         mStateContext = new DownloadStateContext(mStatusText, mAction);
-        mStateContext.setState(DownloadRecord.FLAG_NORMAL);
+        mStateContext.setStateAndDisplay(DownloadRecord.FLAG_NORMAL);
     }
 
     @Override
@@ -81,7 +111,7 @@ public class ServiceDownloadActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         // 读取下载状态, 如果存在下载记录,则初始化为上次下载的状态
-        Subscription query = mRxDownload.getSingleDownloadRecord(url)
+        Subscription query = mRxDownload.getDownloadRecord(url)
                 .subscribe(new Action1<DownloadRecord>() {
                     @Override
                     public void call(DownloadRecord record) {
@@ -93,7 +123,8 @@ public class ServiceDownloadActivity extends AppCompatActivity {
                         mSize.setText(record.getStatus().getFormatStatusString());
 
                         int flag = record.getDownloadFlag();
-                        mStateContext.setState(flag);
+                        //设置下载状态
+                        mStateContext.setStateAndDisplay(flag);
                     }
                 });
 
@@ -102,15 +133,13 @@ public class ServiceDownloadActivity extends AppCompatActivity {
                 .subscribe(new Subscriber<DownloadStatus>() {
                     @Override
                     public void onCompleted() {
-                        mStateContext.setState(DownloadRecord.FLAG_COMPLETED);
-                        mStateContext.displayNowState();
+                        mStateContext.setStateAndDisplay(DownloadRecord.FLAG_COMPLETED);
                     }
 
                     @Override
                     public void onError(Throwable e) {
                         Log.w("TAG", e);
-                        mStateContext.setState(DownloadRecord.FLAG_FAILED);
-                        mStateContext.displayNowState();
+                        mStateContext.setStateAndDisplay(DownloadRecord.FLAG_FAILED);
                     }
 
                     @Override
@@ -124,33 +153,6 @@ public class ServiceDownloadActivity extends AppCompatActivity {
                 });
         mSubscriptions.add(temp);
         mSubscriptions.add(query);
-
-        mStateContext.displayNowState();
-    }
-
-    @OnClick(R.id.action)
-    public void onClick() {
-        mStateContext.nextState(new DownloadStateContext.Callback() {
-            @Override
-            public void startDownload() {
-                start();
-            }
-
-            @Override
-            public void cancelDownload() {
-//                cancel();
-            }
-
-            @Override
-            public void pauseDownload() {
-                pause();
-            }
-        });
-    }
-
-    @OnClick(R.id.finish)
-    public void onClickFinish() {
-        ServiceDownloadActivity.this.finish();
     }
 
     private void start() {
@@ -171,15 +173,13 @@ public class ServiceDownloadActivity extends AppCompatActivity {
                 .subscribe(new Subscriber<DownloadStatus>() {
                     @Override
                     public void onCompleted() {
-                        mStateContext.setState(DownloadRecord.FLAG_COMPLETED);
-                        mStateContext.displayNowState();
+                        mStateContext.setStateAndDisplay(DownloadRecord.FLAG_COMPLETED);
                     }
 
                     @Override
                     public void onError(Throwable e) {
                         Log.w("TAG", e);
-                        mStateContext.setState(DownloadRecord.FLAG_FAILED);
-                        mStateContext.displayNowState();
+                        mStateContext.setStateAndDisplay(DownloadRecord.FLAG_FAILED);
                     }
 
                     @Override
@@ -202,8 +202,7 @@ public class ServiceDownloadActivity extends AppCompatActivity {
                 .subscribe(new Action1<Object>() {
                     @Override
                     public void call(Object o) {
-                        mStateContext.setState(DownloadRecord.FLAG_PAUSED);
-                        mStateContext.displayNowState();
+                        mStateContext.setStateAndDisplay(DownloadRecord.FLAG_PAUSED);
                     }
                 });
         mSubscriptions.add(subscription);
@@ -217,8 +216,7 @@ public class ServiceDownloadActivity extends AppCompatActivity {
                 .subscribe(new Action1<Object>() {
                     @Override
                     public void call(Object o) {
-                        mStateContext.setState(DownloadRecord.FLAG_CANCELED);
-                        mStateContext.displayNowState();
+                        mStateContext.setStateAndDisplay(DownloadRecord.FLAG_CANCELED);
                     }
                 });
         mSubscriptions.add(subscription);

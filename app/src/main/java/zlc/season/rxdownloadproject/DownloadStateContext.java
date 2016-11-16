@@ -9,7 +9,6 @@ import zlc.season.rxdownload.DownloadRecord;
  * Author: Season(ssseasonnn@gmail.com)
  * Date: 2016/11/15
  * Time: 15:26
- * FIXME
  */
 public class DownloadStateContext {
     private DownloadState state;
@@ -22,11 +21,12 @@ public class DownloadStateContext {
         mActionButton = actionButton;
     }
 
-    public void setState(DownloadState state) {
-        this.state = state;
-    }
-
-    public void setState(int flag) {
+    /**
+     * 设置并显示当前状态
+     *
+     * @param flag 状态标识
+     */
+    public void setStateAndDisplay(int flag) {
         switch (flag) {
             case DownloadRecord.FLAG_NORMAL:
                 this.state = new NormalState(this);
@@ -47,16 +47,30 @@ public class DownloadStateContext {
                 this.state = new CompletedState(this);
                 break;
         }
+
+        displayNowState();
     }
 
-    public void displayNowState() {
-        state.nowState(mStatusText, mActionButton);
+    /**
+     * 处理点击事件,切换到下一状态并显示
+     *
+     * @param callback Callback
+     */
+    public void performClick(Callback callback) {
+        state.changeStateAndDisplay(mStatusText, mActionButton, callback);
     }
 
-    public void nextState(Callback callback) {
-        state.nextState(mStatusText, mActionButton, callback);
+    private void displayNowState() {
+        state.displayNowState(mStatusText, mActionButton);
     }
 
+    private void setState(DownloadState state) {
+        this.state = state;
+    }
+
+    /**
+     * 状态处理回调
+     */
     public interface Callback {
 
         void startDownload();
@@ -64,6 +78,8 @@ public class DownloadStateContext {
         void cancelDownload();
 
         void pauseDownload();
+
+        void install();
     }
 
     static abstract class DownloadState {
@@ -73,9 +89,9 @@ public class DownloadStateContext {
             mContext = context;
         }
 
-        abstract void nowState(TextView status, Button action);
+        abstract void displayNowState(TextView status, Button action);
 
-        abstract void nextState(TextView status, Button action, Callback callback);
+        abstract void changeStateAndDisplay(TextView status, Button action, Callback callback);
 
     }
 
@@ -86,13 +102,13 @@ public class DownloadStateContext {
         }
 
         @Override
-        void nowState(TextView status, Button action) {
+        void displayNowState(TextView status, Button action) {
             status.setText("");
             action.setText("开始");
         }
 
         @Override
-        void nextState(TextView status, Button action, Callback callback) {
+        void changeStateAndDisplay(TextView status, Button action, Callback callback) {
             status.setText("正在下载...");
             action.setText("暂停");
             mContext.setState(new StartedState(mContext));
@@ -107,13 +123,13 @@ public class DownloadStateContext {
         }
 
         @Override
-        void nowState(TextView status, Button action) {
+        void displayNowState(TextView status, Button action) {
             status.setText("正在下载...");
             action.setText("暂停");
         }
 
         @Override
-        void nextState(TextView status, Button action, Callback callback) {
+        void changeStateAndDisplay(TextView status, Button action, Callback callback) {
             status.setText("下载已暂停...");
             action.setText("继续");
             mContext.setState(new PausedState(mContext));
@@ -128,13 +144,13 @@ public class DownloadStateContext {
         }
 
         @Override
-        void nowState(TextView status, Button action) {
+        void displayNowState(TextView status, Button action) {
             status.setText("下载已暂停");
             action.setText("继续");
         }
 
         @Override
-        void nextState(TextView status, Button action, Callback callback) {
+        void changeStateAndDisplay(TextView status, Button action, Callback callback) {
             status.setText("正在下载...");
             action.setText("暂停");
             mContext.setState(new StartedState(mContext));
@@ -149,16 +165,17 @@ public class DownloadStateContext {
         }
 
         @Override
-        void nowState(TextView status, Button action) {
+        void displayNowState(TextView status, Button action) {
             status.setText("下载失败");
             action.setText("开始");
         }
 
         @Override
-        void nextState(TextView status, Button action, Callback callback) {
+        void changeStateAndDisplay(TextView status, Button action, Callback callback) {
             status.setText("开始下载");
             action.setText("暂停");
             mContext.setState(new StartedState(mContext));
+            callback.startDownload();
         }
     }
 
@@ -169,16 +186,17 @@ public class DownloadStateContext {
         }
 
         @Override
-        void nowState(TextView status, Button action) {
+        void displayNowState(TextView status, Button action) {
             status.setText("下载取消");
             action.setText("开始");
         }
 
         @Override
-        void nextState(TextView status, Button action, Callback callback) {
+        void changeStateAndDisplay(TextView status, Button action, Callback callback) {
             status.setText("开始下载");
             action.setText("暂停");
             mContext.setState(new StartedState(mContext));
+            callback.startDownload();
         }
     }
 
@@ -189,16 +207,16 @@ public class DownloadStateContext {
         }
 
         @Override
-        void nowState(TextView status, Button action) {
+        void displayNowState(TextView status, Button action) {
             status.setText("下载已完成");
             action.setText("安装");
         }
 
         @Override
-        void nextState(TextView status, Button action, Callback callback) {
+        void changeStateAndDisplay(TextView status, Button action, Callback callback) {
             status.setText("正在安装");
             action.setText("...");
-            //do nothing...
+            callback.install();
         }
     }
 }

@@ -18,7 +18,6 @@ import butterknife.ButterKnife;
 import butterknife.OnClick;
 import rx.Subscriber;
 import rx.Subscription;
-import rx.android.schedulers.AndroidSchedulers;
 import rx.functions.Action1;
 import rx.schedulers.Schedulers;
 import rx.subscriptions.CompositeSubscription;
@@ -128,7 +127,7 @@ public class ServiceDownloadActivity extends AppCompatActivity {
                     }
                 });
 
-        //注册广播接收器, 用于接收下载进度, 此处注册广播是为了Activity退出之后重新进入依然能够接收到下载进度
+        //注册广播接收器, 用于接收下载进度
         Subscription temp = mRxDownload.registerReceiver(url)
                 .subscribe(new Subscriber<DownloadStatus>() {
                     @Override
@@ -156,7 +155,7 @@ public class ServiceDownloadActivity extends AppCompatActivity {
     }
 
     private void start() {
-        //开始下载,先检查权限,同时注册广播接收器用于接收下载进度
+        //开始下载, 先检查权限
         Subscription temp = RxPermissions.getInstance(this)
                 .request(Manifest.permission.WRITE_EXTERNAL_STORAGE)
                 .doOnNext(new Action1<Boolean>() {
@@ -168,29 +167,8 @@ public class ServiceDownloadActivity extends AppCompatActivity {
                     }
                 })
                 .observeOn(Schedulers.io())
-                .compose(mRxDownload.transformService(url, "weixin.apk", null))
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(new Subscriber<DownloadStatus>() {
-                    @Override
-                    public void onCompleted() {
-                        mStateContext.setStateAndDisplay(DownloadRecord.FLAG_COMPLETED);
-                    }
-
-                    @Override
-                    public void onError(Throwable e) {
-                        Log.w("TAG", e);
-                        mStateContext.setStateAndDisplay(DownloadRecord.FLAG_FAILED);
-                    }
-
-                    @Override
-                    public void onNext(final DownloadStatus status) {
-                        mProgress.setIndeterminate(status.isChunked);
-                        mProgress.setMax((int) status.getTotalSize());
-                        mProgress.setProgress((int) status.getDownloadSize());
-                        mPercent.setText(status.getPercent());
-                        mSize.setText(status.getFormatStatusString());
-                    }
-                });
+                .compose(mRxDownload.transformServiceNoReceiver(url, "weixin.apk", null))
+                .subscribe();
         mSubscriptions.add(temp);
     }
 

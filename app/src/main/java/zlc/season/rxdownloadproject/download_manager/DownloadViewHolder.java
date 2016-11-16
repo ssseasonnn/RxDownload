@@ -145,7 +145,7 @@ public class DownloadViewHolder extends AbstractViewHolder<DownloadBean> {
     }
 
     private Subscription startDownload(String url, String saveName, String savePath) {
-        return mRxDownload.downloadThroughService(url, saveName, savePath, null, null)
+        return mRxDownload.serviceDownload(url, saveName, savePath, null, null)
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(new Subscriber<DownloadStatus>() {

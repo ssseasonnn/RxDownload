@@ -68,10 +68,6 @@ public class DownloadStateContext {
         state.displayNowState(mStatusText, mActionButton);
     }
 
-    private void setState(DownloadState state) {
-        this.state = state;
-    }
-
     /**
      * 状态处理回调
      */
@@ -106,7 +102,7 @@ public class DownloadStateContext {
         @Override
         void displayNowState(TextView status, Button action) {
             if (status != null) status.setText("");
-            if (action != null) action.setText("开始");
+            if (action != null) action.setText("下载");
         }
 
         @Override
@@ -160,7 +156,7 @@ public class DownloadStateContext {
         @Override
         void displayNowState(TextView status, Button action) {
             if (status != null) status.setText("下载失败");
-            if (action != null) action.setText("开始");
+            if (action != null) action.setText("下载");
         }
 
         @Override
@@ -178,7 +174,7 @@ public class DownloadStateContext {
         @Override
         void displayNowState(TextView status, Button action) {
             if (status != null) status.setText("下载已取消");
-            if (action != null) action.setText("开始");
+            if (action != null) action.setText("下载");
         }
 
         @Override

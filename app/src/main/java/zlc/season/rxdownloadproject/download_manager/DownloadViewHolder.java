@@ -26,6 +26,7 @@ import rx.Subscription;
 import rx.android.schedulers.AndroidSchedulers;
 import rx.functions.Action1;
 import rx.schedulers.Schedulers;
+import zlc.season.practicalrecyclerview.AbstractAdapter;
 import zlc.season.practicalrecyclerview.AbstractViewHolder;
 import zlc.season.rxdownload.DownloadRecord;
 import zlc.season.rxdownload.DownloadStatus;
@@ -52,27 +53,32 @@ public class DownloadViewHolder extends AbstractViewHolder<DownloadBean> {
     TextView mSize;
     @BindView(R.id.status)
     TextView mStatusText;
-    @BindView(R.id.cancel)
-    Button mDelete;
     @BindView(R.id.action)
     Button mActionButton;
     @BindView(R.id.name)
     TextView mName;
+    @BindView(R.id.delete)
+    Button mDelete;
+    @BindView(R.id.cancel)
+    Button mCancel;
 
+    private AbstractAdapter mAdapter;
     private Context mContext;
     private DownloadBean mData;
     private RxDownload mRxDownload;
 
     private DownloadStateContext mStateContext;
 
-    public DownloadViewHolder(ViewGroup parent) {
+    public DownloadViewHolder(ViewGroup parent, AbstractAdapter adapter) {
         super(parent, R.layout.download_manager_item);
         ButterKnife.bind(this, itemView);
+
+        this.mAdapter = adapter;
+
         mContext = parent.getContext();
         mRxDownload = RxDownload.getInstance().context(mContext);
 
         mStateContext = new DownloadStateContext(mStatusText, mActionButton);
-        mStateContext.setStateAndDisplay(DownloadRecord.FLAG_NORMAL);
     }
 
     @Override
@@ -105,7 +111,7 @@ public class DownloadViewHolder extends AbstractViewHolder<DownloadBean> {
         mData.mSubscriptions.add(temp);
     }
 
-    @OnClick({R.id.action, R.id.cancel})
+    @OnClick({R.id.action, R.id.cancel, R.id.delete})
     public void onClick(View view) {
         switch (view.getId()) {
             case R.id.action:
@@ -129,6 +135,9 @@ public class DownloadViewHolder extends AbstractViewHolder<DownloadBean> {
             case R.id.cancel:
                 cancel();
                 break;
+            case R.id.delete:
+                delete();
+                break;
         }
     }
 
@@ -147,6 +156,13 @@ public class DownloadViewHolder extends AbstractViewHolder<DownloadBean> {
 
         int flag = param.mRecord.getDownloadFlag();
         mStateContext.setStateAndDisplay(flag);
+
+        //如果读取出来是已取消或已完成状态, 特殊处理一下,显示删除按钮
+        if (flag == DownloadRecord.FLAG_CANCELED || flag == DownloadRecord.FLAG_COMPLETED) {
+            mCancel.setVisibility(View.GONE);
+            mDelete.setVisibility(View.VISIBLE);
+        }
+
         updateProgressStatus(param.mRecord.getStatus());
     }
 
@@ -188,6 +204,8 @@ public class DownloadViewHolder extends AbstractViewHolder<DownloadBean> {
                     @Override
                     public void call(Object o) {
                         mStateContext.setStateAndDisplay(DownloadRecord.FLAG_STARTED);
+                        mDelete.setVisibility(View.GONE);
+                        mCancel.setVisibility(View.VISIBLE);
                     }
                 });
         mData.mSubscriptions.add(temp);
@@ -212,6 +230,23 @@ public class DownloadViewHolder extends AbstractViewHolder<DownloadBean> {
                     @Override
                     public void call(Object o) {
                         mStateContext.setStateAndDisplay(DownloadRecord.FLAG_CANCELED);
+                        mCancel.setVisibility(View.GONE);
+                        mDelete.setVisibility(View.VISIBLE);
+                    }
+                });
+        mData.mSubscriptions.add(subscription);
+    }
+
+    //删除下载
+    private void delete() {
+        Subscription subscription = mRxDownload.deleteServiceDownload(mData.mRecord.getUrl())
+                .subscribe(new Action1<Object>() {
+                    @Override
+                    public void call(Object o) {
+                        //Important!! 删除item前必须先取消订阅!!
+                        mData.mSubscriptions.clear();
+                        //删除item并刷新adapter
+                        mAdapter.remove(getAdapterPosition());
                     }
                 });
         mData.mSubscriptions.add(subscription);

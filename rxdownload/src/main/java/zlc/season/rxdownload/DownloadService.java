@@ -142,6 +142,12 @@ public class DownloadService extends Service {
         mDataBaseHelper.updateRecord(url, FLAG_CANCELED);
     }
 
+    public void deleteDownload(String url) {
+        Utils.unSubscribe(mRecordMap.get(url));
+        mRecordMap.remove(url);
+        mDataBaseHelper.deleteRecord(url);
+    }
+
     public class DownloadBinder extends Binder {
         DownloadService getService() {
             return DownloadService.this;

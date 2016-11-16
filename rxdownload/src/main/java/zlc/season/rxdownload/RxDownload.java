@@ -165,7 +165,7 @@ public class RxDownload {
                         }
                     });
                 } else {
-                    mDownloadService.cancelDownload(url);
+                    mDownloadService.pauseDownload(url);
                 }
             }
         });
@@ -195,6 +195,35 @@ public class RxDownload {
                     });
                 } else {
                     mDownloadService.cancelDownload(url);
+                }
+            }
+        });
+    }
+
+    /**
+     * 删除Service中下载地址为url的下载任务.
+     * 同时从数据库中删除该下载记录.
+     * 不会删除已经下载的文件.
+     *
+     * @param url download url
+     */
+    public Observable<?> deleteServiceDownload(final String url) {
+        if (mContext == null) {
+            return Observable.error(new Throwable("Context is NULL! You should call " +
+                    "#RxDownload.context(Context context)# first!"));
+        }
+        return Observable.just(null).doOnSubscribe(new Action0() {
+            @Override
+            public void call() {
+                if (!bound) {
+                    startBindServiceAndDo(new ServiceConnectedCallback() {
+                        @Override
+                        public void call() {
+                            mDownloadService.deleteDownload(url);
+                        }
+                    });
+                } else {
+                    mDownloadService.deleteDownload(url);
                 }
             }
         });

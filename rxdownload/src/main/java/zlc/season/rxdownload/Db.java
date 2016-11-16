@@ -72,9 +72,9 @@ class Db {
             return values;
         }
 
-        static ContentValues update(int status) {
+        static ContentValues update(int flag) {
             ContentValues values = new ContentValues();
-            values.put(COLUMN_DOWNLOAD_FLAG, status);
+            values.put(COLUMN_DOWNLOAD_FLAG, flag);
             return values;
         }
 

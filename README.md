@@ -1,27 +1,15 @@
 # RxDownload
+The download tool based on RxJava . Support multi-threaded download and breakpoint download, intelligent judge whether to support multi-threaded download and breakpoint download.
 基于RxJava打造的下载工具, 支持多线程下载和断点续传, 智能判断是否支持断点续传等功能
 
-
-标签（空格分隔）： Android  RxJava  Download Tools
+标签（空格分隔）： Android  RxJava  Download Tools Multi-threaded
 
 
 
 ---
 
-## 基于RxJava打造的下载工具, 支持多线程和断点续传
-
-
-### 效果图
-
-![demo](https://github.com/ssseasonnn/RxDownload/blob/master/demo.gif?raw=true)
-
-### 大文件下载测试
-
-![王者荣耀下载测试](https://github.com/ssseasonnn/RxDownload/blob/master/王者荣耀下载测试.gif?raw=true)
-
-![内存占用图](https://github.com/ssseasonnn/RxDownload/blob/master/memory.png?raw=true)
-
-> 大文件下载测试中，内存占用一直趋于平稳
+## 基于RxJava打造的下载工具, 支持多线程和断点续传,同时具备后台下载的能力
+## Download tool based on RxJava. Support multi-thread and breakpoint download. Also have background download ability.
 
 ### 主要功能:
 
@@ -33,7 +21,7 @@
 - 网络连接失败自动重连, 可配置最大重试次数, 默认值为3次
 - 利用Java NIO 中的 MappedByteBuffer内存映射进行高效读写文件
 - 流式下载，再大的文件也不会造成内存泄漏
-- 支持根据Last-Modified字段判断服务端文件是否变化
+- 根据Last-Modified字段自动判断服务端文件是否变化
 - 与服务器进行验证过程中,使用更轻便的HEAD请求方式仅获取响应头,减轻通信数据量
 
 
@@ -45,12 +33,31 @@
 
 - 新增transform方法, 可使用RxJava的compose操作符组合调用下载,具体使用方式请看文章底部
 
+###2016-11-17 更新
+- v1.2.0  发布
+- 支持后台下载
+- 支持获取下载进度
+- 具备下载管理功能
+- 使用方式请查看文档
+
+
+### 效果图
+
+<figure class="third">
+    <img title="普通下载" width="300" src="https://github.com/ssseasonnn/RxDownload/blob/master/gif/basic_download.gif?raw=true">
+    <img title="Service下载" width="300" src="https://github.com/ssseasonnn/RxDownload/blob/master/gif/service_download.gif?raw=true">
+    <img title="下载管理" width="300" src="https://github.com/ssseasonnn/RxDownload/blob/master/gif/download_manager.gif?raw=true">
+</figure>
+
 ### 下载流程图
 
-![流程图](https://github.com/ssseasonnn/RxDownload/blob/master/download.png?raw=true)
-
+<figure class="third">
+	<img src="https://github.com/ssseasonnn/RxDownload/blob/master/download.png?raw=true" title="下载流程图">
+</figure>
 
 ### 使用方式
+
+#### 准备工作
 
 1.添加Gradle依赖
 
@@ -58,7 +65,7 @@
 
 ```groovy
 	dependencies{
-   		 compile 'zlc.season:rxdownload:1.1.5'
+   		 compile 'zlc.season:rxdownload:1.2.0'
 	}
 ```
 
@@ -73,7 +80,12 @@
 
 > **注意: Android 6.0 以上还必须申请运行时权限, 如果遇到不能下载, 请先检查权限**
 
-3.代码调用
+#### 常规下载
+
+- 不具备后台下载能力
+- 取消订阅即暂停下载. 
+
+1.使用方式
 
 ```java
 Subscription subscription = RxDownload.getInstance()
@@ -98,15 +110,13 @@ Subscription subscription = RxDownload.getInstance()
                 });
 ```
 
-> download(String url, String  saveName, String savePath)参数说明:
->
-> 参数分别为下载地址,保存文件名,保存地址.
+> 参数说明: 参数分别为下载地址,保存文件名,保存地址.
 >
 > url与saveName为必传参数, savePath为可选参数, 默认的下载地址为/storage/emulated/0/Download/目录下, 也就是内置存储的Download目录
 
-4.参数配置
+2.参数配置
 
-可以配置的参数如下:
+**可以配置的参数如下:**
 
 ```java
 Subscription subscription = RxDownload.getInstance()
@@ -117,22 +127,7 @@ Subscription subscription = RxDownload.getInstance()
                 .download(url,savename,savepath) //开始下载
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(new Subscriber<DownloadStatus>() {
-                    @Override
-                    public void onCompleted() {
-
-                    }
-
-                    @Override
-                    public void onError(Throwable e) {
-
-                    }
-
-                    @Override
-                    public void onNext(DownloadStatus status) {
-					//Status表示的是当前的下载进度
-                    }
-                });
+                .subscribe(new Subscriber<DownloadStatus>() {);
 ```
 
  **Tips:  RxDownload.getInstance() 每次返回的是一个全新的对象, 因此创建多个下载任务时应该避免多次创建实例:**   
@@ -148,35 +143,9 @@ Subscription subscription1 = rxDownload.download(url1,name1,null)...
 Subscription subscription2 = rxDownload.download(url2,name2,null)...  
 ```
 
-5.DownloadStatus 下载状态
+3.取消或暂停下载
 
-```java
-class DownloadStatus {
-    private long totalSize;
-    private long downloadSize;
-    public boolean isChunked = false;
-    //...
-    //返回文件总大小,单位为byte
-    public long getTotalSize() {}
-
-    //返回已下载总大小,单位为byte
-    public long getDownloadSize() {}
-
-    //返回格式化的总大小,如:10MB
-    public String getFormatTotalSize() {}
-
-	//返回格式化的已经下载的大小,如:5KB
-    public String getFormatDownloadSize() {}
-
-    //返回格式化的状态字符串,如:2MB/36MB
-    public String getFormatStatusString() { }
-
-    //返回下载的百分比, 保留两位小数,如:5.25%
-    public String getPercent() {}
-}
-```
-
-6.取消或暂停下载
+**取消订阅, 即可暂停下载**
 
 ```java
 Subscription subscription = RxDownload.getInstance()
@@ -189,9 +158,11 @@ if (subscription != null && !subscription.isUnsubscribed()) {
 }
 ```
 
-7.与RxPermission结合使用
+4.提供了一个transferform方式供RxJava的Compose操作符使用
 
-RxPermission是为Android 6.0解决运行时权限的一个库, 这里是该库的地址: [RxPermission](https://github.com/tbruyelle/RxPermissions)
+例如与RxPermission结合使用
+
+> RxPermission是为Android 6.0解决运行时权限的一个库, 这里是该库的地址: [RxPermission](https://github.com/tbruyelle/RxPermissions)
 
 ```java
  subscription =  RxPermissions.getInstance(mContext)
@@ -207,23 +178,141 @@ RxPermission是为Android 6.0解决运行时权限的一个库, 这里是该库�
                     .observeOn(Schedulers.io())
                     .compose(RxDownload.getInstance().transform(data.url, data.name, null))
                     .observeOn(AndroidSchedulers.mainThread())
-                    .subscribe(new Subscriber<DownloadStatus>() {
-                        @Override
-                        public void onCompleted() {
-                           //下载完成
-                        }
+                    .subscribe(new Subscriber<DownloadStatus>() { ... });
+```
 
-                        @Override
-                        public void onError(Throwable e) {
-                            Log.w("TAG", e);
-                         //下载出错
-                        }
+#### Service下载
 
-                        @Override
-                        public void onNext(final DownloadStatus status) {
-                           //Status表示的是当前的下载进度
-                        }
-                    });
+- 使用Service进行下载, 具备后台下载能力
+- 取消订阅不会导致下载暂停
+- 能够实时获取下载进度
+- 同时保存下载记录到数据库
+
+1.开始下载, 插入下载记录到数据库中, 同时标记下载状态为STARTED
+
+```java
+ Subscription subscription = RxDownload.getInstance().context(this)//使用service下载需Context
+                .serviceDownload(url,saveName,null)
+                .subscribe(new Subscriber<DownloadStatus>() {
+                    @Override
+                    public void onCompleted() {
+                        //下载完成,同时会在数据库中标记下载状态为COMPLETED
+                    }
+
+                    @Override
+                    public void onError(Throwable e) {
+					  //下载失败,同时会在数据库中标记下载状态为FAILED
+                    }
+
+                    @Override
+                    public void onNext(DownloadStatus status) {
+
+                    }
+                });
+```
+
+**serviceDownload()会同时注册广播接收器用于接收下载进度.**
+
+**取消订阅不会暂停下载. 取消订阅即可取消注册广播**
+
+**这里有另一个不注册广播接收器的版本serviceDownloadNoReceiver().**
+
+2.获取下载进度
+
+如果当前任务正在下载, 注册广播接收当前的下载进度
+
+```java
+ Subscription temp = mRxDownload.registerReceiver(url) //获取下载链接为url的下载进度.
+                .subscribe(new Subscriber<DownloadStatus>() {
+                    @Override
+                    public void onCompleted() {
+                      
+                    }
+
+                    @Override
+                    public void onError(Throwable e) {
+                      
+                    }
+
+                    @Override
+                    public void onNext(final DownloadStatus status) {
+                      
+                    }
+                });
+// 取消订阅即可取消注册广播
+```
+
+3.读取下载记录
+
+从数据库中读取该下载记录, 记录包括下载进度, 下载状态,下载时间等信息
+
+```java
+ Subscription query = mRxDownload.getDownloadRecord(url) //获取下载地址为url的下载记录
+                .subscribe(new Action1<DownloadRecord>() {
+                    @Override
+                    public void call(DownloadRecord record) {
+                        //如果有下载记录才会发送事件
+                        //根据下载记录设置当前的状态
+                        mProgress.setIndeterminate(record.getStatus().isChunked);
+                        mProgress.setMax((int) record.getStatus().getTotalSize());
+                        mProgress.setProgress((int) record.getStatus().getDownloadSize());
+                        mPercent.setText(record.getStatus().getPercent());
+                        mSize.setText(record.getStatus().getFormatStatusString());
+
+                        int flag = record.getDownloadFlag();
+                        //设置下载状态
+                        mDownloadController.setStateAndDisplay(flag);
+                    }
+                });
+```
+
+4.暂停下载, 暂停下载地址为url的下载任务, 同时在数据库中标记为PAUSED
+
+```java
+ Subscription subscription = mRxDownload.pauseServiceDownload(url)
+                .subscribe(new Action1<Object>() {
+                    @Override
+                    public void call(Object o) {
+                       //下载暂停, do something
+                        mDownloadController.setStateAndDisplay(DownloadFlag.PAUSED);
+                    }
+                });
+```
+
+5.取消下载,取消下载地址为url的下载任务,同时在数据库中标记为CANCELED
+
+```java
+ Subscription subscription = mRxDownload.cancelServiceDownload(url)
+                .subscribe(new Action1<Object>() {
+                    @Override
+                    public void call(Object o) {
+                      //下载取消, do something
+                        mDownloadController.setStateAndDisplay(DownloadFlag.CANCELED);
+                    }
+                });
+```
+
+6.删除下载, 取消该下载任务并从数据库中删除该任务
+
+```java
+  Subscription subscription = mRxDownload.deleteServiceDownload(mData.mRecord.getUrl())
+                .subscribe(new Action1<Object>() {
+                    @Override
+                    public void call(Object o) {
+                    }
+                });
+```
+
+7.获取所有的下载记录, 获取数据库中所有的下载记录
+
+```java
+  Subscription subscription =mRxDownload.getTotalDownloadRecords()
+                .subscribe(new Action1<List<DownloadRecord>>() {
+                    @Override
+                    public void call(List<DownloadRecord> list) {
+                        mAdapter.addAll(list);
+                    }
+                });
 ```
 
 8.更多功能后续将会逐步完善

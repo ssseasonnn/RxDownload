@@ -1,5 +1,8 @@
 package zlc.season.rxdownload;
 
+import android.os.Parcel;
+import android.os.Parcelable;
+
 import java.text.NumberFormat;
 
 import static zlc.season.rxdownload.Utils.formatSize;
@@ -10,7 +13,19 @@ import static zlc.season.rxdownload.Utils.formatSize;
  * Time: 15:48
  * 表示下载状态, 如果isChunked为true, totalSize 可能不存在
  */
-public class DownloadStatus {
+public class DownloadStatus implements Parcelable {
+    public static final Parcelable.Creator<DownloadStatus> CREATOR = new Parcelable.Creator<DownloadStatus>() {
+        @Override
+        public DownloadStatus createFromParcel(Parcel source) {
+            return new DownloadStatus(source);
+        }
+
+        @Override
+        public DownloadStatus[] newArray(int size) {
+            return new DownloadStatus[size];
+        }
+    };
+
     public boolean isChunked = false;
     private long totalSize;
     private long downloadSize;
@@ -21,6 +36,18 @@ public class DownloadStatus {
     public DownloadStatus(long downloadSize, long totalSize) {
         this.downloadSize = downloadSize;
         this.totalSize = totalSize;
+    }
+
+    public DownloadStatus(boolean isChunked, long downloadSize, long totalSize) {
+        this.isChunked = isChunked;
+        this.downloadSize = downloadSize;
+        this.totalSize = totalSize;
+    }
+
+    protected DownloadStatus(Parcel in) {
+        this.isChunked = in.readByte() != 0;
+        this.totalSize = in.readLong();
+        this.downloadSize = in.readLong();
     }
 
     public long getTotalSize() {
@@ -78,5 +105,17 @@ public class DownloadStatus {
         nf.setMinimumFractionDigits(2);//控制保留小数点后几位，2：表示保留2位小数点
         percent = nf.format(result);
         return percent;
+    }
+
+    @Override
+    public int describeContents() {
+        return 0;
+    }
+
+    @Override
+    public void writeToParcel(Parcel dest, int flags) {
+        dest.writeByte(this.isChunked ? (byte) 1 : (byte) 0);
+        dest.writeLong(this.totalSize);
+        dest.writeLong(this.downloadSize);
     }
 }

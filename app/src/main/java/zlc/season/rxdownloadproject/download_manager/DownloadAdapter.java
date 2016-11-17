@@ -1,4 +1,4 @@
-package zlc.season.rxdownloadproject;
+package zlc.season.rxdownloadproject.download_manager;
 
 import android.view.ViewGroup;
 
@@ -13,7 +13,7 @@ import zlc.season.practicalrecyclerview.AbstractAdapter;
 public class DownloadAdapter extends AbstractAdapter<DownloadBean, DownloadViewHolder> {
     @Override
     protected DownloadViewHolder onNewCreateViewHolder(ViewGroup parent, int viewType) {
-        return new DownloadViewHolder(parent);
+        return new DownloadViewHolder(parent, this);
     }
 
     @Override

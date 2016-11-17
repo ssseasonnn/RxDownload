@@ -23,4 +23,9 @@ public class GMTTest {
         System.out.println(str);
     }
 
+    @Test
+    public void substringTest() throws Exception{
+        String str = "http://dldir1.qq.com/weixin/android/weixin6330android920.apk";
+        System.out.println(str.substring(str.lastIndexOf('/') + 1));
+    }
 }

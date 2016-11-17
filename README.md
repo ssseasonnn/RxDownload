@@ -315,7 +315,13 @@ if (subscription != null && !subscription.isUnsubscribed()) {
                 });
 ```
 
-8.更多功能后续将会逐步完善
+8.serviceDownload也具有transfrom版本,供Compose操作符使用.
+
+具体可见代码
+
+
+
+9.更多功能后续将会逐步完善
 
 若您对此项目有疑问,欢迎来提issues.
 

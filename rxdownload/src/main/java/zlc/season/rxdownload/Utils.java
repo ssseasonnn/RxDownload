@@ -13,6 +13,7 @@ import java.util.TimeZone;
 
 import okhttp3.internal.http.HttpHeaders;
 import retrofit2.Response;
+import rx.Subscription;
 
 /**
  * Author: Season(ssseasonnn@gmail.com)
@@ -41,6 +42,12 @@ class Utils {
     static void close(Closeable closeable) throws IOException {
         if (closeable != null) {
             closeable.close();
+        }
+    }
+
+    static void unSubscribe(Subscription subscription) {
+        if (subscription != null && !subscription.isUnsubscribed()) {
+            subscription.unsubscribe();
         }
     }
 
@@ -88,7 +95,7 @@ class Utils {
         } else if (k > 1) {
             hrSize = dec.format(k).concat(" KB");
         } else {
-            hrSize = dec.format(b).concat(" Bytes");
+            hrSize = dec.format(b).concat(" B");
         }
         return hrSize;
     }

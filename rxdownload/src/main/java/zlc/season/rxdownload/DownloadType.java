@@ -15,7 +15,7 @@ import rx.functions.Func1;
 import rx.functions.Func2;
 import rx.schedulers.Schedulers;
 
-import static zlc.season.rxdownload.DownloadHelper.TAG;
+import static zlc.season.rxdownload.FileHelper.TAG;
 
 
 /**
@@ -122,7 +122,7 @@ abstract class DownloadType {
 
         @Override
         Observable<DownloadStatus> startDownload() throws IOException {
-            DownloadRange range = mDownloadHelper.getDownloadRange(mUrl);
+            DownloadRange range = mDownloadHelper.readDownloadRange(mUrl);
             List<Observable<DownloadStatus>> tasks = new ArrayList<>();
             for (int i = 0; i < mDownloadHelper.getMaxThreads(); i++) {
                 if (range.start[i] <= range.end[i]) {

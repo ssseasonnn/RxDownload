@@ -28,7 +28,7 @@ import zlc.season.rxdownload.DownloadFlag;
 import zlc.season.rxdownload.DownloadRecord;
 import zlc.season.rxdownload.DownloadStatus;
 import zlc.season.rxdownload.RxDownload;
-import zlc.season.rxdownloadproject.DownloadStateContext;
+import zlc.season.rxdownloadproject.DownloadController;
 import zlc.season.rxdownloadproject.R;
 
 import static android.os.Environment.DIRECTORY_DOWNLOADS;
@@ -47,15 +47,15 @@ public class AppInfoViewHolder extends AbstractViewHolder<AppInfoBean> {
     TextView mTitle;
     @BindView(R.id.content)
     TextView mContent;
-    @BindView(R.id.status)
-    Button mStatus;
+    @BindView(R.id.action)
+    Button mAction;
 
     private String defaultPath = getExternalStoragePublicDirectory(DIRECTORY_DOWNLOADS).getPath();
 
     private AppInfoBean mData;
     private Context mContext;
     private RxDownload mRxDownload;
-    private DownloadStateContext mStateContext;
+    private DownloadController mDownloadController;
 
     public AppInfoViewHolder(ViewGroup parent) {
         super(parent, R.layout.app_info_item);
@@ -63,14 +63,14 @@ public class AppInfoViewHolder extends AbstractViewHolder<AppInfoBean> {
         mContext = parent.getContext();
 
         mRxDownload = RxDownload.getInstance().context(mContext);
-
-        mStateContext = new DownloadStateContext(null, mStatus);
-        mStateContext.setStateAndDisplay(DownloadFlag.NORMAL);
+        mDownloadController = new DownloadController(null, mAction);
     }
 
     @Override
     public void setData(AppInfoBean data) {
         this.mData = data;
+        mDownloadController.setStateAndDisplay(DownloadFlag.NORMAL);
+
         Picasso.with(mContext).load(data.img).into(mHead);
         mTitle.setText(data.name);
         mContent.setText(data.info);
@@ -83,7 +83,10 @@ public class AppInfoViewHolder extends AbstractViewHolder<AppInfoBean> {
                         //如果有下载记录才会执行到这里, 如果没有下载记录不会执行这里
                         int flag = record.getDownloadFlag();
                         //设置下载状态
-                        mStateContext.setStateAndDisplay(flag);
+                        mDownloadController.setStateAndDisplay(flag);
+
+                        Log.d("AppInfoViewHolder", "flag:" + flag);
+
                     }
                 });
 
@@ -92,13 +95,14 @@ public class AppInfoViewHolder extends AbstractViewHolder<AppInfoBean> {
                 .subscribe(new Subscriber<DownloadStatus>() {
                     @Override
                     public void onCompleted() {
-                        mStateContext.setStateAndDisplay(DownloadFlag.COMPLETED);
+                        Log.d("AppInfoViewHolder", "complete");
+                        mDownloadController.setStateAndDisplay(DownloadFlag.COMPLETED);
                     }
 
                     @Override
                     public void onError(Throwable e) {
                         Log.w("TAG", e);
-                        mStateContext.setStateAndDisplay(DownloadFlag.FAILED);
+                        mDownloadController.setStateAndDisplay(DownloadFlag.FAILED);
                     }
 
                     @Override
@@ -110,9 +114,9 @@ public class AppInfoViewHolder extends AbstractViewHolder<AppInfoBean> {
         mData.mSubscriptions.add(query);
     }
 
-    @OnClick(R.id.status)
+    @OnClick(R.id.action)
     public void onClick() {
-        mStateContext.performClick(new DownloadStateContext.Callback() {
+        mDownloadController.performClick(new DownloadController.Callback() {
             @Override
             public void startDownload() {
                 start();
@@ -131,7 +135,7 @@ public class AppInfoViewHolder extends AbstractViewHolder<AppInfoBean> {
     }
 
     private void installApk() {
-        mStateContext.setStateAndDisplay(DownloadFlag.INSTALL);
+        mDownloadController.setStateAndDisplay(DownloadFlag.INSTALL);
         Uri uri = Uri.fromFile(new File(defaultPath + File.separator + mData.saveName));
         Intent intent = new Intent(Intent.ACTION_VIEW);
         intent.setDataAndType(uri, "application/vnd.android.package-archive");
@@ -151,12 +155,13 @@ public class AppInfoViewHolder extends AbstractViewHolder<AppInfoBean> {
                     }
                 })
                 .observeOn(Schedulers.io())
-                .compose(mRxDownload.transformServiceNoReceiver(mData.downloadUrl, mData.saveName, null))
+                .compose(mRxDownload.transformServiceNoReceiver(mData.downloadUrl, mData.saveName, null,
+                        mData.name, mData.img))
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(new Action1<Object>() {
                     @Override
                     public void call(Object o) {
-                        mStateContext.setStateAndDisplay(DownloadFlag.STARTED);
+                        mDownloadController.setStateAndDisplay(DownloadFlag.STARTED);
                     }
                 });
         mData.mSubscriptions.add(temp);
@@ -170,7 +175,7 @@ public class AppInfoViewHolder extends AbstractViewHolder<AppInfoBean> {
                 .subscribe(new Action1<Object>() {
                     @Override
                     public void call(Object o) {
-                        mStateContext.setStateAndDisplay(DownloadFlag.PAUSED);
+                        mDownloadController.setStateAndDisplay(DownloadFlag.PAUSED);
                     }
                 });
         mData.mSubscriptions.add(subscription);

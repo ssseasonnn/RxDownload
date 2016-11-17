@@ -2,7 +2,6 @@ package zlc.season.rxdownload;
 
 import android.content.ContentValues;
 import android.database.Cursor;
-import android.text.TextUtils;
 
 import java.util.Date;
 
@@ -57,8 +56,8 @@ class Db {
             values.put(COLUMN_URL, url);
             values.put(COLUMN_SAVE_NAME, saveName);
             values.put(COLUMN_SAVE_PATH, savePath);
-            values.put(COLUMN_NAME, TextUtils.isEmpty(name) ? "" : name);
-            values.put(COLUMN_IMAGE, TextUtils.isEmpty(image) ? "" : image);
+            values.put(COLUMN_NAME, name);
+            values.put(COLUMN_IMAGE, image);
             values.put(COLUMN_DOWNLOAD_FLAG, STARTED);
             values.put(COLUMN_DATE, new Date().getTime());
             return values;

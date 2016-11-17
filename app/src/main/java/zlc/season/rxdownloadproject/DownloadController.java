@@ -9,15 +9,15 @@ import zlc.season.rxdownload.DownloadFlag;
  * Author: Season(ssseasonnn@gmail.com)
  * Date: 2016/11/15
  * Time: 15:26
- * 状态模式
+ * 下载控制
  */
-public class DownloadStateContext {
+public class DownloadController {
     private DownloadState state;
 
     private TextView mStatusText;
     private Button mActionButton;
 
-    public DownloadStateContext(TextView statusText, Button actionButton) {
+    public DownloadController(TextView statusText, Button actionButton) {
         mStatusText = statusText;
         mActionButton = actionButton;
     }
@@ -56,12 +56,12 @@ public class DownloadStateContext {
     }
 
     /**
-     * 处理点击事件,切换到下一状态并显示
+     * 处理点击事件
      *
      * @param callback Callback
      */
     public void performClick(Callback callback) {
-        state.handle(mStatusText, mActionButton, callback);
+        state.handleClickEvent(callback);
     }
 
     private void displayNowState() {
@@ -81,21 +81,21 @@ public class DownloadStateContext {
     }
 
     static abstract class DownloadState {
-        DownloadStateContext mContext;
+        DownloadController mContext;
 
-        DownloadState(DownloadStateContext context) {
+        DownloadState(DownloadController context) {
             mContext = context;
         }
 
         abstract void displayNowState(TextView status, Button action);
 
-        abstract void handle(TextView status, Button action, Callback callback);
+        abstract void handleClickEvent(Callback callback);
 
     }
 
     private static class NormalState extends DownloadState {
 
-        NormalState(DownloadStateContext context) {
+        NormalState(DownloadController context) {
             super(context);
         }
 
@@ -106,14 +106,14 @@ public class DownloadStateContext {
         }
 
         @Override
-        void handle(TextView status, Button action, Callback callback) {
+        void handleClickEvent(Callback callback) {
             callback.startDownload();
         }
     }
 
     private static class StartedState extends DownloadState {
 
-        StartedState(DownloadStateContext context) {
+        StartedState(DownloadController context) {
             super(context);
         }
 
@@ -124,14 +124,14 @@ public class DownloadStateContext {
         }
 
         @Override
-        void handle(TextView status, Button action, Callback callback) {
+        void handleClickEvent(Callback callback) {
             callback.pauseDownload();
         }
     }
 
     private static class PausedState extends DownloadState {
 
-        PausedState(DownloadStateContext context) {
+        PausedState(DownloadController context) {
             super(context);
         }
 
@@ -142,14 +142,14 @@ public class DownloadStateContext {
         }
 
         @Override
-        void handle(TextView status, Button action, Callback callback) {
+        void handleClickEvent(Callback callback) {
             callback.startDownload();
         }
     }
 
     private static class FailedState extends DownloadState {
 
-        FailedState(DownloadStateContext context) {
+        FailedState(DownloadController context) {
             super(context);
         }
 
@@ -160,14 +160,14 @@ public class DownloadStateContext {
         }
 
         @Override
-        void handle(TextView status, Button action, Callback callback) {
+        void handleClickEvent(Callback callback) {
             callback.startDownload();
         }
     }
 
     private static class CanceledState extends DownloadState {
 
-        CanceledState(DownloadStateContext context) {
+        CanceledState(DownloadController context) {
             super(context);
         }
 
@@ -178,14 +178,14 @@ public class DownloadStateContext {
         }
 
         @Override
-        void handle(TextView status, Button action, Callback callback) {
+        void handleClickEvent(Callback callback) {
             callback.startDownload();
         }
     }
 
     private static class CompletedState extends DownloadState {
 
-        CompletedState(DownloadStateContext context) {
+        CompletedState(DownloadController context) {
             super(context);
         }
 
@@ -196,14 +196,14 @@ public class DownloadStateContext {
         }
 
         @Override
-        void handle(TextView status, Button action, Callback callback) {
+        void handleClickEvent(Callback callback) {
             callback.install();
         }
     }
 
     private static class InstallState extends DownloadState {
 
-        InstallState(DownloadStateContext context) {
+        InstallState(DownloadController context) {
             super(context);
         }
 
@@ -214,7 +214,7 @@ public class DownloadStateContext {
         }
 
         @Override
-        void handle(TextView status, Button action, Callback callback) {
+        void handleClickEvent(Callback callback) {
             //doNothing..
         }
     }

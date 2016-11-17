@@ -30,7 +30,7 @@ import zlc.season.rxdownload.DownloadFlag;
 import zlc.season.rxdownload.DownloadRecord;
 import zlc.season.rxdownload.DownloadStatus;
 import zlc.season.rxdownload.RxDownload;
-import zlc.season.rxdownloadproject.DownloadStateContext;
+import zlc.season.rxdownloadproject.DownloadController;
 import zlc.season.rxdownloadproject.R;
 
 import static android.os.Environment.DIRECTORY_DOWNLOADS;
@@ -60,11 +60,11 @@ public class ServiceDownloadActivity extends AppCompatActivity {
     private RxDownload mRxDownload;
     private CompositeSubscription mSubscriptions;
 
-    private DownloadStateContext mStateContext;
+    private DownloadController mDownloadController;
 
     @OnClick(R.id.action)
     public void onClick() {
-        mStateContext.performClick(new DownloadStateContext.Callback() {
+        mDownloadController.performClick(new DownloadController.Callback() {
             @Override
             public void startDownload() {
                 start();
@@ -101,8 +101,8 @@ public class ServiceDownloadActivity extends AppCompatActivity {
         mRxDownload = RxDownload.getInstance().context(this);
         mSubscriptions = new CompositeSubscription();
 
-        mStateContext = new DownloadStateContext(mStatusText, mAction);
-        mStateContext.setStateAndDisplay(DownloadFlag.NORMAL);
+        mDownloadController = new DownloadController(mStatusText, mAction);
+        mDownloadController.setStateAndDisplay(DownloadFlag.NORMAL);
     }
 
     @Override
@@ -129,7 +129,7 @@ public class ServiceDownloadActivity extends AppCompatActivity {
 
                         int flag = record.getDownloadFlag();
                         //设置下载状态
-                        mStateContext.setStateAndDisplay(flag);
+                        mDownloadController.setStateAndDisplay(flag);
                     }
                 });
 
@@ -138,13 +138,13 @@ public class ServiceDownloadActivity extends AppCompatActivity {
                 .subscribe(new Subscriber<DownloadStatus>() {
                     @Override
                     public void onCompleted() {
-                        mStateContext.setStateAndDisplay(DownloadFlag.COMPLETED);
+                        mDownloadController.setStateAndDisplay(DownloadFlag.COMPLETED);
                     }
 
                     @Override
                     public void onError(Throwable e) {
                         Log.w("TAG", e);
-                        mStateContext.setStateAndDisplay(DownloadFlag.FAILED);
+                        mDownloadController.setStateAndDisplay(DownloadFlag.FAILED);
                     }
 
                     @Override
@@ -163,7 +163,7 @@ public class ServiceDownloadActivity extends AppCompatActivity {
     }
 
     private void installApk() {
-        mStateContext.setStateAndDisplay(DownloadFlag.INSTALL);
+        mDownloadController.setStateAndDisplay(DownloadFlag.INSTALL);
         Uri uri = Uri.fromFile(new File(defaultPath + File.separator + saveName));
         Intent intent = new Intent(Intent.ACTION_VIEW);
         intent.setDataAndType(uri, "application/vnd.android.package-archive");
@@ -188,7 +188,7 @@ public class ServiceDownloadActivity extends AppCompatActivity {
                 .subscribe(new Action1<Object>() {
                     @Override
                     public void call(Object o) {
-                        mStateContext.setStateAndDisplay(DownloadFlag.STARTED);
+                        mDownloadController.setStateAndDisplay(DownloadFlag.STARTED);
                     }
                 });
         mSubscriptions.add(temp);
@@ -202,7 +202,7 @@ public class ServiceDownloadActivity extends AppCompatActivity {
                 .subscribe(new Action1<Object>() {
                     @Override
                     public void call(Object o) {
-                        mStateContext.setStateAndDisplay(DownloadFlag.PAUSED);
+                        mDownloadController.setStateAndDisplay(DownloadFlag.PAUSED);
                     }
                 });
         mSubscriptions.add(subscription);
@@ -216,7 +216,7 @@ public class ServiceDownloadActivity extends AppCompatActivity {
                 .subscribe(new Action1<Object>() {
                     @Override
                     public void call(Object o) {
-                        mStateContext.setStateAndDisplay(DownloadFlag.CANCELED);
+                        mDownloadController.setStateAndDisplay(DownloadFlag.CANCELED);
                     }
                 });
         mSubscriptions.add(subscription);

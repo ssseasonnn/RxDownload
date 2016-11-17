@@ -31,7 +31,7 @@ import zlc.season.practicalrecyclerview.AbstractViewHolder;
 import zlc.season.rxdownload.DownloadFlag;
 import zlc.season.rxdownload.DownloadStatus;
 import zlc.season.rxdownload.RxDownload;
-import zlc.season.rxdownloadproject.DownloadStateContext;
+import zlc.season.rxdownloadproject.DownloadController;
 import zlc.season.rxdownloadproject.R;
 
 import static zlc.season.rxdownloadproject.R.id.percent;
@@ -67,7 +67,7 @@ public class DownloadViewHolder extends AbstractViewHolder<DownloadBean> {
     private DownloadBean mData;
     private RxDownload mRxDownload;
 
-    private DownloadStateContext mStateContext;
+    private DownloadController mDownloadController;
 
     public DownloadViewHolder(ViewGroup parent, AbstractAdapter adapter) {
         super(parent, R.layout.download_manager_item);
@@ -78,7 +78,7 @@ public class DownloadViewHolder extends AbstractViewHolder<DownloadBean> {
         mContext = parent.getContext();
         mRxDownload = RxDownload.getInstance().context(mContext);
 
-        mStateContext = new DownloadStateContext(mStatusText, mActionButton);
+        mDownloadController = new DownloadController(mStatusText, mActionButton);
     }
 
     @Override
@@ -92,13 +92,13 @@ public class DownloadViewHolder extends AbstractViewHolder<DownloadBean> {
                 .subscribe(new Subscriber<DownloadStatus>() {
                     @Override
                     public void onCompleted() {
-                        mStateContext.setStateAndDisplay(DownloadFlag.COMPLETED);
+                        mDownloadController.setStateAndDisplay(DownloadFlag.COMPLETED);
                     }
 
                     @Override
                     public void onError(Throwable e) {
                         Log.w("TAG", e);
-                        mStateContext.setStateAndDisplay(DownloadFlag.FAILED);
+                        mDownloadController.setStateAndDisplay(DownloadFlag.FAILED);
                     }
 
                     @Override
@@ -115,7 +115,7 @@ public class DownloadViewHolder extends AbstractViewHolder<DownloadBean> {
     public void onClick(View view) {
         switch (view.getId()) {
             case R.id.action:
-                mStateContext.performClick(new DownloadStateContext.Callback() {
+                mDownloadController.performClick(new DownloadController.Callback() {
                     @Override
                     public void startDownload() {
                         start();
@@ -143,11 +143,13 @@ public class DownloadViewHolder extends AbstractViewHolder<DownloadBean> {
 
     //设置初始状态
     private void initFirstState(DownloadBean param) {
+        //如果创建下载时没有传入image参数, 则获取到的image为null
         if (TextUtils.isEmpty(param.mRecord.getImage())) {
             Picasso.with(mContext).load(R.mipmap.ic_file_download).into(mImg);
         } else {
             Picasso.with(mContext).load(param.mRecord.getImage()).into(mImg);
         }
+        //如果创建下载时没有传入display name参数,则获取到的名称为null
         if (TextUtils.isEmpty(param.mRecord.getName())) {
             mName.setText(param.mRecord.getSaveName());
         } else {
@@ -155,7 +157,7 @@ public class DownloadViewHolder extends AbstractViewHolder<DownloadBean> {
         }
 
         int flag = param.mRecord.getDownloadFlag();
-        mStateContext.setStateAndDisplay(flag);
+        mDownloadController.setStateAndDisplay(flag);
 
         //如果读取出来是已取消或已完成状态, 特殊处理一下,显示删除按钮
         if (flag == DownloadFlag.CANCELED || flag == DownloadFlag.COMPLETED) {
@@ -177,7 +179,7 @@ public class DownloadViewHolder extends AbstractViewHolder<DownloadBean> {
 
     //下载完成自动打开安装程序
     private void installApk() {
-        mStateContext.setStateAndDisplay(DownloadFlag.INSTALL);
+        mDownloadController.setStateAndDisplay(DownloadFlag.INSTALL);
         Uri uri = Uri.fromFile(new File(mData.mRecord.getSavePath() + File.separator + mData.mRecord.getSaveName()));
         Intent intent = new Intent(Intent.ACTION_VIEW);
         intent.setDataAndType(uri, "application/vnd.android.package-archive");
@@ -203,7 +205,7 @@ public class DownloadViewHolder extends AbstractViewHolder<DownloadBean> {
                 .subscribe(new Action1<Object>() {
                     @Override
                     public void call(Object o) {
-                        mStateContext.setStateAndDisplay(DownloadFlag.STARTED);
+                        mDownloadController.setStateAndDisplay(DownloadFlag.STARTED);
                         mDelete.setVisibility(View.GONE);
                         mCancel.setVisibility(View.VISIBLE);
                     }
@@ -217,7 +219,7 @@ public class DownloadViewHolder extends AbstractViewHolder<DownloadBean> {
                 .subscribe(new Action1<Object>() {
                     @Override
                     public void call(Object o) {
-                        mStateContext.setStateAndDisplay(DownloadFlag.PAUSED);
+                        mDownloadController.setStateAndDisplay(DownloadFlag.PAUSED);
                     }
                 });
         mData.mSubscriptions.add(subscription);
@@ -229,7 +231,7 @@ public class DownloadViewHolder extends AbstractViewHolder<DownloadBean> {
                 .subscribe(new Action1<Object>() {
                     @Override
                     public void call(Object o) {
-                        mStateContext.setStateAndDisplay(DownloadFlag.CANCELED);
+                        mDownloadController.setStateAndDisplay(DownloadFlag.CANCELED);
                         mCancel.setVisibility(View.GONE);
                         mDelete.setVisibility(View.VISIBLE);
                     }
@@ -240,11 +242,16 @@ public class DownloadViewHolder extends AbstractViewHolder<DownloadBean> {
     //删除下载
     private void delete() {
         Subscription subscription = mRxDownload.deleteServiceDownload(mData.mRecord.getUrl())
-                .subscribe(new Action1<Object>() {
+                .doOnNext(new Action1<Object>() {
                     @Override
                     public void call(Object o) {
                         //Important!! 删除item前必须先取消订阅!!
                         mData.mSubscriptions.clear();
+                    }
+                })
+                .subscribe(new Action1<Object>() {
+                    @Override
+                    public void call(Object o) {
                         //删除item并刷新adapter
                         mAdapter.remove(getAdapterPosition());
                     }

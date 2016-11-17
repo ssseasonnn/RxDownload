@@ -307,14 +307,14 @@ class FileHelper {
         for (String each : directoryPaths) {
             File file = new File(each);
             if (file.exists() && file.isDirectory()) {
-                Log.i(TAG, "Directory exists. Do not need create. Path = " + each);
+                Log.d(TAG, "Directory exists. Do not need create. Path = " + each);
             } else {
-                Log.i(TAG, "Directory is not exists.So we need create. Path = " + each);
+                Log.d(TAG, "Directory is not exists.So we need create. Path = " + each);
                 boolean flag = file.mkdir();
                 if (flag) {
-                    Log.i(TAG, "Directory create succeed! Path = " + each);
+                    Log.d(TAG, "Directory create succeed! Path = " + each);
                 } else {
-                    Log.i(TAG, "Directory create failed! Path = " + each);
+                    Log.d(TAG, "Directory create failed! Path = " + each);
                     throw new IOException("Directory create failed!");
                 }
             }

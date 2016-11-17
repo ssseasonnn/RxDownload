@@ -194,6 +194,7 @@ public class ServiceDownloadActivity extends AppCompatActivity {
         mSubscriptions.add(temp);
     }
 
+
     /**
      * 暂停下载
      */

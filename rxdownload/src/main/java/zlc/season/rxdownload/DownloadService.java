@@ -126,7 +126,7 @@ public class DownloadService extends Service {
                 });
         mRecordMap.put(url, temp);
         if (mDataBaseHelper.recordNotExists(url)) {
-            mDataBaseHelper.insertRecord(url, saveName, savePath, name, image);
+            mDataBaseHelper.insertRecord(url, saveName, rxDownload.getFileSavePaths(savePath)[0], name, image);
         }
     }
 

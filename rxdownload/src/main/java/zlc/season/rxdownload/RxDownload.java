@@ -23,8 +23,8 @@ import rx.functions.Func1;
 import rx.functions.Func2;
 import rx.subjects.PublishSubject;
 
-import static zlc.season.rxdownload.DownloadHelper.TAG;
 import static zlc.season.rxdownload.DownloadHelper.TEST_RANGE_SUPPORT;
+import static zlc.season.rxdownload.FileHelper.TAG;
 
 
 /**
@@ -49,6 +49,10 @@ public class RxDownload {
 
     public static RxDownload getInstance() {
         return new RxDownload();
+    }
+
+    String[] getFileSavePaths(String savePath) {
+        return mDownloadHelper.getFileSavePaths(savePath);
     }
 
     /**
@@ -521,10 +525,15 @@ public class RxDownload {
         };
     }
 
+
     private Observable<DownloadStatus> downloadDispatcher(final String url,
                                                           final String saveName,
                                                           final String savePath) {
-        mDownloadHelper.addDownloadRecord(url, saveName, savePath);
+        try {
+            mDownloadHelper.addDownloadRecord(url, saveName, savePath);
+        } catch (IOException e) {
+            return Observable.error(e);
+        }
         return getDownloadType(url)
                 .flatMap(new Func1<DownloadType, Observable<DownloadStatus>>() {
                     @Override

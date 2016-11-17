@@ -26,6 +26,7 @@ import rx.android.schedulers.AndroidSchedulers;
 import rx.functions.Action1;
 import rx.schedulers.Schedulers;
 import rx.subscriptions.CompositeSubscription;
+import zlc.season.rxdownload.DownloadFlag;
 import zlc.season.rxdownload.DownloadRecord;
 import zlc.season.rxdownload.DownloadStatus;
 import zlc.season.rxdownload.RxDownload;
@@ -101,7 +102,7 @@ public class ServiceDownloadActivity extends AppCompatActivity {
         mSubscriptions = new CompositeSubscription();
 
         mStateContext = new DownloadStateContext(mStatusText, mAction);
-        mStateContext.setStateAndDisplay(DownloadRecord.FLAG_NORMAL);
+        mStateContext.setStateAndDisplay(DownloadFlag.NORMAL);
     }
 
     @Override
@@ -137,13 +138,13 @@ public class ServiceDownloadActivity extends AppCompatActivity {
                 .subscribe(new Subscriber<DownloadStatus>() {
                     @Override
                     public void onCompleted() {
-                        mStateContext.setStateAndDisplay(DownloadRecord.FLAG_COMPLETED);
+                        mStateContext.setStateAndDisplay(DownloadFlag.COMPLETED);
                     }
 
                     @Override
                     public void onError(Throwable e) {
                         Log.w("TAG", e);
-                        mStateContext.setStateAndDisplay(DownloadRecord.FLAG_FAILED);
+                        mStateContext.setStateAndDisplay(DownloadFlag.FAILED);
                     }
 
                     @Override
@@ -162,7 +163,7 @@ public class ServiceDownloadActivity extends AppCompatActivity {
     }
 
     private void installApk() {
-        mStateContext.setStateAndDisplay(DownloadRecord.FLAG_INSTALL);
+        mStateContext.setStateAndDisplay(DownloadFlag.INSTALL);
         Uri uri = Uri.fromFile(new File(defaultPath + File.separator + saveName));
         Intent intent = new Intent(Intent.ACTION_VIEW);
         intent.setDataAndType(uri, "application/vnd.android.package-archive");
@@ -187,7 +188,7 @@ public class ServiceDownloadActivity extends AppCompatActivity {
                 .subscribe(new Action1<Object>() {
                     @Override
                     public void call(Object o) {
-                        mStateContext.setStateAndDisplay(DownloadRecord.FLAG_STARTED);
+                        mStateContext.setStateAndDisplay(DownloadFlag.STARTED);
                     }
                 });
         mSubscriptions.add(temp);
@@ -201,7 +202,7 @@ public class ServiceDownloadActivity extends AppCompatActivity {
                 .subscribe(new Action1<Object>() {
                     @Override
                     public void call(Object o) {
-                        mStateContext.setStateAndDisplay(DownloadRecord.FLAG_PAUSED);
+                        mStateContext.setStateAndDisplay(DownloadFlag.PAUSED);
                     }
                 });
         mSubscriptions.add(subscription);
@@ -215,7 +216,7 @@ public class ServiceDownloadActivity extends AppCompatActivity {
                 .subscribe(new Action1<Object>() {
                     @Override
                     public void call(Object o) {
-                        mStateContext.setStateAndDisplay(DownloadRecord.FLAG_CANCELED);
+                        mStateContext.setStateAndDisplay(DownloadFlag.CANCELED);
                     }
                 });
         mSubscriptions.add(subscription);

@@ -21,11 +21,11 @@ import static zlc.season.rxdownload.DownloadReceiver.RX_BROADCAST_DOWNLOAD_NEXT;
 import static zlc.season.rxdownload.DownloadReceiver.RX_BROADCAST_KEY_EXCEPTION;
 import static zlc.season.rxdownload.DownloadReceiver.RX_BROADCAST_KEY_STATUS;
 import static zlc.season.rxdownload.DownloadReceiver.RX_BROADCAST_KEY_URL;
-import static zlc.season.rxdownload.DownloadRecord.FLAG_CANCELED;
-import static zlc.season.rxdownload.DownloadRecord.FLAG_COMPLETED;
-import static zlc.season.rxdownload.DownloadRecord.FLAG_FAILED;
-import static zlc.season.rxdownload.DownloadRecord.FLAG_PAUSED;
-import static zlc.season.rxdownload.DownloadRecord.FLAG_STARTED;
+import static zlc.season.rxdownload.DownloadFlag.CANCELED;
+import static zlc.season.rxdownload.DownloadFlag.COMPLETED;
+import static zlc.season.rxdownload.DownloadFlag.FAILED;
+import static zlc.season.rxdownload.DownloadFlag.PAUSED;
+import static zlc.season.rxdownload.DownloadFlag.STARTED;
 
 /**
  * Author: Season(ssseasonnn@gmail.com)
@@ -90,7 +90,7 @@ public class DownloadService extends Service {
                     @Override
                     public void onStart() {
                         super.onStart();
-                        mDataBaseHelper.updateRecord(url, FLAG_STARTED);
+                        mDataBaseHelper.updateRecord(url, STARTED);
                     }
 
                     @Override
@@ -100,7 +100,7 @@ public class DownloadService extends Service {
                         sendBroadcast(intent);
                         Utils.unSubscribe(mRecordMap.get(url));
                         mRecordMap.remove(url);
-                        mDataBaseHelper.updateRecord(url, FLAG_COMPLETED);
+                        mDataBaseHelper.updateRecord(url, COMPLETED);
                     }
 
                     @Override
@@ -112,7 +112,7 @@ public class DownloadService extends Service {
                         sendBroadcast(intent);
                         Utils.unSubscribe(mRecordMap.get(url));
                         mRecordMap.remove(url);
-                        mDataBaseHelper.updateRecord(url, FLAG_FAILED);
+                        mDataBaseHelper.updateRecord(url, FAILED);
                     }
 
                     @Override
@@ -133,13 +133,13 @@ public class DownloadService extends Service {
     public void pauseDownload(String url) {
         Utils.unSubscribe(mRecordMap.get(url));
         mRecordMap.remove(url);
-        mDataBaseHelper.updateRecord(url, FLAG_PAUSED);
+        mDataBaseHelper.updateRecord(url, PAUSED);
     }
 
     public void cancelDownload(String url) {
         Utils.unSubscribe(mRecordMap.get(url));
         mRecordMap.remove(url);
-        mDataBaseHelper.updateRecord(url, FLAG_CANCELED);
+        mDataBaseHelper.updateRecord(url, CANCELED);
     }
 
     public void deleteDownload(String url) {

@@ -15,7 +15,7 @@ import rx.functions.Func1;
 import rx.functions.Func2;
 import rx.schedulers.Schedulers;
 
-import static zlc.season.rxdownload.DownloadHelper.TAG;
+import static zlc.season.rxdownload.FileHelper.TAG;
 
 
 /**

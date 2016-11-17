@@ -6,7 +6,7 @@ import android.text.TextUtils;
 
 import java.util.Date;
 
-import static zlc.season.rxdownload.DownloadRecord.FLAG_STARTED;
+import static zlc.season.rxdownload.DownloadFlag.STARTED;
 
 
 /**
@@ -59,7 +59,7 @@ class Db {
             values.put(COLUMN_SAVE_PATH, savePath);
             values.put(COLUMN_NAME, TextUtils.isEmpty(name) ? "" : name);
             values.put(COLUMN_IMAGE, TextUtils.isEmpty(image) ? "" : image);
-            values.put(COLUMN_DOWNLOAD_FLAG, FLAG_STARTED);
+            values.put(COLUMN_DOWNLOAD_FLAG, STARTED);
             values.put(COLUMN_DATE, new Date().getTime());
             return values;
         }

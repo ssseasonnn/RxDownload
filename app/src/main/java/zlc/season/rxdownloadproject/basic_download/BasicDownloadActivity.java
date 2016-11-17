@@ -26,7 +26,7 @@ import rx.Subscription;
 import rx.android.schedulers.AndroidSchedulers;
 import rx.functions.Action1;
 import rx.schedulers.Schedulers;
-import zlc.season.rxdownload.DownloadRecord;
+import zlc.season.rxdownload.DownloadFlag;
 import zlc.season.rxdownload.DownloadStatus;
 import zlc.season.rxdownload.RxDownload;
 import zlc.season.rxdownloadproject.DownloadStateContext;
@@ -104,7 +104,7 @@ public class BasicDownloadActivity extends AppCompatActivity {
         mStatus.setText("开始");
 
         mStateContext = new DownloadStateContext(mStatus, mAction);
-        mStateContext.setStateAndDisplay(DownloadRecord.FLAG_NORMAL);
+        mStateContext.setStateAndDisplay(DownloadFlag.NORMAL);
     }
 
     @Override
@@ -130,13 +130,13 @@ public class BasicDownloadActivity extends AppCompatActivity {
                 .subscribe(new Subscriber<DownloadStatus>() {
                     @Override
                     public void onCompleted() {
-                        mStateContext.setStateAndDisplay(DownloadRecord.FLAG_COMPLETED);
+                        mStateContext.setStateAndDisplay(DownloadFlag.COMPLETED);
                     }
 
                     @Override
                     public void onError(Throwable e) {
                         Log.w("TAG", e);
-                        mStateContext.setStateAndDisplay(DownloadRecord.FLAG_FAILED);
+                        mStateContext.setStateAndDisplay(DownloadFlag.FAILED);
                     }
 
                     @Override
@@ -152,7 +152,7 @@ public class BasicDownloadActivity extends AppCompatActivity {
 
     private void pause() {
         BasicDownloadActivity.this.unSubscribe(subscription);
-        mStateContext.setStateAndDisplay(DownloadRecord.FLAG_PAUSED);
+        mStateContext.setStateAndDisplay(DownloadFlag.PAUSED);
     }
 
     private void installApk() {

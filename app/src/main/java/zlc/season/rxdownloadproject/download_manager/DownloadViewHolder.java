@@ -28,7 +28,7 @@ import rx.functions.Action1;
 import rx.schedulers.Schedulers;
 import zlc.season.practicalrecyclerview.AbstractAdapter;
 import zlc.season.practicalrecyclerview.AbstractViewHolder;
-import zlc.season.rxdownload.DownloadRecord;
+import zlc.season.rxdownload.DownloadFlag;
 import zlc.season.rxdownload.DownloadStatus;
 import zlc.season.rxdownload.RxDownload;
 import zlc.season.rxdownloadproject.DownloadStateContext;
@@ -92,13 +92,13 @@ public class DownloadViewHolder extends AbstractViewHolder<DownloadBean> {
                 .subscribe(new Subscriber<DownloadStatus>() {
                     @Override
                     public void onCompleted() {
-                        mStateContext.setStateAndDisplay(DownloadRecord.FLAG_COMPLETED);
+                        mStateContext.setStateAndDisplay(DownloadFlag.COMPLETED);
                     }
 
                     @Override
                     public void onError(Throwable e) {
                         Log.w("TAG", e);
-                        mStateContext.setStateAndDisplay(DownloadRecord.FLAG_FAILED);
+                        mStateContext.setStateAndDisplay(DownloadFlag.FAILED);
                     }
 
                     @Override
@@ -158,7 +158,7 @@ public class DownloadViewHolder extends AbstractViewHolder<DownloadBean> {
         mStateContext.setStateAndDisplay(flag);
 
         //如果读取出来是已取消或已完成状态, 特殊处理一下,显示删除按钮
-        if (flag == DownloadRecord.FLAG_CANCELED || flag == DownloadRecord.FLAG_COMPLETED) {
+        if (flag == DownloadFlag.CANCELED || flag == DownloadFlag.COMPLETED) {
             mCancel.setVisibility(View.GONE);
             mDelete.setVisibility(View.VISIBLE);
         }
@@ -177,7 +177,7 @@ public class DownloadViewHolder extends AbstractViewHolder<DownloadBean> {
 
     //下载完成自动打开安装程序
     private void installApk() {
-        mStateContext.setStateAndDisplay(DownloadRecord.FLAG_INSTALL);
+        mStateContext.setStateAndDisplay(DownloadFlag.INSTALL);
         Uri uri = Uri.fromFile(new File(mData.mRecord.getSavePath() + File.separator + mData.mRecord.getSaveName()));
         Intent intent = new Intent(Intent.ACTION_VIEW);
         intent.setDataAndType(uri, "application/vnd.android.package-archive");
@@ -203,7 +203,7 @@ public class DownloadViewHolder extends AbstractViewHolder<DownloadBean> {
                 .subscribe(new Action1<Object>() {
                     @Override
                     public void call(Object o) {
-                        mStateContext.setStateAndDisplay(DownloadRecord.FLAG_STARTED);
+                        mStateContext.setStateAndDisplay(DownloadFlag.STARTED);
                         mDelete.setVisibility(View.GONE);
                         mCancel.setVisibility(View.VISIBLE);
                     }
@@ -217,7 +217,7 @@ public class DownloadViewHolder extends AbstractViewHolder<DownloadBean> {
                 .subscribe(new Action1<Object>() {
                     @Override
                     public void call(Object o) {
-                        mStateContext.setStateAndDisplay(DownloadRecord.FLAG_PAUSED);
+                        mStateContext.setStateAndDisplay(DownloadFlag.PAUSED);
                     }
                 });
         mData.mSubscriptions.add(subscription);
@@ -229,7 +229,7 @@ public class DownloadViewHolder extends AbstractViewHolder<DownloadBean> {
                 .subscribe(new Action1<Object>() {
                     @Override
                     public void call(Object o) {
-                        mStateContext.setStateAndDisplay(DownloadRecord.FLAG_CANCELED);
+                        mStateContext.setStateAndDisplay(DownloadFlag.CANCELED);
                         mCancel.setVisibility(View.GONE);
                         mDelete.setVisibility(View.VISIBLE);
                     }

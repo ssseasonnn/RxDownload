@@ -3,7 +3,7 @@ package zlc.season.rxdownloadproject;
 import android.widget.Button;
 import android.widget.TextView;
 
-import zlc.season.rxdownload.DownloadRecord;
+import zlc.season.rxdownload.DownloadFlag;
 
 /**
  * Author: Season(ssseasonnn@gmail.com)
@@ -29,25 +29,25 @@ public class DownloadStateContext {
      */
     public void setStateAndDisplay(int flag) {
         switch (flag) {
-            case DownloadRecord.FLAG_NORMAL:
+            case DownloadFlag.NORMAL:
                 this.state = new NormalState(this);
                 break;
-            case DownloadRecord.FLAG_STARTED:
+            case DownloadFlag.STARTED:
                 this.state = new StartedState(this);
                 break;
-            case DownloadRecord.FLAG_PAUSED:
+            case DownloadFlag.PAUSED:
                 this.state = new PausedState(this);
                 break;
-            case DownloadRecord.FLAG_FAILED:
+            case DownloadFlag.FAILED:
                 this.state = new FailedState(this);
                 break;
-            case DownloadRecord.FLAG_CANCELED:
+            case DownloadFlag.CANCELED:
                 this.state = new CanceledState(this);
                 break;
-            case DownloadRecord.FLAG_COMPLETED:
+            case DownloadFlag.COMPLETED:
                 this.state = new CompletedState(this);
                 break;
-            case DownloadRecord.FLAG_INSTALL:
+            case DownloadFlag.INSTALL:
                 this.state = new InstallState(this);
                 break;
         }

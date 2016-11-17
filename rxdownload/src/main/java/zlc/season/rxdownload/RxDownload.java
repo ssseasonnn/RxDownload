@@ -51,10 +51,6 @@ public class RxDownload {
         return new RxDownload();
     }
 
-    String[] getFileSavePaths(String savePath) {
-        return mDownloadHelper.getFileSavePaths(savePath);
-    }
-
     /**
      * 普通下载时不需要context, 使用Service下载时需要context;
      *
@@ -236,12 +232,8 @@ public class RxDownload {
     /**
      * 使用Service下载.
      * 同时注册了广播接收器接收下载进度.
-     * <p>
      * 取消订阅即可取消注册, 但不会暂停下载.
-     * 暂停下载请看 {@link #pauseServiceDownload(String)}
-     * <p>
      * 同时在数据库中保存下载记录.
-     * 获取下载记录请看 {@link #getDownloadRecord(String)}
      *
      * @param url      下载文件的Url
      * @param saveName 下载文件的保存名称
@@ -257,12 +249,8 @@ public class RxDownload {
     /**
      * 使用Service下载.
      * 同时注册广播接收器接收下载进度.
-     * <p>
      * 取消订阅即可取消注册, 不会暂停下载.
-     * 暂停下载请看 {@link #pauseServiceDownload(String)}
-     * <p>
      * 同时在数据库中保存下载记录.
-     * 获取下载记录请看 {@link #getDownloadRecord(String)}
      *
      * @param url          下载文件的Url
      * @param saveName     下载文件的保存名称
@@ -314,12 +302,8 @@ public class RxDownload {
     /**
      * 使用Service下载.
      * 不会注册广播接收器,接收下载进度请手动注册广播接收器.
-     * <p>
      * 取消订阅不会暂停下载.
-     * 暂停下载请看 {@link #pauseServiceDownload(String)}
-     * <p>
      * 同时在数据库中保存下载记录.
-     * 获取下载记录请看 {@link #getDownloadRecord(String)}
      *
      * @param url      下载文件的Url
      * @param saveName 下载文件的保存名称
@@ -335,12 +319,8 @@ public class RxDownload {
     /**
      * 使用Service下载.
      * 不会注册广播接收器,接收下载进度请手动注册广播接收器.
-     * <p>
      * 取消订阅不会暂停下载.
-     * 暂停下载请看 {@link #pauseServiceDownload(String)}
-     * <p>
      * 同时在数据库中保存下载记录.
-     * 获取下载记录请看 {@link #getDownloadRecord(String)}
      *
      * @param url          下载文件的Url
      * @param saveName     下载文件的保存名称
@@ -525,6 +505,9 @@ public class RxDownload {
         };
     }
 
+    String[] getFileSavePaths(String savePath) {
+        return mDownloadHelper.getFileSavePaths(savePath);
+    }
 
     private Observable<DownloadStatus> downloadDispatcher(final String url,
                                                           final String saveName,

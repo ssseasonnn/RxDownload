@@ -37,10 +37,9 @@ import static android.os.Environment.DIRECTORY_DOWNLOADS;
 import static android.os.Environment.getExternalStoragePublicDirectory;
 
 public class ServiceDownloadActivity extends AppCompatActivity {
-    final String saveName = "王者荣耀.apk";
+    final String saveName = "梦幻西游.apk";
     final String defaultPath = getExternalStoragePublicDirectory(DIRECTORY_DOWNLOADS).getPath();
-    final String url = "http://120.192.69.163/dlied5.myapp.com/myapp/1104466820/1104466820/sgame/10024163_com.tencent" +
-            ".tmgp.sgame_u131_1.15.2.13.apk";
+    final String url = "http://downali.game.uc.cn/wm/6/6/MY-1.98.0_uc_platform2_3306918_082452919a00.apk";
 
     @BindView(R.id.toolbar)
     Toolbar mToolbar;
@@ -67,7 +66,7 @@ public class ServiceDownloadActivity extends AppCompatActivity {
         mDownloadController.performClick(new DownloadController.Callback() {
             @Override
             public void startDownload() {
-                start();
+                start1();
             }
 
             @Override
@@ -135,6 +134,7 @@ public class ServiceDownloadActivity extends AppCompatActivity {
 
         //注册广播接收器, 用于接收下载进度
         Subscription temp = mRxDownload.registerReceiver(url)
+                .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(new Subscriber<DownloadStatus>() {
                     @Override
                     public void onCompleted() {
@@ -192,6 +192,34 @@ public class ServiceDownloadActivity extends AppCompatActivity {
                     }
                 });
         mSubscriptions.add(temp);
+    }
+
+    private void start1(){
+
+        Subscription subscription = mRxDownload.serviceDownload(url,saveName,defaultPath,null,null)
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(new Subscriber<DownloadStatus>() {
+                    @Override
+                    public void onCompleted() {
+                        mDownloadController.setStateAndDisplay(DownloadFlag.COMPLETED);
+                    }
+
+                    @Override
+                    public void onError(Throwable e) {
+                        Log.w("TAG", e);
+                        mDownloadController.setStateAndDisplay(DownloadFlag.FAILED);
+                    }
+
+                    @Override
+                    public void onNext(final DownloadStatus status) {
+                        mProgress.setIndeterminate(status.isChunked);
+                        mProgress.setMax((int) status.getTotalSize());
+                        mProgress.setProgress((int) status.getDownloadSize());
+                        mPercent.setText(status.getPercent());
+                        mSize.setText(status.getFormatStatusString());
+                    }
+                });
+        mSubscriptions.add(subscription);
     }
 
     /**

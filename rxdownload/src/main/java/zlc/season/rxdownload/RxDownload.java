@@ -16,6 +16,7 @@ import java.util.List;
 import retrofit2.Response;
 import retrofit2.Retrofit;
 import rx.Observable;
+import rx.Subscriber;
 import rx.exceptions.CompositeException;
 import rx.functions.Action0;
 import rx.functions.Action1;
@@ -49,10 +50,6 @@ public class RxDownload {
 
     public static RxDownload getInstance() {
         return new RxDownload();
-    }
-
-    String[] getFileSavePaths(String savePath) {
-        return mDownloadHelper.getFileSavePaths(savePath);
     }
 
     /**
@@ -99,23 +96,26 @@ public class RxDownload {
             return Observable.error(new Throwable("Context is NULL! You should call " +
                     "#RxDownload.context(Context context)# first!"));
         }
-
-        Observable<DownloadStatus> observable;
-        PublishSubject<DownloadStatus> subject = PublishSubject.create();
-        final DownloadReceiver receiver = new DownloadReceiver(url, subject);
-
-        observable = subject.doOnSubscribe(new Action0() {
+        return Observable.create(new Observable.OnSubscribe<Object>() {
             @Override
-            public void call() {
-                mContext.registerReceiver(receiver, receiver.getFilter());
+            public void call(final Subscriber<? super Object> subscriber) {
+                if (!bound) {
+                    startBindServiceAndDo(new ServiceConnectedCallback() {
+                        @Override
+                        public void call() {
+                            subscriber.onNext(null);
+                        }
+                    });
+                } else {
+                    subscriber.onNext(null);
+                }
             }
-        }).doOnUnsubscribe(new Action0() {
+        }).flatMap(new Func1<Object, Observable<DownloadStatus>>() {
             @Override
-            public void call() {
-                mContext.unregisterReceiver(receiver);
+            public Observable<DownloadStatus> call(Object o) {
+                return mDownloadService.getSubject(url);
             }
         });
-        return observable;
     }
 
     /**
@@ -281,31 +281,40 @@ public class RxDownload {
                     "#RxDownload.context(Context context)# first!"));
         }
 
-        PublishSubject<DownloadStatus> subject = PublishSubject.create();
-        final DownloadReceiver receiver = new DownloadReceiver(url, subject);
-
+        final PublishSubject<DownloadStatus> subject = PublishSubject.create();
         Observable<DownloadStatus> observable;
         observable = subject.doOnSubscribe(new Action0() {
             @Override
             public void call() {
-                mContext.registerReceiver(receiver, receiver.getFilter());
                 if (!bound) {
                     startBindServiceAndDo(new ServiceConnectedCallback() {
                         @Override
                         public void call() {
-                            mDownloadService.startDownload(RxDownload.this,
-                                    url, saveName, savePath, displayName, displayImage);
+                            mDownloadService.addDownloadTask(
+                                    new DownloadTask.Builder()
+                                            .setRxDownload(RxDownload.this)
+                                            .setUrl(url)
+                                            .setSaveName(saveName)
+                                            .setSavePath(savePath)
+                                            .setName(displayName)
+                                            .setImage(displayImage)
+                                            .build());
+
+                            //                            mDownloadService.startDownload(RxDownload.this, subject,
+                            //                                    url, saveName, savePath, displayName, displayImage);
                         }
                     });
                 } else {
-                    mDownloadService.startDownload(RxDownload.this,
-                            url, saveName, savePath, displayName, displayImage);
+                    mDownloadService.addDownloadTask(
+                            new DownloadTask.Builder()
+                                    .setRxDownload(RxDownload.this)
+                                    .setUrl(url)
+                                    .setSaveName(saveName)
+                                    .setSavePath(savePath)
+                                    .setName(displayName)
+                                    .setImage(displayImage)
+                                    .build());
                 }
-            }
-        }).doOnUnsubscribe(new Action0() {
-            @Override
-            public void call() {
-                mContext.unregisterReceiver(receiver);
             }
         });
         return observable;
@@ -361,12 +370,12 @@ public class RxDownload {
                     startBindServiceAndDo(new ServiceConnectedCallback() {
                         @Override
                         public void call() {
-                            mDownloadService.startDownload(RxDownload.this,
+                            mDownloadService.startDownload(RxDownload.this, null,
                                     url, saveName, savePath, displayName, displayImage);
                         }
                     });
                 } else {
-                    mDownloadService.startDownload(RxDownload.this,
+                    mDownloadService.startDownload(RxDownload.this, null,
                             url, saveName, savePath, displayName, displayImage);
                 }
             }
@@ -525,6 +534,9 @@ public class RxDownload {
         };
     }
 
+    String[] getFileSavePaths(String savePath) {
+        return mDownloadHelper.getFileSavePaths(savePath);
+    }
 
     private Observable<DownloadStatus> downloadDispatcher(final String url,
                                                           final String saveName,

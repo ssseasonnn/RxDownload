@@ -3,7 +3,6 @@ package zlc.season.rxdownload;
 import android.util.Log;
 
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import rx.Subscriber;
@@ -22,7 +21,6 @@ import static zlc.season.rxdownload.DownloadFlag.FAILED;
  * FIXME
  */
 class DownloadTask {
-    String TAG = "tag";
     private RxDownload rxDownload;
     private String url;
     private String saveName;
@@ -37,10 +35,8 @@ class DownloadTask {
 
         currentNumber.incrementAndGet();
 
-        Log.d(TAG, "task download");
-
         if (subscriptionPool.get(url) != null) {
-            Log.w(TAG, "This url download task already exists! So do nothing.");
+            Log.w("DownloadTask", "This url download task already exists! So do nothing.");
             return;
         }
 
@@ -48,21 +44,21 @@ class DownloadTask {
             db.insertRecord(url, saveName, rxDownload.getFileSavePaths(savePath)[0], name, image);
         }
 
-        final Subject<DownloadStatus, DownloadStatus> finalSubject;
+        final Subject<DownloadStatus, DownloadStatus> realSubject;
         if (subjectPool.get(url) == null) {
-            finalSubject = PublishSubject.create();
-            subjectPool.put(url, finalSubject);
+            realSubject = PublishSubject.create();
+            subjectPool.put(url, realSubject);
         } else {
-            finalSubject = subjectPool.get(url);
+            realSubject = subjectPool.get(url);
         }
 
         Subscription temp = rxDownload.download(url, saveName, savePath)
                 .subscribeOn(Schedulers.io())
-                .sample(500, TimeUnit.MILLISECONDS)
+                .onBackpressureLatest()
                 .subscribe(new Subscriber<DownloadStatus>() {
                     @Override
                     public void onCompleted() {
-                        finalSubject.onCompleted();
+                        realSubject.onCompleted();
                         Utils.unSubscribe(subscriptionPool.get(url));
                         subscriptionPool.remove(url);
                         db.updateRecord(url, COMPLETED);
@@ -72,7 +68,7 @@ class DownloadTask {
                     @Override
                     public void onError(Throwable e) {
                         Log.w("error", e);
-                        finalSubject.onError(e);
+                        realSubject.onError(e);
                         Utils.unSubscribe(subscriptionPool.get(url));
                         subscriptionPool.remove(url);
                         db.updateRecord(url, FAILED);
@@ -81,7 +77,7 @@ class DownloadTask {
 
                     @Override
                     public void onNext(DownloadStatus status) {
-                        finalSubject.onNext(status);
+                        realSubject.onNext(status);
                         db.updateRecord(url, status);
                     }
                 });

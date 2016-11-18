@@ -11,21 +11,14 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Queue;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import rx.Subscriber;
 import rx.Subscription;
-import rx.schedulers.Schedulers;
-import rx.subjects.BehaviorSubject;
 import rx.subjects.PublishSubject;
 import rx.subjects.Subject;
 
 import static zlc.season.rxdownload.DownloadFlag.CANCELED;
-import static zlc.season.rxdownload.DownloadFlag.COMPLETED;
-import static zlc.season.rxdownload.DownloadFlag.FAILED;
 import static zlc.season.rxdownload.DownloadFlag.PAUSED;
-import static zlc.season.rxdownload.DownloadFlag.STARTED;
 
 /**
  * Author: Season(ssseasonnn@gmail.com)
@@ -37,13 +30,11 @@ public class DownloadService extends Service {
     private static final String TAG = "DownloadService";
     private DownloadBinder mBinder;
     private DataBaseHelper mDb;
-    private Map<String, RecordValue> mDownloadRecord;
     private Map<String, Subject<DownloadStatus, DownloadStatus>> mSubjectPool;
     private Map<String, Subscription> mSubscriptionPool;
     private Queue<DownloadTask> mDownloadTaskQueue;
 
-    private BehaviorSubject<String> mEventSubject = BehaviorSubject.create();
-    private int MAX_DOWNLOAD_TASK = 5;
+    private int MAX_DOWNLOAD_TASK = 3;
     private AtomicInteger currentDownloadTask = new AtomicInteger(0);
 
     private Thread mThread;
@@ -53,7 +44,6 @@ public class DownloadService extends Service {
         super.onCreate();
         Log.d(TAG, "Create Download Service...");
         mBinder = new DownloadBinder();
-        mDownloadRecord = new HashMap<>();
         mSubjectPool = new HashMap<>();
         mSubscriptionPool = new HashMap<>();
         mDownloadTaskQueue = new LinkedList<>();
@@ -64,7 +54,9 @@ public class DownloadService extends Service {
     public int onStartCommand(Intent intent, int flags, int startId) {
         Log.d(TAG, "Start Download Service...");
         //TODO: read download record from database
-        MAX_DOWNLOAD_TASK = intent.getIntExtra("MAX_DOWNLOAD_TASK", 5);
+        if (intent != null) {
+            MAX_DOWNLOAD_TASK = intent.getIntExtra("MAX_DOWNLOAD_TASK", 3);
+        }
         return super.onStartCommand(intent, flags, startId);
     }
 
@@ -73,8 +65,8 @@ public class DownloadService extends Service {
         super.onDestroy();
         Log.d(TAG, "Destroy Download Service...");
         mThread.interrupt();
-        for (RecordValue each : mDownloadRecord.values()) {
-            Utils.unSubscribe(each.subscription);
+        for (Subscription each : mSubscriptionPool.values()) {
+            Utils.unSubscribe(each);
         }
         mDb.closeDataBase();
     }
@@ -106,94 +98,27 @@ public class DownloadService extends Service {
         mDownloadTaskQueue.offer(task);
     }
 
-    public void startDownload(RxDownload rxDownload, final Subject<DownloadStatus, DownloadStatus> subject,
-                              final String url, String saveName, String savePath, String name, String image) {
-        if (mDownloadRecord.get(url) != null) {
-            Log.w(TAG, "This url download task already exists! So do nothing.");
-            return;
-        }
-
-        final Subject<DownloadStatus, DownloadStatus> finalSubject;
-        if (null == subject) {
-            finalSubject = PublishSubject.create();
-        } else {
-            finalSubject = subject;
-        }
-
-        Subscription temp = rxDownload.download(url, saveName, savePath)
-                .subscribeOn(Schedulers.io())
-                .sample(500, TimeUnit.MILLISECONDS)
-                .subscribe(new Subscriber<DownloadStatus>() {
-                    @Override
-                    public void onStart() {
-                        super.onStart();
-                        mDb.updateRecord(url, STARTED);
-                    }
-
-                    @Override
-                    public void onCompleted() {
-                        finalSubject.onCompleted();
-                        Utils.unSubscribe(mDownloadRecord.get(url).subscription);
-                        mDownloadRecord.remove(url);
-                        mDb.updateRecord(url, COMPLETED);
-                    }
-
-                    @Override
-                    public void onError(Throwable e) {
-                        Log.w("error", e);
-                        finalSubject.onError(e);
-                        Utils.unSubscribe(mDownloadRecord.get(url).subscription);
-                        mDownloadRecord.remove(url);
-                        mDb.updateRecord(url, FAILED);
-                    }
-
-                    @Override
-                    public void onNext(DownloadStatus status) {
-                        finalSubject.onNext(status);
-                        mDb.updateRecord(url, status);
-                    }
-                });
-        mDownloadRecord.put(url, new RecordValue(temp, finalSubject));
-        if (mDb.recordNotExists(url)) {
-            mDb.insertRecord(url, saveName, rxDownload.getFileSavePaths(savePath)[0], name, image);
-        }
-    }
-
     public void pauseDownload(String url) {
-        if (null != mDownloadRecord.get(url)) {
-            Utils.unSubscribe(mDownloadRecord.get(url).subscription);
-            mDownloadRecord.remove(url);
-        }
+        removeSubscription(url);
         mDb.updateRecord(url, PAUSED);
     }
 
     public void cancelDownload(String url) {
-        if (null != mDownloadRecord.get(url)) {
-            Utils.unSubscribe(mDownloadRecord.get(url).subscription);
-            mDownloadRecord.remove(url);
-        }
+        removeSubscription(url);
         mDb.updateRecord(url, CANCELED);
     }
 
     public void deleteDownload(String url) {
-        if (null != mDownloadRecord.get(url)) {
-            Utils.unSubscribe(mDownloadRecord.get(url).subscription);
-            mDownloadRecord.remove(url);
-        }
+        removeSubscription(url);
         mDb.deleteRecord(url);
     }
 
-    static class RecordValue {
-        Subscription subscription;
-        Subject<DownloadStatus, DownloadStatus> subject;
-
-        RecordValue(Subscription subscription, Subject<DownloadStatus, DownloadStatus> subject) {
-            this.subscription = subscription;
-            this.subject = subject;
-        }
+    private void removeSubscription(String url) {
+        Utils.unSubscribe(mSubscriptionPool.get(url));
+        mSubscriptionPool.remove(url);
     }
 
-    class DownloadTaskDispatchRunnable implements Runnable {
+    private class DownloadTaskDispatchRunnable implements Runnable {
 
         @Override
         public void run() {
@@ -205,8 +130,6 @@ public class DownloadService extends Service {
                         Log.d(TAG, "can download");
                         task.start(mDb, currentDownloadTask, mSubjectPool, mSubscriptionPool);
                         mDownloadTaskQueue.remove();
-                    } else {
-                        Log.d(TAG, "need wait");
                     }
                 }
             }

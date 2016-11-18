@@ -66,7 +66,7 @@ public class ServiceDownloadActivity extends AppCompatActivity {
         mDownloadController.performClick(new DownloadController.Callback() {
             @Override
             public void startDownload() {
-                start1();
+                start();
             }
 
             @Override

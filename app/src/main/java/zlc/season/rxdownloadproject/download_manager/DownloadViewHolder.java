@@ -89,6 +89,7 @@ public class DownloadViewHolder extends AbstractViewHolder<DownloadBean> {
 
         //注册广播接收器, 用于接收下载进度
         Subscription temp = mRxDownload.registerReceiver(mData.mRecord.getUrl())
+                .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(new Subscriber<DownloadStatus>() {
                     @Override
                     public void onCompleted() {

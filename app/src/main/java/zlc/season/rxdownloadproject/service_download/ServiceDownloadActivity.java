@@ -132,8 +132,8 @@ public class ServiceDownloadActivity extends AppCompatActivity {
                     }
                 });
 
-        //注册广播接收器, 用于接收下载进度
-        Subscription temp = mRxDownload.registerReceiver(url)
+        //接收下载进度
+        Subscription temp = mRxDownload.receiveDownloadStatus(url)
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(new Subscriber<DownloadStatus>() {
                     @Override
@@ -183,7 +183,7 @@ public class ServiceDownloadActivity extends AppCompatActivity {
                     }
                 })
                 .observeOn(Schedulers.io())
-                .compose(mRxDownload.transformServiceNoReceiver(url, saveName, defaultPath))
+                .compose(mRxDownload.transformServiceWithoutStatus(url, saveName, defaultPath))
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(new Action1<Object>() {
                     @Override
@@ -192,34 +192,6 @@ public class ServiceDownloadActivity extends AppCompatActivity {
                     }
                 });
         mSubscriptions.add(temp);
-    }
-
-    private void start1(){
-
-        Subscription subscription = mRxDownload.serviceDownload(url,saveName,defaultPath,null,null)
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(new Subscriber<DownloadStatus>() {
-                    @Override
-                    public void onCompleted() {
-                        mDownloadController.setStateAndDisplay(DownloadFlag.COMPLETED);
-                    }
-
-                    @Override
-                    public void onError(Throwable e) {
-                        Log.w("TAG", e);
-                        mDownloadController.setStateAndDisplay(DownloadFlag.FAILED);
-                    }
-
-                    @Override
-                    public void onNext(final DownloadStatus status) {
-                        mProgress.setIndeterminate(status.isChunked);
-                        mProgress.setMax((int) status.getTotalSize());
-                        mProgress.setProgress((int) status.getDownloadSize());
-                        mPercent.setText(status.getPercent());
-                        mSize.setText(status.getFormatStatusString());
-                    }
-                });
-        mSubscriptions.add(subscription);
     }
 
     /**

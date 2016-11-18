@@ -88,7 +88,7 @@ public class DownloadViewHolder extends AbstractViewHolder<DownloadBean> {
         initFirstState(param);
 
         //注册广播接收器, 用于接收下载进度
-        Subscription temp = mRxDownload.registerReceiver(mData.mRecord.getUrl())
+        Subscription temp = mRxDownload.receiveDownloadStatus(mData.mRecord.getUrl())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(new Subscriber<DownloadStatus>() {
                     @Override
@@ -200,7 +200,7 @@ public class DownloadViewHolder extends AbstractViewHolder<DownloadBean> {
                     }
                 })
                 .observeOn(Schedulers.io())
-                .compose(mRxDownload.transformServiceNoReceiver(mData.mRecord.getUrl(), mData.mRecord.getSaveName(),
+                .compose(mRxDownload.transformServiceWithoutStatus(mData.mRecord.getUrl(), mData.mRecord.getSaveName(),
                         mData.mRecord.getSavePath()))
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(new Action1<Object>() {

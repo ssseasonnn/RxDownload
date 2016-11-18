@@ -91,7 +91,7 @@ public class AppInfoViewHolder extends AbstractViewHolder<AppInfoBean> {
                 });
 
         //注册广播接收器, 用于接收下载进度
-        Subscription temp = mRxDownload.registerReceiver(data.downloadUrl)
+        Subscription temp = mRxDownload.receiveDownloadStatus(data.downloadUrl)
                 .subscribe(new Subscriber<DownloadStatus>() {
                     @Override
                     public void onCompleted() {
@@ -155,7 +155,7 @@ public class AppInfoViewHolder extends AbstractViewHolder<AppInfoBean> {
                     }
                 })
                 .observeOn(Schedulers.io())
-                .compose(mRxDownload.transformServiceNoReceiver(mData.downloadUrl, mData.saveName, null,
+                .compose(mRxDownload.transformServiceWithoutStatus(mData.downloadUrl, mData.saveName, null,
                         mData.name, mData.img))
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(new Action1<Object>() {

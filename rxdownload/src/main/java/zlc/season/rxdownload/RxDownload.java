@@ -90,7 +90,7 @@ public class RxDownload {
      * @param url download url
      * @return Observable<DownloadStatus>
      */
-    public Observable<DownloadStatus> registerReceiver(final String url) {
+    public Observable<DownloadStatus> receiveDownloadStatus(final String url) {
         return Observable.create(new Observable.OnSubscribe<Object>() {
             @Override
             public void call(final Subscriber<? super Object> subscriber) {
@@ -108,7 +108,7 @@ public class RxDownload {
         }).flatMap(new Func1<Object, Observable<DownloadStatus>>() {
             @Override
             public Observable<DownloadStatus> call(Object o) {
-                return mDownloadService.getSubject(url);
+                return mDownloadService.getSubject(url).onBackpressureLatest();
             }
         });
     }
@@ -216,19 +216,23 @@ public class RxDownload {
         });
     }
 
+
+
     /**
-     * 使用Service下载.
-     * 同时注册了广播接收器接收下载进度.
+     * Using Service to download. Not only can download, but also can receive download status.
+     * If you only want to download, not receive download status,
+     * see {@link #serviceDownloadWithoutStatus(String, String, String)}
      * <p>
-     * 取消订阅即可取消注册, 但不会暂停下载.
-     * 暂停下载请看 {@link #pauseServiceDownload(String)}
+     * Un subscribe will not pause download.
      * <p>
-     * 同时在数据库中保存下载记录.
-     * 获取下载记录请看 {@link #getDownloadRecord(String)}
+     * If you want pause download, see {@link #pauseServiceDownload(String)}
+     * <p>
+     * This will save the download records in the database, if you want get record from database,
+     * see  {@link #getDownloadRecord(String)}
      *
-     * @param url      下载文件的Url
-     * @param saveName 下载文件的保存名称
-     * @param savePath 下载文件的保存路径, null使用默认的路径,默认保存在/storage/emulated/0/Download/目录下
+     * @param url      download file Url
+     * @param saveName download file SaveName
+     * @param savePath download file SavePath. If NULL, using default save path {@code /storage/emulated/0/Download/}
      * @return Observable<DownloadStatus>
      */
     public Observable<DownloadStatus> serviceDownload(@NonNull final String url,
@@ -237,23 +241,6 @@ public class RxDownload {
         return serviceDownload(url, saveName, savePath, null, null);
     }
 
-    /**
-     * 使用Service下载.
-     * 同时注册广播接收器接收下载进度.
-     * <p>
-     * 取消订阅即可取消注册, 不会暂停下载.
-     * 暂停下载请看 {@link #pauseServiceDownload(String)}
-     * <p>
-     * 同时在数据库中保存下载记录.
-     * 获取下载记录请看 {@link #getDownloadRecord(String)}
-     *
-     * @param url          下载文件的Url
-     * @param saveName     下载文件的保存名称
-     * @param savePath     下载文件的保存路径, null使用默认的路径,默认保存在/storage/emulated/0/Download/目录下
-     * @param displayName  可选参数, 显示在下载记录中的名称. 如需要在下载记录中显示名称,传入此参数保存到下载记录中
-     * @param displayImage 可选参数, 显示在下载记录中的图片. 如需要在下载记录中显示图片或图标,传入此参数保存到下载记录中
-     * @return Observable<DownloadStatus>
-     */
     public Observable<DownloadStatus> serviceDownload(@NonNull final String url,
                                                       @NonNull final String saveName,
                                                       @Nullable final String savePath,
@@ -278,54 +265,37 @@ public class RxDownload {
         }).flatMap(new Func1<Object, Observable<DownloadStatus>>() {
             @Override
             public Observable<DownloadStatus> call(Object o) {
-                return mDownloadService.getSubject(url);
+                return mDownloadService.getSubject(url).onBackpressureLatest();
             }
         });
     }
 
     /**
-     * 使用Service下载.
-     * 不会注册广播接收器,接收下载进度请手动注册广播接收器.
+     * Using Service to download. Just download, can't receive download status.
      * <p>
-     * 取消订阅不会暂停下载.
-     * 暂停下载请看 {@link #pauseServiceDownload(String)}
+     * Un subscribe will not pause download.
      * <p>
-     * 同时在数据库中保存下载记录.
-     * 获取下载记录请看 {@link #getDownloadRecord(String)}
+     * If you want pause download, see {@link #pauseServiceDownload(String)}
+     * <p>
+     * Also save the download records in the database, if you want get record from database,
+     * see  {@link #getDownloadRecord(String)}
      *
-     * @param url      下载文件的Url
-     * @param saveName 下载文件的保存名称
-     * @param savePath 下载文件的保存路径, null使用默认的路径,默认保存在/storage/emulated/0/Download/目录下
-     * @return Observable emit a NULL object
+     * @param url      download file Url
+     * @param saveName download file SaveName
+     * @param savePath download file SavePath. If NULL, using default save path {@code /storage/emulated/0/Download/}
+     * @return Observable<DownloadStatus>
      */
-    public Observable<Object> serviceDownloadNoReceiver(@NonNull final String url,
-                                                        @NonNull final String saveName,
-                                                        @Nullable final String savePath) {
-        return serviceDownloadNoReceiver(url, saveName, savePath, null, null);
+    public Observable<Object> serviceDownloadWithoutStatus(@NonNull final String url,
+                                                           @NonNull final String saveName,
+                                                           @Nullable final String savePath) {
+        return serviceDownloadWithoutStatus(url, saveName, savePath, null, null);
     }
 
-    /**
-     * 使用Service下载.
-     * 不会注册广播接收器,接收下载进度请手动注册广播接收器.
-     * <p>
-     * 取消订阅不会暂停下载.
-     * 暂停下载请看 {@link #pauseServiceDownload(String)}
-     * <p>
-     * 同时在数据库中保存下载记录.
-     * 获取下载记录请看 {@link #getDownloadRecord(String)}
-     *
-     * @param url          下载文件的Url
-     * @param saveName     下载文件的保存名称
-     * @param savePath     下载文件的保存路径, null使用默认的路径,默认保存在/storage/emulated/0/Download/目录下
-     * @param displayName  可选参数, 显示在下载记录中的名称. 如需要在下载记录中显示名称,传入此参数保存到下载记录中
-     * @param displayImage 可选参数, 显示在下载记录中的图片. 如需要在下载记录中显示图片或图标,传入此参数保存到下载记录中
-     * @return Observable emit a NULL object
-     */
-    public Observable<Object> serviceDownloadNoReceiver(@NonNull final String url,
-                                                        @NonNull final String saveName,
-                                                        @Nullable final String savePath,
-                                                        @Nullable final String displayName,
-                                                        @Nullable final String displayImage) {
+    public Observable<Object> serviceDownloadWithoutStatus(@NonNull final String url,
+                                                           @NonNull final String saveName,
+                                                           @Nullable final String savePath,
+                                                           @Nullable final String displayName,
+                                                           @Nullable final String displayImage) {
         return Observable.just(null).doOnSubscribe(new Action0() {
             @Override
             public void call() {
@@ -344,13 +314,15 @@ public class RxDownload {
     }
 
     /**
-     * 普通下载, 不使用Service.
-     * 取消订阅则暂停下载.
-     * 不会在数据库中保存下载记录.
+     * Normal download.
+     * <p>
+     * Un subscribe will  pause download.
+     * <p>
+     * Do not save the download records in the database.
      *
-     * @param url      下载文件的Url
-     * @param saveName 下载文件的保存名称
-     * @param savePath 下载文件的保存路径, null使用默认的路径,默认保存在/storage/emulated/0/Download/目录下
+     * @param url      download file Url
+     * @param saveName download file SaveName
+     * @param savePath download file SavePath. If NULL, using default save path {@code /storage/emulated/0/Download/}
      * @return Observable<DownloadStatus>
      */
     public Observable<DownloadStatus> download(@NonNull final String url,
@@ -360,12 +332,13 @@ public class RxDownload {
     }
 
     /**
-     * 普通下载的Transformer版本.
-     * 提供给RxJava Compose操作符使用.
+     * Normal download version of the Transformer.
+     * <p>
+     * Provide RxJava Compose operator use.
      *
-     * @param url      下载文件的Url
-     * @param saveName 下载文件的保存名称
-     * @param savePath 下载文件的保存路径, null使用默认的路径,默认保存在/storage/emulated/0/Download/目录下
+     * @param url      download file Url
+     * @param saveName download file SaveName
+     * @param savePath download file SavePath. If NULL, using default save path {@code /storage/emulated/0/Download/}
      * @param <T>      T
      * @return Transformer
      */
@@ -386,12 +359,13 @@ public class RxDownload {
     }
 
     /**
-     * ServiceDownload的Transformer版本.
-     * 提供给RxJava Compose操作符使用.
+     * Service download version of the Transformer.
+     * <p>
+     * Provide RxJava Compose operator use.
      *
-     * @param url      下载文件的Url
-     * @param saveName 下载文件的保存名称
-     * @param savePath 下载文件的保存路径, null使用默认的路径,默认保存在/storage/emulated/0/Download/目录下
+     * @param url      download file Url
+     * @param saveName download file SaveName
+     * @param savePath download file SavePath. If NULL, using default save path {@code /storage/emulated/0/Download/}
      * @param <T>      T
      * @return Transformer
      */
@@ -411,17 +385,6 @@ public class RxDownload {
         };
     }
 
-    /**
-     * 同上
-     *
-     * @param url          url
-     * @param saveName     saveName
-     * @param savePath     savePath
-     * @param displayName  display name in download record
-     * @param displayImage display image in download record
-     * @param <T>          T
-     * @return Transformer
-     */
     public <T> Observable.Transformer<T, DownloadStatus> transformService(@NonNull final String url,
                                                                           @NonNull final String saveName,
                                                                           @Nullable final String savePath,
@@ -441,54 +404,44 @@ public class RxDownload {
     }
 
     /**
-     * ServiceDownloadNoReceiver的Transformer版本
-     * 提供给RxJava Compose操作符使用.
+     * Service download without status version of the Transformer.
+     * <p>
+     * Provide RxJava Compose operator use.
      *
-     * @param url      下载文件的Url
-     * @param saveName 下载文件的保存名称
-     * @param savePath 下载文件的保存路径, null使用默认的路径,默认保存在/storage/emulated/0/Download/目录下
+     * @param url      download file Url
+     * @param saveName download file SaveName
+     * @param savePath download file SavePath. If NULL, using default save path {@code /storage/emulated/0/Download/}
      * @param <T>      T
      * @return Transformer
      */
-    public <T> Observable.Transformer<T, Object> transformServiceNoReceiver(@NonNull final String url,
-                                                                            @NonNull final String saveName,
-                                                                            @Nullable final String savePath) {
+    public <T> Observable.Transformer<T, Object> transformServiceWithoutStatus(@NonNull final String url,
+                                                                               @NonNull final String saveName,
+                                                                               @Nullable final String savePath) {
         return new Observable.Transformer<T, Object>() {
             @Override
             public Observable<Object> call(Observable<T> observable) {
                 return observable.flatMap(new Func1<T, Observable<Object>>() {
                     @Override
                     public Observable<Object> call(T t) {
-                        return serviceDownloadNoReceiver(url, saveName, savePath);
+                        return serviceDownloadWithoutStatus(url, saveName, savePath);
                     }
                 });
             }
         };
     }
 
-    /**
-     * 同上
-     *
-     * @param url          url
-     * @param saveName     saveName
-     * @param savePath     savePath
-     * @param displayName  display name in download record
-     * @param displayImage display image in download record
-     * @param <T>          T
-     * @return Transformer
-     */
-    public <T> Observable.Transformer<T, Object> transformServiceNoReceiver(@NonNull final String url,
-                                                                            @NonNull final String saveName,
-                                                                            @Nullable final String savePath,
-                                                                            @Nullable final String displayName,
-                                                                            @Nullable final String displayImage) {
+    public <T> Observable.Transformer<T, Object> transformServiceWithoutStatus(@NonNull final String url,
+                                                                               @NonNull final String saveName,
+                                                                               @Nullable final String savePath,
+                                                                               @Nullable final String displayName,
+                                                                               @Nullable final String displayImage) {
         return new Observable.Transformer<T, Object>() {
             @Override
             public Observable<Object> call(Observable<T> observable) {
                 return observable.flatMap(new Func1<T, Observable<Object>>() {
                     @Override
                     public Observable<Object> call(T t) {
-                        return serviceDownloadNoReceiver(url, saveName, savePath, displayName, displayImage);
+                        return serviceDownloadWithoutStatus(url, saveName, savePath, displayName, displayImage);
                     }
                 });
             }

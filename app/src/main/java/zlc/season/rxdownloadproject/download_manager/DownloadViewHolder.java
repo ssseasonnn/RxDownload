@@ -28,9 +28,9 @@ import rx.functions.Action1;
 import rx.schedulers.Schedulers;
 import zlc.season.practicalrecyclerview.AbstractAdapter;
 import zlc.season.practicalrecyclerview.AbstractViewHolder;
+import zlc.season.rxdownload.RxDownload;
 import zlc.season.rxdownload.entity.DownloadFlag;
 import zlc.season.rxdownload.entity.DownloadStatus;
-import zlc.season.rxdownload.RxDownload;
 import zlc.season.rxdownloadproject.DownloadController;
 import zlc.season.rxdownloadproject.R;
 
@@ -243,16 +243,11 @@ public class DownloadViewHolder extends AbstractViewHolder<DownloadBean> {
     //删除下载
     private void delete() {
         Subscription subscription = mRxDownload.deleteServiceDownload(mData.mRecord.getUrl())
-                .doOnNext(new Action1<Object>() {
-                    @Override
-                    public void call(Object o) {
-                        //Important!! 删除item前必须先取消订阅!!
-                        mData.mSubscriptions.clear();
-                    }
-                })
                 .subscribe(new Action1<Object>() {
                     @Override
                     public void call(Object o) {
+                        //Important!! 删除item前必须先取消订阅!!
+//                        mData.mSubscriptions.clear();
                         //删除item并刷新adapter
                         mAdapter.remove(getAdapterPosition());
                     }

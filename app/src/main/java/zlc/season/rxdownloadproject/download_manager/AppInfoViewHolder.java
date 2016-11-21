@@ -24,10 +24,10 @@ import rx.android.schedulers.AndroidSchedulers;
 import rx.functions.Action1;
 import rx.schedulers.Schedulers;
 import zlc.season.practicalrecyclerview.AbstractViewHolder;
+import zlc.season.rxdownload.RxDownload;
 import zlc.season.rxdownload.entity.DownloadFlag;
 import zlc.season.rxdownload.entity.DownloadRecord;
 import zlc.season.rxdownload.entity.DownloadStatus;
-import zlc.season.rxdownload.RxDownload;
 import zlc.season.rxdownloadproject.DownloadController;
 import zlc.season.rxdownloadproject.R;
 
@@ -84,18 +84,14 @@ public class AppInfoViewHolder extends AbstractViewHolder<AppInfoBean> {
                         int flag = record.getDownloadFlag();
                         //设置下载状态
                         mDownloadController.setStateAndDisplay(flag);
-
-                        Log.d("AppInfoViewHolder", "flag:" + flag);
-
                     }
                 });
 
-        //注册广播接收器, 用于接收下载进度
+        //接收下载进度
         Subscription temp = mRxDownload.receiveDownloadStatus(data.downloadUrl)
                 .subscribe(new Subscriber<DownloadStatus>() {
                     @Override
                     public void onCompleted() {
-                        Log.d("AppInfoViewHolder", "complete");
                         mDownloadController.setStateAndDisplay(DownloadFlag.COMPLETED);
                     }
 

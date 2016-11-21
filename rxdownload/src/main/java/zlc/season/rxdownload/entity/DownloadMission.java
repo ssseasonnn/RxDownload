@@ -12,13 +12,9 @@ import rx.subjects.PublishSubject;
 import rx.subjects.Subject;
 import zlc.season.rxdownload.RxDownload;
 import zlc.season.rxdownload.db.DataBaseHelper;
-import zlc.season.rxdownload.util.Mission;
-import zlc.season.rxdownload.util.Utils;
 
-import static zlc.season.rxdownload.entity.DownloadFlag.CANCELED;
 import static zlc.season.rxdownload.entity.DownloadFlag.COMPLETED;
 import static zlc.season.rxdownload.entity.DownloadFlag.FAILED;
-import static zlc.season.rxdownload.entity.DownloadFlag.PAUSED;
 import static zlc.season.rxdownload.entity.DownloadFlag.STARTED;
 
 /**
@@ -27,7 +23,8 @@ import static zlc.season.rxdownload.entity.DownloadFlag.STARTED;
  * Time: 11:38
  * FIXME
  */
-public class DownloadMission implements Mission {
+public class DownloadMission {
+    public boolean insertFlag = false;
     private RxDownload rxDownload;
     private String url;
     private String saveName;
@@ -35,10 +32,10 @@ public class DownloadMission implements Mission {
     private String name;
     private String image;
 
-    private Subscription mSubscription;
     private AtomicInteger mCount;
     private DataBaseHelper mDb;
     private Subject<DownloadStatus, DownloadStatus> mRealSubject;
+    private Map<String, Subscription> mSubscriptionPool;
 
     public String getUrl() {
         return url;
@@ -60,10 +57,9 @@ public class DownloadMission implements Mission {
         return image;
     }
 
-    @Override
     public void start() {
         mCount.incrementAndGet();
-        mSubscription = rxDownload.download(url, saveName, savePath)
+        Subscription temp = rxDownload.download(url, saveName, savePath)
                 .subscribeOn(Schedulers.io())
                 .onBackpressureLatest()
                 .subscribe(new Subscriber<DownloadStatus>() {
@@ -78,7 +74,6 @@ public class DownloadMission implements Mission {
                         mRealSubject.onCompleted();
                         mDb.updateRecord(url, COMPLETED);
                         mCount.decrementAndGet();
-                        Utils.unSubscribe(mSubscription);
                     }
 
                     @Override
@@ -87,7 +82,6 @@ public class DownloadMission implements Mission {
                         mRealSubject.onError(e);
                         mDb.updateRecord(url, FAILED);
                         mCount.decrementAndGet();
-                        Utils.unSubscribe(mSubscription);
                     }
 
                     @Override
@@ -96,14 +90,15 @@ public class DownloadMission implements Mission {
                         mDb.updateRecord(url, status);
                     }
                 });
+        mSubscriptionPool.put(url, temp);
     }
 
 
-    @Override
-    public void init(Map<String, Subject<DownloadStatus, DownloadStatus>> subjectPool, AtomicInteger count,
-                     DataBaseHelper db) {
+    public void init(Map<String, Subject<DownloadStatus, DownloadStatus>> subjectPool,
+                     Map<String, Subscription> subscriptionMap, AtomicInteger count, DataBaseHelper db) {
         this.mCount = count;
         this.mDb = db;
+        this.mSubscriptionPool = subscriptionMap;
 
         if (subjectPool.get(url) == null) {
             mRealSubject = PublishSubject.create();
@@ -111,28 +106,6 @@ public class DownloadMission implements Mission {
         } else {
             mRealSubject = subjectPool.get(url);
         }
-    }
-
-
-    @Override
-    public void pause() {
-        Utils.unSubscribe(mSubscription);
-        mDb.updateRecord(url, PAUSED);
-        mCount.decrementAndGet();
-    }
-
-
-    public void delete() {
-        Utils.unSubscribe(mSubscription);
-        mDb.deleteRecord(url);
-        mCount.decrementAndGet();
-    }
-
-    @Override
-    public void cancel() {
-        Utils.unSubscribe(mSubscription);
-        mDb.updateRecord(url, CANCELED);
-        mCount.decrementAndGet();
     }
 
     public static class Builder {

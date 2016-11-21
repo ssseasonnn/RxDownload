@@ -7,19 +7,21 @@ import android.os.IBinder;
 import android.support.annotation.Nullable;
 import android.util.Log;
 
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import rx.Subscription;
 import rx.subjects.PublishSubject;
 import rx.subjects.Subject;
-import zlc.season.rxdownload.BuildConfig;
 import zlc.season.rxdownload.db.DataBaseHelper;
 import zlc.season.rxdownload.entity.DownloadMission;
 import zlc.season.rxdownload.entity.DownloadStatus;
+
+import static zlc.season.rxdownload.entity.DownloadFlag.CANCELED;
+import static zlc.season.rxdownload.entity.DownloadFlag.PAUSED;
 
 /**
  * Author: Season(ssseasonnn@gmail.com)
@@ -30,15 +32,16 @@ import zlc.season.rxdownload.entity.DownloadStatus;
 public class DownloadService extends Service {
     private static final String TAG = "DownloadService";
     private DownloadBinder mBinder;
-    private DataBaseHelper mDb;
+    private DataBaseHelper mDataBaseHelper;
+
     private Map<String, Subject<DownloadStatus, DownloadStatus>> mSubjectPool;
-    private Map<String, DownloadMission> mDownloadMissionPool;
+    private Map<String, Subscription> mSubscriptionPool;
     private Queue<DownloadMission> mWaitingForDownload;
 
     private int MAX_DOWNLOAD_TASK = 3;
-    private AtomicInteger mCount = new AtomicInteger(0);
+    private volatile AtomicInteger mCount = new AtomicInteger(0);
 
-    private Thread mThread;
+    private Thread mDownloadQueueThread;
 
     @Override
     public void onCreate() {
@@ -47,10 +50,10 @@ public class DownloadService extends Service {
         mBinder = new DownloadBinder();
 
         mSubjectPool = new ConcurrentHashMap<>();
-        mDownloadMissionPool = new HashMap<>();
+        mSubscriptionPool = new ConcurrentHashMap<>();
         mWaitingForDownload = new LinkedList<>();
 
-        mDb = DataBaseHelper.getSingleton(this);
+        mDataBaseHelper = DataBaseHelper.getSingleton(this);
     }
 
     @Override
@@ -67,19 +70,19 @@ public class DownloadService extends Service {
     public void onDestroy() {
         super.onDestroy();
         Log.d(TAG, "Destroy Download Service...");
-        mThread.interrupt();
-        for (DownloadMission mission : mDownloadMissionPool.values()) {
-            mission.pause();
+        mDownloadQueueThread.interrupt();
+        for (String each : mSubscriptionPool.keySet()) {
+            pauseDownload(each);
         }
-        mDb.closeDataBase();
+        mDataBaseHelper.closeDataBase();
     }
 
     @Nullable
     @Override
     public IBinder onBind(Intent intent) {
         Log.d(TAG, "Bind Download Service...");
-        mThread = new Thread(new DownloadTaskDispatchRunnable());
-        mThread.start();
+        mDownloadQueueThread = new Thread(new DownloadTaskDispatchRunnable());
+        mDownloadQueueThread.start();
         return mBinder;
     }
 
@@ -93,67 +96,53 @@ public class DownloadService extends Service {
 
     public void addDownloadMission(DownloadMission mission) {
         mWaitingForDownload.offer(mission);
+        mDataBaseHelper.insertRecord(mission);
     }
 
     public void pauseDownload(String url) {
-        DownloadMission mission = mDownloadMissionPool.get(url);
-        if (mission != null) {
-            mission.pause();
+        if (mSubscriptionPool.get(url) != null) {
+            mCount.decrementAndGet();
         }
-        mDownloadMissionPool.remove(url);
+        Utils.unSubscribe(mSubscriptionPool.get(url));
+        mDataBaseHelper.updateRecord(url, PAUSED);
+        mSubscriptionPool.remove(url);
     }
 
     public void cancelDownload(String url) {
-        DownloadMission mission = mDownloadMissionPool.get(url);
-        if (mission != null) {
-            mission.cancel();
+        if (mSubscriptionPool.get(url) != null) {
+            mCount.decrementAndGet();
         }
-        mDownloadMissionPool.remove(url);
+        Utils.unSubscribe(mSubscriptionPool.get(url));
+        mDataBaseHelper.updateRecord(url, CANCELED);
+        mSubscriptionPool.remove(url);
     }
 
     public void deleteDownload(String url) {
-        DownloadMission mission = mDownloadMissionPool.get(url);
-        if (mission != null) {
-            mission.delete();
+        if (mSubscriptionPool.get(url) != null) {
+            mCount.decrementAndGet();
         }
-        mDownloadMissionPool.remove(url);
+        Utils.unSubscribe(mSubscriptionPool.get(url));
+        mDataBaseHelper.deleteRecord(url);
+        mSubscriptionPool.remove(url);
     }
 
 
     private class DownloadTaskDispatchRunnable implements Runnable {
-        private int log = 0;
 
         @Override
         public void run() {
-            if (BuildConfig.DEBUG) {
-                Log.d(TAG, "Download mission dispatch thread is running.");
-            }
             while (!Thread.currentThread().isInterrupted()) {
                 DownloadMission mission = mWaitingForDownload.peek();
                 if (null != mission) {
-                    final String url = mission.getUrl();
-                    if (mDownloadMissionPool.get(url) != null) {
-                        Log.w(TAG, "This url download task already exists! So do nothing.");
+                    String url = mission.getUrl();
+                    if (mSubscriptionPool.get(url) != null) {
                         mWaitingForDownload.remove();
                         continue;
                     }
-                    if (mDb.recordNotExists(url)) {
-                        mDb.insertRecord(mission);
-                    }
                     if (mCount.get() < MAX_DOWNLOAD_TASK) {
-                        if (BuildConfig.DEBUG) {
-                            Log.d(TAG, "Can download, so downloading.");
-                            log = 0;
-                        }
-                        mission.init(mSubjectPool, mCount, mDb);
+                        mission.init(mSubjectPool, mSubscriptionPool, mCount, mDataBaseHelper);
                         mission.start();
-                        mDownloadMissionPool.put(url, mission);
                         mWaitingForDownload.remove();
-                    } else {
-                        if (BuildConfig.DEBUG && log == 0) {
-                            Log.d(TAG, "Current download mission number is maximum, so wait.");
-                            log++;
-                        }
                     }
                 }
             }

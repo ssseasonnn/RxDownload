@@ -231,7 +231,6 @@ public class DownloadViewHolder extends AbstractViewHolder<DownloadBean> {
                 .subscribe(new Action1<Object>() {
                     @Override
                     public void call(Object o) {
-                        mData.mSubscriptions.clear();
                         mAdapter.remove(getAdapterPosition());
                     }
                 });

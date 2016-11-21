@@ -9,7 +9,7 @@ package zlc.season.rxdownload.entity;
 public class DownloadRecord {
     private String url;
     private String saveName;
-    private String savePath;
+    private String savePath;  //param path, not file save path;
     private DownloadStatus mStatus;
     private int downloadFlag = DownloadFlag.NORMAL;
     private long date; //格林威治时间,毫秒

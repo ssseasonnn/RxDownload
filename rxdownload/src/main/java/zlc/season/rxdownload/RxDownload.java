@@ -235,8 +235,7 @@ public class RxDownload {
             }
         });
     }
-
-
+    
     /**
      * Using Service to download. Not only can download, but also can receive download status.
      * If you only want to download, not receive download status,
@@ -257,14 +256,6 @@ public class RxDownload {
     public Observable<DownloadStatus> serviceDownload(@NonNull final String url,
                                                       @NonNull final String saveName,
                                                       @Nullable final String savePath) {
-        return serviceDownload(url, saveName, savePath, null, null);
-    }
-
-    public Observable<DownloadStatus> serviceDownload(@NonNull final String url,
-                                                      @NonNull final String saveName,
-                                                      @Nullable final String savePath,
-                                                      @Nullable final String displayName,
-                                                      @Nullable final String displayImage) {
         return Observable.create(new Observable.OnSubscribe<Object>() {
             @Override
             public void call(final Subscriber<? super Object> subscriber) {
@@ -272,12 +263,12 @@ public class RxDownload {
                     startBindServiceAndDo(new ServiceConnectedCallback() {
                         @Override
                         public void call() {
-                            addDownloadTask(url, saveName, savePath, displayName, displayImage);
+                            addDownloadTask(url, saveName, savePath);
                             subscriber.onNext(null);
                         }
                     });
                 } else {
-                    addDownloadTask(url, saveName, savePath, displayName, displayImage);
+                    addDownloadTask(url, saveName, savePath);
                     subscriber.onNext(null);
                 }
             }
@@ -307,14 +298,6 @@ public class RxDownload {
     public Observable<Object> serviceDownloadWithoutStatus(@NonNull final String url,
                                                            @NonNull final String saveName,
                                                            @Nullable final String savePath) {
-        return serviceDownloadWithoutStatus(url, saveName, savePath, null, null);
-    }
-
-    public Observable<Object> serviceDownloadWithoutStatus(@NonNull final String url,
-                                                           @NonNull final String saveName,
-                                                           @Nullable final String savePath,
-                                                           @Nullable final String displayName,
-                                                           @Nullable final String displayImage) {
         return Observable.just(null).doOnSubscribe(new Action0() {
             @Override
             public void call() {
@@ -322,11 +305,11 @@ public class RxDownload {
                     startBindServiceAndDo(new ServiceConnectedCallback() {
                         @Override
                         public void call() {
-                            addDownloadTask(url, saveName, savePath, displayName, displayImage);
+                            addDownloadTask(url, saveName, savePath);
                         }
                     });
                 } else {
-                    addDownloadTask(url, saveName, savePath, displayName, displayImage);
+                    addDownloadTask(url, saveName, savePath);
                 }
             }
         });
@@ -404,24 +387,6 @@ public class RxDownload {
         };
     }
 
-    public <T> Observable.Transformer<T, DownloadStatus> transformService(@NonNull final String url,
-                                                                          @NonNull final String saveName,
-                                                                          @Nullable final String savePath,
-                                                                          @Nullable final String displayName,
-                                                                          @Nullable final String displayImage) {
-        return new Observable.Transformer<T, DownloadStatus>() {
-            @Override
-            public Observable<DownloadStatus> call(Observable<T> observable) {
-                return observable.flatMap(new Func1<T, Observable<DownloadStatus>>() {
-                    @Override
-                    public Observable<DownloadStatus> call(T t) {
-                        return serviceDownload(url, saveName, savePath, displayName, displayImage);
-                    }
-                });
-            }
-        };
-    }
-
     /**
      * Service download without status version of the Transformer.
      * <p>
@@ -449,23 +414,6 @@ public class RxDownload {
         };
     }
 
-    public <T> Observable.Transformer<T, Object> transformServiceWithoutStatus(@NonNull final String url,
-                                                                               @NonNull final String saveName,
-                                                                               @Nullable final String savePath,
-                                                                               @Nullable final String displayName,
-                                                                               @Nullable final String displayImage) {
-        return new Observable.Transformer<T, Object>() {
-            @Override
-            public Observable<Object> call(Observable<T> observable) {
-                return observable.flatMap(new Func1<T, Observable<Object>>() {
-                    @Override
-                    public Observable<Object> call(T t) {
-                        return serviceDownloadWithoutStatus(url, saveName, savePath, displayName, displayImage);
-                    }
-                });
-            }
-        };
-    }
 
     public String[] getFileSavePaths(String savePath) {
         return mDownloadHelper.getFileSavePaths(savePath);
@@ -473,17 +421,13 @@ public class RxDownload {
 
     private void addDownloadTask(@NonNull String url,
                                  @NonNull String saveName,
-                                 @Nullable String savePath,
-                                 @Nullable String displayName,
-                                 @Nullable String displayImage) {
+                                 @Nullable String savePath) {
         mDownloadService.addDownloadMission(
                 new DownloadMission.Builder()
                         .setRxDownload(RxDownload.this)
                         .setUrl(url)
                         .setSaveName(saveName)
                         .setSavePath(savePath)
-                        .setName(displayName)
-                        .setImage(displayImage)
                         .build());
     }
 

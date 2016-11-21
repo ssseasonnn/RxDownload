@@ -29,8 +29,6 @@ public class DownloadMission {
     private String url;
     private String saveName;
     private String savePath;
-    private String name;
-    private String image;
 
     private Subscription mSubscription;
 
@@ -48,14 +46,6 @@ public class DownloadMission {
 
     public String getSavePath() {
         return savePath;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public String getImage() {
-        return image;
     }
 
     public void start(final Map<String, DownloadMission> nowDownloadMap,
@@ -105,8 +95,6 @@ public class DownloadMission {
         String url;
         String saveName;
         String savePath;
-        String name;
-        String image;
 
         public Builder setRxDownload(RxDownload rxDownload) {
             this.rxDownload = rxDownload;
@@ -128,24 +116,12 @@ public class DownloadMission {
             return this;
         }
 
-        public Builder setName(String name) {
-            this.name = name;
-            return this;
-        }
-
-        public Builder setImage(String image) {
-            this.image = image;
-            return this;
-        }
-
         public DownloadMission build() {
             DownloadMission task = new DownloadMission();
             task.rxDownload = rxDownload;
             task.url = url;
             task.saveName = saveName;
             task.savePath = savePath;
-            task.name = name;
-            task.image = image;
             return task;
         }
     }

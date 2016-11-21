@@ -2,6 +2,8 @@ package zlc.season.rxdownload;
 
 import org.junit.Test;
 
+import zlc.season.rxdownload.util.Utils;
+
 /**
  * Author: Season(ssseasonnn@gmail.com)
  * Date: 2016/11/1

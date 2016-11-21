@@ -1,4 +1,4 @@
-package zlc.season.rxdownload;
+package zlc.season.rxdownload.entity;
 
 /**
  * Author: Season(ssseasonnn@gmail.com)

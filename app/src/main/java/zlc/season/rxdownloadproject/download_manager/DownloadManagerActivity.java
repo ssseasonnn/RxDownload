@@ -15,7 +15,7 @@ import rx.Subscription;
 import rx.functions.Action1;
 import rx.functions.Func1;
 import zlc.season.practicalrecyclerview.PracticalRecyclerView;
-import zlc.season.rxdownload.DownloadRecord;
+import zlc.season.rxdownload.entity.DownloadRecord;
 import zlc.season.rxdownload.RxDownload;
 import zlc.season.rxdownloadproject.R;
 

@@ -3,7 +3,7 @@ package zlc.season.rxdownloadproject;
 import android.widget.Button;
 import android.widget.TextView;
 
-import zlc.season.rxdownload.DownloadFlag;
+import zlc.season.rxdownload.entity.DownloadFlag;
 
 /**
  * Author: Season(ssseasonnn@gmail.com)

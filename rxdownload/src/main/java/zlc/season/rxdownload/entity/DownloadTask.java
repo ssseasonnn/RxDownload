@@ -1,4 +1,4 @@
-package zlc.season.rxdownload;
+package zlc.season.rxdownload.entity;
 
 import android.util.Log;
 
@@ -10,9 +10,12 @@ import rx.Subscription;
 import rx.schedulers.Schedulers;
 import rx.subjects.PublishSubject;
 import rx.subjects.Subject;
+import zlc.season.rxdownload.RxDownload;
+import zlc.season.rxdownload.db.DataBaseHelper;
+import zlc.season.rxdownload.util.Utils;
 
-import static zlc.season.rxdownload.DownloadFlag.COMPLETED;
-import static zlc.season.rxdownload.DownloadFlag.FAILED;
+import static zlc.season.rxdownload.entity.DownloadFlag.COMPLETED;
+import static zlc.season.rxdownload.entity.DownloadFlag.FAILED;
 
 /**
  * Author: Season(ssseasonnn@gmail.com)
@@ -20,7 +23,7 @@ import static zlc.season.rxdownload.DownloadFlag.FAILED;
  * Time: 11:38
  * FIXME
  */
-class DownloadTask {
+public class DownloadTask {
     private RxDownload rxDownload;
     private String url;
     private String saveName;
@@ -29,9 +32,9 @@ class DownloadTask {
     private String image;
 
 
-    void start(final DataBaseHelper db, final AtomicInteger currentNumber,
-               Map<String, Subject<DownloadStatus, DownloadStatus>> subjectPool,
-               final Map<String, Subscription> subscriptionPool) {
+    public void start(final DataBaseHelper db, final AtomicInteger currentNumber,
+                      Map<String, Subject<DownloadStatus, DownloadStatus>> subjectPool,
+                      final Map<String, Subscription> subscriptionPool) {
 
         currentNumber.incrementAndGet();
 
@@ -84,7 +87,7 @@ class DownloadTask {
         subscriptionPool.put(url, temp);
     }
 
-    static class Builder {
+    public static class Builder {
         RxDownload rxDownload;
         String url;
         String saveName;
@@ -92,37 +95,37 @@ class DownloadTask {
         String name;
         String image;
 
-        Builder setRxDownload(RxDownload rxDownload) {
+        public Builder setRxDownload(RxDownload rxDownload) {
             this.rxDownload = rxDownload;
             return this;
         }
 
-        Builder setUrl(String url) {
+        public Builder setUrl(String url) {
             this.url = url;
             return this;
         }
 
-        Builder setSaveName(String saveName) {
+        public Builder setSaveName(String saveName) {
             this.saveName = saveName;
             return this;
         }
 
-        Builder setSavePath(String savePath) {
+        public Builder setSavePath(String savePath) {
             this.savePath = savePath;
             return this;
         }
 
-        Builder setName(String name) {
+        public Builder setName(String name) {
             this.name = name;
             return this;
         }
 
-        Builder setImage(String image) {
+        public Builder setImage(String image) {
             this.image = image;
             return this;
         }
 
-        DownloadTask build() {
+        public DownloadTask build() {
             DownloadTask task = new DownloadTask();
             task.rxDownload = rxDownload;
             task.url = url;

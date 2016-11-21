@@ -1,4 +1,4 @@
-package zlc.season.rxdownload;
+package zlc.season.rxdownload.util;
 
 import java.util.concurrent.TimeUnit;
 
@@ -7,6 +7,7 @@ import okhttp3.logging.HttpLoggingInterceptor;
 import retrofit2.Retrofit;
 import retrofit2.adapter.rxjava.RxJavaCallAdapterFactory;
 import retrofit2.converter.gson.GsonConverterFactory;
+import zlc.season.rxdownload.BuildConfig;
 
 /**
  * Author: Season(ssseasonnn@gmail.com)

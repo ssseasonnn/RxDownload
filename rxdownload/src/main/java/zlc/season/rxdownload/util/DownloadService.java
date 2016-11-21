@@ -1,4 +1,4 @@
-package zlc.season.rxdownload;
+package zlc.season.rxdownload.util;
 
 import android.app.Service;
 import android.content.Intent;
@@ -7,18 +7,22 @@ import android.os.IBinder;
 import android.support.annotation.Nullable;
 import android.util.Log;
 
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Queue;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import rx.Subscription;
 import rx.subjects.PublishSubject;
 import rx.subjects.Subject;
+import zlc.season.rxdownload.db.DataBaseHelper;
+import zlc.season.rxdownload.db.DbOpenHelper;
+import zlc.season.rxdownload.entity.DownloadStatus;
+import zlc.season.rxdownload.entity.DownloadTask;
 
-import static zlc.season.rxdownload.DownloadFlag.CANCELED;
-import static zlc.season.rxdownload.DownloadFlag.PAUSED;
+import static zlc.season.rxdownload.entity.DownloadFlag.CANCELED;
+import static zlc.season.rxdownload.entity.DownloadFlag.PAUSED;
 
 /**
  * Author: Season(ssseasonnn@gmail.com)
@@ -35,7 +39,7 @@ public class DownloadService extends Service {
     private Queue<DownloadTask> mDownloadTaskQueue;
 
     private int MAX_DOWNLOAD_TASK = 3;
-    private AtomicInteger currentDownloadTask = new AtomicInteger(0);
+    private AtomicInteger count = new AtomicInteger(0);
 
     private Thread mThread;
 
@@ -44,9 +48,11 @@ public class DownloadService extends Service {
         super.onCreate();
         Log.d(TAG, "Create Download Service...");
         mBinder = new DownloadBinder();
-        mSubjectPool = new HashMap<>();
-        mSubscriptionPool = new HashMap<>();
+
+        mSubjectPool = new ConcurrentHashMap<>();
+        mSubscriptionPool = new ConcurrentHashMap<>();
         mDownloadTaskQueue = new LinkedList<>();
+
         mDb = new DataBaseHelper(new DbOpenHelper(this));
     }
 
@@ -126,9 +132,9 @@ public class DownloadService extends Service {
             while (!Thread.currentThread().isInterrupted()) {
                 DownloadTask task = mDownloadTaskQueue.peek();
                 if (null != task) {
-                    if (currentDownloadTask.get() < MAX_DOWNLOAD_TASK) {
+                    if (count.get() < MAX_DOWNLOAD_TASK) {
                         Log.d(TAG, "can download");
-                        task.start(mDb, currentDownloadTask, mSubjectPool, mSubscriptionPool);
+                        task.start(mDb, count, mSubjectPool, mSubscriptionPool);
                         mDownloadTaskQueue.remove();
                     }
                 }
@@ -137,7 +143,7 @@ public class DownloadService extends Service {
     }
 
     public class DownloadBinder extends Binder {
-        DownloadService getService() {
+        public DownloadService getService() {
             return DownloadService.this;
         }
     }

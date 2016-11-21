@@ -1,4 +1,4 @@
-package zlc.season.rxdownload;
+package zlc.season.rxdownload.util;
 
 import android.util.Log;
 
@@ -18,9 +18,10 @@ import retrofit2.Retrofit;
 import retrofit2.adapter.rxjava.HttpException;
 import rx.Subscriber;
 import rx.exceptions.CompositeException;
+import zlc.season.rxdownload.entity.DownloadRange;
+import zlc.season.rxdownload.entity.DownloadStatus;
 
 import static android.text.TextUtils.concat;
-import static zlc.season.rxdownload.FileHelper.TAG;
 
 /**
  * Author: Season(ssseasonnn@gmail.com)
@@ -28,8 +29,8 @@ import static zlc.season.rxdownload.FileHelper.TAG;
  * Time: 09:39
  * Download helper 类
  */
-class DownloadHelper {
-    static final String TEST_RANGE_SUPPORT = "bytes=0-";
+public class DownloadHelper {
+    public static final String TEST_RANGE_SUPPORT = "bytes=0-";
 
     private int MAX_RETRY_COUNT = 3;
 
@@ -39,47 +40,67 @@ class DownloadHelper {
     //Record : { "url" : new String[] { "file path" , "temp file path" , "last modify file path" }}
     private Map<String, String[]> mDownloadRecord;
 
-    DownloadHelper() {
+    public DownloadHelper() {
         mDownloadRecord = new HashMap<>();
         mFileHelper = new FileHelper();
         mDownloadApi = RetrofitProvider.getInstance().create(DownloadApi.class);
     }
 
-    void setRetrofit(Retrofit retrofit) {
+    public void setRetrofit(Retrofit retrofit) {
         mDownloadApi = retrofit.create(DownloadApi.class);
     }
 
-    void setDefaultSavePath(String defaultSavePath) {
+    public void setDefaultSavePath(String defaultSavePath) {
         mFileHelper.setDefaultSavePath(defaultSavePath);
+    }
+
+    public void setMaxRetryCount(int MAX_RETRY_COUNT) {
+        this.MAX_RETRY_COUNT = MAX_RETRY_COUNT;
+    }
+
+    public void addDownloadRecord(String url, String saveName, String savePath) throws IOException {
+        mFileHelper.createDirectories(savePath);
+        mDownloadRecord.put(url, mFileHelper.getRealFilePaths(saveName, savePath));
+    }
+
+    public void deleteDownloadRecord(String url) {
+        mDownloadRecord.remove(url);
+    }
+
+    public String getLastModify(String url) throws IOException {
+        return mFileHelper.getLastModify(getLastModifyFileBy(url));
+    }
+
+    public boolean downloadNotComplete(String url) throws IOException {
+        return mFileHelper.downloadNotComplete(getTempFileBy(url));
+    }
+
+    public boolean downloadNotComplete(String url, long contentLength) {
+        return getFileBy(url).length() != contentLength;
+    }
+
+    public boolean needReDownload(String url, long contentLength) throws IOException {
+        return tempFileNotExists(url) || tempFileDamaged(url, contentLength);
+    }
+
+    public String[] getFileSavePaths(String savePath) {
+        return mFileHelper.getRealDirectoryPaths(savePath);
+    }
+
+    public boolean downloadFileExists(String url) {
+        return getFileBy(url).exists();
     }
 
     int getMaxThreads() {
         return mFileHelper.getMaxThreads();
     }
 
-    void setMaxThreads(int MAX_THREADS) {
+    public void setMaxThreads(int MAX_THREADS) {
         mFileHelper.setMaxThreads(MAX_THREADS);
     }
 
-    void setMaxRetryCount(int MAX_RETRY_COUNT) {
-        this.MAX_RETRY_COUNT = MAX_RETRY_COUNT;
-    }
-
-    DownloadApi getDownloadApi() {
+    public   DownloadApi getDownloadApi() {
         return mDownloadApi;
-    }
-
-    void addDownloadRecord(String url, String saveName, String savePath) throws IOException {
-        mFileHelper.createDirectories(savePath);
-        mDownloadRecord.put(url, mFileHelper.getRealFilePaths(saveName, savePath));
-    }
-
-    void deleteDownloadRecord(String url) {
-        mDownloadRecord.remove(url);
-    }
-
-    String getLastModify(String url) throws IOException {
-        return mFileHelper.getLastModify(getLastModifyFileBy(url));
     }
 
     void prepareNormalDownload(String url, long fileLength, String lastModify) throws IOException, ParseException {
@@ -104,69 +125,49 @@ class DownloadHelper {
         mFileHelper.saveFile(subscriber, i, start, end, getTempFileBy(url), getFileBy(url), response);
     }
 
-    boolean downloadNotComplete(String url) throws IOException {
-        return mFileHelper.downloadNotComplete(getTempFileBy(url));
-    }
-
-    boolean downloadNotComplete(String url, long contentLength) {
-        return getFileBy(url).length() != contentLength;
-    }
-
-    boolean needReDownload(String url, long contentLength) throws IOException {
-        return tempFileNotExists(url) || tempFileDamaged(url, contentLength);
-    }
-
-    String[] getFileSavePaths(String savePath) {
-        return mFileHelper.getRealDirectoryPaths(savePath);
-    }
-
-    Boolean retry(Integer integer, Throwable throwable) {
+    public Boolean retry(Integer integer, Throwable throwable) {
         if (throwable instanceof UnknownHostException) {
             if (integer < MAX_RETRY_COUNT + 1) {
-                Log.w(TAG, Thread.currentThread().getName() +
+                Log.w(FileHelper.TAG, Thread.currentThread().getName() +
                         " no network, retry to connect " + integer + " times");
                 return true;
             }
             return false;
         } else if (throwable instanceof HttpException) {
             if (integer < MAX_RETRY_COUNT + 1) {
-                Log.w(TAG, Thread.currentThread().getName() +
+                Log.w(FileHelper.TAG, Thread.currentThread().getName() +
                         " had non-2XX http error, retry to connect " + integer + " times");
                 return true;
             }
             return false;
         } else if (throwable instanceof SocketTimeoutException) {
             if (integer < MAX_RETRY_COUNT + 1) {
-                Log.w(TAG, Thread.currentThread().getName() +
+                Log.w(FileHelper.TAG, Thread.currentThread().getName() +
                         " socket time out,retry to connect " + integer + " times");
                 return true;
             }
             return false;
         } else if (throwable instanceof ConnectException) {
             if (integer < MAX_RETRY_COUNT + 1) {
-                Log.w(TAG, concat(Thread.currentThread().getName(), " ", throwable.getMessage(),
+                Log.w(FileHelper.TAG, concat(Thread.currentThread().getName(), " ", throwable.getMessage(),
                         ". retry to connect ", String.valueOf(integer), " times").toString());
                 return true;
             }
             return false;
         } else if (throwable instanceof SocketException) {
             if (integer < MAX_RETRY_COUNT + 1) {
-                Log.w(TAG, Thread.currentThread().getName() +
+                Log.w(FileHelper.TAG, Thread.currentThread().getName() +
                         " a network or conversion error happened, retry to connect " + integer + " times");
                 return true;
             }
             return false;
         } else if (throwable instanceof CompositeException) {
-            Log.w(TAG, throwable.getMessage());
+            Log.w(FileHelper.TAG, throwable.getMessage());
             return false;
         } else {
-            Log.w(TAG, throwable);
+            Log.w(FileHelper.TAG, throwable);
             return false;
         }
-    }
-
-    boolean downloadFileExists(String url) {
-        return getFileBy(url).exists();
     }
 
     private boolean tempFileDamaged(String url, long fileLength) throws IOException {

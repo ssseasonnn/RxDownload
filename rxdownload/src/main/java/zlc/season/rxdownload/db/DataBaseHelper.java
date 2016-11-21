@@ -1,4 +1,4 @@
-package zlc.season.rxdownload;
+package zlc.season.rxdownload.db;
 
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
@@ -10,10 +10,8 @@ import rx.Observable;
 import rx.Subscriber;
 import rx.android.schedulers.AndroidSchedulers;
 import rx.schedulers.Schedulers;
-
-import static zlc.season.rxdownload.Db.RecordTable.TABLE_NAME;
-import static zlc.season.rxdownload.Db.RecordTable.insert;
-import static zlc.season.rxdownload.Db.RecordTable.update;
+import zlc.season.rxdownload.entity.DownloadRecord;
+import zlc.season.rxdownload.entity.DownloadStatus;
 
 /**
  * Author: Season(ssseasonnn@gmail.com)
@@ -21,15 +19,54 @@ import static zlc.season.rxdownload.Db.RecordTable.update;
  * Time: 10:02
  * FIXME
  */
-class DataBaseHelper {
+public class DataBaseHelper {
     private volatile SQLiteDatabase mWritableDatabase;
     private DbOpenHelper mDbOpenHelper;
 
-    DataBaseHelper(DbOpenHelper dbOpenHelper) {
+    public DataBaseHelper(DbOpenHelper dbOpenHelper) {
         this.mDbOpenHelper = dbOpenHelper;
     }
 
-    Observable<List<DownloadRecord>> readAllRecords() {
+    public boolean recordNotExists(String url) {
+        Cursor cursor = null;
+        try {
+            cursor = getWritableDatabase().rawQuery("select " + Db.RecordTable.COLUMN_ID + " from "
+                    + Db.RecordTable.TABLE_NAME + " where url=?", new String[]{url});
+            return cursor.getCount() == 0;
+        } finally {
+            if (cursor != null) {
+                cursor.close();
+            }
+        }
+    }
+
+    public long insertRecord(String url, String saveName, String savePath, String name, String image) {
+        return getWritableDatabase().insert(Db.RecordTable.TABLE_NAME, null, Db.RecordTable.insert(url, saveName,
+                savePath, name, image));
+    }
+
+    public long updateRecord(String url, DownloadStatus status) {
+        return getWritableDatabase().update(Db.RecordTable.TABLE_NAME, Db.RecordTable.update(status), "url=?", new
+                String[]{url});
+    }
+
+    public long updateRecord(String url, int flag) {
+        return getWritableDatabase().update(Db.RecordTable.TABLE_NAME, Db.RecordTable.update(flag), "url=?", new
+                String[]{url});
+    }
+
+    public int deleteRecord(String url) {
+        return getWritableDatabase().delete(Db.RecordTable.TABLE_NAME, "url=?", new String[]{url});
+    }
+
+    public void closeDataBase() {
+        synchronized (this) {
+            mWritableDatabase = null;
+            mDbOpenHelper.close();
+        }
+    }
+
+    public Observable<List<DownloadRecord>> readAllRecords() {
         return Observable.create(new Observable.OnSubscribe<List<DownloadRecord>>() {
             @Override
             public void call(Subscriber<? super List<DownloadRecord>> subscriber) {
@@ -37,7 +74,7 @@ class DataBaseHelper {
                 Cursor cursor = null;
                 try {
                     db = mDbOpenHelper.getReadableDatabase();
-                    cursor = db.rawQuery("select * from " + TABLE_NAME, new String[]{});
+                    cursor = db.rawQuery("select * from " + Db.RecordTable.TABLE_NAME, new String[]{});
                     List<DownloadRecord> result = new ArrayList<>();
                     while (cursor.moveToNext()) {
                         result.add(Db.RecordTable.read(cursor));
@@ -56,7 +93,7 @@ class DataBaseHelper {
         }).subscribeOn(Schedulers.io()).observeOn(AndroidSchedulers.mainThread());
     }
 
-    Observable<DownloadRecord> readRecord(final String url) {
+    public Observable<DownloadRecord> readRecord(final String url) {
         return Observable.create(new Observable.OnSubscribe<DownloadRecord>() {
             @Override
             public void call(Subscriber<? super DownloadRecord> subscriber) {
@@ -64,7 +101,8 @@ class DataBaseHelper {
                 Cursor cursor = null;
                 try {
                     db = mDbOpenHelper.getReadableDatabase();
-                    cursor = db.rawQuery("select * from " + TABLE_NAME + " where url=?", new String[]{url});
+                    cursor = db.rawQuery("select * from " + Db.RecordTable.TABLE_NAME + " where url=?", new
+                            String[]{url});
                     while (cursor.moveToNext()) {
                         subscriber.onNext(Db.RecordTable.read(cursor));
                     }
@@ -79,43 +117,6 @@ class DataBaseHelper {
                 }
             }
         }).subscribeOn(Schedulers.io()).observeOn(AndroidSchedulers.mainThread());
-    }
-
-
-    boolean recordNotExists(String url) {
-        Cursor cursor = null;
-        try {
-            cursor = getWritableDatabase().rawQuery("select " + Db.RecordTable.COLUMN_ID + " from "
-                    + TABLE_NAME + " where url=?", new String[]{url});
-            return cursor.getCount() == 0;
-        } finally {
-            if (cursor != null) {
-                cursor.close();
-            }
-        }
-    }
-
-    long insertRecord(String url, String saveName, String savePath, String name, String image) {
-        return getWritableDatabase().insert(TABLE_NAME, null, insert(url, saveName, savePath, name, image));
-    }
-
-    long updateRecord(String url, DownloadStatus status) {
-        return getWritableDatabase().update(TABLE_NAME, update(status), "url=?", new String[]{url});
-    }
-
-    long updateRecord(String url, int flag) {
-        return getWritableDatabase().update(TABLE_NAME, update(flag), "url=?", new String[]{url});
-    }
-
-    int deleteRecord(String url) {
-        return getWritableDatabase().delete(TABLE_NAME, "url=?", new String[]{url});
-    }
-
-    void closeDataBase() {
-        synchronized (this) {
-            mWritableDatabase = null;
-            mDbOpenHelper.close();
-        }
     }
 
     private SQLiteDatabase getWritableDatabase() {

@@ -1,4 +1,4 @@
-package zlc.season.rxdownload;
+package zlc.season.rxdownload.util;
 
 import android.text.TextUtils;
 import android.util.Log;
@@ -16,6 +16,8 @@ import java.text.ParseException;
 import okhttp3.ResponseBody;
 import retrofit2.Response;
 import rx.Subscriber;
+import zlc.season.rxdownload.entity.DownloadRange;
+import zlc.season.rxdownload.entity.DownloadStatus;
 
 import static android.os.Environment.DIRECTORY_DOWNLOADS;
 import static android.os.Environment.getExternalStoragePublicDirectory;
@@ -29,8 +31,8 @@ import static java.nio.channels.FileChannel.MapMode.READ_WRITE;
  * Time: 10:35
  * FIXME
  */
-class FileHelper {
-    static final String TAG = "RxDownload";
+public class FileHelper {
+    public static final String TAG = "RxDownload";
 
     private static final String TMP_SUFFIX = ".tmp";  //temp file
     private static final String LMF_SUFFIX = ".lmf";  //last modify file

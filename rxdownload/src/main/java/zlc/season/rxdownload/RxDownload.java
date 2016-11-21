@@ -22,9 +22,19 @@ import rx.functions.Action0;
 import rx.functions.Action1;
 import rx.functions.Func1;
 import rx.functions.Func2;
+import zlc.season.rxdownload.db.DataBaseHelper;
+import zlc.season.rxdownload.db.DbOpenHelper;
+import zlc.season.rxdownload.entity.DownloadRecord;
+import zlc.season.rxdownload.entity.DownloadStatus;
+import zlc.season.rxdownload.entity.DownloadTask;
+import zlc.season.rxdownload.util.DownloadFactory;
+import zlc.season.rxdownload.util.DownloadHelper;
+import zlc.season.rxdownload.util.DownloadService;
+import zlc.season.rxdownload.util.DownloadType;
+import zlc.season.rxdownload.util.Utils;
 
-import static zlc.season.rxdownload.DownloadHelper.TEST_RANGE_SUPPORT;
-import static zlc.season.rxdownload.FileHelper.TAG;
+import static zlc.season.rxdownload.util.DownloadHelper.TEST_RANGE_SUPPORT;
+import static zlc.season.rxdownload.util.FileHelper.TAG;
 
 
 /**
@@ -448,7 +458,7 @@ public class RxDownload {
         };
     }
 
-    String[] getFileSavePaths(String savePath) {
+    public    String[] getFileSavePaths(String savePath) {
         return mDownloadHelper.getFileSavePaths(savePath);
     }
 

@@ -1,11 +1,14 @@
-package zlc.season.rxdownload;
+package zlc.season.rxdownload.db;
 
 import android.content.ContentValues;
 import android.database.Cursor;
 
 import java.util.Date;
 
-import static zlc.season.rxdownload.DownloadFlag.STARTED;
+import zlc.season.rxdownload.entity.DownloadRecord;
+import zlc.season.rxdownload.entity.DownloadStatus;
+
+import static zlc.season.rxdownload.entity.DownloadFlag.STARTED;
 
 
 /**

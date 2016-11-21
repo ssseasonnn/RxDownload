@@ -1,4 +1,4 @@
-package zlc.season.rxdownload;
+package zlc.season.rxdownload.db;
 
 import android.content.Context;
 import android.database.sqlite.SQLiteDatabase;
@@ -10,11 +10,11 @@ import android.database.sqlite.SQLiteOpenHelper;
  * Time: 10:02
  * FIXME
  */
-class DbOpenHelper extends SQLiteOpenHelper {
+public class DbOpenHelper extends SQLiteOpenHelper {
     private static final String DATABASE_NAME = "zlc_season_rxdownload_download.db";
     private static final int DATABASE_VERSION = 1;
 
-    DbOpenHelper(Context context) {
+    public DbOpenHelper(Context context) {
         super(context, DATABASE_NAME, null, DATABASE_VERSION);
     }
 

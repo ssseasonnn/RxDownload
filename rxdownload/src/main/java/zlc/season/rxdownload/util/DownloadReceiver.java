@@ -1,4 +1,4 @@
-package zlc.season.rxdownload;
+package zlc.season.rxdownload.util;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -6,6 +6,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 
 import rx.subjects.Subject;
+import zlc.season.rxdownload.entity.DownloadStatus;
 
 /**
  * Author: Season(ssseasonnn@gmail.com)

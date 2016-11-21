@@ -1,4 +1,4 @@
-package zlc.season.rxdownload;
+package zlc.season.rxdownload.util;
 
 /**
  * Author: Season(ssseasonnn@gmail.com)
@@ -6,32 +6,32 @@ package zlc.season.rxdownload;
  * Time: 15:21
  * Download Type 工厂
  */
-class DownloadFactory {
+public class DownloadFactory {
     private String mUrl;
     private long mFileLength;
     private String mLastModify;
     private DownloadHelper mDownloadHelper;
 
-    DownloadFactory(DownloadHelper downloadHelper) {
+    public DownloadFactory(DownloadHelper downloadHelper) {
         this.mDownloadHelper = downloadHelper;
     }
 
-    DownloadFactory url(String url) {
+    public DownloadFactory url(String url) {
         this.mUrl = url;
         return this;
     }
 
-    DownloadFactory fileLength(long fileLength) {
+    public DownloadFactory fileLength(long fileLength) {
         this.mFileLength = fileLength;
         return this;
     }
 
-    DownloadFactory lastModify(String lastModify) {
+    public DownloadFactory lastModify(String lastModify) {
         this.mLastModify = lastModify;
         return this;
     }
 
-    DownloadType buildNormalDownload() {
+    public DownloadType buildNormalDownload() {
         DownloadType type = new DownloadType.NormalDownload();
         type.mUrl = this.mUrl;
         type.mFileLength = this.mFileLength;
@@ -40,7 +40,7 @@ class DownloadFactory {
         return type;
     }
 
-    DownloadType buildContinueDownload() {
+    public DownloadType buildContinueDownload() {
         DownloadType type = new DownloadType.ContinueDownload();
         type.mUrl = this.mUrl;
         type.mFileLength = this.mFileLength;
@@ -49,7 +49,7 @@ class DownloadFactory {
         return type;
     }
 
-    DownloadType buildMultiDownload() {
+    public DownloadType buildMultiDownload() {
         DownloadType type = new DownloadType.MultiThreadDownload();
         type.mUrl = this.mUrl;
         type.mFileLength = this.mFileLength;
@@ -58,7 +58,7 @@ class DownloadFactory {
         return type;
     }
 
-    DownloadType buildAlreadyDownload() {
+    public DownloadType buildAlreadyDownload() {
         DownloadType type = new DownloadType.AlreadyDownloaded();
         type.mUrl = this.mUrl;
         type.mFileLength = this.mFileLength;

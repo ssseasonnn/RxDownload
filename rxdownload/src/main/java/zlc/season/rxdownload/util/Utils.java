@@ -1,4 +1,4 @@
-package zlc.season.rxdownload;
+package zlc.season.rxdownload.util;
 
 import android.text.TextUtils;
 
@@ -21,15 +21,15 @@ import rx.Subscription;
  * Time: 09:07
  * 工具类
  */
-class Utils {
-    static String longToGMT(long lastModify) {
+public class Utils {
+    public static String longToGMT(long lastModify) {
         Date d = new Date(lastModify);
         SimpleDateFormat sdf = new SimpleDateFormat("EEE, d MMM yyyy HH:mm:ss z", Locale.US);
         sdf.setTimeZone(TimeZone.getTimeZone("GMT"));
         return sdf.format(d);
     }
 
-    static long GMTToLong(String GMT) throws ParseException {
+    public static long GMTToLong(String GMT) throws ParseException {
         if (GMT == null || "".equals(GMT)) {
             return new Date().getTime();
         }
@@ -39,43 +39,43 @@ class Utils {
         return date.getTime();
     }
 
-    static void close(Closeable closeable) throws IOException {
+    public static void close(Closeable closeable) throws IOException {
         if (closeable != null) {
             closeable.close();
         }
     }
 
-    static void unSubscribe(Subscription subscription) {
+    public static void unSubscribe(Subscription subscription) {
         if (subscription != null && !subscription.isUnsubscribed()) {
             subscription.unsubscribe();
         }
     }
 
-    static String lastModify(Response<?> response) {
+    public static String lastModify(Response<?> response) {
         return response.headers().get("Last-Modified");
     }
 
-    static long contentLength(Response<?> response) {
+    public static long contentLength(Response<?> response) {
         return HttpHeaders.contentLength(response.headers());
     }
 
-    static String transferEncoding(Response<?> response) {
+    public static String transferEncoding(Response<?> response) {
         return response.headers().get("Transfer-Encoding");
     }
 
-    static boolean notSupportRange(Response<?> response) {
+    public static boolean notSupportRange(Response<?> response) {
         return TextUtils.isEmpty(contentRange(response)) || contentLength(response) == -1;
     }
 
-    static boolean serverFileChanged(Response<Void> resp) {
+    public static boolean serverFileChanged(Response<Void> resp) {
         return resp.code() == 200;
     }
 
-    static boolean serverFileNotChange(Response<Void> resp) {
+    public static boolean serverFileNotChange(Response<Void> resp) {
         return resp.code() == 206;
     }
 
-    static String formatSize(long size) {
+    public static String formatSize(long size) {
         String hrSize;
 
         double b = size;

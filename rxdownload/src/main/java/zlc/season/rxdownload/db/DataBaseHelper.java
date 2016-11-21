@@ -10,6 +10,7 @@ import rx.Observable;
 import rx.Subscriber;
 import rx.android.schedulers.AndroidSchedulers;
 import rx.schedulers.Schedulers;
+import zlc.season.rxdownload.entity.DownloadMission;
 import zlc.season.rxdownload.entity.DownloadRecord;
 import zlc.season.rxdownload.entity.DownloadStatus;
 
@@ -43,6 +44,10 @@ public class DataBaseHelper {
     public long insertRecord(String url, String saveName, String savePath, String name, String image) {
         return getWritableDatabase().insert(Db.RecordTable.TABLE_NAME, null, Db.RecordTable.insert(url, saveName,
                 savePath, name, image));
+    }
+
+    public long insertRecord(DownloadMission mission){
+        return getWritableDatabase().insert(Db.RecordTable.TABLE_NAME,null,Db.RecordTable.insert(mission));
     }
 
     public long updateRecord(String url, DownloadStatus status) {

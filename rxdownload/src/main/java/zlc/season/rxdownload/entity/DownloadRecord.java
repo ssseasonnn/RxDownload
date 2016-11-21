@@ -7,8 +7,6 @@ package zlc.season.rxdownload.entity;
  * FIXME
  */
 public class DownloadRecord {
-
-
     private String url;
     private String name;
     private String image;

@@ -68,15 +68,15 @@ public class DownloadHelper {
     }
 
     public String getLastModify(String url) throws IOException {
-        return mFileHelper.getLastModify(getLastModifyFileBy(url));
+        return mFileHelper.getLastModify(getLastModifyFile(url));
     }
 
     public boolean downloadNotComplete(String url) throws IOException {
-        return mFileHelper.downloadNotComplete(getTempFileBy(url));
+        return mFileHelper.downloadNotComplete(getTempFile(url));
     }
 
     public boolean downloadNotComplete(String url, long contentLength) {
-        return getFileBy(url).length() != contentLength;
+        return getFile(url).length() != contentLength;
     }
 
     public boolean needReDownload(String url, long contentLength) throws IOException {
@@ -88,41 +88,11 @@ public class DownloadHelper {
     }
 
     public boolean downloadFileExists(String url) {
-        return getFileBy(url).exists();
+        return getFile(url).exists();
     }
 
-    int getMaxThreads() {
-        return mFileHelper.getMaxThreads();
-    }
-
-    public void setMaxThreads(int MAX_THREADS) {
-        mFileHelper.setMaxThreads(MAX_THREADS);
-    }
-
-    public   DownloadApi getDownloadApi() {
+    public DownloadApi getDownloadApi() {
         return mDownloadApi;
-    }
-
-    void prepareNormalDownload(String url, long fileLength, String lastModify) throws IOException, ParseException {
-        mFileHelper.prepareDownload(getLastModifyFileBy(url), getFileBy(url), fileLength, lastModify);
-    }
-
-    void saveNormalFile(Subscriber<? super DownloadStatus> sub, String url, Response<ResponseBody> resp) {
-        mFileHelper.saveFile(sub, getFileBy(url), resp);
-    }
-
-    DownloadRange readDownloadRange(String url) throws IOException {
-        return mFileHelper.readDownloadRange(getTempFileBy(url));
-    }
-
-    void prepareMultiThreadDownload(String url, long fileLength, String lastModify) throws IOException, ParseException {
-        mFileHelper.prepareDownload(getLastModifyFileBy(url), getTempFileBy(url), getFileBy(url),
-                fileLength, lastModify);
-    }
-
-    void saveRangeFile(Subscriber<? super DownloadStatus> subscriber, int i, long start, long end,
-                       String url, ResponseBody response) {
-        mFileHelper.saveFile(subscriber, i, start, end, getTempFileBy(url), getFileBy(url), response);
     }
 
     public Boolean retry(Integer integer, Throwable throwable) {
@@ -170,23 +140,53 @@ public class DownloadHelper {
         }
     }
 
+    int getMaxThreads() {
+        return mFileHelper.getMaxThreads();
+    }
+
+    public void setMaxThreads(int MAX_THREADS) {
+        mFileHelper.setMaxThreads(MAX_THREADS);
+    }
+
+    void prepareNormalDownload(String url, long fileLength, String lastModify) throws IOException, ParseException {
+        mFileHelper.prepareDownload(getLastModifyFile(url), getFile(url), fileLength, lastModify);
+    }
+
+    void saveNormalFile(Subscriber<? super DownloadStatus> sub, String url, Response<ResponseBody> resp) {
+        mFileHelper.saveFile(sub, getFile(url), resp);
+    }
+
+    DownloadRange readDownloadRange(String url) throws IOException {
+        return mFileHelper.readDownloadRange(getTempFile(url));
+    }
+
+    void prepareMultiThreadDownload(String url, long fileLength, String lastModify) throws IOException, ParseException {
+        mFileHelper.prepareDownload(getLastModifyFile(url), getTempFile(url), getFile(url),
+                fileLength, lastModify);
+    }
+
+    void saveRangeFile(Subscriber<? super DownloadStatus> subscriber, int i, long start, long end,
+                       String url, ResponseBody response) {
+        mFileHelper.saveFile(subscriber, i, start, end, getTempFile(url), getFile(url), response);
+    }
+
     private boolean tempFileDamaged(String url, long fileLength) throws IOException {
-        return mFileHelper.tempFileDamaged(getTempFileBy(url), fileLength);
+        return mFileHelper.tempFileDamaged(getTempFile(url), fileLength);
     }
 
     private boolean tempFileNotExists(String url) {
-        return !getTempFileBy(url).exists();
+        return !getTempFile(url).exists();
     }
 
-    private File getFileBy(String url) {
+    private File getFile(String url) {
         return new File(mDownloadRecord.get(url)[0]);
     }
 
-    private File getTempFileBy(String url) {
+    private File getTempFile(String url) {
         return new File(mDownloadRecord.get(url)[1]);
     }
 
-    private File getLastModifyFileBy(String url) {
+    private File getLastModifyFile(String url) {
         return new File(mDownloadRecord.get(url)[2]);
     }
 }

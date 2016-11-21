@@ -122,8 +122,8 @@ public abstract class DownloadType {
          * @param response 响应值
          * @return Observable
          */
-        private Observable<DownloadStatus> rangeSave(final long start, final long end, final int i, final ResponseBody
-                response) {
+        private Observable<DownloadStatus> rangeSave(final long start, final long end, final int i,
+                                                     final ResponseBody response) {
             return Observable.create(new Observable.OnSubscribe<DownloadStatus>() {
                 @Override
                 public void call(Subscriber<? super DownloadStatus> subscriber) {

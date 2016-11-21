@@ -24,9 +24,9 @@ import rx.functions.Func1;
 import rx.functions.Func2;
 import zlc.season.rxdownload.db.DataBaseHelper;
 import zlc.season.rxdownload.db.DbOpenHelper;
+import zlc.season.rxdownload.entity.DownloadMission;
 import zlc.season.rxdownload.entity.DownloadRecord;
 import zlc.season.rxdownload.entity.DownloadStatus;
-import zlc.season.rxdownload.entity.DownloadTask;
 import zlc.season.rxdownload.util.DownloadFactory;
 import zlc.season.rxdownload.util.DownloadHelper;
 import zlc.season.rxdownload.util.DownloadService;
@@ -225,7 +225,6 @@ public class RxDownload {
             }
         });
     }
-
 
 
     /**
@@ -458,14 +457,14 @@ public class RxDownload {
         };
     }
 
-    public    String[] getFileSavePaths(String savePath) {
+    public String[] getFileSavePaths(String savePath) {
         return mDownloadHelper.getFileSavePaths(savePath);
     }
 
     private void addDownloadTask(@NonNull String url, @NonNull String saveName, @Nullable String savePath,
                                  @Nullable String displayName, @Nullable String displayImage) {
-        mDownloadService.addDownloadTask(
-                new DownloadTask.Builder()
+        mDownloadService.addDownloadMission(
+                new DownloadMission.Builder()
                         .setRxDownload(RxDownload.this)
                         .setUrl(url)
                         .setSaveName(saveName)
@@ -489,12 +488,8 @@ public class RxDownload {
                     public Observable<DownloadStatus> call(DownloadType type) {
                         try {
                             type.prepareDownload();
-                        } catch (IOException | ParseException e) {
-                            return Observable.error(e);
-                        }
-                        try {
                             return type.startDownload();
-                        } catch (IOException e) {
+                        } catch (IOException | ParseException e) {
                             return Observable.error(e);
                         }
                     }

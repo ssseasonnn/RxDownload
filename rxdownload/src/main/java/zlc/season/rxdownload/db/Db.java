@@ -5,9 +5,11 @@ import android.database.Cursor;
 
 import java.util.Date;
 
+import zlc.season.rxdownload.entity.DownloadMission;
 import zlc.season.rxdownload.entity.DownloadRecord;
 import zlc.season.rxdownload.entity.DownloadStatus;
 
+import static zlc.season.rxdownload.entity.DownloadFlag.NORMAL;
 import static zlc.season.rxdownload.entity.DownloadFlag.STARTED;
 
 
@@ -52,6 +54,17 @@ class Db {
                         COLUMN_DATE + " INTEGER NOT NULL " +
                         " )";
 
+        static ContentValues insert(DownloadMission mission) {
+            ContentValues values = new ContentValues();
+            values.put(COLUMN_URL, mission.getUrl());
+            values.put(COLUMN_SAVE_NAME, mission.getSaveName());
+            values.put(COLUMN_SAVE_PATH, mission.getSavePath());
+            values.put(COLUMN_NAME, mission.getName());
+            values.put(COLUMN_IMAGE, mission.getImage());
+            values.put(COLUMN_DOWNLOAD_FLAG, NORMAL);
+            values.put(COLUMN_DATE, new Date().getTime());
+            return values;
+        }
 
         static ContentValues insert(String url, String saveName, String savePath,
                                     String name, String image) {

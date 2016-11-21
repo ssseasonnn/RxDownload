@@ -10,11 +10,11 @@ import android.database.sqlite.SQLiteOpenHelper;
  * Time: 10:02
  * FIXME
  */
-public class DbOpenHelper extends SQLiteOpenHelper {
+class DbOpenHelper extends SQLiteOpenHelper {
     private static final String DATABASE_NAME = "zlc_season_rxdownload_download.db";
     private static final int DATABASE_VERSION = 1;
 
-    public DbOpenHelper(Context context) {
+    DbOpenHelper(Context context) {
         super(context, DATABASE_NAME, null, DATABASE_VERSION);
     }
 

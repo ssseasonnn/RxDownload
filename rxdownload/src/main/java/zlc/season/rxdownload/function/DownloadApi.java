@@ -1,4 +1,4 @@
-package zlc.season.rxdownload.util;
+package zlc.season.rxdownload.function;
 
 import okhttp3.ResponseBody;
 import retrofit2.Response;

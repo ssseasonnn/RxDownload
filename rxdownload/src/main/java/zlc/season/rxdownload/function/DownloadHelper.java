@@ -1,4 +1,4 @@
-package zlc.season.rxdownload.util;
+package zlc.season.rxdownload.function;
 
 import android.util.Log;
 

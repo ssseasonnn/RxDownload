@@ -5,7 +5,7 @@ import android.os.Parcelable;
 
 import java.text.NumberFormat;
 
-import static zlc.season.rxdownload.util.Utils.formatSize;
+import static zlc.season.rxdownload.function.Utils.formatSize;
 
 /**
  * User: Season(ssseasonnn@gmail.com)

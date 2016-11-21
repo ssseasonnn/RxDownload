@@ -101,8 +101,8 @@ public class DownloadController {
 
         @Override
         void displayNowState(TextView status, Button action) {
-            if (status != null) status.setText("");
-            if (action != null) action.setText("下载");
+            if (status != null) status.setText("等待下载...");
+            if (action != null) action.setText("取消");
         }
 
         @Override

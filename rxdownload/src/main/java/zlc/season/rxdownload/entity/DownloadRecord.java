@@ -8,8 +8,6 @@ package zlc.season.rxdownload.entity;
  */
 public class DownloadRecord {
     private String url;
-    private String name;
-    private String image;
     private String saveName;
     private String savePath;
     private DownloadStatus mStatus;
@@ -25,22 +23,6 @@ public class DownloadRecord {
 
     public void setUrl(String url) {
         this.url = url;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public String getImage() {
-        return image;
-    }
-
-    public void setImage(String image) {
-        this.image = image;
     }
 
     public String getSaveName() {

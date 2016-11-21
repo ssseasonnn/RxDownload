@@ -26,14 +26,14 @@ import zlc.season.rxdownload.db.DataBaseHelper;
 import zlc.season.rxdownload.entity.DownloadMission;
 import zlc.season.rxdownload.entity.DownloadRecord;
 import zlc.season.rxdownload.entity.DownloadStatus;
-import zlc.season.rxdownload.util.DownloadFactory;
-import zlc.season.rxdownload.util.DownloadHelper;
-import zlc.season.rxdownload.util.DownloadService;
-import zlc.season.rxdownload.util.DownloadType;
-import zlc.season.rxdownload.util.Utils;
+import zlc.season.rxdownload.function.DownloadFactory;
+import zlc.season.rxdownload.function.DownloadHelper;
+import zlc.season.rxdownload.function.DownloadService;
+import zlc.season.rxdownload.function.DownloadType;
+import zlc.season.rxdownload.function.Utils;
 
-import static zlc.season.rxdownload.util.DownloadHelper.TEST_RANGE_SUPPORT;
-import static zlc.season.rxdownload.util.FileHelper.TAG;
+import static zlc.season.rxdownload.function.DownloadHelper.TEST_RANGE_SUPPORT;
+import static zlc.season.rxdownload.function.FileHelper.TAG;
 
 
 /**
@@ -50,6 +50,8 @@ public class RxDownload {
     private DownloadFactory mFactory;
 
     private Context mContext;
+
+    private int MAX_DOWNLOAD_NUMBER = 2;
 
     private RxDownload() {
         mDownloadHelper = new DownloadHelper();
@@ -91,10 +93,14 @@ public class RxDownload {
         return this;
     }
 
+    public RxDownload maxDownloadNumber(int max) {
+        this.MAX_DOWNLOAD_NUMBER = max;
+        return this;
+    }
+
     /**
-     * 为Service中下载地址为url的下载任务注册广播接收器,用于接收该任务的下载进度.
+     * 接收下载地址为url的下载任务的下载进度.
      * 注意只接收下载地址为url的下载进度.
-     * 取消订阅即可取消注册.
      *
      * @param url download url
      * @return Observable<DownloadStatus>
@@ -118,6 +124,11 @@ public class RxDownload {
             @Override
             public Observable<DownloadStatus> call(Object o) {
                 return mDownloadService.getSubject(url).onBackpressureLatest();
+            }
+        }).doOnCompleted(new Action0() {
+            @Override
+            public void call() {
+
             }
         });
     }
@@ -460,8 +471,11 @@ public class RxDownload {
         return mDownloadHelper.getFileSavePaths(savePath);
     }
 
-    private void addDownloadTask(@NonNull String url, @NonNull String saveName, @Nullable String savePath,
-                                 @Nullable String displayName, @Nullable String displayImage) {
+    private void addDownloadTask(@NonNull String url,
+                                 @NonNull String saveName,
+                                 @Nullable String savePath,
+                                 @Nullable String displayName,
+                                 @Nullable String displayImage) {
         mDownloadService.addDownloadMission(
                 new DownloadMission.Builder()
                         .setRxDownload(RxDownload.this)
@@ -645,6 +659,7 @@ public class RxDownload {
         }
         Log.w(TAG, "Download Service is not Start or Bind. So start Service and Bind.");
         Intent intent = new Intent(mContext, DownloadService.class);
+        intent.putExtra(DownloadService.INTENT_KEY, MAX_DOWNLOAD_NUMBER);
         mContext.startService(intent);
         mContext.bindService(intent, new ServiceConnection() {
             @Override

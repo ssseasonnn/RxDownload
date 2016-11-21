@@ -8,10 +8,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 import rx.Subscriber;
 import rx.Subscription;
 import rx.schedulers.Schedulers;
-import rx.subjects.PublishSubject;
 import rx.subjects.Subject;
 import zlc.season.rxdownload.RxDownload;
 import zlc.season.rxdownload.db.DataBaseHelper;
+import zlc.season.rxdownload.function.Utils;
 
 import static zlc.season.rxdownload.entity.DownloadFlag.COMPLETED;
 import static zlc.season.rxdownload.entity.DownloadFlag.FAILED;
@@ -24,7 +24,7 @@ import static zlc.season.rxdownload.entity.DownloadFlag.STARTED;
  * FIXME
  */
 public class DownloadMission {
-    public boolean insertFlag = false;
+    public boolean canceled = false;
     private RxDownload rxDownload;
     private String url;
     private String saveName;
@@ -32,10 +32,11 @@ public class DownloadMission {
     private String name;
     private String image;
 
-    private AtomicInteger mCount;
-    private DataBaseHelper mDb;
-    private Subject<DownloadStatus, DownloadStatus> mRealSubject;
-    private Map<String, Subscription> mSubscriptionPool;
+    private Subscription mSubscription;
+
+    public Subscription getSubscription() {
+        return mSubscription;
+    }
 
     public String getUrl() {
         return url;
@@ -57,55 +58,46 @@ public class DownloadMission {
         return image;
     }
 
-    public void start() {
-        mCount.incrementAndGet();
-        Subscription temp = rxDownload.download(url, saveName, savePath)
+    public void start(final Map<String, DownloadMission> nowDownloadMap,
+                      final Subject<DownloadStatus, DownloadStatus> subject,
+                      final AtomicInteger count, final DataBaseHelper helper) {
+        nowDownloadMap.put(url, this);
+        count.incrementAndGet();
+        mSubscription = rxDownload.download(url, saveName, savePath)
                 .subscribeOn(Schedulers.io())
                 .onBackpressureLatest()
                 .subscribe(new Subscriber<DownloadStatus>() {
                     @Override
                     public void onStart() {
                         super.onStart();
-                        mDb.updateRecord(url, STARTED);
+                        helper.updateRecord(url, STARTED);
                     }
 
                     @Override
                     public void onCompleted() {
-                        mRealSubject.onCompleted();
-                        mDb.updateRecord(url, COMPLETED);
-                        mCount.decrementAndGet();
+                        subject.onCompleted();
+                        helper.updateRecord(url, COMPLETED);
+                        count.decrementAndGet();
+                        nowDownloadMap.remove(url);
+                        Utils.unSubscribe(mSubscription);
                     }
 
                     @Override
                     public void onError(Throwable e) {
                         Log.w("error", e);
-                        mRealSubject.onError(e);
-                        mDb.updateRecord(url, FAILED);
-                        mCount.decrementAndGet();
+                        subject.onError(e);
+                        helper.updateRecord(url, FAILED);
+                        count.decrementAndGet();
+                        nowDownloadMap.remove(url);
+                        Utils.unSubscribe(mSubscription);
                     }
 
                     @Override
                     public void onNext(DownloadStatus status) {
-                        mRealSubject.onNext(status);
-                        mDb.updateRecord(url, status);
+                        subject.onNext(status);
+                        helper.updateRecord(url, status);
                     }
                 });
-        mSubscriptionPool.put(url, temp);
-    }
-
-
-    public void init(Map<String, Subject<DownloadStatus, DownloadStatus>> subjectPool,
-                     Map<String, Subscription> subscriptionMap, AtomicInteger count, DataBaseHelper db) {
-        this.mCount = count;
-        this.mDb = db;
-        this.mSubscriptionPool = subscriptionMap;
-
-        if (subjectPool.get(url) == null) {
-            mRealSubject = PublishSubject.create();
-            subjectPool.put(url, mRealSubject);
-        } else {
-            mRealSubject = subjectPool.get(url);
-        }
     }
 
     public static class Builder {

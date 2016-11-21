@@ -1,4 +1,4 @@
-package zlc.season.rxdownload.util;
+package zlc.season.rxdownload.function;
 
 import android.text.TextUtils;
 
@@ -49,6 +49,10 @@ public class Utils {
         if (subscription != null && !subscription.isUnsubscribed()) {
             subscription.unsubscribe();
         }
+    }
+
+    public static boolean isNullOrUnsubscribed(Subscription subscription) {
+        return subscription == null || subscription.isUnsubscribed();
     }
 
     public static String lastModify(Response<?> response) {

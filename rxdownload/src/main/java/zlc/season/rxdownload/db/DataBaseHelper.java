@@ -15,6 +15,11 @@ import zlc.season.rxdownload.entity.DownloadMission;
 import zlc.season.rxdownload.entity.DownloadRecord;
 import zlc.season.rxdownload.entity.DownloadStatus;
 
+import static zlc.season.rxdownload.db.Db.RecordTable.COLUMN_ID;
+import static zlc.season.rxdownload.db.Db.RecordTable.TABLE_NAME;
+import static zlc.season.rxdownload.db.Db.RecordTable.insert;
+import static zlc.season.rxdownload.db.Db.RecordTable.update;
+
 /**
  * Author: Season(ssseasonnn@gmail.com)
  * Date: 2016/11/14
@@ -26,7 +31,7 @@ public class DataBaseHelper {
     private final Object databaseLock = new Object();
     private DbOpenHelper mDbOpenHelper;
     private volatile SQLiteDatabase readableDatabase;
-    private volatile SQLiteDatabase writeableDatabase;
+    private volatile SQLiteDatabase writableDatabase;
 
     private DataBaseHelper(Context context) {
         mDbOpenHelper = new DbOpenHelper(context);
@@ -46,8 +51,8 @@ public class DataBaseHelper {
     public boolean recordNotExists(String url) {
         Cursor cursor = null;
         try {
-            cursor = getWriteableDatabase().rawQuery("select " + Db.RecordTable.COLUMN_ID + " from "
-                    + Db.RecordTable.TABLE_NAME + " where url=?", new String[]{url});
+            cursor = getWritableDatabase().rawQuery("select " + COLUMN_ID + " from " + TABLE_NAME +
+                    " where url=?", new String[]{url});
             return cursor.getCount() == 0;
         } finally {
             if (cursor != null) {
@@ -56,34 +61,27 @@ public class DataBaseHelper {
         }
     }
 
-    public long insertRecord(String url, String saveName, String savePath, String name, String image) {
-        return getWriteableDatabase().insert(Db.RecordTable.TABLE_NAME, null,
-                Db.RecordTable.insert(url, saveName, savePath, name, image));
-    }
 
     public long insertRecord(DownloadMission mission) {
-        return getWriteableDatabase().insert(Db.RecordTable.TABLE_NAME, null,
-                Db.RecordTable.insert(mission));
+        return getWritableDatabase().insert(TABLE_NAME, null, insert(mission));
     }
 
     public long updateRecord(String url, DownloadStatus status) {
-        return getWriteableDatabase().update(Db.RecordTable.TABLE_NAME, Db.RecordTable.update(status),
-                "url=?", new String[]{url});
+        return getWritableDatabase().update(TABLE_NAME, update(status), "url=?", new String[]{url});
     }
 
     public long updateRecord(String url, int flag) {
-        return getWriteableDatabase().update(Db.RecordTable.TABLE_NAME, Db.RecordTable.update(flag),
-                "url=?", new String[]{url});
+        return getWritableDatabase().update(TABLE_NAME, update(flag), "url=?", new String[]{url});
     }
 
     public int deleteRecord(String url) {
-        return getWriteableDatabase().delete(Db.RecordTable.TABLE_NAME, "url=?", new String[]{url});
+        return getWritableDatabase().delete(TABLE_NAME, "url=?", new String[]{url});
     }
 
     public void closeDataBase() {
         synchronized (databaseLock) {
             readableDatabase = null;
-            writeableDatabase = null;
+            writableDatabase = null;
             mDbOpenHelper.close();
         }
     }
@@ -94,8 +92,7 @@ public class DataBaseHelper {
             public void call(Subscriber<? super List<DownloadRecord>> subscriber) {
                 Cursor cursor = null;
                 try {
-                    cursor = getReadableDatabase().rawQuery("select * from " +
-                            Db.RecordTable.TABLE_NAME, new String[]{});
+                    cursor = getReadableDatabase().rawQuery("select * from " + TABLE_NAME, new String[]{});
                     List<DownloadRecord> result = new ArrayList<>();
                     while (cursor.moveToNext()) {
                         result.add(Db.RecordTable.read(cursor));
@@ -117,8 +114,8 @@ public class DataBaseHelper {
             public void call(Subscriber<? super DownloadRecord> subscriber) {
                 Cursor cursor = null;
                 try {
-                    cursor = getReadableDatabase().rawQuery("select * from " +
-                            Db.RecordTable.TABLE_NAME + " where " + "url=?", new String[]{url});
+                    cursor = getReadableDatabase().rawQuery("select * from " + TABLE_NAME +
+                            " where " + "url=?", new String[]{url});
                     while (cursor.moveToNext()) {
                         subscriber.onNext(Db.RecordTable.read(cursor));
                     }
@@ -132,14 +129,13 @@ public class DataBaseHelper {
         }).subscribeOn(Schedulers.io()).observeOn(AndroidSchedulers.mainThread());
     }
 
-    // Package-private to avoid synthetic accessor method for 'transaction' instance.
-    private SQLiteDatabase getWriteableDatabase() {
-        SQLiteDatabase db = writeableDatabase;
+    private SQLiteDatabase getWritableDatabase() {
+        SQLiteDatabase db = writableDatabase;
         if (db == null) {
             synchronized (databaseLock) {
-                db = writeableDatabase;
+                db = writableDatabase;
                 if (db == null) {
-                    db = writeableDatabase = mDbOpenHelper.getWritableDatabase();
+                    db = writableDatabase = mDbOpenHelper.getWritableDatabase();
                 }
             }
         }

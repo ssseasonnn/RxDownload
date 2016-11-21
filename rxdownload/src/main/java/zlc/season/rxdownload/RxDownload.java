@@ -23,7 +23,6 @@ import rx.functions.Action1;
 import rx.functions.Func1;
 import rx.functions.Func2;
 import zlc.season.rxdownload.db.DataBaseHelper;
-import zlc.season.rxdownload.db.DbOpenHelper;
 import zlc.season.rxdownload.entity.DownloadMission;
 import zlc.season.rxdownload.entity.DownloadRecord;
 import zlc.season.rxdownload.entity.DownloadStatus;
@@ -133,7 +132,7 @@ public class RxDownload {
             return Observable.error(new Throwable("Context is NULL! You should call " +
                     "#RxDownload.context(Context context)# first!"));
         }
-        DataBaseHelper dataBaseHelper = new DataBaseHelper(new DbOpenHelper(mContext));
+        DataBaseHelper dataBaseHelper = DataBaseHelper.getSingleton(mContext);
         return dataBaseHelper.readAllRecords();
     }
 
@@ -148,7 +147,7 @@ public class RxDownload {
             return Observable.error(new Throwable("Context is NULL! You should call " +
                     "#RxDownload.context(Context context)# first!"));
         }
-        DataBaseHelper dataBaseHelper = new DataBaseHelper(new DbOpenHelper(mContext));
+        DataBaseHelper dataBaseHelper = DataBaseHelper.getSingleton(mContext);
         return dataBaseHelper.readRecord(url);
     }
 

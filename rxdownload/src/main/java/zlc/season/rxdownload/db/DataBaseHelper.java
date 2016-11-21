@@ -1,5 +1,6 @@
 package zlc.season.rxdownload.db;
 
+import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 
@@ -21,17 +22,31 @@ import zlc.season.rxdownload.entity.DownloadStatus;
  * FIXME
  */
 public class DataBaseHelper {
-    private volatile SQLiteDatabase mWritableDatabase;
+    private volatile static DataBaseHelper singleton;
+    private final Object databaseLock = new Object();
     private DbOpenHelper mDbOpenHelper;
+    private volatile SQLiteDatabase readableDatabase;
+    private volatile SQLiteDatabase writeableDatabase;
 
-    public DataBaseHelper(DbOpenHelper dbOpenHelper) {
-        this.mDbOpenHelper = dbOpenHelper;
+    private DataBaseHelper(Context context) {
+        mDbOpenHelper = new DbOpenHelper(context);
+    }
+
+    public static DataBaseHelper getSingleton(Context context) {
+        if (singleton == null) {
+            synchronized (DataBaseHelper.class) {
+                if (singleton == null) {
+                    singleton = new DataBaseHelper(context);
+                }
+            }
+        }
+        return singleton;
     }
 
     public boolean recordNotExists(String url) {
         Cursor cursor = null;
         try {
-            cursor = getWritableDatabase().rawQuery("select " + Db.RecordTable.COLUMN_ID + " from "
+            cursor = getWriteableDatabase().rawQuery("select " + Db.RecordTable.COLUMN_ID + " from "
                     + Db.RecordTable.TABLE_NAME + " where url=?", new String[]{url});
             return cursor.getCount() == 0;
         } finally {
@@ -42,31 +57,33 @@ public class DataBaseHelper {
     }
 
     public long insertRecord(String url, String saveName, String savePath, String name, String image) {
-        return getWritableDatabase().insert(Db.RecordTable.TABLE_NAME, null, Db.RecordTable.insert(url, saveName,
-                savePath, name, image));
+        return getWriteableDatabase().insert(Db.RecordTable.TABLE_NAME, null,
+                Db.RecordTable.insert(url, saveName, savePath, name, image));
     }
 
-    public long insertRecord(DownloadMission mission){
-        return getWritableDatabase().insert(Db.RecordTable.TABLE_NAME,null,Db.RecordTable.insert(mission));
+    public long insertRecord(DownloadMission mission) {
+        return getWriteableDatabase().insert(Db.RecordTable.TABLE_NAME, null,
+                Db.RecordTable.insert(mission));
     }
 
     public long updateRecord(String url, DownloadStatus status) {
-        return getWritableDatabase().update(Db.RecordTable.TABLE_NAME, Db.RecordTable.update(status), "url=?", new
-                String[]{url});
+        return getWriteableDatabase().update(Db.RecordTable.TABLE_NAME, Db.RecordTable.update(status),
+                "url=?", new String[]{url});
     }
 
     public long updateRecord(String url, int flag) {
-        return getWritableDatabase().update(Db.RecordTable.TABLE_NAME, Db.RecordTable.update(flag), "url=?", new
-                String[]{url});
+        return getWriteableDatabase().update(Db.RecordTable.TABLE_NAME, Db.RecordTable.update(flag),
+                "url=?", new String[]{url});
     }
 
     public int deleteRecord(String url) {
-        return getWritableDatabase().delete(Db.RecordTable.TABLE_NAME, "url=?", new String[]{url});
+        return getWriteableDatabase().delete(Db.RecordTable.TABLE_NAME, "url=?", new String[]{url});
     }
 
     public void closeDataBase() {
-        synchronized (this) {
-            mWritableDatabase = null;
+        synchronized (databaseLock) {
+            readableDatabase = null;
+            writeableDatabase = null;
             mDbOpenHelper.close();
         }
     }
@@ -75,11 +92,10 @@ public class DataBaseHelper {
         return Observable.create(new Observable.OnSubscribe<List<DownloadRecord>>() {
             @Override
             public void call(Subscriber<? super List<DownloadRecord>> subscriber) {
-                SQLiteDatabase db = null;
                 Cursor cursor = null;
                 try {
-                    db = mDbOpenHelper.getReadableDatabase();
-                    cursor = db.rawQuery("select * from " + Db.RecordTable.TABLE_NAME, new String[]{});
+                    cursor = getReadableDatabase().rawQuery("select * from " +
+                            Db.RecordTable.TABLE_NAME, new String[]{});
                     List<DownloadRecord> result = new ArrayList<>();
                     while (cursor.moveToNext()) {
                         result.add(Db.RecordTable.read(cursor));
@@ -90,9 +106,6 @@ public class DataBaseHelper {
                     if (cursor != null) {
                         cursor.close();
                     }
-                    if (db != null) {
-                        db.close();
-                    }
                 }
             }
         }).subscribeOn(Schedulers.io()).observeOn(AndroidSchedulers.mainThread());
@@ -102,12 +115,10 @@ public class DataBaseHelper {
         return Observable.create(new Observable.OnSubscribe<DownloadRecord>() {
             @Override
             public void call(Subscriber<? super DownloadRecord> subscriber) {
-                SQLiteDatabase db = null;
                 Cursor cursor = null;
                 try {
-                    db = mDbOpenHelper.getReadableDatabase();
-                    cursor = db.rawQuery("select * from " + Db.RecordTable.TABLE_NAME + " where url=?", new
-                            String[]{url});
+                    cursor = getReadableDatabase().rawQuery("select * from " +
+                            Db.RecordTable.TABLE_NAME + " where " + "url=?", new String[]{url});
                     while (cursor.moveToNext()) {
                         subscriber.onNext(Db.RecordTable.read(cursor));
                     }
@@ -116,21 +127,32 @@ public class DataBaseHelper {
                     if (cursor != null) {
                         cursor.close();
                     }
-                    if (db != null) {
-                        db.close();
-                    }
                 }
             }
         }).subscribeOn(Schedulers.io()).observeOn(AndroidSchedulers.mainThread());
     }
 
-    private SQLiteDatabase getWritableDatabase() {
-        SQLiteDatabase db = mWritableDatabase;
+    // Package-private to avoid synthetic accessor method for 'transaction' instance.
+    private SQLiteDatabase getWriteableDatabase() {
+        SQLiteDatabase db = writeableDatabase;
         if (db == null) {
-            synchronized (this) {
-                db = mWritableDatabase;
+            synchronized (databaseLock) {
+                db = writeableDatabase;
                 if (db == null) {
-                    db = mWritableDatabase = mDbOpenHelper.getWritableDatabase();
+                    db = writeableDatabase = mDbOpenHelper.getWritableDatabase();
+                }
+            }
+        }
+        return db;
+    }
+
+    private SQLiteDatabase getReadableDatabase() {
+        SQLiteDatabase db = readableDatabase;
+        if (db == null) {
+            synchronized (databaseLock) {
+                db = readableDatabase;
+                if (db == null) {
+                    db = readableDatabase = mDbOpenHelper.getReadableDatabase();
                 }
             }
         }

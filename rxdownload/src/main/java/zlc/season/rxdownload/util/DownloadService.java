@@ -18,7 +18,6 @@ import rx.subjects.PublishSubject;
 import rx.subjects.Subject;
 import zlc.season.rxdownload.BuildConfig;
 import zlc.season.rxdownload.db.DataBaseHelper;
-import zlc.season.rxdownload.db.DbOpenHelper;
 import zlc.season.rxdownload.entity.DownloadMission;
 import zlc.season.rxdownload.entity.DownloadStatus;
 
@@ -51,7 +50,7 @@ public class DownloadService extends Service {
         mDownloadMissionPool = new HashMap<>();
         mWaitingForDownload = new LinkedList<>();
 
-        mDb = new DataBaseHelper(new DbOpenHelper(this));
+        mDb = DataBaseHelper.getSingleton(this);
     }
 
     @Override

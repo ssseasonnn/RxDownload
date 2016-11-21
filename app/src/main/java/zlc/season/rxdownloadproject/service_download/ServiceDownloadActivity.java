@@ -26,10 +26,10 @@ import rx.android.schedulers.AndroidSchedulers;
 import rx.functions.Action1;
 import rx.schedulers.Schedulers;
 import rx.subscriptions.CompositeSubscription;
+import zlc.season.rxdownload.RxDownload;
 import zlc.season.rxdownload.entity.DownloadFlag;
 import zlc.season.rxdownload.entity.DownloadRecord;
 import zlc.season.rxdownload.entity.DownloadStatus;
-import zlc.season.rxdownload.RxDownload;
 import zlc.season.rxdownloadproject.DownloadController;
 import zlc.season.rxdownloadproject.R;
 
@@ -75,6 +75,11 @@ public class ServiceDownloadActivity extends AppCompatActivity {
             }
 
             @Override
+            public void cancelDownload() {
+                cancel();
+            }
+
+            @Override
             public void install() {
                 installApk();
             }
@@ -107,7 +112,6 @@ public class ServiceDownloadActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        // 取消订阅,不会暂停下载
         mSubscriptions.clear();
     }
 

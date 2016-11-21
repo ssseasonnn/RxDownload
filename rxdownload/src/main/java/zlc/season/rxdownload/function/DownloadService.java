@@ -22,7 +22,6 @@ import zlc.season.rxdownload.entity.DownloadStatus;
 
 import static zlc.season.rxdownload.entity.DownloadFlag.CANCELED;
 import static zlc.season.rxdownload.entity.DownloadFlag.PAUSED;
-import static zlc.season.rxdownload.entity.DownloadFlag.WAITING;
 
 /**
  * Author: Season(ssseasonnn@gmail.com)
@@ -155,8 +154,6 @@ public class DownloadService extends Service {
                         mission.start(mNowDownloading, getSubject(url), mCount, mDataBaseHelper);
                         mWaitingForDownload.remove();
                         mWaitingForDownloadLookUpMap.remove(url);
-                    } else {
-                        mDataBaseHelper.updateRecord(url, WAITING);
                     }
                 }
             }

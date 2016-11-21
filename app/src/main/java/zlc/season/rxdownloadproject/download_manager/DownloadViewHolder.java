@@ -86,7 +86,7 @@ public class DownloadViewHolder extends AbstractViewHolder<DownloadBean> {
 
         initFirstState(param);
 
-        //注册广播接收器, 用于接收下载进度
+        //接收下载进度
         Subscription temp = mRxDownload.receiveDownloadStatus(mData.mRecord.getUrl())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(new Subscriber<DownloadStatus>() {
@@ -107,7 +107,6 @@ public class DownloadViewHolder extends AbstractViewHolder<DownloadBean> {
                     }
                 });
 
-        //将subscription收集起来,在Activity销毁的时候取消订阅,以免内存泄漏
         mData.mSubscriptions.add(temp);
     }
 
@@ -127,6 +126,10 @@ public class DownloadViewHolder extends AbstractViewHolder<DownloadBean> {
                     }
 
                     @Override
+                    public void cancelDownload() {
+                    }
+
+                    @Override
                     public void install() {
                         installApk();
                     }
@@ -141,7 +144,6 @@ public class DownloadViewHolder extends AbstractViewHolder<DownloadBean> {
         }
     }
 
-    //设置初始状态
     private void initFirstState(DownloadBean param) {
         Picasso.with(mContext).load(R.mipmap.ic_file_download).into(mImg);
         mName.setText(param.mRecord.getSaveName());
@@ -158,7 +160,6 @@ public class DownloadViewHolder extends AbstractViewHolder<DownloadBean> {
         updateProgressStatus(param.mRecord.getStatus());
     }
 
-    //更新下载进度
     private void updateProgressStatus(DownloadStatus status) {
         mProgress.setIndeterminate(status.isChunked);
         mProgress.setMax((int) status.getTotalSize());
@@ -167,7 +168,6 @@ public class DownloadViewHolder extends AbstractViewHolder<DownloadBean> {
         mSize.setText(status.getFormatStatusString());
     }
 
-    //下载完成自动打开安装程序
     private void installApk() {
         mDownloadController.setStateAndDisplay(DownloadFlag.INSTALL);
         Uri uri = Uri.fromFile(new File(mData.mRecord.getSavePath() + File.separator + mData.mRecord.getSaveName()));
@@ -176,7 +176,6 @@ public class DownloadViewHolder extends AbstractViewHolder<DownloadBean> {
         mContext.startActivity(intent);
     }
 
-    //开始下载, 先检查权限
     private void start() {
         Subscription temp = RxPermissions.getInstance(mContext)
                 .request(Manifest.permission.WRITE_EXTERNAL_STORAGE)
@@ -203,7 +202,6 @@ public class DownloadViewHolder extends AbstractViewHolder<DownloadBean> {
         mData.mSubscriptions.add(temp);
     }
 
-    //暂停下载
     private void pause() {
         Subscription subscription = mRxDownload.pauseServiceDownload(mData.mRecord.getUrl())
                 .subscribe(new Action1<Object>() {
@@ -215,7 +213,6 @@ public class DownloadViewHolder extends AbstractViewHolder<DownloadBean> {
         mData.mSubscriptions.add(subscription);
     }
 
-    //取消下载
     private void cancel() {
         Subscription subscription = mRxDownload.cancelServiceDownload(mData.mRecord.getUrl())
                 .subscribe(new Action1<Object>() {
@@ -229,15 +226,12 @@ public class DownloadViewHolder extends AbstractViewHolder<DownloadBean> {
         mData.mSubscriptions.add(subscription);
     }
 
-    //删除下载
     private void delete() {
         Subscription subscription = mRxDownload.deleteServiceDownload(mData.mRecord.getUrl())
                 .subscribe(new Action1<Object>() {
                     @Override
                     public void call(Object o) {
-                        //Important!! 删除item前必须先取消订阅!!
-                        //                        mData.mSubscriptions.clear();
-                        //删除item并刷新adapter
+                        mData.mSubscriptions.clear();
                         mAdapter.remove(getAdapterPosition());
                     }
                 });

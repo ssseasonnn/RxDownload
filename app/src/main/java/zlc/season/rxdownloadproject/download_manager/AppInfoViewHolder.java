@@ -75,7 +75,7 @@ public class AppInfoViewHolder extends AbstractViewHolder<AppInfoBean> {
         mTitle.setText(data.name);
         mContent.setText(data.info);
 
-        // 读取下载状态, 如果存在下载记录,则初始化为上次下载的状态
+        // 初始化为上次下载的状态
         Subscription query = mRxDownload.getDownloadRecord(data.downloadUrl)
                 .subscribe(new Action1<DownloadRecord>() {
                     @Override
@@ -105,7 +105,7 @@ public class AppInfoViewHolder extends AbstractViewHolder<AppInfoBean> {
                     public void onNext(final DownloadStatus status) {
                     }
                 });
-        //将subscription收集起来,在Activity销毁的时候取消订阅,以免内存泄漏
+
         mData.mSubscriptions.add(temp);
         mData.mSubscriptions.add(query);
     }
@@ -121,6 +121,11 @@ public class AppInfoViewHolder extends AbstractViewHolder<AppInfoBean> {
             @Override
             public void pauseDownload() {
                 pause();
+            }
+
+            @Override
+            public void cancelDownload() {
+                cancel();
             }
 
             @Override
@@ -171,6 +176,17 @@ public class AppInfoViewHolder extends AbstractViewHolder<AppInfoBean> {
                     @Override
                     public void call(Object o) {
                         mDownloadController.setStateAndDisplay(DownloadFlag.PAUSED);
+                    }
+                });
+        mData.mSubscriptions.add(subscription);
+    }
+
+    private void cancel() {
+        Subscription subscription = mRxDownload.cancelServiceDownload(mData.downloadUrl)
+                .subscribe(new Action1<Object>() {
+                    @Override
+                    public void call(Object o) {
+                        mDownloadController.setStateAndDisplay(DownloadFlag.CANCELED);
                     }
                 });
         mData.mSubscriptions.add(subscription);

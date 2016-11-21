@@ -77,14 +77,18 @@ public class BasicDownloadActivity extends AppCompatActivity {
                     }
 
                     @Override
+                    public void cancelDownload() {
+
+                    }
+
+                    @Override
                     public void install() {
                         installApk();
                     }
                 });
                 break;
             case R.id.finish:
-                //                BasicDownloadActivity.this.finish();
-                start();
+                BasicDownloadActivity.this.finish();
                 break;
         }
     }

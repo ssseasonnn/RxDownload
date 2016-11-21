@@ -9,7 +9,7 @@ import zlc.season.rxdownload.entity.DownloadMission;
 import zlc.season.rxdownload.entity.DownloadRecord;
 import zlc.season.rxdownload.entity.DownloadStatus;
 
-import static zlc.season.rxdownload.entity.DownloadFlag.NORMAL;
+import static zlc.season.rxdownload.entity.DownloadFlag.WAITING;
 
 
 /**
@@ -54,7 +54,7 @@ class Db {
             values.put(COLUMN_URL, mission.getUrl());
             values.put(COLUMN_SAVE_NAME, mission.getSaveName());
             values.put(COLUMN_SAVE_PATH, mission.getSavePath());
-            values.put(COLUMN_DOWNLOAD_FLAG, NORMAL);
+            values.put(COLUMN_DOWNLOAD_FLAG, WAITING);
             values.put(COLUMN_DATE, new Date().getTime());
             return values;
         }

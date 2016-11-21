@@ -50,6 +50,9 @@ public class DownloadController {
             case DownloadFlag.INSTALL:
                 this.state = new InstallState(this);
                 break;
+            case DownloadFlag.WAITING:
+                this.state = new WaitingState(this);
+                break;
         }
 
         displayNowState();
@@ -77,6 +80,8 @@ public class DownloadController {
 
         void pauseDownload();
 
+        void cancelDownload();
+
         void install();
     }
 
@@ -101,8 +106,8 @@ public class DownloadController {
 
         @Override
         void displayNowState(TextView status, Button action) {
-            if (status != null) status.setText("等待下载...");
-            if (action != null) action.setText("取消");
+            if (status != null) status.setText("");
+            if (action != null) action.setText("下载");
         }
 
         @Override
@@ -216,6 +221,25 @@ public class DownloadController {
         @Override
         void handleClickEvent(Callback callback) {
             //doNothing..
+        }
+    }
+
+    private static class WaitingState extends DownloadState {
+
+
+        WaitingState(DownloadController context) {
+            super(context);
+        }
+
+        @Override
+        void displayNowState(TextView status, Button action) {
+            if (status != null) status.setText("等待下载...");
+            if (action != null) action.setText("等待中");
+        }
+
+        @Override
+        void handleClickEvent(Callback callback) {
+            callback.cancelDownload();
         }
     }
 }

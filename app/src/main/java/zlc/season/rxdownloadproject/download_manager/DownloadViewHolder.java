@@ -4,7 +4,6 @@ import android.Manifest;
 import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
-import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
@@ -144,18 +143,8 @@ public class DownloadViewHolder extends AbstractViewHolder<DownloadBean> {
 
     //设置初始状态
     private void initFirstState(DownloadBean param) {
-        //如果创建下载时没有传入image参数, 则获取到的image为null
-        if (TextUtils.isEmpty(param.mRecord.getImage())) {
-            Picasso.with(mContext).load(R.mipmap.ic_file_download).into(mImg);
-        } else {
-            Picasso.with(mContext).load(param.mRecord.getImage()).into(mImg);
-        }
-        //如果创建下载时没有传入display name参数,则获取到的名称为null
-        if (TextUtils.isEmpty(param.mRecord.getName())) {
-            mName.setText(param.mRecord.getSaveName());
-        } else {
-            mName.setText(param.mRecord.getName());
-        }
+        Picasso.with(mContext).load(R.mipmap.ic_file_download).into(mImg);
+        mName.setText(param.mRecord.getSaveName());
 
         int flag = param.mRecord.getDownloadFlag();
         mDownloadController.setStateAndDisplay(flag);
@@ -247,7 +236,7 @@ public class DownloadViewHolder extends AbstractViewHolder<DownloadBean> {
                     @Override
                     public void call(Object o) {
                         //Important!! 删除item前必须先取消订阅!!
-//                        mData.mSubscriptions.clear();
+                        //                        mData.mSubscriptions.clear();
                         //删除item并刷新adapter
                         mAdapter.remove(getAdapterPosition());
                     }

@@ -151,8 +151,7 @@ public class AppInfoViewHolder extends AbstractViewHolder<AppInfoBean> {
                     }
                 })
                 .observeOn(Schedulers.io())
-                .compose(mRxDownload.transformServiceWithoutStatus(mData.downloadUrl, mData.saveName, null,
-                        mData.name, mData.img))
+                .compose(mRxDownload.transformServiceWithoutStatus(mData.downloadUrl, mData.saveName, null))
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(new Action1<Object>() {
                     @Override

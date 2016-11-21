@@ -235,9 +235,10 @@ public class RxDownload {
             }
         });
     }
-    
+
     /**
      * Using Service to download. Not only can download, but also can receive download status.
+     * <p>
      * If you only want to download, not receive download status,
      * see {@link #serviceDownloadWithoutStatus(String, String, String)}
      * <p>
@@ -434,6 +435,9 @@ public class RxDownload {
     private Observable<DownloadStatus> downloadDispatcher(final String url,
                                                           final String saveName,
                                                           final String savePath) {
+        if (mDownloadHelper.isRecordExists(url)) {
+            return Observable.error(new Throwable("This url download task already exists, so do nothing."));
+        }
         try {
             mDownloadHelper.addDownloadRecord(url, saveName, savePath);
         } catch (IOException e) {

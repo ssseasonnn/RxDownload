@@ -63,6 +63,10 @@ public class DownloadHelper {
         mDownloadRecord.put(url, mFileHelper.getRealFilePaths(saveName, savePath));
     }
 
+    public boolean isRecordExists(String url) {
+        return mDownloadRecord.get(url) != null;
+    }
+
     public void deleteDownloadRecord(String url) {
         mDownloadRecord.remove(url);
     }

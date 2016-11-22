@@ -14,14 +14,17 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import rx.subjects.PublishSubject;
+import rx.subjects.BehaviorSubject;
+import rx.subjects.SerializedSubject;
 import rx.subjects.Subject;
 import zlc.season.rxdownload.db.DataBaseHelper;
+import zlc.season.rxdownload.entity.DownloadEvent;
 import zlc.season.rxdownload.entity.DownloadMission;
-import zlc.season.rxdownload.entity.DownloadStatus;
+import zlc.season.rxdownload.entity.DownloadRecord;
 
-import static zlc.season.rxdownload.entity.DownloadFlag.CANCELED;
-import static zlc.season.rxdownload.entity.DownloadFlag.PAUSED;
+import static zlc.season.rxdownload.entity.DownloadEvent.EventHolder.CANCELED;
+import static zlc.season.rxdownload.entity.DownloadEvent.EventHolder.PAUSED;
+
 
 /**
  * Author: Season(ssseasonnn@gmail.com)
@@ -35,7 +38,7 @@ public class DownloadService extends Service {
     private DownloadBinder mBinder;
     private DataBaseHelper mDataBaseHelper;
 
-    private Map<String, Subject<DownloadStatus, DownloadStatus>> mSubjectPool;
+    private Map<String, Subject<DownloadEvent, DownloadEvent>> mSubjectPool;
 
     private Map<String, DownloadMission> mNowDownloading;
     private Queue<DownloadMission> mWaitingForDownload;
@@ -90,29 +93,52 @@ public class DownloadService extends Service {
         return mBinder;
     }
 
-    public Subject<DownloadStatus, DownloadStatus> getSubject(String url) {
+    public Subject<DownloadEvent, DownloadEvent> getSubject(String url) {
+        Subject<DownloadEvent, DownloadEvent> subject = justGet(url);
+        if (mDataBaseHelper.recordNotExists(url)) {
+            subject.onNext(DownloadEvent.EventHolder.NORMAL);
+        } else {
+            DownloadRecord record = mDataBaseHelper.readSingleRecord(url);
+            subject.onNext(DownloadEvent.createEvent(record.getDownloadFlag(), record.getStatus()));
+        }
+        return subject;
+    }
+
+    public Subject<DownloadEvent, DownloadEvent> justGet(String url) {
         if (mSubjectPool.get(url) == null) {
-            Subject<DownloadStatus, DownloadStatus> subject = PublishSubject.create();
+            Subject<DownloadEvent, DownloadEvent> subject = new SerializedSubject<>(
+                    BehaviorSubject.<DownloadEvent>create());
             mSubjectPool.put(url, subject);
         }
         return mSubjectPool.get(url);
     }
 
-    public void addDownloadMission(DownloadMission mission) {
-        if (mDataBaseHelper.recordNotExists(mission.getUrl())) {
-            mDataBaseHelper.insertRecord(mission);
+    public boolean addDownloadMission(DownloadMission mission) {
+        String url = mission.getUrl();
+        if (mWaitingForDownloadLookUpMap.get(url) != null || mNowDownloading.get(url) != null) {
+            return false;
+        } else {
+            if (mDataBaseHelper.recordNotExists(url)) {
+                mDataBaseHelper.insertRecord(mission);
+            } else {
+                mDataBaseHelper.updateRecord(url, DownloadEvent.EventHolder.WAITING.flag);
+            }
+            mWaitingForDownload.offer(mission);
+            mWaitingForDownloadLookUpMap.put(url, mission);
+            justGet(url).onNext(DownloadEvent.EventHolder.WAITING);
+            return true;
         }
-        mWaitingForDownload.offer(mission);
-        mWaitingForDownloadLookUpMap.put(mission.getUrl(), mission);
     }
 
     public void pauseDownload(String url) {
         mDataBaseHelper.updateRecord(url, PAUSED);
+        justGet(url).onNext(PAUSED);
         decreaseCountAndBook(url);
     }
 
     public void cancelDownload(String url) {
         mDataBaseHelper.updateRecord(url, CANCELED);
+        justGet(url).onNext(CANCELED);
         decreaseCountAndBook(url);
     }
 
@@ -123,8 +149,8 @@ public class DownloadService extends Service {
 
     private void decreaseCountAndBook(String url) {
         if (mNowDownloading.get(url) != null) {
-            mCount.decrementAndGet();
             Utils.unSubscribe(mNowDownloading.get(url).getSubscription());
+            mCount.decrementAndGet();
             mNowDownloading.remove(url);
         }
         if (mWaitingForDownloadLookUpMap.get(url) != null) {

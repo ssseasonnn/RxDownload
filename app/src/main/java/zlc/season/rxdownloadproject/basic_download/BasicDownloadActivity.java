@@ -27,9 +27,7 @@ import rx.android.schedulers.AndroidSchedulers;
 import rx.functions.Action1;
 import rx.schedulers.Schedulers;
 import zlc.season.rxdownload.RxDownload;
-import zlc.season.rxdownload.entity.DownloadFlag;
 import zlc.season.rxdownload.entity.DownloadStatus;
-import zlc.season.rxdownloadproject.DownloadController;
 import zlc.season.rxdownloadproject.R;
 
 import static android.os.Environment.DIRECTORY_DOWNLOADS;
@@ -58,34 +56,13 @@ public class BasicDownloadActivity extends AppCompatActivity {
     private String defaultPath = getExternalStoragePublicDirectory(DIRECTORY_DOWNLOADS).getPath();
     private String url = "http://dldir1.qq.com/weixin/android/weixin6330android920.apk";
     private Subscription subscription;
-    private DownloadController mDownloadController;
     private RxDownload mRxDownload;
 
     @OnClick({R.id.action, R.id.finish})
     public void onClick(View view) {
         switch (view.getId()) {
             case R.id.action:
-                mDownloadController.performClick(new DownloadController.Callback() {
-                    @Override
-                    public void startDownload() {
-                        start();
-                    }
 
-                    @Override
-                    public void pauseDownload() {
-                        pause();
-                    }
-
-                    @Override
-                    public void cancelDownload() {
-
-                    }
-
-                    @Override
-                    public void install() {
-                        installApk();
-                    }
-                });
                 break;
             case R.id.finish:
                 BasicDownloadActivity.this.finish();
@@ -112,8 +89,6 @@ public class BasicDownloadActivity extends AppCompatActivity {
 
         mRxDownload = RxDownload.getInstance().maxThread(10);
 
-        mDownloadController = new DownloadController(mStatus, mAction);
-        mDownloadController.setStateAndDisplay(DownloadFlag.NORMAL);
     }
 
     @Override
@@ -140,18 +115,18 @@ public class BasicDownloadActivity extends AppCompatActivity {
                     @Override
                     public void onStart() {
                         super.onStart();
-                        mDownloadController.setStateAndDisplay(DownloadFlag.STARTED);
+
                     }
 
                     @Override
                     public void onCompleted() {
-                        mDownloadController.setStateAndDisplay(DownloadFlag.COMPLETED);
+
                     }
 
                     @Override
                     public void onError(Throwable e) {
                         Log.w("TAG", e);
-                        mDownloadController.setStateAndDisplay(DownloadFlag.FAILED);
+
                     }
 
                     @Override
@@ -167,7 +142,6 @@ public class BasicDownloadActivity extends AppCompatActivity {
 
     private void pause() {
         BasicDownloadActivity.this.unSubscribe(subscription);
-        mDownloadController.setStateAndDisplay(DownloadFlag.PAUSED);
     }
 
     private void installApk() {

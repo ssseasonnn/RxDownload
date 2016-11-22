@@ -23,6 +23,7 @@ import rx.functions.Action1;
 import rx.functions.Func1;
 import rx.functions.Func2;
 import zlc.season.rxdownload.db.DataBaseHelper;
+import zlc.season.rxdownload.entity.DownloadEvent;
 import zlc.season.rxdownload.entity.DownloadMission;
 import zlc.season.rxdownload.entity.DownloadRecord;
 import zlc.season.rxdownload.entity.DownloadStatus;
@@ -105,7 +106,7 @@ public class RxDownload {
      * @param url download url
      * @return Observable<DownloadStatus>
      */
-    public Observable<DownloadStatus> receiveDownloadStatus(final String url) {
+    public Observable<DownloadEvent> receiveDownloadStatus(final String url) {
         return Observable.create(new Observable.OnSubscribe<Object>() {
             @Override
             public void call(final Subscriber<? super Object> subscriber) {
@@ -120,9 +121,9 @@ public class RxDownload {
                     subscriber.onNext(null);
                 }
             }
-        }).flatMap(new Func1<Object, Observable<DownloadStatus>>() {
+        }).flatMap(new Func1<Object, Observable<DownloadEvent>>() {
             @Override
-            public Observable<DownloadStatus> call(Object o) {
+            public Observable<DownloadEvent> call(Object o) {
                 return mDownloadService.getSubject(url).onBackpressureLatest();
             }
         }).doOnCompleted(new Action0() {
@@ -254,9 +255,9 @@ public class RxDownload {
      * @param savePath download file SavePath. If NULL, using default save path {@code /storage/emulated/0/Download/}
      * @return Observable<DownloadStatus>
      */
-    public Observable<DownloadStatus> serviceDownload(@NonNull final String url,
-                                                      @NonNull final String saveName,
-                                                      @Nullable final String savePath) {
+    public Observable<DownloadEvent> serviceDownload(@NonNull final String url,
+                                                     @NonNull final String saveName,
+                                                     @Nullable final String savePath) {
         return Observable.create(new Observable.OnSubscribe<Object>() {
             @Override
             public void call(final Subscriber<? super Object> subscriber) {
@@ -273,9 +274,9 @@ public class RxDownload {
                     subscriber.onNext(null);
                 }
             }
-        }).flatMap(new Func1<Object, Observable<DownloadStatus>>() {
+        }).flatMap(new Func1<Object, Observable<DownloadEvent>>() {
             @Override
-            public Observable<DownloadStatus> call(Object o) {
+            public Observable<DownloadEvent> call(Object o) {
                 return mDownloadService.getSubject(url).onBackpressureLatest();
             }
         });
@@ -372,15 +373,15 @@ public class RxDownload {
      * @param <T>      T
      * @return Transformer
      */
-    public <T> Observable.Transformer<T, DownloadStatus> transformService(@NonNull final String url,
+    public <T> Observable.Transformer<T, DownloadEvent> transformService(@NonNull final String url,
                                                                           @NonNull final String saveName,
                                                                           @Nullable final String savePath) {
-        return new Observable.Transformer<T, DownloadStatus>() {
+        return new Observable.Transformer<T, DownloadEvent>() {
             @Override
-            public Observable<DownloadStatus> call(Observable<T> observable) {
-                return observable.flatMap(new Func1<T, Observable<DownloadStatus>>() {
+            public Observable<DownloadEvent> call(Observable<T> observable) {
+                return observable.flatMap(new Func1<T, Observable<DownloadEvent>>() {
                     @Override
-                    public Observable<DownloadStatus> call(T t) {
+                    public Observable<DownloadEvent> call(T t) {
                         return serviceDownload(url, saveName, savePath);
                     }
                 });
@@ -605,7 +606,6 @@ public class RxDownload {
             throw new RuntimeException("Context is NULL! You should call " +
                     "#RxDownload.context(Context context)# first!");
         }
-        Log.w(TAG, "Download Service is not Start or Bind. So start Service and Bind.");
         Intent intent = new Intent(mContext, DownloadService.class);
         intent.putExtra(DownloadService.INTENT_KEY, MAX_DOWNLOAD_NUMBER);
         mContext.startService(intent);

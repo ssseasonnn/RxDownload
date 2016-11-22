@@ -5,11 +5,10 @@ import android.database.Cursor;
 
 import java.util.Date;
 
+import zlc.season.rxdownload.entity.DownloadEvent;
 import zlc.season.rxdownload.entity.DownloadMission;
 import zlc.season.rxdownload.entity.DownloadRecord;
 import zlc.season.rxdownload.entity.DownloadStatus;
-
-import static zlc.season.rxdownload.entity.DownloadFlag.WAITING;
 
 
 /**
@@ -54,11 +53,19 @@ class Db {
             values.put(COLUMN_URL, mission.getUrl());
             values.put(COLUMN_SAVE_NAME, mission.getSaveName());
             values.put(COLUMN_SAVE_PATH, mission.getSavePath());
-            values.put(COLUMN_DOWNLOAD_FLAG, WAITING);
+            values.put(COLUMN_DOWNLOAD_FLAG, DownloadEvent.EventHolder.WAITING.flag);
             values.put(COLUMN_DATE, new Date().getTime());
             return values;
         }
 
+        static ContentValues update(DownloadEvent event) {
+            ContentValues values = new ContentValues();
+            values.put(COLUMN_DOWNLOAD_FLAG, event.flag);
+            values.put(COLUMN_IS_CHUNKED, event.downloadStatus.isChunked);
+            values.put(COLUMN_DOWNLOAD_SIZE, event.downloadStatus.getDownloadSize());
+            values.put(COLUMN_TOTAL_SIZE, event.downloadStatus.getTotalSize());
+            return values;
+        }
 
         static ContentValues update(DownloadStatus status) {
             ContentValues values = new ContentValues();

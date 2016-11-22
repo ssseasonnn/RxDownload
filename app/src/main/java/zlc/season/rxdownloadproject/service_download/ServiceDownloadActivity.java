@@ -27,8 +27,8 @@ import rx.functions.Action1;
 import rx.schedulers.Schedulers;
 import rx.subscriptions.CompositeSubscription;
 import zlc.season.rxdownload.RxDownload;
-import zlc.season.rxdownload.entity.DownloadRecord;
-import zlc.season.rxdownload.entity.DownloadStatus;
+import zlc.season.rxdownload.entity.DownloadEvent;
+import zlc.season.rxdownloadproject.DownloadController;
 import zlc.season.rxdownloadproject.R;
 
 import static android.os.Environment.DIRECTORY_DOWNLOADS;
@@ -61,7 +61,7 @@ public class ServiceDownloadActivity extends AppCompatActivity {
 
     @OnClick(R.id.action)
     public void onClick() {
-        mDownloadController.performClick(new DownloadController.Callback() {
+        mDownloadController.handleClick(new DownloadController.Callback() {
             @Override
             public void startDownload() {
                 start();
@@ -98,13 +98,13 @@ public class ServiceDownloadActivity extends AppCompatActivity {
 
         String icon = "http://static.yingyonghui.com/icon/128/4196396.png";
         Picasso.with(this).load(icon).into(mImg);
-        mStatusText.setText("开始");
+        mAction.setText("开始");
 
         mRxDownload = RxDownload.getInstance().context(this);
         mSubscriptions = new CompositeSubscription();
 
-        mDownloadController = new DownloadController(mStatusText, mAction);
-        mDownloadController.setStateAndDisplay(DownloadFlag.NORMAL);
+        mDownloadController = new DownloadController();
+        mDownloadController.setState(new DownloadController.Normal());
     }
 
     @Override
@@ -116,56 +116,40 @@ public class ServiceDownloadActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        // 读取下载状态, 如果存在下载记录,则初始化为上次下载的状态
-        Subscription query = mRxDownload.getDownloadRecord(url)
-                .subscribe(new Action1<DownloadRecord>() {
-                    @Override
-                    public void call(DownloadRecord record) {
-                        //如果有下载记录才会执行到这里, 如果没有下载记录不会执行这里
-                        mProgress.setIndeterminate(record.getStatus().isChunked);
-                        mProgress.setMax((int) record.getStatus().getTotalSize());
-                        mProgress.setProgress((int) record.getStatus().getDownloadSize());
-                        mPercent.setText(record.getStatus().getPercent());
-                        mSize.setText(record.getStatus().getFormatStatusString());
-
-                        int flag = record.getDownloadFlag();
-                        //设置下载状态
-                        mDownloadController.setStateAndDisplay(flag);
-                    }
-                });
-
         //接收下载进度
         Subscription temp = mRxDownload.receiveDownloadStatus(url)
                 .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(new Subscriber<DownloadStatus>() {
+                .subscribe(new Subscriber<DownloadEvent>() {
                     @Override
                     public void onCompleted() {
-                        mDownloadController.setStateAndDisplay(DownloadFlag.COMPLETED);
+                        mDownloadController.setState(new DownloadController.Completed());
                     }
 
                     @Override
                     public void onError(Throwable e) {
                         Log.w("TAG", e);
-                        mDownloadController.setStateAndDisplay(DownloadFlag.FAILED);
+                        mDownloadController.setState(new DownloadController.Failed());
                     }
 
                     @Override
-                    public void onNext(final DownloadStatus status) {
-                        mProgress.setIndeterminate(status.isChunked);
-                        mProgress.setMax((int) status.getTotalSize());
-                        mProgress.setProgress((int) status.getDownloadSize());
-                        mPercent.setText(status.getPercent());
-                        mSize.setText(status.getFormatStatusString());
+                    public void onNext(final DownloadEvent event) {
+                        if (event instanceof DownloadEvent.StartedEvent) {
+                            mProgress.setIndeterminate(event.downloadStatus.isChunked);
+                            mProgress.setMax((int) event.downloadStatus.getTotalSize());
+                            mProgress.setProgress((int) event.downloadStatus.getDownloadSize());
+                            mPercent.setText(event.downloadStatus.getPercent());
+                            mSize.setText(event.downloadStatus.getFormatStatusString());
+                        } else if (event instanceof DownloadEvent.PausedEvent) {
+                            mAction.setText("继续");
+                            mStatusText.setText("已暂停");
+                        }
                     }
                 });
 
-        //将subscription收集起来,在Activity销毁的时候取消订阅,以免内存泄漏
         mSubscriptions.add(temp);
-        mSubscriptions.add(query);
     }
 
     private void installApk() {
-        mDownloadController.setStateAndDisplay(DownloadFlag.INSTALL);
         Uri uri = Uri.fromFile(new File(defaultPath + File.separator + saveName));
         Intent intent = new Intent(Intent.ACTION_VIEW);
         intent.setDataAndType(uri, "application/vnd.android.package-archive");
@@ -173,7 +157,6 @@ public class ServiceDownloadActivity extends AppCompatActivity {
     }
 
     private void start() {
-        //开始下载, 先检查权限
         Subscription temp = RxPermissions.getInstance(this)
                 .request(Manifest.permission.WRITE_EXTERNAL_STORAGE)
                 .doOnNext(new Action1<Boolean>() {
@@ -190,35 +173,31 @@ public class ServiceDownloadActivity extends AppCompatActivity {
                 .subscribe(new Action1<Object>() {
                     @Override
                     public void call(Object o) {
-                        mDownloadController.setStateAndDisplay(DownloadFlag.STARTED);
+                        mAction.setText("暂停");
+                        mStatusText.setText("下载中...");
+                        mDownloadController.setState(new DownloadController.Started());
                     }
                 });
         mSubscriptions.add(temp);
     }
 
-    /**
-     * 暂停下载
-     */
+
     private void pause() {
         Subscription subscription = mRxDownload.pauseServiceDownload(url)
                 .subscribe(new Action1<Object>() {
                     @Override
                     public void call(Object o) {
-                        mDownloadController.setStateAndDisplay(DownloadFlag.PAUSED);
                     }
                 });
         mSubscriptions.add(subscription);
     }
 
-    /**
-     * 取消下载
-     */
+
     private void cancel() {
         Subscription subscription = mRxDownload.cancelServiceDownload(url)
                 .subscribe(new Action1<Object>() {
                     @Override
                     public void call(Object o) {
-                        mDownloadController.setStateAndDisplay(DownloadFlag.CANCELED);
                     }
                 });
         mSubscriptions.add(subscription);

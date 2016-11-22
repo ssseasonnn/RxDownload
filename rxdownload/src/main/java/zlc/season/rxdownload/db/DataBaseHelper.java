@@ -11,7 +11,6 @@ import rx.Observable;
 import rx.Subscriber;
 import rx.android.schedulers.AndroidSchedulers;
 import rx.schedulers.Schedulers;
-import zlc.season.rxdownload.entity.DownloadEvent;
 import zlc.season.rxdownload.entity.DownloadMission;
 import zlc.season.rxdownload.entity.DownloadRecord;
 import zlc.season.rxdownload.entity.DownloadStatus;
@@ -67,9 +66,9 @@ public class DataBaseHelper {
         return getWritableDatabase().insert(TABLE_NAME, null, insert(mission));
     }
 
-    public long updateRecord(String url, DownloadEvent event) {
-        return getWritableDatabase().update(TABLE_NAME, update(event), "url=?", new String[]{url});
-    }
+//    public long updateRecord(String url, DownloadEvent event) {
+//        return getWritableDatabase().update(TABLE_NAME, update(event), "url=?", new String[]{url});
+//    }
 
     public long updateRecord(String url, DownloadStatus status) {
         return getWritableDatabase().update(TABLE_NAME, update(status), "url=?", new String[]{url});

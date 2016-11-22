@@ -7,37 +7,49 @@ package zlc.season.rxdownload.entity;
  * FIXME
  */
 public class DownloadEvent {
-    public DownloadStatus downloadStatus;
     public int flag;
+    public DownloadStatus downloadStatus;
 
     public static DownloadEvent createEvent(int flag, DownloadStatus status) {
         switch (flag) {
-            case NormalEvent.flag:
-                return EventHolder.NORMAL.setDownloadStatus(status);
-            case WaitingEvent.flag:
-                return EventHolder.WAITING.setDownloadStatus(status);
-            case StartedEvent.flag:
-                return EventHolder.STARTED.setDownloadStatus(status);
-            case PausedEvent.flag:
-                return EventHolder.PAUSED.setDownloadStatus(status);
-            case CanceledEvent.flag:
-                return EventHolder.CANCELED.setDownloadStatus(status);
-            case CompletedEvent.flag:
-                return EventHolder.COMPLETED.setDownloadStatus(status);
-            case FailedEvent.flag:
-                return EventHolder.FAILED.setDownloadStatus(status);
-            case InstallEvent.flag:
-                return EventHolder.INSTALL.setDownloadStatus(status);
-            case InstalledEvent.flag:
-                return EventHolder.INSTALLED.setDownloadStatus(status);
+            case FlagHolder.NORMAL:
+                return EventHolder.NORMAL.set(status);
+            case FlagHolder.WAITING:
+                return EventHolder.WAITING.set(status);
+            case FlagHolder.STARTED:
+                return EventHolder.STARTED.set(status);
+            case FlagHolder.PAUSED:
+                return EventHolder.PAUSED.set(status);
+            case FlagHolder.CANCELED:
+                return EventHolder.CANCELED.set(status);
+            case FlagHolder.COMPLETED:
+                return EventHolder.COMPLETED.set(status);
+            case FlagHolder.FAILED:
+                return EventHolder.FAILED.set(status);
+            case FlagHolder.INSTALL:
+                return EventHolder.INSTALL.set(status);
+            case FlagHolder.INSTALLED:
+                return EventHolder.INSTALLED.set(status);
             default:
-                return EventHolder.NORMAL.setDownloadStatus(status);
+                return EventHolder.NORMAL.set(status);
         }
     }
 
-    protected DownloadEvent setDownloadStatus(DownloadStatus status) {
+    protected DownloadEvent set(DownloadStatus status) {
         this.downloadStatus = status;
         return this;
+    }
+
+    public static class FlagHolder {
+        public static final int NORMAL = 9990;
+        public static final int WAITING = 9991;
+        public static final int STARTED = 9992;
+        public static final int PAUSED = 9993;
+        public static final int CANCELED = 9994;
+        public static final int COMPLETED = 9995;
+        public static final int FAILED = 9996;
+        public static final int INSTALL = 9997;
+        public static final int INSTALLED = 9998;
     }
 
     public static class EventHolder {
@@ -52,39 +64,84 @@ public class DownloadEvent {
         public static final DownloadEvent INSTALLED = new InstalledEvent();
     }
 
-    private static class NormalEvent extends DownloadEvent {
-        public static final int flag = 9990;   //下载未开始
+    public static class NormalEvent extends DownloadEvent {
+        @Override
+        public NormalEvent set(DownloadStatus status) {
+            super.set(status);
+            flag = FlagHolder.NORMAL;
+            return this;
+        }
     }
 
-    private static class WaitingEvent extends DownloadEvent {
-        public static final int flag = 9991;   //等待下载
+    public static class WaitingEvent extends DownloadEvent {
+        @Override
+        public WaitingEvent set(DownloadStatus status) {
+            super.set(status);
+            flag = FlagHolder.WAITING;
+            return this;
+        }
     }
 
-    private static class StartedEvent extends DownloadEvent {
-        public static final int flag = 9992;  //下载已开始
+    public static class StartedEvent extends DownloadEvent {
+        @Override
+        public StartedEvent set(DownloadStatus status) {
+            super.set(status);
+            flag = FlagHolder.STARTED;
+            return this;
+        }
     }
 
-    private static class PausedEvent extends DownloadEvent {
-        public static final int flag = 9993;   //下载已暂停
+    public static class PausedEvent extends DownloadEvent {
+        @Override
+        public PausedEvent set(DownloadStatus status) {
+            super.set(status);
+            flag = FlagHolder.PAUSED;
+            return this;
+        }
     }
 
-    private static class CanceledEvent extends DownloadEvent {
-        public static final int flag = 9994; //下载已取消
+    public static class CanceledEvent extends DownloadEvent {
+        @Override
+        public CanceledEvent set(DownloadStatus status) {
+            super.set(status);
+            flag = FlagHolder.CANCELED;
+            return this;
+        }
     }
 
-    private static class CompletedEvent extends DownloadEvent {
-        public static final int flag = 9995;//下载已完成
+    public static class CompletedEvent extends DownloadEvent {
+        @Override
+        public CompletedEvent set(DownloadStatus status) {
+            super.set(status);
+            flag = FlagHolder.COMPLETED;
+            return this;
+        }
     }
 
-    private static class FailedEvent extends DownloadEvent {
-        public static final int flag = 9996;   //下载已失败
+    public static class FailedEvent extends DownloadEvent {
+        @Override
+        public FailedEvent set(DownloadStatus status) {
+            super.set(status);
+            flag = FlagHolder.FAILED;
+            return this;
+        }
     }
 
-    private static class InstallEvent extends DownloadEvent {
-        public static final int flag = 9997;
+    public static class InstallEvent extends DownloadEvent {
+        @Override
+        public InstallEvent set(DownloadStatus status) {
+            super.set(status);
+            flag = FlagHolder.INSTALL;
+            return this;
+        }
     }
 
-    private static class InstalledEvent extends DownloadEvent {
-        public static final int flag = 9998;
+    public static class InstalledEvent extends DownloadEvent {
+        @Override
+        public InstalledEvent set(DownloadStatus status) {
+            super.set(status);
+            flag = FlagHolder.INSTALLED;
+            return this;
+        }
     }
 }

@@ -25,8 +25,8 @@ import rx.functions.Action1;
 import rx.schedulers.Schedulers;
 import zlc.season.practicalrecyclerview.AbstractViewHolder;
 import zlc.season.rxdownload.RxDownload;
-import zlc.season.rxdownload.entity.DownloadRecord;
-import zlc.season.rxdownload.entity.DownloadStatus;
+import zlc.season.rxdownload.entity.DownloadEvent;
+import zlc.season.rxdownloadproject.DownloadController;
 import zlc.season.rxdownloadproject.R;
 
 import static android.os.Environment.DIRECTORY_DOWNLOADS;
@@ -61,56 +61,44 @@ public class AppInfoViewHolder extends AbstractViewHolder<AppInfoBean> {
         mContext = parent.getContext();
 
         mRxDownload = RxDownload.getInstance().context(mContext);
-        mDownloadController = new DownloadController(null, mAction);
+        mDownloadController = new DownloadController();
     }
 
     @Override
     public void setData(AppInfoBean data) {
         this.mData = data;
-        mDownloadController.setStateAndDisplay(DownloadFlag.NORMAL);
+        mDownloadController.setState(new DownloadController.Normal());
 
         Picasso.with(mContext).load(data.img).into(mHead);
         mTitle.setText(data.name);
         mContent.setText(data.info);
 
-        // 初始化为上次下载的状态
-        Subscription query = mRxDownload.getDownloadRecord(data.downloadUrl)
-                .subscribe(new Action1<DownloadRecord>() {
-                    @Override
-                    public void call(DownloadRecord record) {
-                        //如果有下载记录才会执行到这里, 如果没有下载记录不会执行这里
-                        int flag = record.getDownloadFlag();
-                        //设置下载状态
-                        mDownloadController.setStateAndDisplay(flag);
-                    }
-                });
 
         //接收下载进度
-        Subscription temp = mRxDownload.receiveDownloadStatus(data.downloadUrl)
-                .subscribe(new Subscriber<DownloadStatus>() {
+        Subscription temp = mRxDownload.receiveDownloadStatus(mData.downloadUrl)
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(new Subscriber<DownloadEvent>() {
                     @Override
                     public void onCompleted() {
-                        mDownloadController.setStateAndDisplay(DownloadFlag.COMPLETED);
+                        mDownloadController.setState(new DownloadController.Completed());
                     }
 
                     @Override
                     public void onError(Throwable e) {
                         Log.w("TAG", e);
-                        mDownloadController.setStateAndDisplay(DownloadFlag.FAILED);
+                        mDownloadController.setState(new DownloadController.Failed());
                     }
 
                     @Override
-                    public void onNext(final DownloadStatus status) {
+                    public void onNext(final DownloadEvent event) {
                     }
                 });
-
         mData.mSubscriptions.add(temp);
-        mData.mSubscriptions.add(query);
     }
 
     @OnClick(R.id.action)
     public void onClick() {
-        mDownloadController.performClick(new DownloadController.Callback() {
+        mDownloadController.handleClick(new DownloadController.Callback() {
             @Override
             public void startDownload() {
                 start();
@@ -134,7 +122,6 @@ public class AppInfoViewHolder extends AbstractViewHolder<AppInfoBean> {
     }
 
     private void installApk() {
-        mDownloadController.setStateAndDisplay(DownloadFlag.INSTALL);
         Uri uri = Uri.fromFile(new File(defaultPath + File.separator + mData.saveName));
         Intent intent = new Intent(Intent.ACTION_VIEW);
         intent.setDataAndType(uri, "application/vnd.android.package-archive");
@@ -159,7 +146,6 @@ public class AppInfoViewHolder extends AbstractViewHolder<AppInfoBean> {
                 .subscribe(new Action1<Object>() {
                     @Override
                     public void call(Object o) {
-                        mDownloadController.setStateAndDisplay(DownloadFlag.STARTED);
                     }
                 });
         mData.mSubscriptions.add(temp);
@@ -173,7 +159,6 @@ public class AppInfoViewHolder extends AbstractViewHolder<AppInfoBean> {
                 .subscribe(new Action1<Object>() {
                     @Override
                     public void call(Object o) {
-                        mDownloadController.setStateAndDisplay(DownloadFlag.PAUSED);
                     }
                 });
         mData.mSubscriptions.add(subscription);
@@ -184,7 +169,6 @@ public class AppInfoViewHolder extends AbstractViewHolder<AppInfoBean> {
                 .subscribe(new Action1<Object>() {
                     @Override
                     public void call(Object o) {
-                        mDownloadController.setStateAndDisplay(DownloadFlag.CANCELED);
                     }
                 });
         mData.mSubscriptions.add(subscription);

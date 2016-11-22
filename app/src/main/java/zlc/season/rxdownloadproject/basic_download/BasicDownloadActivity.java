@@ -28,6 +28,7 @@ import rx.functions.Action1;
 import rx.schedulers.Schedulers;
 import zlc.season.rxdownload.RxDownload;
 import zlc.season.rxdownload.entity.DownloadStatus;
+import zlc.season.rxdownloadproject.DownloadController;
 import zlc.season.rxdownloadproject.R;
 
 import static android.os.Environment.DIRECTORY_DOWNLOADS;
@@ -57,12 +58,32 @@ public class BasicDownloadActivity extends AppCompatActivity {
     private String url = "http://dldir1.qq.com/weixin/android/weixin6330android920.apk";
     private Subscription subscription;
     private RxDownload mRxDownload;
+    private DownloadController mDownloadController;
 
     @OnClick({R.id.action, R.id.finish})
     public void onClick(View view) {
         switch (view.getId()) {
             case R.id.action:
+                mDownloadController.handleClick(new DownloadController.Callback() {
+                    @Override
+                    public void startDownload() {
+                        start();
+                    }
 
+                    @Override
+                    public void pauseDownload() {
+                        pause();
+                    }
+
+                    @Override
+                    public void cancelDownload() {
+                    }
+
+                    @Override
+                    public void install() {
+                        installApk();
+                    }
+                });
                 break;
             case R.id.finish:
                 BasicDownloadActivity.this.finish();
@@ -85,10 +106,11 @@ public class BasicDownloadActivity extends AppCompatActivity {
 
         String icon = "http://static.yingyonghui.com/icon/128/4200197.png";
         Picasso.with(this).load(icon).into(mImg);
-        mStatus.setText("开始");
+        mAction.setText("开始");
 
         mRxDownload = RxDownload.getInstance().maxThread(10);
-
+        mDownloadController = new DownloadController();
+        mDownloadController.setState(new DownloadController.Normal());
     }
 
     @Override
@@ -115,18 +137,24 @@ public class BasicDownloadActivity extends AppCompatActivity {
                     @Override
                     public void onStart() {
                         super.onStart();
-
+                        mDownloadController.setState(new DownloadController.Started());
+                        mAction.setText("暂停");
+                        mStatus.setText("下载中...");
                     }
 
                     @Override
                     public void onCompleted() {
-
+                        mDownloadController.setState(new DownloadController.Completed());
+                        mAction.setText("安装");
+                        mStatus.setText("下载完成");
                     }
 
                     @Override
                     public void onError(Throwable e) {
                         Log.w("TAG", e);
-
+                        mDownloadController.setState(new DownloadController.Paused());
+                        mAction.setText("继续");
+                        mStatus.setText("下载失败");
                     }
 
                     @Override

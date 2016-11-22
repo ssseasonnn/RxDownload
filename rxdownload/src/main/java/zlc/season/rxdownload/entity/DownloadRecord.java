@@ -11,7 +11,7 @@ public class DownloadRecord {
     private String saveName;
     private String savePath;  //param path, not file save path;
     private DownloadStatus mStatus;
-    private int downloadFlag = DownloadEvent.EventHolder.NORMAL.flag;
+    private int downloadFlag = DownloadEvent.FlagHolder.NORMAL;
     private long date; //格林威治时间,毫秒
 
     public DownloadRecord() {

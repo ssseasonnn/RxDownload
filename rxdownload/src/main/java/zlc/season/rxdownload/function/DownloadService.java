@@ -22,9 +22,6 @@ import zlc.season.rxdownload.entity.DownloadEvent;
 import zlc.season.rxdownload.entity.DownloadMission;
 import zlc.season.rxdownload.entity.DownloadRecord;
 
-import static zlc.season.rxdownload.entity.DownloadEvent.EventHolder.CANCELED;
-import static zlc.season.rxdownload.entity.DownloadEvent.EventHolder.PAUSED;
-
 
 /**
  * Author: Season(ssseasonnn@gmail.com)
@@ -94,7 +91,7 @@ public class DownloadService extends Service {
     }
 
     public Subject<DownloadEvent, DownloadEvent> getSubject(String url) {
-        Subject<DownloadEvent, DownloadEvent> subject = justGet(url);
+        Subject<DownloadEvent, DownloadEvent> subject = subject(url);
         if (mDataBaseHelper.recordNotExists(url)) {
             subject.onNext(DownloadEvent.EventHolder.NORMAL);
         } else {
@@ -104,7 +101,7 @@ public class DownloadService extends Service {
         return subject;
     }
 
-    public Subject<DownloadEvent, DownloadEvent> justGet(String url) {
+    public Subject<DownloadEvent, DownloadEvent> subject(String url) {
         if (mSubjectPool.get(url) == null) {
             Subject<DownloadEvent, DownloadEvent> subject = new SerializedSubject<>(
                     BehaviorSubject.<DownloadEvent>create());
@@ -121,33 +118,33 @@ public class DownloadService extends Service {
             if (mDataBaseHelper.recordNotExists(url)) {
                 mDataBaseHelper.insertRecord(mission);
             } else {
-                mDataBaseHelper.updateRecord(url, DownloadEvent.EventHolder.WAITING.flag);
+                mDataBaseHelper.updateRecord(url, DownloadEvent.FlagHolder.WAITING);
             }
             mWaitingForDownload.offer(mission);
             mWaitingForDownloadLookUpMap.put(url, mission);
-            justGet(url).onNext(DownloadEvent.EventHolder.WAITING);
+            subject(url).onNext(DownloadEvent.EventHolder.WAITING);
             return true;
         }
     }
 
     public void pauseDownload(String url) {
-        mDataBaseHelper.updateRecord(url, PAUSED);
-        justGet(url).onNext(PAUSED);
-        decreaseCountAndBook(url);
+        stopDownload(url);
+        subject(url).onNext(DownloadEvent.EventHolder.PAUSED);
+        mDataBaseHelper.updateRecord(url, DownloadEvent.FlagHolder.PAUSED);
     }
 
     public void cancelDownload(String url) {
-        mDataBaseHelper.updateRecord(url, CANCELED);
-        justGet(url).onNext(CANCELED);
-        decreaseCountAndBook(url);
+        stopDownload(url);
+        subject(url).onNext(DownloadEvent.EventHolder.CANCELED);
+        mDataBaseHelper.updateRecord(url, DownloadEvent.FlagHolder.CANCELED);
     }
 
     public void deleteDownload(String url) {
         mDataBaseHelper.deleteRecord(url);
-        decreaseCountAndBook(url);
+        stopDownload(url);
     }
 
-    private void decreaseCountAndBook(String url) {
+    private void stopDownload(String url) {
         if (mNowDownloading.get(url) != null) {
             Utils.unSubscribe(mNowDownloading.get(url).getSubscription());
             mCount.decrementAndGet();
@@ -177,7 +174,7 @@ public class DownloadService extends Service {
                         continue;
                     }
                     if (mCount.get() < MAX_DOWNLOAD_NUMBER) {
-                        mission.start(mNowDownloading, getSubject(url), mCount, mDataBaseHelper);
+                        mission.start(mNowDownloading, subject(url), mCount, mDataBaseHelper);
                         mWaitingForDownload.remove();
                         mWaitingForDownloadLookUpMap.remove(url);
                     }

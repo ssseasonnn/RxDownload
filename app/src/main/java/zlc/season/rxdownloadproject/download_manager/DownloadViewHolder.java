@@ -28,7 +28,9 @@ import rx.schedulers.Schedulers;
 import zlc.season.practicalrecyclerview.AbstractAdapter;
 import zlc.season.practicalrecyclerview.AbstractViewHolder;
 import zlc.season.rxdownload.RxDownload;
+import zlc.season.rxdownload.entity.DownloadEvent;
 import zlc.season.rxdownload.entity.DownloadStatus;
+import zlc.season.rxdownloadproject.DownloadController;
 import zlc.season.rxdownloadproject.R;
 
 import static zlc.season.rxdownloadproject.R.id.percent;
@@ -75,7 +77,7 @@ public class DownloadViewHolder extends AbstractViewHolder<DownloadBean> {
         mContext = parent.getContext();
         mRxDownload = RxDownload.getInstance().context(mContext);
 
-        mDownloadController = new DownloadController(mStatusText, mActionButton);
+        mDownloadController = new DownloadController();
     }
 
     @Override
@@ -87,21 +89,22 @@ public class DownloadViewHolder extends AbstractViewHolder<DownloadBean> {
         //接收下载进度
         Subscription temp = mRxDownload.receiveDownloadStatus(mData.mRecord.getUrl())
                 .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(new Subscriber<DownloadStatus>() {
+                .subscribe(new Subscriber<DownloadEvent>() {
                     @Override
                     public void onCompleted() {
-                        mDownloadController.setStateAndDisplay(DownloadFlag.COMPLETED);
+                        mDownloadController.setState(new DownloadController.Completed());
                     }
 
                     @Override
                     public void onError(Throwable e) {
                         Log.w("TAG", e);
-                        mDownloadController.setStateAndDisplay(DownloadFlag.FAILED);
+                        mDownloadController.setState(new DownloadController.Failed());
                     }
 
                     @Override
-                    public void onNext(final DownloadStatus status) {
-                        updateProgressStatus(status);
+                    public void onNext(final DownloadEvent event) {
+                        if (event instanceof DownloadEvent.StartedEvent)
+                            updateProgressStatus(event.downloadStatus);
                     }
                 });
 
@@ -112,7 +115,7 @@ public class DownloadViewHolder extends AbstractViewHolder<DownloadBean> {
     public void onClick(View view) {
         switch (view.getId()) {
             case R.id.action:
-                mDownloadController.performClick(new DownloadController.Callback() {
+                mDownloadController.handleClick(new DownloadController.Callback() {
                     @Override
                     public void startDownload() {
                         start();
@@ -146,16 +149,6 @@ public class DownloadViewHolder extends AbstractViewHolder<DownloadBean> {
         Picasso.with(mContext).load(R.mipmap.ic_file_download).into(mImg);
         mName.setText(param.mRecord.getSaveName());
 
-        int flag = param.mRecord.getDownloadFlag();
-        mDownloadController.setStateAndDisplay(flag);
-
-        //如果读取出来是已取消或已完成状态, 特殊处理一下,显示删除按钮
-        if (flag == DownloadFlag.CANCELED || flag == DownloadFlag.COMPLETED) {
-            mCancel.setVisibility(View.GONE);
-            mDelete.setVisibility(View.VISIBLE);
-        }
-
-        updateProgressStatus(param.mRecord.getStatus());
     }
 
     private void updateProgressStatus(DownloadStatus status) {
@@ -167,7 +160,6 @@ public class DownloadViewHolder extends AbstractViewHolder<DownloadBean> {
     }
 
     private void installApk() {
-        mDownloadController.setStateAndDisplay(DownloadFlag.INSTALL);
         Uri uri = Uri.fromFile(new File(mData.mRecord.getSavePath() + File.separator + mData.mRecord.getSaveName()));
         Intent intent = new Intent(Intent.ACTION_VIEW);
         intent.setDataAndType(uri, "application/vnd.android.package-archive");
@@ -192,7 +184,6 @@ public class DownloadViewHolder extends AbstractViewHolder<DownloadBean> {
                 .subscribe(new Action1<Object>() {
                     @Override
                     public void call(Object o) {
-                        mDownloadController.setStateAndDisplay(DownloadFlag.STARTED);
                         mDelete.setVisibility(View.GONE);
                         mCancel.setVisibility(View.VISIBLE);
                     }
@@ -205,7 +196,6 @@ public class DownloadViewHolder extends AbstractViewHolder<DownloadBean> {
                 .subscribe(new Action1<Object>() {
                     @Override
                     public void call(Object o) {
-                        mDownloadController.setStateAndDisplay(DownloadFlag.PAUSED);
                     }
                 });
         mData.mSubscriptions.add(subscription);
@@ -216,7 +206,6 @@ public class DownloadViewHolder extends AbstractViewHolder<DownloadBean> {
                 .subscribe(new Action1<Object>() {
                     @Override
                     public void call(Object o) {
-                        mDownloadController.setStateAndDisplay(DownloadFlag.CANCELED);
                         mCancel.setVisibility(View.GONE);
                         mDelete.setVisibility(View.VISIBLE);
                     }

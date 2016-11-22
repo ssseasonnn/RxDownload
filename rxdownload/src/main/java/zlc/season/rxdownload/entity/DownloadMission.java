@@ -12,10 +12,6 @@ import rx.subjects.Subject;
 import zlc.season.rxdownload.RxDownload;
 import zlc.season.rxdownload.db.DataBaseHelper;
 
-import static zlc.season.rxdownload.entity.DownloadEvent.EventHolder.COMPLETED;
-import static zlc.season.rxdownload.entity.DownloadEvent.EventHolder.FAILED;
-import static zlc.season.rxdownload.entity.DownloadEvent.EventHolder.STARTED;
-
 /**
  * Author: Season(ssseasonnn@gmail.com)
  * Date: 2016/11/18
@@ -29,7 +25,12 @@ public class DownloadMission {
     private String saveName;
     private String savePath;
 
+    private DownloadStatus mStatus;
     private Subscription mSubscription;
+
+    public DownloadStatus getStatus() {
+        return mStatus;
+    }
 
     public Subscription getSubscription() {
         return mSubscription;
@@ -59,15 +60,14 @@ public class DownloadMission {
                     @Override
                     public void onStart() {
                         super.onStart();
-                        helper.updateRecord(url, STARTED);
-                        subject.onNext(STARTED);
+                        helper.updateRecord(url, DownloadEvent.FlagHolder.STARTED);
                     }
 
                     @Override
                     public void onCompleted() {
-                        subject.onNext(COMPLETED);
+                        subject.onNext(DownloadEvent.EventHolder.COMPLETED.set(mStatus));
                         subject.onCompleted();
-                        helper.updateRecord(url, COMPLETED);
+                        helper.updateRecord(url, DownloadEvent.FlagHolder.COMPLETED);
                         count.decrementAndGet();
                         nowDownloadMap.remove(url);
                     }
@@ -75,17 +75,18 @@ public class DownloadMission {
                     @Override
                     public void onError(Throwable e) {
                         Log.w("error", e);
-                        subject.onNext(FAILED);
+                        subject.onNext(DownloadEvent.EventHolder.FAILED.set(mStatus));
                         subject.onError(e);
-                        helper.updateRecord(url, FAILED);
+                        helper.updateRecord(url, DownloadEvent.FlagHolder.FAILED);
                         count.decrementAndGet();
                         nowDownloadMap.remove(url);
                     }
 
                     @Override
                     public void onNext(DownloadStatus status) {
-                        subject.onNext(STARTED.setDownloadStatus(status));
+                        subject.onNext(DownloadEvent.EventHolder.STARTED.set(status));
                         helper.updateRecord(url, status);
+                        mStatus = status;
                     }
                 });
     }

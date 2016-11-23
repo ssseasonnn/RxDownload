@@ -252,18 +252,30 @@ public class RxDownload {
     public Observable<Object> serviceDownload(@NonNull final String url,
                                               @NonNull final String saveName,
                                               @Nullable final String savePath) {
-        return Observable.just(null).doOnSubscribe(new Action0() {
+        return Observable.create(new Observable.OnSubscribe<Object>() {
             @Override
-            public void call() {
+            public void call(final Subscriber<? super Object> subscriber) {
                 if (!bound) {
                     startBindServiceAndDo(new ServiceConnectedCallback() {
                         @Override
                         public void call() {
-                            addDownloadTask(url, saveName, savePath);
+                            try {
+                                addDownloadTask(url, saveName, savePath);
+                                subscriber.onNext(null);
+                                subscriber.onCompleted();
+                            } catch (IOException e) {
+                                subscriber.onError(e);
+                            }
                         }
                     });
                 } else {
-                    addDownloadTask(url, saveName, savePath);
+                    try {
+                        addDownloadTask(url, saveName, savePath);
+                        subscriber.onNext(null);
+                        subscriber.onCompleted();
+                    } catch (IOException e) {
+                        subscriber.onError(e);
+                    }
                 }
             }
         });
@@ -346,9 +358,8 @@ public class RxDownload {
         return mDownloadHelper.getFileSavePaths(savePath);
     }
 
-    private void addDownloadTask(@NonNull String url,
-                                 @NonNull String saveName,
-                                 @Nullable String savePath) {
+    private void addDownloadTask(@NonNull String url, @NonNull String saveName,
+                                 @Nullable String savePath) throws IOException {
         mDownloadService.addDownloadMission(
                 new DownloadMission.Builder()
                         .setRxDownload(RxDownload.this)

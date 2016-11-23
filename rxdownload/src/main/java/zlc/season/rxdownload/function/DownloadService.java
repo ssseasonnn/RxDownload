@@ -7,6 +7,7 @@ import android.os.IBinder;
 import android.support.annotation.Nullable;
 import android.util.Log;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
@@ -93,9 +94,7 @@ public class DownloadService extends Service {
     }
 
     public Subject<DownloadEvent, DownloadEvent> getSubject(String url) {
-        Log.d(TAG, url);
         Subject<DownloadEvent, DownloadEvent> subject = subject(url);
-        Log.d(TAG, "subject:" + subject);
         if (!mDataBaseHelper.recordNotExists(url)) {
             DownloadRecord record = mDataBaseHelper.readSingleRecord(url);
             subject.onNext(DownloadEventFactory.getSingleton().factory(url, record.getFlag(), record.getStatus()));
@@ -113,10 +112,10 @@ public class DownloadService extends Service {
         return mSubjectPool.get(url);
     }
 
-    public boolean addDownloadMission(DownloadMission mission) {
+    public void addDownloadMission(DownloadMission mission) throws IOException {
         String url = mission.getUrl();
         if (mWaitingForDownloadLookUpMap.get(url) != null || mNowDownloading.get(url) != null) {
-            return false;
+            throw new IOException("This download mission is exists.");
         } else {
             if (mDataBaseHelper.recordNotExists(url)) {
                 mDataBaseHelper.insertRecord(mission);
@@ -128,7 +127,6 @@ public class DownloadService extends Service {
             DownloadEvent event = DownloadEventFactory.getSingleton().factory(url, DownloadFlag.WAITING,
                     mDataBaseHelper.readStatus(url));
             subject(url).onNext(event);
-            return true;
         }
     }
 

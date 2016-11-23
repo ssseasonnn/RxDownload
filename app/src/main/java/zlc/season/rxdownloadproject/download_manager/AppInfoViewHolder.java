@@ -5,6 +5,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.util.Log;
+import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.ImageView;
@@ -48,7 +49,6 @@ public class AppInfoViewHolder extends AbstractViewHolder<AppInfoBean> {
     TextView mContent;
     @BindView(R.id.action)
     Button mAction;
-    Subscription mSubscription;
 
     private String defaultPath = getExternalStoragePublicDirectory(DIRECTORY_DOWNLOADS).getPath();
 
@@ -56,14 +56,20 @@ public class AppInfoViewHolder extends AbstractViewHolder<AppInfoBean> {
     private Context mContext;
     private RxDownload mRxDownload;
     private DownloadController mDownloadController;
+    private Subscription mSubscription;
 
     public AppInfoViewHolder(ViewGroup parent) {
         super(parent, R.layout.app_info_item);
         ButterKnife.bind(this, itemView);
         mContext = parent.getContext();
         mRxDownload = RxDownload.getInstance().context(mContext);
-
-
+        mDownloadController = new DownloadController(new TextView(mContext), mAction);
+        itemView.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                start();
+            }
+        });
     }
 
     @Override
@@ -72,8 +78,8 @@ public class AppInfoViewHolder extends AbstractViewHolder<AppInfoBean> {
         Picasso.with(mContext).load(data.img).into(mHead);
         mTitle.setText(data.name);
         mContent.setText(data.info);
+
         Utils.unSubscribe(mSubscription);
-        mDownloadController = new DownloadController(new TextView(mContext), mAction);
         mSubscription = mRxDownload.receiveDownloadStatus(mData.downloadUrl)
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(new Subscriber<DownloadEvent>() {
@@ -143,6 +149,11 @@ public class AppInfoViewHolder extends AbstractViewHolder<AppInfoBean> {
                     @Override
                     public void call(Object o) {
                         Toast.makeText(mContext, "下载开始", Toast.LENGTH_SHORT).show();
+                    }
+                }, new Action1<Throwable>() {
+                    @Override
+                    public void call(Throwable throwable) {
+                        Toast.makeText(mContext, "下载任务已存在", Toast.LENGTH_SHORT).show();
                     }
                 });
     }

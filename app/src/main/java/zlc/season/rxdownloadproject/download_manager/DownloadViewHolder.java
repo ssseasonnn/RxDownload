@@ -66,8 +66,8 @@ public class DownloadViewHolder extends AbstractViewHolder<DownloadBean> {
     private Context mContext;
     private DownloadBean mData;
     private RxDownload mRxDownload;
-    private Subscription mSubscription;
     private DownloadController mDownloadController;
+    private Subscription mSubscription;
 
     public DownloadViewHolder(ViewGroup parent, AbstractAdapter adapter) {
         super(parent, R.layout.download_manager_item);
@@ -76,16 +76,16 @@ public class DownloadViewHolder extends AbstractViewHolder<DownloadBean> {
         mContext = parent.getContext();
         mRxDownload = RxDownload.getInstance().context(mContext);
 
-
+        mDownloadController = new DownloadController(mStatusText, mActionButton);
     }
 
     @Override
     public void setData(DownloadBean param) {
         this.mData = param;
-        Utils.unSubscribe(mSubscription);
         Picasso.with(mContext).load(R.mipmap.ic_file_download).into(mImg);
         mName.setText(param.mRecord.getSaveName());
-        mDownloadController = new DownloadController(mStatusText, mActionButton);
+
+        Utils.unSubscribe(mSubscription);
         mSubscription = mRxDownload.receiveDownloadStatus(mData.mRecord.getUrl())
                 .subscribe(new Subscriber<DownloadEvent>() {
                     @Override

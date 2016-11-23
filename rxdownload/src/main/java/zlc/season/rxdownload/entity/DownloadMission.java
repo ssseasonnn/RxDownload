@@ -51,7 +51,6 @@ public class DownloadMission {
     public void start(final Map<String, DownloadMission> nowDownloadMap,
                       final Subject<DownloadEvent, DownloadEvent> subject,
                       final AtomicInteger count, final DataBaseHelper helper) {
-        Log.d("DownloadMission", "subject:" + subject);
         nowDownloadMap.put(url, this);
         count.incrementAndGet();
         mSubscription = rxDownload.download(url, saveName, savePath)

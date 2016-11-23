@@ -11,6 +11,7 @@ import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.squareup.picasso.Picasso;
 import com.tbruyelle.rxpermissions.RxPermissions;
@@ -24,10 +25,9 @@ import rx.Subscriber;
 import rx.Subscription;
 import rx.android.schedulers.AndroidSchedulers;
 import rx.functions.Action1;
-import rx.schedulers.Schedulers;
-import rx.subscriptions.CompositeSubscription;
 import zlc.season.rxdownload.RxDownload;
 import zlc.season.rxdownload.entity.DownloadEvent;
+import zlc.season.rxdownload.function.Utils;
 import zlc.season.rxdownloadproject.DownloadController;
 import zlc.season.rxdownloadproject.R;
 
@@ -55,7 +55,7 @@ public class ServiceDownloadActivity extends AppCompatActivity {
     Button mAction;
 
     private RxDownload mRxDownload;
-    private CompositeSubscription mSubscriptions;
+    private Subscription mSubscription;
 
     private DownloadController mDownloadController;
 
@@ -100,22 +100,19 @@ public class ServiceDownloadActivity extends AppCompatActivity {
         Picasso.with(this).load(icon).into(mImg);
 
         mRxDownload = RxDownload.getInstance().context(this);
-        mSubscriptions = new CompositeSubscription();
-
-        mDownloadController = new DownloadController();
+        mDownloadController = new DownloadController(mStatusText, mAction);
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        mSubscriptions.clear();
+        Utils.unSubscribe(mSubscription);
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        //接收下载进度
-        Subscription temp = mRxDownload.receiveDownloadStatus(url)
+        mSubscription = mRxDownload.receiveDownloadStatus(url)
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(new Subscriber<DownloadEvent>() {
                     @Override
@@ -131,45 +128,18 @@ public class ServiceDownloadActivity extends AppCompatActivity {
 
                     @Override
                     public void onNext(final DownloadEvent event) {
-                        mProgress.setIndeterminate(event.downloadStatus.isChunked);
-                        mProgress.setMax((int) event.downloadStatus.getTotalSize());
-                        mProgress.setProgress((int) event.downloadStatus.getDownloadSize());
-                        mPercent.setText(event.downloadStatus.getPercent());
-                        mSize.setText(event.downloadStatus.getFormatStatusString());
-
-                        if (event instanceof DownloadEvent.NormalEvent) {
-                            mAction.setText("下载");
-                            mStatusText.setText("");
-                            mDownloadController.setState(new DownloadController.Normal());
-                        } else if (event instanceof DownloadEvent.WaitingEvent) {
-                            mAction.setText("取消");
-                            mStatusText.setText("等待中...");
-                            mDownloadController.setState(new DownloadController.Waiting());
-                        } else if (event instanceof DownloadEvent.StartedEvent) {
-                            mAction.setText("暂停");
-                            mStatusText.setText("下载中...");
-                            mDownloadController.setState(new DownloadController.Started());
-                        } else if (event instanceof DownloadEvent.PausedEvent) {
-                            mAction.setText("继续");
-                            mStatusText.setText("已暂停");
-                            mDownloadController.setState(new DownloadController.Paused());
-                        } else if (event instanceof DownloadEvent.CanceledEvent) {
-                            mAction.setText("下载");
-                            mStatusText.setText("下载已取消");
-                            mDownloadController.setState(new DownloadController.Canceled());
-                        } else if (event instanceof DownloadEvent.CompletedEvent) {
-                            mAction.setText("安装");
-                            mStatusText.setText("下载已完成");
-                            mDownloadController.setState(new DownloadController.Completed());
-                        } else if (event instanceof DownloadEvent.FailedEvent) {
-                            mAction.setText("继续");
-                            mStatusText.setText("下载失败");
-                            mDownloadController.setState(new DownloadController.Failed());
-                        }
+                        mDownloadController.setEvent(event);
+                        updateProgress(event);
                     }
                 });
+    }
 
-        mSubscriptions.add(temp);
+    private void updateProgress(DownloadEvent event) {
+        mProgress.setIndeterminate(event.downloadStatus.isChunked);
+        mProgress.setMax((int) event.downloadStatus.getTotalSize());
+        mProgress.setProgress((int) event.downloadStatus.getDownloadSize());
+        mPercent.setText(event.downloadStatus.getPercent());
+        mSize.setText(event.downloadStatus.getFormatStatusString());
     }
 
     private void installApk() {
@@ -180,7 +150,7 @@ public class ServiceDownloadActivity extends AppCompatActivity {
     }
 
     private void start() {
-        Subscription temp = RxPermissions.getInstance(this)
+        RxPermissions.getInstance(this)
                 .request(Manifest.permission.WRITE_EXTERNAL_STORAGE)
                 .doOnNext(new Action1<Boolean>() {
                     @Override
@@ -190,39 +160,22 @@ public class ServiceDownloadActivity extends AppCompatActivity {
                         }
                     }
                 })
-                .observeOn(Schedulers.io())
-                .compose(mRxDownload.transformServiceWithoutStatus(url, saveName, defaultPath))
-                .observeOn(AndroidSchedulers.mainThread())
+                .compose(mRxDownload.transformService(url, saveName, defaultPath))
                 .subscribe(new Action1<Object>() {
                     @Override
                     public void call(Object o) {
-                        mAction.setText("暂停");
-                        mStatusText.setText("下载中...");
-                        mDownloadController.setState(new DownloadController.Started());
+                        Toast.makeText(ServiceDownloadActivity.this, "下载开始", Toast.LENGTH_SHORT).show();
                     }
                 });
-        mSubscriptions.add(temp);
     }
 
 
     private void pause() {
-        Subscription subscription = mRxDownload.pauseServiceDownload(url)
-                .subscribe(new Action1<Object>() {
-                    @Override
-                    public void call(Object o) {
-                    }
-                });
-        mSubscriptions.add(subscription);
+        mRxDownload.pauseServiceDownload(url).subscribe();
     }
 
 
     private void cancel() {
-        Subscription subscription = mRxDownload.cancelServiceDownload(url)
-                .subscribe(new Action1<Object>() {
-                    @Override
-                    public void call(Object o) {
-                    }
-                });
-        mSubscriptions.add(subscription);
+        mRxDownload.cancelServiceDownload(url).subscribe();
     }
 }

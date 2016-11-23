@@ -237,50 +237,6 @@ public class RxDownload {
         });
     }
 
-    /**
-     * Using Service to download. Not only can download, but also can receive download status.
-     * <p>
-     * If you only want to download, not receive download status,
-     * see {@link #serviceDownloadWithoutStatus(String, String, String)}
-     * <p>
-     * Un subscribe will not pause download.
-     * <p>
-     * If you want pause download, see {@link #pauseServiceDownload(String)}
-     * <p>
-     * This will save the download records in the database, if you want get record from database,
-     * see  {@link #getDownloadRecord(String)}
-     *
-     * @param url      download file Url
-     * @param saveName download file SaveName
-     * @param savePath download file SavePath. If NULL, using default save path {@code /storage/emulated/0/Download/}
-     * @return Observable<DownloadStatus>
-     */
-    public Observable<DownloadEvent> serviceDownload(@NonNull final String url,
-                                                     @NonNull final String saveName,
-                                                     @Nullable final String savePath) {
-        return Observable.create(new Observable.OnSubscribe<Object>() {
-            @Override
-            public void call(final Subscriber<? super Object> subscriber) {
-                if (!bound) {
-                    startBindServiceAndDo(new ServiceConnectedCallback() {
-                        @Override
-                        public void call() {
-                            addDownloadTask(url, saveName, savePath);
-                            subscriber.onNext(null);
-                        }
-                    });
-                } else {
-                    addDownloadTask(url, saveName, savePath);
-                    subscriber.onNext(null);
-                }
-            }
-        }).flatMap(new Func1<Object, Observable<DownloadEvent>>() {
-            @Override
-            public Observable<DownloadEvent> call(Object o) {
-                return mDownloadService.getSubject(url).onBackpressureLatest();
-            }
-        });
-    }
 
     /**
      * Using Service to download. Just download, can't receive download status.
@@ -297,9 +253,9 @@ public class RxDownload {
      * @param savePath download file SavePath. If NULL, using default save path {@code /storage/emulated/0/Download/}
      * @return Observable<DownloadStatus>
      */
-    public Observable<Object> serviceDownloadWithoutStatus(@NonNull final String url,
-                                                           @NonNull final String saveName,
-                                                           @Nullable final String savePath) {
+    public Observable<Object> serviceDownload(@NonNull final String url,
+                                              @NonNull final String saveName,
+                                              @Nullable final String savePath) {
         return Observable.just(null).doOnSubscribe(new Action0() {
             @Override
             public void call() {
@@ -363,33 +319,6 @@ public class RxDownload {
     }
 
     /**
-     * Service download version of the Transformer.
-     * <p>
-     * Provide RxJava Compose operator use.
-     *
-     * @param url      download file Url
-     * @param saveName download file SaveName
-     * @param savePath download file SavePath. If NULL, using default save path {@code /storage/emulated/0/Download/}
-     * @param <T>      T
-     * @return Transformer
-     */
-    public <T> Observable.Transformer<T, DownloadEvent> transformService(@NonNull final String url,
-                                                                          @NonNull final String saveName,
-                                                                          @Nullable final String savePath) {
-        return new Observable.Transformer<T, DownloadEvent>() {
-            @Override
-            public Observable<DownloadEvent> call(Observable<T> observable) {
-                return observable.flatMap(new Func1<T, Observable<DownloadEvent>>() {
-                    @Override
-                    public Observable<DownloadEvent> call(T t) {
-                        return serviceDownload(url, saveName, savePath);
-                    }
-                });
-            }
-        };
-    }
-
-    /**
      * Service download without status version of the Transformer.
      * <p>
      * Provide RxJava Compose operator use.
@@ -400,16 +329,16 @@ public class RxDownload {
      * @param <T>      T
      * @return Transformer
      */
-    public <T> Observable.Transformer<T, Object> transformServiceWithoutStatus(@NonNull final String url,
-                                                                               @NonNull final String saveName,
-                                                                               @Nullable final String savePath) {
+    public <T> Observable.Transformer<T, Object> transformService(@NonNull final String url,
+                                                                  @NonNull final String saveName,
+                                                                  @Nullable final String savePath) {
         return new Observable.Transformer<T, Object>() {
             @Override
             public Observable<Object> call(Observable<T> observable) {
                 return observable.flatMap(new Func1<T, Observable<Object>>() {
                     @Override
                     public Observable<Object> call(T t) {
-                        return serviceDownloadWithoutStatus(url, saveName, savePath);
+                        return serviceDownload(url, saveName, savePath);
                     }
                 });
             }

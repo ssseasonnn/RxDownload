@@ -61,7 +61,7 @@ public class AppInfoViewHolder extends AbstractViewHolder<AppInfoBean> {
         mContext = parent.getContext();
 
         mRxDownload = RxDownload.getInstance().context(mContext);
-        mDownloadController = new DownloadController();
+        mDownloadController = new DownloadController(new TextView(mContext), mAction);
     }
 
     @Override
@@ -141,7 +141,7 @@ public class AppInfoViewHolder extends AbstractViewHolder<AppInfoBean> {
                     }
                 })
                 .observeOn(Schedulers.io())
-                .compose(mRxDownload.transformServiceWithoutStatus(mData.downloadUrl, mData.saveName, null))
+                .compose(mRxDownload.transformService(mData.downloadUrl, mData.saveName, null))
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(new Action1<Object>() {
                     @Override

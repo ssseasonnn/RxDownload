@@ -77,7 +77,7 @@ public class DownloadViewHolder extends AbstractViewHolder<DownloadBean> {
         mContext = parent.getContext();
         mRxDownload = RxDownload.getInstance().context(mContext);
 
-        mDownloadController = new DownloadController();
+        mDownloadController = new DownloadController(mStatusText,mActionButton);
     }
 
     @Override
@@ -178,7 +178,7 @@ public class DownloadViewHolder extends AbstractViewHolder<DownloadBean> {
                     }
                 })
                 .observeOn(Schedulers.io())
-                .compose(mRxDownload.transformServiceWithoutStatus(mData.mRecord.getUrl(), mData.mRecord.getSaveName(),
+                .compose(mRxDownload.transformService(mData.mRecord.getUrl(), mData.mRecord.getSaveName(),
                         mData.mRecord.getSavePath()))
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(new Action1<Object>() {

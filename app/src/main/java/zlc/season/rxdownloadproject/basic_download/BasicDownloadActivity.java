@@ -109,7 +109,7 @@ public class BasicDownloadActivity extends AppCompatActivity {
         mAction.setText("开始");
 
         mRxDownload = RxDownload.getInstance().maxThread(10);
-        mDownloadController = new DownloadController();
+        mDownloadController = new DownloadController(mStatus, mAction);
         mDownloadController.setState(new DownloadController.Normal());
     }
 
@@ -138,23 +138,17 @@ public class BasicDownloadActivity extends AppCompatActivity {
                     public void onStart() {
                         super.onStart();
                         mDownloadController.setState(new DownloadController.Started());
-                        mAction.setText("暂停");
-                        mStatus.setText("下载中...");
                     }
 
                     @Override
                     public void onCompleted() {
                         mDownloadController.setState(new DownloadController.Completed());
-                        mAction.setText("安装");
-                        mStatus.setText("下载完成");
                     }
 
                     @Override
                     public void onError(Throwable e) {
                         Log.w("TAG", e);
                         mDownloadController.setState(new DownloadController.Paused());
-                        mAction.setText("继续");
-                        mStatus.setText("下载失败");
                     }
 
                     @Override
@@ -169,6 +163,7 @@ public class BasicDownloadActivity extends AppCompatActivity {
     }
 
     private void pause() {
+        mDownloadController.setState(new DownloadController.Paused());
         BasicDownloadActivity.this.unSubscribe(subscription);
     }
 

@@ -58,15 +58,6 @@ class Db {
             return values;
         }
 
-        //        static ContentValues update(DownloadEvent event) {
-        //            ContentValues values = new ContentValues();
-        //            values.put(COLUMN_DOWNLOAD_FLAG, event.flag);
-        //            values.put(COLUMN_IS_CHUNKED, event.downloadStatus.isChunked);
-        //            values.put(COLUMN_DOWNLOAD_SIZE, event.downloadStatus.getDownloadSize());
-        //            values.put(COLUMN_TOTAL_SIZE, event.downloadStatus.getTotalSize());
-        //            return values;
-        //        }
-
         static ContentValues update(DownloadStatus status) {
             ContentValues values = new ContentValues();
             values.put(COLUMN_IS_CHUNKED, status.isChunked);

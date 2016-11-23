@@ -233,7 +233,6 @@ public class RxDownload {
         });
     }
 
-
     /**
      * Using Service to download. Just download, can't receive download status.
      * <p>

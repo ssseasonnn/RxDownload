@@ -51,6 +51,7 @@ public class AppMarketActivity extends AppCompatActivity {
         mAdapter = new AppInfoAdapter();
         mRecycler.setLayoutManager(new LinearLayoutManager(this));
         mRecycler.setAdapterWithLoading(mAdapter);
+
     }
 
     @Override

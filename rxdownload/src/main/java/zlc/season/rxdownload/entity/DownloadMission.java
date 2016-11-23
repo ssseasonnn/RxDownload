@@ -65,8 +65,8 @@ public class DownloadMission {
 
                     @Override
                     public void onCompleted() {
-                        subject.onNext(DownloadEventFactory.getSingleton().factory(url, DownloadFlag.COMPLETED, mStatus));
-                        subject.onCompleted();
+                        subject.onNext(DownloadEventFactory.getSingleton().factory(url, DownloadFlag.COMPLETED,
+                                mStatus));
                         helper.updateRecord(url, DownloadFlag.COMPLETED);
                         count.decrementAndGet();
                         nowDownloadMap.remove(url);
@@ -76,7 +76,6 @@ public class DownloadMission {
                     public void onError(Throwable e) {
                         Log.w("error", e);
                         subject.onNext(DownloadEventFactory.getSingleton().factory(url, DownloadFlag.FAILED, mStatus));
-                        subject.onError(e);
                         helper.updateRecord(url, DownloadFlag.FAILED);
                         count.decrementAndGet();
                         nowDownloadMap.remove(url);

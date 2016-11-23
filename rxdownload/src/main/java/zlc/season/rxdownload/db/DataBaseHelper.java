@@ -11,10 +11,12 @@ import rx.Observable;
 import rx.Subscriber;
 import rx.android.schedulers.AndroidSchedulers;
 import rx.schedulers.Schedulers;
+import zlc.season.rxdownload.entity.DownloadFlag;
 import zlc.season.rxdownload.entity.DownloadMission;
 import zlc.season.rxdownload.entity.DownloadRecord;
 import zlc.season.rxdownload.entity.DownloadStatus;
 
+import static zlc.season.rxdownload.db.Db.RecordTable.COLUMN_DOWNLOAD_FLAG;
 import static zlc.season.rxdownload.db.Db.RecordTable.COLUMN_DOWNLOAD_SIZE;
 import static zlc.season.rxdownload.db.Db.RecordTable.COLUMN_ID;
 import static zlc.season.rxdownload.db.Db.RecordTable.COLUMN_IS_CHUNKED;
@@ -54,8 +56,8 @@ public class DataBaseHelper {
     public boolean recordNotExists(String url) {
         Cursor cursor = null;
         try {
-            cursor = getWritableDatabase().rawQuery("select " + COLUMN_ID + " from " + TABLE_NAME +
-                    " where url=?", new String[]{url});
+            cursor = getReadableDatabase().query(TABLE_NAME, new String[]{COLUMN_ID}, "url=?",
+                    new String[]{url}, null, null, null);
             return cursor.getCount() == 0;
         } finally {
             if (cursor != null) {
@@ -64,14 +66,9 @@ public class DataBaseHelper {
         }
     }
 
-
     public long insertRecord(DownloadMission mission) {
         return getWritableDatabase().insert(TABLE_NAME, null, insert(mission));
     }
-
-    //    public long updateRecord(String url, DownloadEvent event) {
-    //        return getWritableDatabase().update(TABLE_NAME, update(event), "url=?", new String[]{url});
-    //    }
 
     public long updateRecord(String url, DownloadStatus status) {
         return getWritableDatabase().update(TABLE_NAME, update(status), "url=?", new String[]{url});
@@ -145,6 +142,12 @@ public class DataBaseHelper {
                 }
             }
         }).subscribeOn(Schedulers.io()).observeOn(AndroidSchedulers.mainThread());
+    }
+
+    public long repairErrorFlag() {
+        return getWritableDatabase().update(TABLE_NAME, update(DownloadFlag.PAUSED),
+                COLUMN_DOWNLOAD_FLAG + "=? or " + COLUMN_DOWNLOAD_FLAG + "=?",
+                new String[]{DownloadFlag.WAITING + "", DownloadFlag.STARTED + ""});
     }
 
     public Observable<DownloadRecord> readRecord(final String url) {

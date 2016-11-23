@@ -84,7 +84,8 @@ public class DownloadViewHolder extends AbstractViewHolder<DownloadBean> {
         this.mData = param;
         Picasso.with(mContext).load(R.mipmap.ic_file_download).into(mImg);
         mName.setText(param.mRecord.getSaveName());
-
+        if (mSubscription != null)
+            Log.d("DownloadViewHolder", "mSubscription.isUnsubscribed():" + mSubscription.isUnsubscribed());
         Utils.unSubscribe(mSubscription);
         mSubscription = mRxDownload.receiveDownloadStatus(mData.mRecord.getUrl())
                 .subscribe(new Subscriber<DownloadEvent>() {
@@ -193,6 +194,7 @@ public class DownloadViewHolder extends AbstractViewHolder<DownloadBean> {
                 .subscribe(new Action1<Object>() {
                     @Override
                     public void call(Object o) {
+                        Utils.unSubscribe(mSubscription);
                         mAdapter.remove(getAdapterPosition());
                     }
                 });
@@ -200,8 +202,8 @@ public class DownloadViewHolder extends AbstractViewHolder<DownloadBean> {
 
     private void showPopUpWindow(View view) {
         final ListPopupWindow listPopupWindow = new ListPopupWindow(mContext);
-        listPopupWindow.setAdapter(new ArrayAdapter<>(mContext, android.R.layout.simple_list_item_1, new
-                String[]{"删除"}));
+        listPopupWindow.setAdapter(new ArrayAdapter<>(mContext, android.R.layout.simple_list_item_1,
+                new String[]{"删除"}));
         listPopupWindow.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int pos, long id) {

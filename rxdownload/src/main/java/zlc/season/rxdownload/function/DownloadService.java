@@ -5,7 +5,6 @@ import android.content.Intent;
 import android.os.Binder;
 import android.os.IBinder;
 import android.support.annotation.Nullable;
-import android.util.Log;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -34,7 +33,6 @@ import zlc.season.rxdownload.entity.DownloadRecord;
  */
 public class DownloadService extends Service {
     public static final String INTENT_KEY = "zlc_season_rxdownload_max_download_number";
-    private static final String TAG = "DownloadService";
     private DownloadBinder mBinder;
     private DataBaseHelper mDataBaseHelper;
 
@@ -52,7 +50,6 @@ public class DownloadService extends Service {
     @Override
     public void onCreate() {
         super.onCreate();
-        Log.d(TAG, "Create Download Service...");
         mBinder = new DownloadBinder();
 
         mSubjectPool = new ConcurrentHashMap<>();
@@ -65,8 +62,7 @@ public class DownloadService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        Log.d(TAG, "Start Download Service...");
-        //TODO: read download record from database
+        mDataBaseHelper.repairErrorFlag();
         if (intent != null) {
             MAX_DOWNLOAD_NUMBER = intent.getIntExtra(INTENT_KEY, 5);
         }
@@ -76,7 +72,6 @@ public class DownloadService extends Service {
     @Override
     public void onDestroy() {
         super.onDestroy();
-        Log.d(TAG, "Destroy Download Service...");
         mDownloadQueueThread.interrupt();
         for (String each : mNowDownloading.keySet()) {
             pauseDownload(each);
@@ -87,7 +82,6 @@ public class DownloadService extends Service {
     @Nullable
     @Override
     public IBinder onBind(Intent intent) {
-        Log.d(TAG, "Bind Download Service...");
         mDownloadQueueThread = new Thread(new DownloadTaskDispatchRunnable());
         mDownloadQueueThread.start();
         return mBinder;
@@ -104,9 +98,8 @@ public class DownloadService extends Service {
 
     public Subject<DownloadEvent, DownloadEvent> subject(String url) {
         if (mSubjectPool.get(url) == null) {
-            DownloadEvent defaultEvent = DownloadEventFactory.getSingleton().factory(url, DownloadFlag.NORMAL, null);
             Subject<DownloadEvent, DownloadEvent> subject = new SerializedSubject<>(BehaviorSubject.create
-                    (defaultEvent));
+                    (DownloadEventFactory.getSingleton().factory(url, DownloadFlag.NORMAL, null)));
             mSubjectPool.put(url, subject);
         }
         return mSubjectPool.get(url);

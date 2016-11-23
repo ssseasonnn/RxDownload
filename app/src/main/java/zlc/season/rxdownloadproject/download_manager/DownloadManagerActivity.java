@@ -42,7 +42,6 @@ public class DownloadManagerActivity extends AppCompatActivity {
         loadData();
     }
 
-
     private void loadData() {
         RxDownload.getInstance().context(this).getTotalDownloadRecords()
                 .map(new Func1<List<DownloadRecord>, List<DownloadBean>>() {

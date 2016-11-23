@@ -7,8 +7,8 @@ package zlc.season.rxdownload.entity;
  * FIXME
  */
 public class DownloadEvent {
-    public int flag;
-    public DownloadStatus downloadStatus;
+    public int flag = FlagHolder.NORMAL;
+    public DownloadStatus downloadStatus = new DownloadStatus();
 
     public static DownloadEvent createEvent(int flag, DownloadStatus status) {
         switch (flag) {
@@ -30,12 +30,14 @@ public class DownloadEvent {
                 return EventHolder.INSTALL.set(status);
             case FlagHolder.INSTALLED:
                 return EventHolder.INSTALLED.set(status);
+            case FlagHolder.DELETED:
+                return EventHolder.DELETED.set(status);
             default:
                 return EventHolder.NORMAL.set(status);
         }
     }
 
-    protected DownloadEvent set(DownloadStatus status) {
+    public DownloadEvent set(DownloadStatus status) {
         this.downloadStatus = status;
         return this;
     }
@@ -50,6 +52,7 @@ public class DownloadEvent {
         public static final int FAILED = 9996;
         public static final int INSTALL = 9997;
         public static final int INSTALLED = 9998;
+        public static final int DELETED = 9999;
     }
 
     public static class EventHolder {
@@ -62,6 +65,7 @@ public class DownloadEvent {
         public static final DownloadEvent FAILED = new FailedEvent();
         public static final DownloadEvent INSTALL = new InstallEvent();
         public static final DownloadEvent INSTALLED = new InstalledEvent();
+        public static final DownloadEvent DELETED = new DeletedEvent();
     }
 
     public static class NormalEvent extends DownloadEvent {
@@ -141,6 +145,15 @@ public class DownloadEvent {
         public InstalledEvent set(DownloadStatus status) {
             super.set(status);
             flag = FlagHolder.INSTALLED;
+            return this;
+        }
+    }
+
+    public static class DeletedEvent extends DownloadEvent {
+        @Override
+        public DeletedEvent set(DownloadStatus status) {
+            super.set(status);
+            flag = FlagHolder.DELETED;
             return this;
         }
     }

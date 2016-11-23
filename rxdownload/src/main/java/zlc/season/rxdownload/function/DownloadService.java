@@ -92,11 +92,9 @@ public class DownloadService extends Service {
 
     public Subject<DownloadEvent, DownloadEvent> getSubject(String url) {
         Subject<DownloadEvent, DownloadEvent> subject = subject(url);
-        if (mDataBaseHelper.recordNotExists(url)) {
-            subject.onNext(DownloadEvent.EventHolder.NORMAL);
-        } else {
+        if (!mDataBaseHelper.recordNotExists(url)) {
             DownloadRecord record = mDataBaseHelper.readSingleRecord(url);
-            subject.onNext(DownloadEvent.createEvent(record.getDownloadFlag(), record.getStatus()));
+            subject.onNext(DownloadEvent.createEvent(record.getFlag(), record.getStatus()));
         }
         return subject;
     }
@@ -104,7 +102,7 @@ public class DownloadService extends Service {
     public Subject<DownloadEvent, DownloadEvent> subject(String url) {
         if (mSubjectPool.get(url) == null) {
             Subject<DownloadEvent, DownloadEvent> subject = new SerializedSubject<>(
-                    BehaviorSubject.<DownloadEvent>create());
+                    BehaviorSubject.create(DownloadEvent.EventHolder.NORMAL));
             mSubjectPool.put(url, subject);
         }
         return mSubjectPool.get(url);
@@ -122,36 +120,38 @@ public class DownloadService extends Service {
             }
             mWaitingForDownload.offer(mission);
             mWaitingForDownloadLookUpMap.put(url, mission);
-            subject(url).onNext(DownloadEvent.EventHolder.WAITING);
+            subject(url).onNext(DownloadEvent.EventHolder.WAITING.set(mDataBaseHelper.readStatus(url)));
             return true;
         }
     }
 
     public void pauseDownload(String url) {
-        stopDownload(url);
-        subject(url).onNext(DownloadEvent.EventHolder.PAUSED);
+        suspendDownloadAndSendEvent(url, DownloadEvent.EventHolder.PAUSED);
         mDataBaseHelper.updateRecord(url, DownloadEvent.FlagHolder.PAUSED);
     }
 
     public void cancelDownload(String url) {
-        stopDownload(url);
-        subject(url).onNext(DownloadEvent.EventHolder.CANCELED);
+        suspendDownloadAndSendEvent(url, DownloadEvent.EventHolder.CANCELED);
         mDataBaseHelper.updateRecord(url, DownloadEvent.FlagHolder.CANCELED);
     }
 
     public void deleteDownload(String url) {
+        suspendDownloadAndSendEvent(url, DownloadEvent.EventHolder.DELETED);
         mDataBaseHelper.deleteRecord(url);
-        stopDownload(url);
+        mSubjectPool.remove(url);
     }
 
-    private void stopDownload(String url) {
-        if (mNowDownloading.get(url) != null) {
-            Utils.unSubscribe(mNowDownloading.get(url).getSubscription());
-            mCount.decrementAndGet();
-            mNowDownloading.remove(url);
-        }
+    private void suspendDownloadAndSendEvent(String url, DownloadEvent event) {
         if (mWaitingForDownloadLookUpMap.get(url) != null) {
             mWaitingForDownloadLookUpMap.get(url).canceled = true;
+        }
+        if (mNowDownloading.get(url) != null) {
+            Utils.unSubscribe(mNowDownloading.get(url).getSubscription());
+            subject(url).onNext(event.set(mNowDownloading.get(url).getStatus()));
+            mCount.decrementAndGet();
+            mNowDownloading.remove(url);
+        } else {
+            subject(url).onNext(event.set(mDataBaseHelper.readStatus(url)));
         }
     }
 

@@ -11,7 +11,7 @@ public class DownloadRecord {
     private String saveName;
     private String savePath;  //param path, not file save path;
     private DownloadStatus mStatus;
-    private int downloadFlag = DownloadEvent.FlagHolder.NORMAL;
+    private int flag = DownloadEvent.FlagHolder.NORMAL;
     private long date; //格林威治时间,毫秒
 
     public DownloadRecord() {
@@ -49,12 +49,12 @@ public class DownloadRecord {
         mStatus = status;
     }
 
-    public int getDownloadFlag() {
-        return downloadFlag;
+    public int getFlag() {
+        return flag;
     }
 
-    public void setDownloadFlag(int downloadFlag) {
-        this.downloadFlag = downloadFlag;
+    public void setFlag(int flag) {
+        this.flag = flag;
     }
 
     public long getDate() {

@@ -40,6 +40,14 @@ public class DownloadController {
         }
     }
 
+    public static class Waiting extends DownloadState {
+
+        @Override
+        void handleClick(Callback callback) {
+            callback.cancelDownload();
+        }
+    }
+
     public static class Started extends DownloadState {
 
         @Override
@@ -57,6 +65,14 @@ public class DownloadController {
     }
 
     public static class Failed extends DownloadState {
+
+        @Override
+        void handleClick(Callback callback) {
+            callback.startDownload();
+        }
+    }
+
+    public static class Canceled extends DownloadState {
 
         @Override
         void handleClick(Callback callback) {

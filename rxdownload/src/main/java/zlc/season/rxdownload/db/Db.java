@@ -81,6 +81,13 @@ class Db {
             return values;
         }
 
+        static DownloadStatus readStatus(Cursor cursor) {
+            boolean isChunked = cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_IS_CHUNKED)) > 0;
+            long downloadSize = cursor.getLong(cursor.getColumnIndexOrThrow(COLUMN_DOWNLOAD_SIZE));
+            long totalSize = cursor.getLong(cursor.getColumnIndexOrThrow(COLUMN_TOTAL_SIZE));
+            return new DownloadStatus(isChunked, downloadSize, totalSize);
+        }
+
         static DownloadRecord read(Cursor cursor) {
             DownloadRecord record = new DownloadRecord();
             record.setUrl(cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_URL)));
@@ -92,7 +99,7 @@ class Db {
             long totalSize = cursor.getLong(cursor.getColumnIndexOrThrow(COLUMN_TOTAL_SIZE));
             record.setStatus(new DownloadStatus(isChunked, downloadSize, totalSize));
 
-            record.setDownloadFlag(cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_DOWNLOAD_FLAG)));
+            record.setFlag(cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_DOWNLOAD_FLAG)));
             record.setDate(cursor.getLong(cursor.getColumnIndexOrThrow(COLUMN_DATE)));
             return record;
         }

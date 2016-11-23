@@ -15,7 +15,10 @@ import zlc.season.rxdownload.entity.DownloadMission;
 import zlc.season.rxdownload.entity.DownloadRecord;
 import zlc.season.rxdownload.entity.DownloadStatus;
 
+import static zlc.season.rxdownload.db.Db.RecordTable.COLUMN_DOWNLOAD_SIZE;
 import static zlc.season.rxdownload.db.Db.RecordTable.COLUMN_ID;
+import static zlc.season.rxdownload.db.Db.RecordTable.COLUMN_IS_CHUNKED;
+import static zlc.season.rxdownload.db.Db.RecordTable.COLUMN_TOTAL_SIZE;
 import static zlc.season.rxdownload.db.Db.RecordTable.TABLE_NAME;
 import static zlc.season.rxdownload.db.Db.RecordTable.insert;
 import static zlc.season.rxdownload.db.Db.RecordTable.update;
@@ -66,9 +69,9 @@ public class DataBaseHelper {
         return getWritableDatabase().insert(TABLE_NAME, null, insert(mission));
     }
 
-//    public long updateRecord(String url, DownloadEvent event) {
-//        return getWritableDatabase().update(TABLE_NAME, update(event), "url=?", new String[]{url});
-//    }
+    //    public long updateRecord(String url, DownloadEvent event) {
+    //        return getWritableDatabase().update(TABLE_NAME, update(event), "url=?", new String[]{url});
+    //    }
 
     public long updateRecord(String url, DownloadStatus status) {
         return getWritableDatabase().update(TABLE_NAME, update(status), "url=?", new String[]{url});
@@ -85,10 +88,28 @@ public class DataBaseHelper {
     public DownloadRecord readSingleRecord(String url) {
         Cursor cursor = null;
         try {
-            cursor = getReadableDatabase().rawQuery("select * from " + TABLE_NAME +
-                    " where " + "url=?", new String[]{url});
+            cursor = getReadableDatabase().rawQuery("select * from " + TABLE_NAME + " where url=?", new String[]{url});
             cursor.moveToFirst();
             return Db.RecordTable.read(cursor);
+        } finally {
+            if (cursor != null) {
+                cursor.close();
+            }
+        }
+    }
+
+    public DownloadStatus readStatus(String url) {
+        Cursor cursor = null;
+        try {
+            cursor = getReadableDatabase().query(
+                    TABLE_NAME, new String[]{COLUMN_DOWNLOAD_SIZE, COLUMN_TOTAL_SIZE, COLUMN_IS_CHUNKED},
+                    "url=?", new String[]{url}, null, null, null);
+            if (cursor.getCount() == 0) {
+                return new DownloadStatus();
+            } else {
+                cursor.moveToFirst();
+                return Db.RecordTable.readStatus(cursor);
+            }
         } finally {
             if (cursor != null) {
                 cursor.close();

@@ -98,13 +98,11 @@ public class ServiceDownloadActivity extends AppCompatActivity {
 
         String icon = "http://static.yingyonghui.com/icon/128/4196396.png";
         Picasso.with(this).load(icon).into(mImg);
-        mAction.setText("开始");
 
         mRxDownload = RxDownload.getInstance().context(this);
         mSubscriptions = new CompositeSubscription();
 
         mDownloadController = new DownloadController();
-        mDownloadController.setState(new DownloadController.Normal());
     }
 
     @Override
@@ -133,15 +131,40 @@ public class ServiceDownloadActivity extends AppCompatActivity {
 
                     @Override
                     public void onNext(final DownloadEvent event) {
-                        if (event instanceof DownloadEvent.StartedEvent) {
-                            mProgress.setIndeterminate(event.downloadStatus.isChunked);
-                            mProgress.setMax((int) event.downloadStatus.getTotalSize());
-                            mProgress.setProgress((int) event.downloadStatus.getDownloadSize());
-                            mPercent.setText(event.downloadStatus.getPercent());
-                            mSize.setText(event.downloadStatus.getFormatStatusString());
+                        mProgress.setIndeterminate(event.downloadStatus.isChunked);
+                        mProgress.setMax((int) event.downloadStatus.getTotalSize());
+                        mProgress.setProgress((int) event.downloadStatus.getDownloadSize());
+                        mPercent.setText(event.downloadStatus.getPercent());
+                        mSize.setText(event.downloadStatus.getFormatStatusString());
+
+                        if (event instanceof DownloadEvent.NormalEvent) {
+                            mAction.setText("下载");
+                            mStatusText.setText("");
+                            mDownloadController.setState(new DownloadController.Normal());
+                        } else if (event instanceof DownloadEvent.WaitingEvent) {
+                            mAction.setText("取消");
+                            mStatusText.setText("等待中...");
+                            mDownloadController.setState(new DownloadController.Waiting());
+                        } else if (event instanceof DownloadEvent.StartedEvent) {
+                            mAction.setText("暂停");
+                            mStatusText.setText("下载中...");
+                            mDownloadController.setState(new DownloadController.Started());
                         } else if (event instanceof DownloadEvent.PausedEvent) {
                             mAction.setText("继续");
                             mStatusText.setText("已暂停");
+                            mDownloadController.setState(new DownloadController.Paused());
+                        } else if (event instanceof DownloadEvent.CanceledEvent) {
+                            mAction.setText("下载");
+                            mStatusText.setText("下载已取消");
+                            mDownloadController.setState(new DownloadController.Canceled());
+                        } else if (event instanceof DownloadEvent.CompletedEvent) {
+                            mAction.setText("安装");
+                            mStatusText.setText("下载已完成");
+                            mDownloadController.setState(new DownloadController.Completed());
+                        } else if (event instanceof DownloadEvent.FailedEvent) {
+                            mAction.setText("继续");
+                            mStatusText.setText("下载失败");
+                            mDownloadController.setState(new DownloadController.Failed());
                         }
                     }
                 });

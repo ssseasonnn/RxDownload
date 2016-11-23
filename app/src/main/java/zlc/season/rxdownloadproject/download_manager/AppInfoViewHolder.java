@@ -79,9 +79,9 @@ public class AppInfoViewHolder extends AbstractViewHolder<AppInfoBean> {
         mTitle.setText(data.name);
         mContent.setText(data.info);
 
-        if (mSubscription != null)
-            Log.d("DownloadViewHolder", "mSubscription.isUnsubscribed():" + mSubscription.isUnsubscribed());
-
+        /**
+         * important!! 如果有订阅没有取消,则取消订阅!防止ViewHolder复用导致界面显示的BUG!
+         */
         Utils.unSubscribe(mSubscription);
         mSubscription = mRxDownload.receiveDownloadStatus(mData.downloadUrl)
                 .observeOn(AndroidSchedulers.mainThread())

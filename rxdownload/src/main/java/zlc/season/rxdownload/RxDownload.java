@@ -17,6 +17,7 @@ import retrofit2.Response;
 import retrofit2.Retrofit;
 import rx.Observable;
 import rx.Subscriber;
+import rx.android.schedulers.AndroidSchedulers;
 import rx.exceptions.CompositeException;
 import rx.functions.Action0;
 import rx.functions.Action1;
@@ -124,14 +125,9 @@ public class RxDownload {
         }).flatMap(new Func1<Object, Observable<DownloadEvent>>() {
             @Override
             public Observable<DownloadEvent> call(Object o) {
-                return mDownloadService.getSubject(url).onBackpressureLatest();
+                return mDownloadService.getSubject(url).asObservable().onBackpressureLatest();
             }
-        }).doOnCompleted(new Action0() {
-            @Override
-            public void call() {
-
-            }
-        });
+        }).observeOn(AndroidSchedulers.mainThread());
     }
 
     /**

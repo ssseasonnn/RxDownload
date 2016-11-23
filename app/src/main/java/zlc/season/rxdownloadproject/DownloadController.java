@@ -4,6 +4,7 @@ import android.widget.Button;
 import android.widget.TextView;
 
 import zlc.season.rxdownload.entity.DownloadEvent;
+import zlc.season.rxdownload.entity.DownloadFlag;
 
 /**
  * Author: Season(ssseasonnn@gmail.com)
@@ -20,6 +21,7 @@ public class DownloadController {
     public DownloadController(TextView status, Button action) {
         mStatus = status;
         mAction = action;
+        setState(new Normal());
     }
 
     public void setState(DownloadState state) {
@@ -28,20 +30,29 @@ public class DownloadController {
     }
 
     public void setEvent(DownloadEvent event) {
-        if (event instanceof DownloadEvent.NormalEvent) {
-            setState(new DownloadController.Normal());
-        } else if (event instanceof DownloadEvent.WaitingEvent) {
-            setState(new DownloadController.Waiting());
-        } else if (event instanceof DownloadEvent.StartedEvent) {
-            setState(new DownloadController.Started());
-        } else if (event instanceof DownloadEvent.PausedEvent) {
-            setState(new DownloadController.Paused());
-        } else if (event instanceof DownloadEvent.CanceledEvent) {
-            setState(new DownloadController.Canceled());
-        } else if (event instanceof DownloadEvent.CompletedEvent) {
-            setState(new DownloadController.Completed());
-        } else if (event instanceof DownloadEvent.FailedEvent) {
-            setState(new DownloadController.Failed());
+        int flag = event.getFlag();
+        switch (flag) {
+            case DownloadFlag.NORMAL:
+                setState(new DownloadController.Normal());
+                break;
+            case DownloadFlag.WAITING:
+                setState(new DownloadController.Waiting());
+                break;
+            case DownloadFlag.STARTED:
+                setState(new DownloadController.Started());
+                break;
+            case DownloadFlag.PAUSED:
+                setState(new DownloadController.Paused());
+                break;
+            case DownloadFlag.CANCELED:
+                setState(new DownloadController.Canceled());
+                break;
+            case DownloadFlag.COMPLETED:
+                setState(new DownloadController.Completed());
+                break;
+            case DownloadFlag.FAILED:
+                setState(new DownloadController.Failed());
+                break;
         }
     }
 
@@ -83,7 +94,7 @@ public class DownloadController {
     public static class Waiting extends DownloadState {
         @Override
         void setText(TextView status, Button button) {
-            button.setText("取消");
+            button.setText("等待中");
             status.setText("等待中...");
         }
 

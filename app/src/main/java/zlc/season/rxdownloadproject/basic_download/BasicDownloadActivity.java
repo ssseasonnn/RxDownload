@@ -28,6 +28,7 @@ import rx.functions.Action1;
 import rx.schedulers.Schedulers;
 import zlc.season.rxdownload.RxDownload;
 import zlc.season.rxdownload.entity.DownloadStatus;
+import zlc.season.rxdownload.function.Utils;
 import zlc.season.rxdownloadproject.DownloadController;
 import zlc.season.rxdownloadproject.R;
 
@@ -91,11 +92,6 @@ public class BasicDownloadActivity extends AppCompatActivity {
         }
     }
 
-    void unSubscribe(Subscription subscription) {
-        if (subscription != null && !subscription.isUnsubscribed()) {
-            subscription.unsubscribe();
-        }
-    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -104,8 +100,7 @@ public class BasicDownloadActivity extends AppCompatActivity {
         ButterKnife.bind(this);
         setSupportActionBar(mToolbar);
 
-        String icon = "http://static.yingyonghui.com/icon/128/4200197.png";
-        Picasso.with(this).load(icon).into(mImg);
+        Picasso.with(this).load("http://static.yingyonghui.com/icon/128/4200197.png").into(mImg);
         mAction.setText("开始");
 
         mRxDownload = RxDownload.getInstance().maxThread(10);
@@ -116,7 +111,7 @@ public class BasicDownloadActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        unSubscribe(subscription);
+        Utils.unSubscribe(subscription);
     }
 
     private void start() {
@@ -164,12 +159,11 @@ public class BasicDownloadActivity extends AppCompatActivity {
 
     private void pause() {
         mDownloadController.setState(new DownloadController.Paused());
-        BasicDownloadActivity.this.unSubscribe(subscription);
+        Utils.unSubscribe(subscription);
     }
 
     private void installApk() {
         Uri uri = Uri.fromFile(new File(defaultPath + File.separator + saveName));
-        Log.d("TAg", defaultPath + File.separator + saveName);
         Intent intent = new Intent(Intent.ACTION_VIEW);
         intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
         intent.setDataAndType(uri, "application/vnd.android.package-archive");

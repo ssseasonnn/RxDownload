@@ -9,6 +9,7 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.squareup.picasso.Picasso;
 import com.tbruyelle.rxpermissions.RxPermissions;
@@ -22,10 +23,10 @@ import rx.Subscriber;
 import rx.Subscription;
 import rx.android.schedulers.AndroidSchedulers;
 import rx.functions.Action1;
-import rx.schedulers.Schedulers;
 import zlc.season.practicalrecyclerview.AbstractViewHolder;
 import zlc.season.rxdownload.RxDownload;
 import zlc.season.rxdownload.entity.DownloadEvent;
+import zlc.season.rxdownload.function.Utils;
 import zlc.season.rxdownloadproject.DownloadController;
 import zlc.season.rxdownloadproject.R;
 
@@ -47,6 +48,7 @@ public class AppInfoViewHolder extends AbstractViewHolder<AppInfoBean> {
     TextView mContent;
     @BindView(R.id.action)
     Button mAction;
+    Subscription mSubscription;
 
     private String defaultPath = getExternalStoragePublicDirectory(DIRECTORY_DOWNLOADS).getPath();
 
@@ -59,23 +61,20 @@ public class AppInfoViewHolder extends AbstractViewHolder<AppInfoBean> {
         super(parent, R.layout.app_info_item);
         ButterKnife.bind(this, itemView);
         mContext = parent.getContext();
-
         mRxDownload = RxDownload.getInstance().context(mContext);
-        mDownloadController = new DownloadController(new TextView(mContext), mAction);
+
+
     }
 
     @Override
     public void setData(AppInfoBean data) {
         this.mData = data;
-        mDownloadController.setState(new DownloadController.Normal());
-
         Picasso.with(mContext).load(data.img).into(mHead);
         mTitle.setText(data.name);
         mContent.setText(data.info);
-
-
-        //接收下载进度
-        Subscription temp = mRxDownload.receiveDownloadStatus(mData.downloadUrl)
+        Utils.unSubscribe(mSubscription);
+        mDownloadController = new DownloadController(new TextView(mContext), mAction);
+        mSubscription = mRxDownload.receiveDownloadStatus(mData.downloadUrl)
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(new Subscriber<DownloadEvent>() {
                     @Override
@@ -91,9 +90,9 @@ public class AppInfoViewHolder extends AbstractViewHolder<AppInfoBean> {
 
                     @Override
                     public void onNext(final DownloadEvent event) {
+                        mDownloadController.setEvent(event);
                     }
                 });
-        mData.mSubscriptions.add(temp);
     }
 
     @OnClick(R.id.action)
@@ -129,8 +128,7 @@ public class AppInfoViewHolder extends AbstractViewHolder<AppInfoBean> {
     }
 
     private void start() {
-        //开始下载, 先检查权限
-        Subscription temp = RxPermissions.getInstance(mContext)
+        RxPermissions.getInstance(mContext)
                 .request(Manifest.permission.WRITE_EXTERNAL_STORAGE)
                 .doOnNext(new Action1<Boolean>() {
                     @Override
@@ -140,37 +138,20 @@ public class AppInfoViewHolder extends AbstractViewHolder<AppInfoBean> {
                         }
                     }
                 })
-                .observeOn(Schedulers.io())
                 .compose(mRxDownload.transformService(mData.downloadUrl, mData.saveName, null))
-                .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(new Action1<Object>() {
                     @Override
                     public void call(Object o) {
+                        Toast.makeText(mContext, "下载开始", Toast.LENGTH_SHORT).show();
                     }
                 });
-        mData.mSubscriptions.add(temp);
     }
 
-    /**
-     * 暂停下载
-     */
     private void pause() {
-        Subscription subscription = mRxDownload.pauseServiceDownload(mData.downloadUrl)
-                .subscribe(new Action1<Object>() {
-                    @Override
-                    public void call(Object o) {
-                    }
-                });
-        mData.mSubscriptions.add(subscription);
+        mRxDownload.pauseServiceDownload(mData.downloadUrl).subscribe();
     }
 
     private void cancel() {
-        Subscription subscription = mRxDownload.cancelServiceDownload(mData.downloadUrl)
-                .subscribe(new Action1<Object>() {
-                    @Override
-                    public void call(Object o) {
-                    }
-                });
-        mData.mSubscriptions.add(subscription);
+        mRxDownload.cancelServiceDownload(mData.downloadUrl).subscribe();
     }
 }

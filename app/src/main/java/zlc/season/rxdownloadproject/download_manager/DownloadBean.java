@@ -1,6 +1,5 @@
 package zlc.season.rxdownloadproject.download_manager;
 
-import rx.subscriptions.CompositeSubscription;
 import zlc.season.practicalrecyclerview.ItemType;
 import zlc.season.rxdownload.entity.DownloadRecord;
 
@@ -12,14 +11,6 @@ import zlc.season.rxdownload.entity.DownloadRecord;
  */
 public class DownloadBean implements ItemType {
     DownloadRecord mRecord;
-    CompositeSubscription mSubscriptions = new CompositeSubscription();
-
-    /**
-     * 取消订阅
-     */
-    public void unsubscrbe() {
-        mSubscriptions.clear();
-    }
 
     @Override
     public int itemType() {

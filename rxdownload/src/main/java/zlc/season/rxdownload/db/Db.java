@@ -5,7 +5,7 @@ import android.database.Cursor;
 
 import java.util.Date;
 
-import zlc.season.rxdownload.entity.DownloadEvent;
+import zlc.season.rxdownload.entity.DownloadFlag;
 import zlc.season.rxdownload.entity.DownloadMission;
 import zlc.season.rxdownload.entity.DownloadRecord;
 import zlc.season.rxdownload.entity.DownloadStatus;
@@ -53,7 +53,7 @@ class Db {
             values.put(COLUMN_URL, mission.getUrl());
             values.put(COLUMN_SAVE_NAME, mission.getSaveName());
             values.put(COLUMN_SAVE_PATH, mission.getSavePath());
-            values.put(COLUMN_DOWNLOAD_FLAG, DownloadEvent.FlagHolder.WAITING);
+            values.put(COLUMN_DOWNLOAD_FLAG, DownloadFlag.WAITING);
             values.put(COLUMN_DATE, new Date().getTime());
             return values;
         }

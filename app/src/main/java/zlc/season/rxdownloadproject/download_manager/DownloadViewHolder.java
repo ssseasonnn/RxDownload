@@ -4,13 +4,17 @@ import android.Manifest;
 import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
+import android.support.v7.widget.ListPopupWindow;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.squareup.picasso.Picasso;
 import com.tbruyelle.rxpermissions.RxPermissions;
@@ -22,14 +26,13 @@ import butterknife.ButterKnife;
 import butterknife.OnClick;
 import rx.Subscriber;
 import rx.Subscription;
-import rx.android.schedulers.AndroidSchedulers;
 import rx.functions.Action1;
-import rx.schedulers.Schedulers;
 import zlc.season.practicalrecyclerview.AbstractAdapter;
 import zlc.season.practicalrecyclerview.AbstractViewHolder;
 import zlc.season.rxdownload.RxDownload;
 import zlc.season.rxdownload.entity.DownloadEvent;
 import zlc.season.rxdownload.entity.DownloadStatus;
+import zlc.season.rxdownload.function.Utils;
 import zlc.season.rxdownloadproject.DownloadController;
 import zlc.season.rxdownloadproject.R;
 
@@ -56,39 +59,34 @@ public class DownloadViewHolder extends AbstractViewHolder<DownloadBean> {
     Button mActionButton;
     @BindView(R.id.name)
     TextView mName;
-    @BindView(R.id.delete)
-    Button mDelete;
-    @BindView(R.id.cancel)
-    Button mCancel;
+    @BindView(R.id.more)
+    Button mMore;
 
     private AbstractAdapter mAdapter;
     private Context mContext;
     private DownloadBean mData;
     private RxDownload mRxDownload;
-
+    private Subscription mSubscription;
     private DownloadController mDownloadController;
 
     public DownloadViewHolder(ViewGroup parent, AbstractAdapter adapter) {
         super(parent, R.layout.download_manager_item);
         ButterKnife.bind(this, itemView);
-
         this.mAdapter = adapter;
-
         mContext = parent.getContext();
         mRxDownload = RxDownload.getInstance().context(mContext);
 
-        mDownloadController = new DownloadController(mStatusText,mActionButton);
+
     }
 
     @Override
     public void setData(DownloadBean param) {
         this.mData = param;
-
-        initFirstState(param);
-
-        //接收下载进度
-        Subscription temp = mRxDownload.receiveDownloadStatus(mData.mRecord.getUrl())
-                .observeOn(AndroidSchedulers.mainThread())
+        Utils.unSubscribe(mSubscription);
+        Picasso.with(mContext).load(R.mipmap.ic_file_download).into(mImg);
+        mName.setText(param.mRecord.getSaveName());
+        mDownloadController = new DownloadController(mStatusText, mActionButton);
+        mSubscription = mRxDownload.receiveDownloadStatus(mData.mRecord.getUrl())
                 .subscribe(new Subscriber<DownloadEvent>() {
                     @Override
                     public void onCompleted() {
@@ -103,15 +101,14 @@ public class DownloadViewHolder extends AbstractViewHolder<DownloadBean> {
 
                     @Override
                     public void onNext(final DownloadEvent event) {
-                        if (event instanceof DownloadEvent.StartedEvent)
-                            updateProgressStatus(event.downloadStatus);
+                        mDownloadController.setEvent(event);
+                        updateProgressStatus(event.getDownloadStatus());
                     }
                 });
 
-        mData.mSubscriptions.add(temp);
     }
 
-    @OnClick({R.id.action, R.id.cancel, R.id.delete})
+    @OnClick({R.id.action, R.id.more})
     public void onClick(View view) {
         switch (view.getId()) {
             case R.id.action:
@@ -128,6 +125,7 @@ public class DownloadViewHolder extends AbstractViewHolder<DownloadBean> {
 
                     @Override
                     public void cancelDownload() {
+                        cancel();
                     }
 
                     @Override
@@ -136,20 +134,12 @@ public class DownloadViewHolder extends AbstractViewHolder<DownloadBean> {
                     }
                 });
                 break;
-            case R.id.cancel:
-                cancel();
-                break;
-            case R.id.delete:
-                delete();
+            case R.id.more:
+                showPopUpWindow(view);
                 break;
         }
     }
 
-    private void initFirstState(DownloadBean param) {
-        Picasso.with(mContext).load(R.mipmap.ic_file_download).into(mImg);
-        mName.setText(param.mRecord.getSaveName());
-
-    }
 
     private void updateProgressStatus(DownloadStatus status) {
         mProgress.setIndeterminate(status.isChunked);
@@ -167,7 +157,11 @@ public class DownloadViewHolder extends AbstractViewHolder<DownloadBean> {
     }
 
     private void start() {
-        Subscription temp = RxPermissions.getInstance(mContext)
+        String url = mData.mRecord.getUrl();
+        String saveName = mData.mRecord.getSaveName();
+        String savePath = mData.mRecord.getSavePath();
+
+        RxPermissions.getInstance(mContext)
                 .request(Manifest.permission.WRITE_EXTERNAL_STORAGE)
                 .doOnNext(new Action1<Boolean>() {
                     @Override
@@ -177,50 +171,49 @@ public class DownloadViewHolder extends AbstractViewHolder<DownloadBean> {
                         }
                     }
                 })
-                .observeOn(Schedulers.io())
-                .compose(mRxDownload.transformService(mData.mRecord.getUrl(), mData.mRecord.getSaveName(),
-                        mData.mRecord.getSavePath()))
-                .observeOn(AndroidSchedulers.mainThread())
+                .compose(mRxDownload.transformService(url, saveName, savePath))
                 .subscribe(new Action1<Object>() {
                     @Override
                     public void call(Object o) {
-                        mDelete.setVisibility(View.GONE);
-                        mCancel.setVisibility(View.VISIBLE);
+                        Toast.makeText(mContext, "下载开始", Toast.LENGTH_SHORT).show();
                     }
                 });
-        mData.mSubscriptions.add(temp);
     }
 
     private void pause() {
-        Subscription subscription = mRxDownload.pauseServiceDownload(mData.mRecord.getUrl())
-                .subscribe(new Action1<Object>() {
-                    @Override
-                    public void call(Object o) {
-                    }
-                });
-        mData.mSubscriptions.add(subscription);
+        mRxDownload.pauseServiceDownload(mData.mRecord.getUrl()).subscribe();
     }
 
     private void cancel() {
-        Subscription subscription = mRxDownload.cancelServiceDownload(mData.mRecord.getUrl())
-                .subscribe(new Action1<Object>() {
-                    @Override
-                    public void call(Object o) {
-                        mCancel.setVisibility(View.GONE);
-                        mDelete.setVisibility(View.VISIBLE);
-                    }
-                });
-        mData.mSubscriptions.add(subscription);
+        mRxDownload.cancelServiceDownload(mData.mRecord.getUrl()).subscribe();
     }
 
     private void delete() {
-        Subscription subscription = mRxDownload.deleteServiceDownload(mData.mRecord.getUrl())
+        mRxDownload.deleteServiceDownload(mData.mRecord.getUrl())
                 .subscribe(new Action1<Object>() {
                     @Override
                     public void call(Object o) {
                         mAdapter.remove(getAdapterPosition());
                     }
                 });
-        mData.mSubscriptions.add(subscription);
+    }
+
+    private void showPopUpWindow(View view) {
+        final ListPopupWindow listPopupWindow = new ListPopupWindow(mContext);
+        listPopupWindow.setAdapter(new ArrayAdapter<>(mContext, android.R.layout.simple_list_item_1, new
+                String[]{"删除"}));
+        listPopupWindow.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int pos, long id) {
+                if (pos == 0) {
+                    delete();
+                    listPopupWindow.dismiss();
+                }
+            }
+        });
+        listPopupWindow.setWidth(200);
+        listPopupWindow.setAnchorView(view);
+        listPopupWindow.setModal(false);
+        listPopupWindow.show();
     }
 }

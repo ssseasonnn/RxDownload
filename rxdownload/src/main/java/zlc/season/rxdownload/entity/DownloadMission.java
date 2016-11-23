@@ -51,6 +51,7 @@ public class DownloadMission {
     public void start(final Map<String, DownloadMission> nowDownloadMap,
                       final Subject<DownloadEvent, DownloadEvent> subject,
                       final AtomicInteger count, final DataBaseHelper helper) {
+        Log.d("DownloadMission", "subject:" + subject);
         nowDownloadMap.put(url, this);
         count.incrementAndGet();
         mSubscription = rxDownload.download(url, saveName, savePath)
@@ -60,14 +61,14 @@ public class DownloadMission {
                     @Override
                     public void onStart() {
                         super.onStart();
-                        helper.updateRecord(url, DownloadEvent.FlagHolder.STARTED);
+                        helper.updateRecord(url, DownloadFlag.STARTED);
                     }
 
                     @Override
                     public void onCompleted() {
-                        subject.onNext(DownloadEvent.EventHolder.COMPLETED.set(mStatus));
+                        subject.onNext(DownloadEventFactory.getSingleton().factory(url, DownloadFlag.COMPLETED, mStatus));
                         subject.onCompleted();
-                        helper.updateRecord(url, DownloadEvent.FlagHolder.COMPLETED);
+                        helper.updateRecord(url, DownloadFlag.COMPLETED);
                         count.decrementAndGet();
                         nowDownloadMap.remove(url);
                     }
@@ -75,16 +76,16 @@ public class DownloadMission {
                     @Override
                     public void onError(Throwable e) {
                         Log.w("error", e);
-                        subject.onNext(DownloadEvent.EventHolder.FAILED.set(mStatus));
+                        subject.onNext(DownloadEventFactory.getSingleton().factory(url, DownloadFlag.FAILED, mStatus));
                         subject.onError(e);
-                        helper.updateRecord(url, DownloadEvent.FlagHolder.FAILED);
+                        helper.updateRecord(url, DownloadFlag.FAILED);
                         count.decrementAndGet();
                         nowDownloadMap.remove(url);
                     }
 
                     @Override
                     public void onNext(DownloadStatus status) {
-                        subject.onNext(DownloadEvent.EventHolder.STARTED.set(status));
+                        subject.onNext(DownloadEventFactory.getSingleton().factory(url, DownloadFlag.STARTED, status));
                         helper.updateRecord(url, status);
                         mStatus = status;
                     }

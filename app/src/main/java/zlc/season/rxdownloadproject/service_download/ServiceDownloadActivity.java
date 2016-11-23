@@ -22,12 +22,10 @@ import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
 import rx.Subscriber;
-import rx.Subscription;
-import rx.android.schedulers.AndroidSchedulers;
 import rx.functions.Action1;
 import zlc.season.rxdownload.RxDownload;
 import zlc.season.rxdownload.entity.DownloadEvent;
-import zlc.season.rxdownload.function.Utils;
+import zlc.season.rxdownload.entity.DownloadStatus;
 import zlc.season.rxdownloadproject.DownloadController;
 import zlc.season.rxdownloadproject.R;
 
@@ -55,8 +53,6 @@ public class ServiceDownloadActivity extends AppCompatActivity {
     Button mAction;
 
     private RxDownload mRxDownload;
-    private Subscription mSubscription;
-
     private DownloadController mDownloadController;
 
     @OnClick(R.id.action)
@@ -104,16 +100,9 @@ public class ServiceDownloadActivity extends AppCompatActivity {
     }
 
     @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        Utils.unSubscribe(mSubscription);
-    }
-
-    @Override
     protected void onResume() {
         super.onResume();
-        mSubscription = mRxDownload.receiveDownloadStatus(url)
-                .observeOn(AndroidSchedulers.mainThread())
+        mRxDownload.receiveDownloadStatus(url)
                 .subscribe(new Subscriber<DownloadEvent>() {
                     @Override
                     public void onCompleted() {
@@ -135,16 +124,18 @@ public class ServiceDownloadActivity extends AppCompatActivity {
     }
 
     private void updateProgress(DownloadEvent event) {
-        mProgress.setIndeterminate(event.downloadStatus.isChunked);
-        mProgress.setMax((int) event.downloadStatus.getTotalSize());
-        mProgress.setProgress((int) event.downloadStatus.getDownloadSize());
-        mPercent.setText(event.downloadStatus.getPercent());
-        mSize.setText(event.downloadStatus.getFormatStatusString());
+        DownloadStatus status = event.getDownloadStatus();
+        mProgress.setIndeterminate(status.isChunked);
+        mProgress.setMax((int) status.getTotalSize());
+        mProgress.setProgress((int) status.getDownloadSize());
+        mPercent.setText(status.getPercent());
+        mSize.setText(status.getFormatStatusString());
     }
 
     private void installApk() {
         Uri uri = Uri.fromFile(new File(defaultPath + File.separator + saveName));
         Intent intent = new Intent(Intent.ACTION_VIEW);
+        intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
         intent.setDataAndType(uri, "application/vnd.android.package-archive");
         startActivity(intent);
     }
@@ -169,11 +160,9 @@ public class ServiceDownloadActivity extends AppCompatActivity {
                 });
     }
 
-
     private void pause() {
         mRxDownload.pauseServiceDownload(url).subscribe();
     }
-
 
     private void cancel() {
         mRxDownload.cancelServiceDownload(url).subscribe();

@@ -1,4 +1,4 @@
-package zlc.season.rxdownload.function;
+package zlc.season.rxdownload.entity;
 
 import android.util.Log;
 
@@ -14,8 +14,8 @@ import rx.Subscriber;
 import rx.functions.Func1;
 import rx.functions.Func2;
 import rx.schedulers.Schedulers;
-import zlc.season.rxdownload.entity.DownloadRange;
-import zlc.season.rxdownload.entity.DownloadStatus;
+import zlc.season.rxdownload.function.DownloadHelper;
+import zlc.season.rxdownload.function.FileHelper;
 
 
 /**

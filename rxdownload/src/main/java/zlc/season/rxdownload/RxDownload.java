@@ -28,10 +28,10 @@ import zlc.season.rxdownload.entity.DownloadEvent;
 import zlc.season.rxdownload.entity.DownloadMission;
 import zlc.season.rxdownload.entity.DownloadRecord;
 import zlc.season.rxdownload.entity.DownloadStatus;
-import zlc.season.rxdownload.function.DownloadFactory;
+import zlc.season.rxdownload.entity.DownloadTypeFactory;
 import zlc.season.rxdownload.function.DownloadHelper;
 import zlc.season.rxdownload.function.DownloadService;
-import zlc.season.rxdownload.function.DownloadType;
+import zlc.season.rxdownload.entity.DownloadType;
 import zlc.season.rxdownload.function.Utils;
 
 import static zlc.season.rxdownload.function.DownloadHelper.TEST_RANGE_SUPPORT;
@@ -49,7 +49,7 @@ public class RxDownload {
     private static boolean bound = false;
 
     private DownloadHelper mDownloadHelper;
-    private DownloadFactory mFactory;
+    private DownloadTypeFactory mFactory;
 
     private Context mContext;
 
@@ -57,7 +57,7 @@ public class RxDownload {
 
     private RxDownload() {
         mDownloadHelper = new DownloadHelper();
-        mFactory = new DownloadFactory(mDownloadHelper);
+        mFactory = new DownloadTypeFactory(mDownloadHelper);
     }
 
     public static RxDownload getInstance() {

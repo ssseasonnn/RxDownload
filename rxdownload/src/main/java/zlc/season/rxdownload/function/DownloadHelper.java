@@ -144,7 +144,7 @@ public class DownloadHelper {
         }
     }
 
-    int getMaxThreads() {
+    public int getMaxThreads() {
         return mFileHelper.getMaxThreads();
     }
 
@@ -152,25 +152,27 @@ public class DownloadHelper {
         mFileHelper.setMaxThreads(MAX_THREADS);
     }
 
-    void prepareNormalDownload(String url, long fileLength, String lastModify) throws IOException, ParseException {
+    public void prepareNormalDownload(String url, long fileLength, String lastModify) throws IOException,
+            ParseException {
         mFileHelper.prepareDownload(getLastModifyFile(url), getFile(url), fileLength, lastModify);
     }
 
-    void saveNormalFile(Subscriber<? super DownloadStatus> sub, String url, Response<ResponseBody> resp) {
+    public void saveNormalFile(Subscriber<? super DownloadStatus> sub, String url, Response<ResponseBody> resp) {
         mFileHelper.saveFile(sub, getFile(url), resp);
     }
 
-    DownloadRange readDownloadRange(String url) throws IOException {
+    public DownloadRange readDownloadRange(String url) throws IOException {
         return mFileHelper.readDownloadRange(getTempFile(url));
     }
 
-    void prepareMultiThreadDownload(String url, long fileLength, String lastModify) throws IOException, ParseException {
+    public void prepareMultiThreadDownload(String url, long fileLength, String lastModify) throws IOException,
+            ParseException {
         mFileHelper.prepareDownload(getLastModifyFile(url), getTempFile(url), getFile(url),
                 fileLength, lastModify);
     }
 
-    void saveRangeFile(Subscriber<? super DownloadStatus> subscriber, int i, long start, long end,
-                       String url, ResponseBody response) {
+    public void saveRangeFile(Subscriber<? super DownloadStatus> subscriber, int i, long start, long end,
+                              String url, ResponseBody response) {
         mFileHelper.saveFile(subscriber, i, start, end, getTempFile(url), getFile(url), response);
     }
 

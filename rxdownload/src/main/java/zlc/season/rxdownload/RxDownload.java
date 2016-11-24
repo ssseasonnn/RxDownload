@@ -247,10 +247,14 @@ public class RxDownload {
     /**
      * Using Service to download. Just download, can't receive download status.
      * 使用Service下载. 仅仅开始下载, 不会接收下载进度.
+     * <p>
      * Un subscribe will not pause download.
      * 取消订阅不会停止下载.
+     * <p>
      * If you want receive download status, see {@link #receiveDownloadStatus(String)}
+     * <p>
      * If you want pause download, see {@link #pauseServiceDownload(String)}
+     * <p>
      * Also save the download records in the database, if you want get record from database,
      * see  {@link #getDownloadRecord(String)}
      *
@@ -293,7 +297,9 @@ public class RxDownload {
 
     /**
      * Normal download.
+     * <p>
      * Un subscribe will  pause download.
+     * <p>
      * Do not save the download records in the database.
      *
      * @param url      download file Url

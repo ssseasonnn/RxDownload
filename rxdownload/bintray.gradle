@@ -72,7 +72,7 @@ bintray {
     }
 }
 javadoc { //jav doc采用utf-8编码否则会报“GBK的不可映射字符”错误
-    options{
+    options {
         encoding "UTF-8"
         charSet 'UTF-8'
     }

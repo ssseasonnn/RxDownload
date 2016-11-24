@@ -54,7 +54,7 @@ public class RxDownload {
 
     private Context mContext;
 
-    private int MAX_DOWNLOAD_NUMBER = 2;
+    private int MAX_DOWNLOAD_NUMBER = 5;
 
     private RxDownload() {
         mDownloadHelper = new DownloadHelper();

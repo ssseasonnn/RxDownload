@@ -367,7 +367,6 @@ public class RxDownload {
         };
     }
 
-
     public String[] getRealFileSavePaths(String savePath) {
         return mDownloadHelper.getFileSavePaths(savePath);
     }

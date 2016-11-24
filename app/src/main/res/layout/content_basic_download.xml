@@ -14,6 +14,24 @@
     tools:context="zlc.season.rxdownloadproject.basic_download.BasicDownloadActivity"
     tools:showIn="@layout/activity_basic_download">
 
+    <TextView
+        android:id="@+id/textView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerVertical="true"
+        android:layout_centerHorizontal="true"
+        android:gravity="start"
+        android:text="Basic download demo.\n基本的下载示例程序.\n点击开始即开始下载.\n取消订阅则暂停下载. "/>
+
+    <Button
+        android:id="@+id/finish"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_above="@+id/textView"
+        android:layout_centerHorizontal="true"
+        android:layout_marginBottom="11dp"
+        android:text="FINISH ACTIVITY"/>
+
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="?android:attr/listPreferredItemHeight"
@@ -21,7 +39,10 @@
         android:foreground="?android:attr/selectableItemBackground"
         android:orientation="horizontal"
         android:paddingLeft="5dp"
-        android:paddingRight="5dp">
+        android:paddingRight="5dp"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentStart="true">
 
         <ImageView
             android:id="@+id/img"
@@ -100,22 +121,4 @@
             tools:text="开始"/>
 
     </LinearLayout>
-
-    <TextView
-        android:id="@+id/textView"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_centerVertical="true"
-        android:layout_centerHorizontal="true"
-        android:gravity="start"
-        android:text="Basic download demo.\n基本的下载示例程序.\n点击开始即开始下载.\n取消订阅则暂停下载. "/>
-
-    <Button
-        android:id="@+id/finish"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_above="@+id/textView"
-        android:layout_centerHorizontal="true"
-        android:layout_marginBottom="11dp"
-        android:text="FINISH ACTIVITY"/>
 </RelativeLayout>

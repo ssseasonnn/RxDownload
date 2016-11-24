@@ -1,4 +1,4 @@
-package zlc.season.rxdownload;
+package zlc.season.rxdownload.db;
 
 import android.content.Context;
 import android.database.sqlite.SQLiteDatabase;

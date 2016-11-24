@@ -1,4 +1,4 @@
-package zlc.season.rxdownload;
+package zlc.season.rxdownload.function;
 
 import android.text.TextUtils;
 import android.util.Log;
@@ -16,6 +16,9 @@ import java.text.ParseException;
 import okhttp3.ResponseBody;
 import retrofit2.Response;
 import rx.Subscriber;
+import zlc.season.rxdownload.BuildConfig;
+import zlc.season.rxdownload.entity.DownloadRange;
+import zlc.season.rxdownload.entity.DownloadStatus;
 
 import static android.os.Environment.DIRECTORY_DOWNLOADS;
 import static android.os.Environment.getExternalStoragePublicDirectory;
@@ -29,8 +32,8 @@ import static java.nio.channels.FileChannel.MapMode.READ_WRITE;
  * Time: 10:35
  * FIXME
  */
-class FileHelper {
-    static final String TAG = "RxDownload";
+public class FileHelper {
+    public static final String TAG = "RxDownload";
 
     private static final String TMP_SUFFIX = ".tmp";  //temp file
     private static final String LMF_SUFFIX = ".lmf";  //last modify file
@@ -143,7 +146,7 @@ class FileHelper {
             }
         } catch (IOException e) {
             Log.i(TAG, "Normal download failed or cancel!");
-            sub.onError(new Throwable(e));
+            sub.onError(e);
         }
     }
 
@@ -230,7 +233,7 @@ class FileHelper {
             }
         } catch (IOException e) {
             Log.i(TAG, Thread.currentThread().getName() + " download failed or cancel!");
-            subscriber.onError(new Throwable(e));
+            subscriber.onError(e);
         }
     }
 
@@ -307,14 +310,14 @@ class FileHelper {
         for (String each : directoryPaths) {
             File file = new File(each);
             if (file.exists() && file.isDirectory()) {
-                Log.d(TAG, "Directory exists. Do not need create. Path = " + each);
+                if (BuildConfig.DEBUG) Log.d(TAG, "Directory exists. Do not need create. Path = " + each);
             } else {
-                Log.d(TAG, "Directory is not exists.So we need create. Path = " + each);
+                if (BuildConfig.DEBUG) Log.d(TAG, "Directory is not exists.So we need create. Path = " + each);
                 boolean flag = file.mkdir();
                 if (flag) {
-                    Log.d(TAG, "Directory create succeed! Path = " + each);
+                    if (BuildConfig.DEBUG) Log.d(TAG, "Directory create succeed! Path = " + each);
                 } else {
-                    Log.d(TAG, "Directory create failed! Path = " + each);
+                    if (BuildConfig.DEBUG) Log.d(TAG, "Directory create failed! Path = " + each);
                     throw new IOException("Directory create failed!");
                 }
             }

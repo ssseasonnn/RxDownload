@@ -1,4 +1,4 @@
-package zlc.season.rxdownload;
+package zlc.season.rxdownload.function;
 
 import okhttp3.ResponseBody;
 import retrofit2.Response;
@@ -15,7 +15,7 @@ import rx.Observable;
  * Time: 10:02
  * Download Api
  */
-interface DownloadApi {
+public interface DownloadApi {
     @GET
     @Streaming
     Observable<Response<ResponseBody>> download(@Header("Range") String range, @Url String url);

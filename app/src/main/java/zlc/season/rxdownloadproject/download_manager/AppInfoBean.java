@@ -1,6 +1,5 @@
 package zlc.season.rxdownloadproject.download_manager;
 
-import rx.subscriptions.CompositeSubscription;
 import zlc.season.practicalrecyclerview.ItemType;
 
 /**
@@ -16,15 +15,12 @@ public class AppInfoBean implements ItemType {
     String downloadUrl;
     String saveName;
 
-    CompositeSubscription mSubscriptions;
-
     public AppInfoBean(String name, String img, String info, String downloadUrl) {
         this.name = name;
         this.img = img;
         this.info = info;
         this.downloadUrl = downloadUrl;
         this.saveName = getSaveNameByUrl(downloadUrl);
-        this.mSubscriptions = new CompositeSubscription();
     }
 
     @Override

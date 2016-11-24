@@ -6,7 +6,6 @@ import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.Toolbar;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 
@@ -52,19 +51,13 @@ public class AppMarketActivity extends AppCompatActivity {
         mAdapter = new AppInfoAdapter();
         mRecycler.setLayoutManager(new LinearLayoutManager(this));
         mRecycler.setAdapterWithLoading(mAdapter);
+        loadData();
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        Log.d("AppMarketActivity", "onresume");
-        loadData();
-    }
-
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        unSubscribeAll();
+//        loadData();
     }
 
     private void loadData() {
@@ -78,17 +71,7 @@ public class AppMarketActivity extends AppCompatActivity {
             AppInfoBean temp = new AppInfoBean(names[i], images[i], infos[i], urls[i]);
             list.add(temp);
         }
-        //important!! Memory Leak!!
-        unSubscribeAll();
         mAdapter.clear();
         mAdapter.addAll(list);
-    }
-
-    //回收Item之前必须取消所有的订阅, 否则会内存泄漏
-    private void unSubscribeAll() {
-        List<AppInfoBean> list = mAdapter.getData();
-        for (AppInfoBean each : list) {
-            each.mSubscriptions.clear();
-        }
     }
 }

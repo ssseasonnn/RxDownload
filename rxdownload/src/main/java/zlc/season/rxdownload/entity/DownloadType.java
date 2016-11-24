@@ -1,4 +1,4 @@
-package zlc.season.rxdownload;
+package zlc.season.rxdownload.entity;
 
 import android.util.Log;
 
@@ -14,8 +14,8 @@ import rx.Subscriber;
 import rx.functions.Func1;
 import rx.functions.Func2;
 import rx.schedulers.Schedulers;
-
-import static zlc.season.rxdownload.FileHelper.TAG;
+import zlc.season.rxdownload.function.DownloadHelper;
+import zlc.season.rxdownload.function.FileHelper;
 
 
 /**
@@ -24,35 +24,26 @@ import static zlc.season.rxdownload.FileHelper.TAG;
  * Time: 09:44
  * 下载类型
  */
-abstract class DownloadType {
+public abstract class DownloadType {
     String mUrl;
     long mFileLength;
     String mLastModify;
     DownloadHelper mDownloadHelper;
 
-    abstract void prepareDownload() throws IOException, ParseException;
+    public abstract void prepareDownload() throws IOException, ParseException;
 
-    abstract Observable<DownloadStatus> startDownload() throws IOException;
+    public abstract Observable<DownloadStatus> startDownload() throws IOException;
 
     static class NormalDownload extends DownloadType {
 
         @Override
-        void prepareDownload() throws IOException, ParseException {
+        public void prepareDownload() throws IOException, ParseException {
             mDownloadHelper.prepareNormalDownload(mUrl, mFileLength, mLastModify);
         }
 
-        private Observable<DownloadStatus> normalSave(final Response<ResponseBody> response) {
-            return Observable.create(new Observable.OnSubscribe<DownloadStatus>() {
-                @Override
-                public void call(Subscriber<? super DownloadStatus> subscriber) {
-                    mDownloadHelper.saveNormalFile(subscriber, mUrl, response);
-                }
-            });
-        }
-
         @Override
-        Observable<DownloadStatus> startDownload() {
-            Log.i(TAG, "Normal download start!!");
+        public Observable<DownloadStatus> startDownload() {
+            Log.i(FileHelper.TAG, "Normal download start!!");
             return mDownloadHelper.getDownloadApi().download(null, mUrl)
                     .subscribeOn(Schedulers.io())
                     .flatMap(new Func1<Response<ResponseBody>, Observable<DownloadStatus>>() {
@@ -67,9 +58,35 @@ abstract class DownloadType {
                         }
                     });
         }
+
+        private Observable<DownloadStatus> normalSave(final Response<ResponseBody> response) {
+            return Observable.create(new Observable.OnSubscribe<DownloadStatus>() {
+                @Override
+                public void call(Subscriber<? super DownloadStatus> subscriber) {
+                    mDownloadHelper.saveNormalFile(subscriber, mUrl, response);
+                }
+            });
+        }
     }
 
     static class ContinueDownload extends DownloadType {
+
+        @Override
+        public void prepareDownload() throws IOException, ParseException {
+            Log.i(FileHelper.TAG, "Continue download start!!");
+        }
+
+        @Override
+        public Observable<DownloadStatus> startDownload() throws IOException {
+            DownloadRange range = mDownloadHelper.readDownloadRange(mUrl);
+            List<Observable<DownloadStatus>> tasks = new ArrayList<>();
+            for (int i = 0; i < mDownloadHelper.getMaxThreads(); i++) {
+                if (range.start[i] <= range.end[i]) {
+                    tasks.add(rangeDownloadTask(range.start[i], range.end[i], i));
+                }
+            }
+            return Observable.mergeDelayError(tasks);
+        }
 
         /**
          * 分段下载的任务
@@ -105,8 +122,8 @@ abstract class DownloadType {
          * @param response 响应值
          * @return Observable
          */
-        private Observable<DownloadStatus> rangeSave(final long start, final long end, final int i, final ResponseBody
-                response) {
+        private Observable<DownloadStatus> rangeSave(final long start, final long end, final int i,
+                                                     final ResponseBody response) {
             return Observable.create(new Observable.OnSubscribe<DownloadStatus>() {
                 @Override
                 public void call(Subscriber<? super DownloadStatus> subscriber) {
@@ -114,35 +131,18 @@ abstract class DownloadType {
                 }
             });
         }
-
-        @Override
-        void prepareDownload() throws IOException, ParseException {
-            Log.i(TAG, "Continue download start!!");
-        }
-
-        @Override
-        Observable<DownloadStatus> startDownload() throws IOException {
-            DownloadRange range = mDownloadHelper.readDownloadRange(mUrl);
-            List<Observable<DownloadStatus>> tasks = new ArrayList<>();
-            for (int i = 0; i < mDownloadHelper.getMaxThreads(); i++) {
-                if (range.start[i] <= range.end[i]) {
-                    tasks.add(rangeDownloadTask(range.start[i], range.end[i], i));
-                }
-            }
-            return Observable.mergeDelayError(tasks);
-        }
     }
 
     static class MultiThreadDownload extends ContinueDownload {
 
         @Override
-        void prepareDownload() throws IOException, ParseException {
+        public void prepareDownload() throws IOException, ParseException {
             mDownloadHelper.prepareMultiThreadDownload(mUrl, mFileLength, mLastModify);
         }
 
         @Override
-        Observable<DownloadStatus> startDownload() throws IOException {
-            Log.i(TAG, "Multi Thread download start!!");
+        public Observable<DownloadStatus> startDownload() throws IOException {
+            Log.i(FileHelper.TAG, "Multi Thread download start!!");
             return super.startDownload();
         }
     }
@@ -150,12 +150,12 @@ abstract class DownloadType {
     static class AlreadyDownloaded extends DownloadType {
 
         @Override
-        void prepareDownload() throws IOException, ParseException {
-            Log.i(TAG, "File Already downloaded!!");
+        public void prepareDownload() throws IOException, ParseException {
+            Log.i(FileHelper.TAG, "File Already downloaded!!");
         }
 
         @Override
-        Observable<DownloadStatus> startDownload() throws IOException {
+        public Observable<DownloadStatus> startDownload() throws IOException {
             return Observable.just(new DownloadStatus(mFileLength, mFileLength));
         }
     }

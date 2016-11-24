@@ -24,7 +24,7 @@ import rx.Subscriber;
 import rx.Subscription;
 import rx.android.schedulers.AndroidSchedulers;
 import rx.schedulers.Schedulers;
-import zlc.season.rxdownload.DownloadStatus;
+import zlc.season.rxdownload.entity.DownloadStatus;
 import zlc.season.rxdownload.RxDownload;
 
 import static android.app.PendingIntent.FLAG_UPDATE_CURRENT;

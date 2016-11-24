@@ -1,4 +1,4 @@
-package zlc.season.rxdownload;
+package zlc.season.rxdownload.entity;
 
 /**
  * Author: Season(ssseasonnn@gmail.com)
@@ -7,15 +7,11 @@ package zlc.season.rxdownload;
  * FIXME
  */
 public class DownloadRecord {
-
-
     private String url;
-    private String name;
-    private String image;
     private String saveName;
-    private String savePath;
+    private String savePath;  //param path, not file save path;
     private DownloadStatus mStatus;
-    private int downloadFlag = DownloadFlag.NORMAL;
+    private int flag = DownloadFlag.NORMAL;
     private long date; //格林威治时间,毫秒
 
     public DownloadRecord() {
@@ -27,22 +23,6 @@ public class DownloadRecord {
 
     public void setUrl(String url) {
         this.url = url;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public String getImage() {
-        return image;
-    }
-
-    public void setImage(String image) {
-        this.image = image;
     }
 
     public String getSaveName() {
@@ -69,12 +49,12 @@ public class DownloadRecord {
         mStatus = status;
     }
 
-    public int getDownloadFlag() {
-        return downloadFlag;
+    public int getFlag() {
+        return flag;
     }
 
-    public void setDownloadFlag(int downloadFlag) {
-        this.downloadFlag = downloadFlag;
+    public void setFlag(int flag) {
+        this.flag = flag;
     }
 
     public long getDate() {

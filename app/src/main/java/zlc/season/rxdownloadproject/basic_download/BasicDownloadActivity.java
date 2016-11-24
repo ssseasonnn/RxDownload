@@ -26,9 +26,9 @@ import rx.Subscription;
 import rx.android.schedulers.AndroidSchedulers;
 import rx.functions.Action1;
 import rx.schedulers.Schedulers;
-import zlc.season.rxdownload.DownloadFlag;
-import zlc.season.rxdownload.DownloadStatus;
 import zlc.season.rxdownload.RxDownload;
+import zlc.season.rxdownload.entity.DownloadStatus;
+import zlc.season.rxdownload.function.Utils;
 import zlc.season.rxdownloadproject.DownloadController;
 import zlc.season.rxdownloadproject.R;
 
@@ -58,13 +58,14 @@ public class BasicDownloadActivity extends AppCompatActivity {
     private String defaultPath = getExternalStoragePublicDirectory(DIRECTORY_DOWNLOADS).getPath();
     private String url = "http://dldir1.qq.com/weixin/android/weixin6330android920.apk";
     private Subscription subscription;
+    private RxDownload mRxDownload;
     private DownloadController mDownloadController;
 
     @OnClick({R.id.action, R.id.finish})
     public void onClick(View view) {
         switch (view.getId()) {
             case R.id.action:
-                mDownloadController.performClick(new DownloadController.Callback() {
+                mDownloadController.handleClick(new DownloadController.Callback() {
                     @Override
                     public void startDownload() {
                         start();
@@ -73,6 +74,10 @@ public class BasicDownloadActivity extends AppCompatActivity {
                     @Override
                     public void pauseDownload() {
                         pause();
+                    }
+
+                    @Override
+                    public void cancelDownload() {
                     }
 
                     @Override
@@ -87,11 +92,6 @@ public class BasicDownloadActivity extends AppCompatActivity {
         }
     }
 
-    void unSubscribe(Subscription subscription) {
-        if (subscription != null && !subscription.isUnsubscribed()) {
-            subscription.unsubscribe();
-        }
-    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -100,18 +100,18 @@ public class BasicDownloadActivity extends AppCompatActivity {
         ButterKnife.bind(this);
         setSupportActionBar(mToolbar);
 
-        String icon = "http://static.yingyonghui.com/icon/128/4200197.png";
-        Picasso.with(this).load(icon).into(mImg);
-        mStatus.setText("开始");
+        Picasso.with(this).load("http://static.yingyonghui.com/icon/128/4200197.png").into(mImg);
+        mAction.setText("开始");
 
+        mRxDownload = RxDownload.getInstance().maxThread(10);
         mDownloadController = new DownloadController(mStatus, mAction);
-        mDownloadController.setStateAndDisplay(DownloadFlag.NORMAL);
+        mDownloadController.setState(new DownloadController.Normal());
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        unSubscribe(subscription);
+        Utils.unSubscribe(subscription);
     }
 
     private void start() {
@@ -126,24 +126,24 @@ public class BasicDownloadActivity extends AppCompatActivity {
                     }
                 })
                 .observeOn(Schedulers.io())
-                .compose(RxDownload.getInstance().transform(url, saveName, null))
+                .compose(mRxDownload.transform(url, saveName, null))
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(new Subscriber<DownloadStatus>() {
                     @Override
                     public void onStart() {
                         super.onStart();
-                        mDownloadController.setStateAndDisplay(DownloadFlag.STARTED);
+                        mDownloadController.setState(new DownloadController.Started());
                     }
 
                     @Override
                     public void onCompleted() {
-                        mDownloadController.setStateAndDisplay(DownloadFlag.COMPLETED);
+                        mDownloadController.setState(new DownloadController.Completed());
                     }
 
                     @Override
                     public void onError(Throwable e) {
                         Log.w("TAG", e);
-                        mDownloadController.setStateAndDisplay(DownloadFlag.FAILED);
+                        mDownloadController.setState(new DownloadController.Paused());
                     }
 
                     @Override
@@ -158,13 +158,12 @@ public class BasicDownloadActivity extends AppCompatActivity {
     }
 
     private void pause() {
-        BasicDownloadActivity.this.unSubscribe(subscription);
-        mDownloadController.setStateAndDisplay(DownloadFlag.PAUSED);
+        mDownloadController.setState(new DownloadController.Paused());
+        Utils.unSubscribe(subscription);
     }
 
     private void installApk() {
         Uri uri = Uri.fromFile(new File(defaultPath + File.separator + saveName));
-        Log.d("TAg",defaultPath+File.separator+saveName);
         Intent intent = new Intent(Intent.ACTION_VIEW);
         intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
         intent.setDataAndType(uri, "application/vnd.android.package-archive");

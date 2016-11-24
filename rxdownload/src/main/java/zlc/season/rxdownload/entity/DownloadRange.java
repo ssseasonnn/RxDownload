@@ -1,4 +1,4 @@
-package zlc.season.rxdownload;
+package zlc.season.rxdownload.entity;
 
 /**
  * Author: Season(ssseasonnn@gmail.com)
@@ -6,11 +6,11 @@ package zlc.season.rxdownload;
  * Time: 15:28
  * Download Range
  */
-class DownloadRange {
-    long[] start;
-    long[] end;
+public class DownloadRange {
+    public long[] start;
+    public long[] end;
 
-    DownloadRange(long[] start, long[] end) {
+    public DownloadRange(long[] start, long[] end) {
         this.start = start;
         this.end = end;
     }

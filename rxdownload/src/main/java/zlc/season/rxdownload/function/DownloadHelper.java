@@ -5,6 +5,7 @@ import android.util.Log;
 import java.io.File;
 import java.io.IOException;
 import java.net.ConnectException;
+import java.net.ProtocolException;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
@@ -104,7 +105,15 @@ public class DownloadHelper {
     }
 
     public Boolean retry(Integer integer, Throwable throwable) {
-        if (throwable instanceof UnknownHostException) {
+        if (throwable instanceof ProtocolException) {
+            if (integer < MAX_RETRY_COUNT + 1) {
+                Log.w(FileHelper.TAG, Thread.currentThread().getName() +
+                        " we got an error in the underlying protocol, such as a TCP error, retry to connect " +
+                        integer + " times");
+                return true;
+            }
+            return false;
+        } else if (throwable instanceof UnknownHostException) {
             if (integer < MAX_RETRY_COUNT + 1) {
                 Log.w(FileHelper.TAG, Thread.currentThread().getName() +
                         " no network, retry to connect " + integer + " times");

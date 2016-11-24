@@ -146,7 +146,7 @@ public class FileHelper {
             }
         } catch (IOException e) {
             Log.i(TAG, "Normal download failed or cancel!");
-            sub.onError(new Throwable(e));
+            sub.onError(e);
         }
     }
 
@@ -233,7 +233,7 @@ public class FileHelper {
             }
         } catch (IOException e) {
             Log.i(TAG, Thread.currentThread().getName() + " download failed or cancel!");
-            subscriber.onError(new Throwable(e));
+            subscriber.onError(e);
         }
     }
 

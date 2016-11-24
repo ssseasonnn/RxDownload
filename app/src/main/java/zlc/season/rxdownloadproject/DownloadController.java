@@ -53,6 +53,9 @@ public class DownloadController {
             case DownloadFlag.FAILED:
                 setState(new DownloadController.Failed());
                 break;
+            case DownloadFlag.DELETED:
+                setState(new DownloadController.Deleted());
+                break;
         }
     }
 
@@ -166,6 +169,20 @@ public class DownloadController {
         @Override
         void handleClick(Callback callback) {
             callback.install();
+        }
+    }
+
+    public static class Deleted extends DownloadState {
+
+        @Override
+        void setText(TextView status, Button button) {
+            button.setText("下载");
+            status.setText("下载已取消");
+        }
+
+        @Override
+        void handleClick(Callback callback) {
+            callback.startDownload();
         }
     }
 }

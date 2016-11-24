@@ -51,13 +51,13 @@ public class AppMarketActivity extends AppCompatActivity {
         mAdapter = new AppInfoAdapter();
         mRecycler.setLayoutManager(new LinearLayoutManager(this));
         mRecycler.setAdapterWithLoading(mAdapter);
-
+        loadData();
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        loadData();
+//        loadData();
     }
 
     private void loadData() {

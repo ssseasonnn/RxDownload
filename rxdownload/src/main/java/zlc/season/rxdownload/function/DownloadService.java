@@ -137,7 +137,7 @@ public class DownloadService extends Service {
     public void deleteDownload(String url) {
         suspendDownloadAndSendEvent(url, DownloadFlag.DELETED);
         mDataBaseHelper.deleteRecord(url);
-        mSubjectPool.remove(url);
+//        mSubjectPool.remove(url);
     }
 
     private void suspendDownloadAndSendEvent(String url, int flag) {

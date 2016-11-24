@@ -79,6 +79,7 @@ public class DownloadViewHolder extends AbstractViewHolder<DownloadBean> {
 
     @Override
     public void setData(DownloadBean param) {
+        Log.d("DownloadViewHolder", "setdata");
         this.mData = param;
         Picasso.with(mContext).load(R.mipmap.ic_file_download).into(mImg);
         mName.setText(param.mRecord.getSaveName());

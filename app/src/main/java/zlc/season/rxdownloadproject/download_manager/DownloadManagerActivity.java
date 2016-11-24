@@ -11,12 +11,11 @@ import java.util.List;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
-import rx.Subscription;
 import rx.functions.Action1;
 import rx.functions.Func1;
 import zlc.season.practicalrecyclerview.PracticalRecyclerView;
-import zlc.season.rxdownload.DownloadRecord;
 import zlc.season.rxdownload.RxDownload;
+import zlc.season.rxdownload.entity.DownloadRecord;
 import zlc.season.rxdownloadproject.R;
 
 public class DownloadManagerActivity extends AppCompatActivity {
@@ -29,14 +28,6 @@ public class DownloadManagerActivity extends AppCompatActivity {
     RelativeLayout mContentMain;
 
     private DownloadAdapter mAdapter;
-    private Subscription mSubscription;
-
-    @Override
-    public void onBackPressed() {
-        super.onBackPressed();
-        finish();
-    }
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -51,17 +42,8 @@ public class DownloadManagerActivity extends AppCompatActivity {
         loadData();
     }
 
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        unsubscribe();
-        if (mSubscription != null && !mSubscription.isUnsubscribed()) {
-            mSubscription.unsubscribe();
-        }
-    }
-
     private void loadData() {
-        mSubscription = RxDownload.getInstance().context(this).getTotalDownloadRecords()
+        RxDownload.getInstance().context(this).getTotalDownloadRecords()
                 .map(new Func1<List<DownloadRecord>, List<DownloadBean>>() {
                     @Override
                     public List<DownloadBean> call(List<DownloadRecord> downloadRecords) {
@@ -80,12 +62,5 @@ public class DownloadManagerActivity extends AppCompatActivity {
                         mAdapter.addAll(downloadBeen);
                     }
                 });
-    }
-
-    private void unsubscribe() {
-        List<DownloadBean> list = mAdapter.getData();
-        for (DownloadBean each : list) {
-            each.unsubscrbe();
-        }
     }
 }

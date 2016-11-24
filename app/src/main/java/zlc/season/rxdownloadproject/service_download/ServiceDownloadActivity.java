@@ -11,25 +11,19 @@ import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.squareup.picasso.Picasso;
 import com.tbruyelle.rxpermissions.RxPermissions;
-
-import java.io.File;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
 import rx.Subscriber;
-import rx.Subscription;
-import rx.android.schedulers.AndroidSchedulers;
 import rx.functions.Action1;
-import rx.schedulers.Schedulers;
-import rx.subscriptions.CompositeSubscription;
-import zlc.season.rxdownload.DownloadFlag;
-import zlc.season.rxdownload.DownloadRecord;
-import zlc.season.rxdownload.DownloadStatus;
 import zlc.season.rxdownload.RxDownload;
+import zlc.season.rxdownload.entity.DownloadEvent;
+import zlc.season.rxdownload.entity.DownloadStatus;
 import zlc.season.rxdownloadproject.DownloadController;
 import zlc.season.rxdownloadproject.R;
 
@@ -37,10 +31,9 @@ import static android.os.Environment.DIRECTORY_DOWNLOADS;
 import static android.os.Environment.getExternalStoragePublicDirectory;
 
 public class ServiceDownloadActivity extends AppCompatActivity {
-    final String saveName = "王者荣耀.apk";
+    final String saveName = "梦幻西游.apk";
     final String defaultPath = getExternalStoragePublicDirectory(DIRECTORY_DOWNLOADS).getPath();
-    final String url = "http://120.192.69.163/dlied5.myapp.com/myapp/1104466820/1104466820/sgame/10024163_com.tencent" +
-            ".tmgp.sgame_u131_1.15.2.13.apk";
+    final String url = "http://downali.game.uc.cn/wm/6/6/MY-1.98.0_uc_platform2_3306918_082452919a00.apk";
 
     @BindView(R.id.toolbar)
     Toolbar mToolbar;
@@ -58,13 +51,11 @@ public class ServiceDownloadActivity extends AppCompatActivity {
     Button mAction;
 
     private RxDownload mRxDownload;
-    private CompositeSubscription mSubscriptions;
-
     private DownloadController mDownloadController;
 
     @OnClick(R.id.action)
     public void onClick() {
-        mDownloadController.performClick(new DownloadController.Callback() {
+        mDownloadController.handleClick(new DownloadController.Callback() {
             @Override
             public void startDownload() {
                 start();
@@ -73,6 +64,11 @@ public class ServiceDownloadActivity extends AppCompatActivity {
             @Override
             public void pauseDownload() {
                 pause();
+            }
+
+            @Override
+            public void cancelDownload() {
+                cancel();
             }
 
             @Override
@@ -94,85 +90,56 @@ public class ServiceDownloadActivity extends AppCompatActivity {
         ButterKnife.bind(this);
         setSupportActionBar(mToolbar);
 
-        String icon = "http://static.yingyonghui.com/icon/128/4196396.png";
+        String icon = "http://image.coolapk.com/apk_logo/2015/0330/12202_1427696232_8648.png";
         Picasso.with(this).load(icon).into(mImg);
-        mStatusText.setText("开始");
 
         mRxDownload = RxDownload.getInstance().context(this);
-        mSubscriptions = new CompositeSubscription();
-
         mDownloadController = new DownloadController(mStatusText, mAction);
-        mDownloadController.setStateAndDisplay(DownloadFlag.NORMAL);
-    }
-
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        // 取消订阅,不会暂停下载
-        mSubscriptions.clear();
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        // 读取下载状态, 如果存在下载记录,则初始化为上次下载的状态
-        Subscription query = mRxDownload.getDownloadRecord(url)
-                .subscribe(new Action1<DownloadRecord>() {
-                    @Override
-                    public void call(DownloadRecord record) {
-                        //如果有下载记录才会执行到这里, 如果没有下载记录不会执行这里
-                        mProgress.setIndeterminate(record.getStatus().isChunked);
-                        mProgress.setMax((int) record.getStatus().getTotalSize());
-                        mProgress.setProgress((int) record.getStatus().getDownloadSize());
-                        mPercent.setText(record.getStatus().getPercent());
-                        mSize.setText(record.getStatus().getFormatStatusString());
-
-                        int flag = record.getDownloadFlag();
-                        //设置下载状态
-                        mDownloadController.setStateAndDisplay(flag);
-                    }
-                });
-
-        //注册广播接收器, 用于接收下载进度
-        Subscription temp = mRxDownload.registerReceiver(url)
-                .subscribe(new Subscriber<DownloadStatus>() {
+        mRxDownload.receiveDownloadStatus(url)
+                .subscribe(new Subscriber<DownloadEvent>() {
                     @Override
                     public void onCompleted() {
-                        mDownloadController.setStateAndDisplay(DownloadFlag.COMPLETED);
+                        mDownloadController.setState(new DownloadController.Completed());
                     }
 
                     @Override
                     public void onError(Throwable e) {
                         Log.w("TAG", e);
-                        mDownloadController.setStateAndDisplay(DownloadFlag.FAILED);
+                        mDownloadController.setState(new DownloadController.Failed());
                     }
 
                     @Override
-                    public void onNext(final DownloadStatus status) {
-                        mProgress.setIndeterminate(status.isChunked);
-                        mProgress.setMax((int) status.getTotalSize());
-                        mProgress.setProgress((int) status.getDownloadSize());
-                        mPercent.setText(status.getPercent());
-                        mSize.setText(status.getFormatStatusString());
+                    public void onNext(final DownloadEvent event) {
+                        mDownloadController.setEvent(event);
+                        updateProgress(event);
                     }
                 });
+    }
 
-        //将subscription收集起来,在Activity销毁的时候取消订阅,以免内存泄漏
-        mSubscriptions.add(temp);
-        mSubscriptions.add(query);
+    private void updateProgress(DownloadEvent event) {
+        DownloadStatus status = event.getDownloadStatus();
+        mProgress.setIndeterminate(status.isChunked);
+        mProgress.setMax((int) status.getTotalSize());
+        mProgress.setProgress((int) status.getDownloadSize());
+        mPercent.setText(status.getPercent());
+        mSize.setText(status.getFormatStatusString());
     }
 
     private void installApk() {
-        mDownloadController.setStateAndDisplay(DownloadFlag.INSTALL);
-        Uri uri = Uri.fromFile(new File(defaultPath + File.separator + saveName));
+        Uri uri = Uri.fromFile(mRxDownload.getRealFiles(saveName, defaultPath)[0]);
         Intent intent = new Intent(Intent.ACTION_VIEW);
+        intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
         intent.setDataAndType(uri, "application/vnd.android.package-archive");
         startActivity(intent);
     }
 
     private void start() {
-        //开始下载, 先检查权限
-        Subscription temp = RxPermissions.getInstance(this)
+        RxPermissions.getInstance(this)
                 .request(Manifest.permission.WRITE_EXTERNAL_STORAGE)
                 .doOnNext(new Action1<Boolean>() {
                     @Override
@@ -182,44 +149,20 @@ public class ServiceDownloadActivity extends AppCompatActivity {
                         }
                     }
                 })
-                .observeOn(Schedulers.io())
-                .compose(mRxDownload.transformServiceNoReceiver(url, saveName, defaultPath))
-                .observeOn(AndroidSchedulers.mainThread())
+                .compose(mRxDownload.transformService(url, saveName, defaultPath))
                 .subscribe(new Action1<Object>() {
                     @Override
                     public void call(Object o) {
-                        mDownloadController.setStateAndDisplay(DownloadFlag.STARTED);
+                        Toast.makeText(ServiceDownloadActivity.this, "下载开始", Toast.LENGTH_SHORT).show();
                     }
                 });
-        mSubscriptions.add(temp);
     }
 
-
-    /**
-     * 暂停下载
-     */
     private void pause() {
-        Subscription subscription = mRxDownload.pauseServiceDownload(url)
-                .subscribe(new Action1<Object>() {
-                    @Override
-                    public void call(Object o) {
-                        mDownloadController.setStateAndDisplay(DownloadFlag.PAUSED);
-                    }
-                });
-        mSubscriptions.add(subscription);
+        mRxDownload.pauseServiceDownload(url).subscribe();
     }
 
-    /**
-     * 取消下载
-     */
     private void cancel() {
-        Subscription subscription = mRxDownload.cancelServiceDownload(url)
-                .subscribe(new Action1<Object>() {
-                    @Override
-                    public void call(Object o) {
-                        mDownloadController.setStateAndDisplay(DownloadFlag.CANCELED);
-                    }
-                });
-        mSubscriptions.add(subscription);
+        mRxDownload.cancelServiceDownload(url).subscribe();
     }
 }

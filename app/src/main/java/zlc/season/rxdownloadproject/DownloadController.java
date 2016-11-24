@@ -3,220 +3,186 @@ package zlc.season.rxdownloadproject;
 import android.widget.Button;
 import android.widget.TextView;
 
-import zlc.season.rxdownload.DownloadFlag;
+import zlc.season.rxdownload.entity.DownloadEvent;
+import zlc.season.rxdownload.entity.DownloadFlag;
 
 /**
  * Author: Season(ssseasonnn@gmail.com)
- * Date: 2016/11/15
- * Time: 15:26
- * 下载控制
+ * Date: 2016/11/22
+ * Time: 15:18
+ * FIXME
  */
 public class DownloadController {
-    private DownloadState state;
+    private TextView mStatus;
+    private Button mAction;
 
-    private TextView mStatusText;
-    private Button mActionButton;
+    private DownloadState mState;
 
-    public DownloadController(TextView statusText, Button actionButton) {
-        mStatusText = statusText;
-        mActionButton = actionButton;
+    public DownloadController(TextView status, Button action) {
+        mStatus = status;
+        mAction = action;
+        setState(new Normal());
     }
 
-    /**
-     * 设置并显示当前状态
-     *
-     * @param flag 状态标识
-     */
-    public void setStateAndDisplay(int flag) {
+    public void setState(DownloadState state) {
+        mState = state;
+        mState.setText(mStatus, mAction);
+    }
+
+    public void setEvent(DownloadEvent event) {
+        int flag = event.getFlag();
         switch (flag) {
             case DownloadFlag.NORMAL:
-                this.state = new NormalState(this);
+                setState(new DownloadController.Normal());
+                break;
+            case DownloadFlag.WAITING:
+                setState(new DownloadController.Waiting());
                 break;
             case DownloadFlag.STARTED:
-                this.state = new StartedState(this);
+                setState(new DownloadController.Started());
                 break;
             case DownloadFlag.PAUSED:
-                this.state = new PausedState(this);
-                break;
-            case DownloadFlag.FAILED:
-                this.state = new FailedState(this);
+                setState(new DownloadController.Paused());
                 break;
             case DownloadFlag.CANCELED:
-                this.state = new CanceledState(this);
+                setState(new DownloadController.Canceled());
                 break;
             case DownloadFlag.COMPLETED:
-                this.state = new CompletedState(this);
+                setState(new DownloadController.Completed());
                 break;
-            case DownloadFlag.INSTALL:
-                this.state = new InstallState(this);
+            case DownloadFlag.FAILED:
+                setState(new DownloadController.Failed());
+                break;
+            case DownloadFlag.DELETED:
+                setState(new DownloadController.Deleted());
                 break;
         }
-
-        displayNowState();
     }
 
-    /**
-     * 处理点击事件
-     *
-     * @param callback Callback
-     */
-    public void performClick(Callback callback) {
-        state.handleClickEvent(callback);
+    public void handleClick(Callback callback) {
+        mState.handleClick(callback);
     }
 
-    private void displayNowState() {
-        state.displayNowState(mStatusText, mActionButton);
-    }
-
-    /**
-     * 状态处理回调
-     */
     public interface Callback {
-
         void startDownload();
 
         void pauseDownload();
+
+        void cancelDownload();
 
         void install();
     }
 
     static abstract class DownloadState {
-        DownloadController mContext;
 
-        DownloadState(DownloadController context) {
-            mContext = context;
-        }
+        abstract void setText(TextView status, Button button);
 
-        abstract void displayNowState(TextView status, Button action);
-
-        abstract void handleClickEvent(Callback callback);
-
+        abstract void handleClick(Callback callback);
     }
 
-    private static class NormalState extends DownloadState {
+    public static class Normal extends DownloadState {
 
-        NormalState(DownloadController context) {
-            super(context);
+        @Override
+        void setText(TextView status, Button button) {
+            button.setText("下载");
+            status.setText("");
         }
 
         @Override
-        void displayNowState(TextView status, Button action) {
-            if (status != null) status.setText("");
-            if (action != null) action.setText("下载");
-        }
-
-        @Override
-        void handleClickEvent(Callback callback) {
+        void handleClick(Callback callback) {
             callback.startDownload();
         }
     }
 
-    private static class StartedState extends DownloadState {
-
-        StartedState(DownloadController context) {
-            super(context);
+    public static class Waiting extends DownloadState {
+        @Override
+        void setText(TextView status, Button button) {
+            button.setText("等待中");
+            status.setText("等待中...");
         }
 
         @Override
-        void displayNowState(TextView status, Button action) {
-            if (status != null) status.setText("正在下载...");
-            if (action != null) action.setText("暂停");
+        void handleClick(Callback callback) {
+            callback.cancelDownload();
+        }
+    }
+
+    public static class Started extends DownloadState {
+        @Override
+        void setText(TextView status, Button button) {
+            button.setText("暂停");
+            status.setText("下载中...");
         }
 
         @Override
-        void handleClickEvent(Callback callback) {
+        void handleClick(Callback callback) {
             callback.pauseDownload();
         }
     }
 
-    private static class PausedState extends DownloadState {
-
-        PausedState(DownloadController context) {
-            super(context);
+    public static class Paused extends DownloadState {
+        @Override
+        void setText(TextView status, Button button) {
+            button.setText("继续");
+            status.setText("已暂停");
         }
 
         @Override
-        void displayNowState(TextView status, Button action) {
-            if (status != null) status.setText("下载已暂停");
-            if (action != null) action.setText("继续");
-        }
-
-        @Override
-        void handleClickEvent(Callback callback) {
+        void handleClick(Callback callback) {
             callback.startDownload();
         }
     }
 
-    private static class FailedState extends DownloadState {
-
-        FailedState(DownloadController context) {
-            super(context);
+    public static class Failed extends DownloadState {
+        @Override
+        void setText(TextView status, Button button) {
+            button.setText("继续");
+            status.setText("下载失败");
         }
 
         @Override
-        void displayNowState(TextView status, Button action) {
-            if (status != null) status.setText("下载失败");
-            if (action != null) action.setText("下载");
-        }
-
-        @Override
-        void handleClickEvent(Callback callback) {
+        void handleClick(Callback callback) {
             callback.startDownload();
         }
     }
 
-    private static class CanceledState extends DownloadState {
-
-        CanceledState(DownloadController context) {
-            super(context);
+    public static class Canceled extends DownloadState {
+        @Override
+        void setText(TextView status, Button button) {
+            button.setText("下载");
+            status.setText("下载已取消");
         }
 
         @Override
-        void displayNowState(TextView status, Button action) {
-            if (status != null) status.setText("下载已取消");
-            if (action != null) action.setText("下载");
-        }
-
-        @Override
-        void handleClickEvent(Callback callback) {
+        void handleClick(Callback callback) {
             callback.startDownload();
         }
     }
 
-    private static class CompletedState extends DownloadState {
-
-        CompletedState(DownloadController context) {
-            super(context);
+    public static class Completed extends DownloadState {
+        @Override
+        void setText(TextView status, Button button) {
+            button.setText("安装");
+            status.setText("下载已完成");
         }
 
         @Override
-        void displayNowState(TextView status, Button action) {
-            if (status != null) status.setText("下载已完成");
-            if (action != null) action.setText("安装");
-        }
-
-        @Override
-        void handleClickEvent(Callback callback) {
+        void handleClick(Callback callback) {
             callback.install();
         }
     }
 
-    private static class InstallState extends DownloadState {
+    public static class Deleted extends DownloadState {
 
-        InstallState(DownloadController context) {
-            super(context);
+        @Override
+        void setText(TextView status, Button button) {
+            button.setText("下载");
+            status.setText("下载已取消");
         }
 
         @Override
-        void displayNowState(TextView status, Button action) {
-            if (status != null) status.setText("正在安装...");
-            if (action != null) action.setText("安装中");
-        }
-
-        @Override
-        void handleClickEvent(Callback callback) {
-            //doNothing..
+        void handleClick(Callback callback) {
+            callback.startDownload();
         }
     }
 }
-

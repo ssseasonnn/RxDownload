@@ -16,7 +16,6 @@
         android:layout_gravity="center"
         android:src="@mipmap/ic_launcher"/>
 
-
     <LinearLayout
         android:layout_width="0dp"
         android:layout_height="wrap_content"
@@ -42,11 +41,11 @@
                 android:layout_marginEnd="20dp"
                 android:layout_marginRight="20dp"
                 android:layout_weight="1"
+                android:ellipsize="end"
                 android:gravity="start"
+                android:maxLines="1"
                 android:textSize="15sp"
                 android:textStyle="bold"
-                android:maxLines="1"
-                android:ellipsize="end"
                 tools:text="微信"/>
 
             <TextView
@@ -101,38 +100,26 @@
     </LinearLayout>
 
     <LinearLayout
-        android:layout_width="50dp"
+        android:layout_width="80dp"
         android:layout_height="match_parent"
-        android:gravity="center"
-        android:orientation="vertical">
+        android:gravity="center_vertical|center_horizontal"
+        android:orientation="horizontal">
 
         <Button
             android:id="@+id/action"
-            android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="1"
+            android:layout_width="50dp"
+            android:layout_height="wrap_content"
             android:background="@null"
             android:text="开始"
             android:textColor="@color/colorAccent"/>
 
         <Button
-            android:id="@+id/cancel"
-            android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="1"
-            android:background="@null"
-            android:text="取消"
+            android:id="@+id/more"
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:background="@mipmap/ic_more_vert"
             android:textColor="@color/colorAccent"/>
 
-        <Button
-            android:id="@+id/delete"
-            android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="1"
-            android:background="@null"
-            android:text="删除"
-            android:textColor="@color/colorAccent"
-            android:visibility="gone"/>
     </LinearLayout>
 
 

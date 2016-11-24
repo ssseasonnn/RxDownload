@@ -9,6 +9,7 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.util.Log;
 
+import java.io.File;
 import java.io.IOException;
 import java.text.ParseException;
 import java.util.List;
@@ -16,15 +17,26 @@ import java.util.List;
 import retrofit2.Response;
 import retrofit2.Retrofit;
 import rx.Observable;
+import rx.Subscriber;
+import rx.android.schedulers.AndroidSchedulers;
 import rx.exceptions.CompositeException;
 import rx.functions.Action0;
 import rx.functions.Action1;
 import rx.functions.Func1;
 import rx.functions.Func2;
-import rx.subjects.PublishSubject;
+import zlc.season.rxdownload.db.DataBaseHelper;
+import zlc.season.rxdownload.entity.DownloadEvent;
+import zlc.season.rxdownload.entity.DownloadMission;
+import zlc.season.rxdownload.entity.DownloadRecord;
+import zlc.season.rxdownload.entity.DownloadStatus;
+import zlc.season.rxdownload.entity.DownloadType;
+import zlc.season.rxdownload.entity.DownloadTypeFactory;
+import zlc.season.rxdownload.function.DownloadHelper;
+import zlc.season.rxdownload.function.DownloadService;
+import zlc.season.rxdownload.function.Utils;
 
-import static zlc.season.rxdownload.DownloadHelper.TEST_RANGE_SUPPORT;
-import static zlc.season.rxdownload.FileHelper.TAG;
+import static zlc.season.rxdownload.function.DownloadHelper.TEST_RANGE_SUPPORT;
+import static zlc.season.rxdownload.function.FileHelper.TAG;
 
 
 /**
@@ -38,13 +50,15 @@ public class RxDownload {
     private static boolean bound = false;
 
     private DownloadHelper mDownloadHelper;
-    private DownloadFactory mFactory;
+    private DownloadTypeFactory mFactory;
 
     private Context mContext;
 
+    private int MAX_DOWNLOAD_NUMBER = 5;
+
     private RxDownload() {
         mDownloadHelper = new DownloadHelper();
-        mFactory = new DownloadFactory(mDownloadHelper);
+        mFactory = new DownloadTypeFactory(mDownloadHelper);
     }
 
     public static RxDownload getInstance() {
@@ -82,40 +96,47 @@ public class RxDownload {
         return this;
     }
 
+    public RxDownload maxDownloadNumber(int max) {
+        this.MAX_DOWNLOAD_NUMBER = max;
+        return this;
+    }
+
     /**
-     * 为Service中下载地址为url的下载任务注册广播接收器,用于接收该任务的下载进度.
-     * 注意只接收下载地址为url的下载进度.
-     * 取消订阅即可取消注册.
+     * Receive the download address for the url download event and download status.
+     * 接收下载地址为url的下载事件和下载状态.
+     * <p>
+     * Note that only receive the download address for the URL.
+     * 注意只接收下载地址为url的事件和状态.
      *
      * @param url download url
      * @return Observable<DownloadStatus>
      */
-    public Observable<DownloadStatus> registerReceiver(final String url) {
-        if (mContext == null) {
-            return Observable.error(new Throwable("Context is NULL! You should call " +
-                    "#RxDownload.context(Context context)# first!"));
-        }
-
-        Observable<DownloadStatus> observable;
-        PublishSubject<DownloadStatus> subject = PublishSubject.create();
-        final DownloadReceiver receiver = new DownloadReceiver(url, subject);
-
-        observable = subject.doOnSubscribe(new Action0() {
+    public Observable<DownloadEvent> receiveDownloadStatus(final String url) {
+        return Observable.create(new Observable.OnSubscribe<Object>() {
             @Override
-            public void call() {
-                mContext.registerReceiver(receiver, receiver.getFilter());
+            public void call(final Subscriber<? super Object> subscriber) {
+                if (!bound) {
+                    startBindServiceAndDo(new ServiceConnectedCallback() {
+                        @Override
+                        public void call() {
+                            subscriber.onNext(null);
+                        }
+                    });
+                } else {
+                    subscriber.onNext(null);
+                }
             }
-        }).doOnUnsubscribe(new Action0() {
+        }).flatMap(new Func1<Object, Observable<DownloadEvent>>() {
             @Override
-            public void call() {
-                mContext.unregisterReceiver(receiver);
+            public Observable<DownloadEvent> call(Object o) {
+                return mDownloadService.getSubject(url).asObservable().onBackpressureLatest();
             }
-        });
-        return observable;
+        }).observeOn(AndroidSchedulers.mainThread());
     }
 
     /**
-     * 从数据库中读取所有的下载任务
+     * Read all the download record from the database
+     * 从数据库中读取所有的下载记录
      *
      * @return Observable<List<DownloadRecord>>
      */
@@ -124,11 +145,12 @@ public class RxDownload {
             return Observable.error(new Throwable("Context is NULL! You should call " +
                     "#RxDownload.context(Context context)# first!"));
         }
-        DataBaseHelper dataBaseHelper = new DataBaseHelper(new DbOpenHelper(mContext));
+        DataBaseHelper dataBaseHelper = DataBaseHelper.getSingleton(mContext);
         return dataBaseHelper.readAllRecords();
     }
 
     /**
+     * Read single download record with url.
      * 从数据库中读取下载地址为url的下载记录
      *
      * @param url download url
@@ -139,21 +161,20 @@ public class RxDownload {
             return Observable.error(new Throwable("Context is NULL! You should call " +
                     "#RxDownload.context(Context context)# first!"));
         }
-        DataBaseHelper dataBaseHelper = new DataBaseHelper(new DbOpenHelper(mContext));
+        DataBaseHelper dataBaseHelper = DataBaseHelper.getSingleton(mContext);
         return dataBaseHelper.readRecord(url);
     }
 
     /**
+     * Suspended download address for the url download task in Service.
      * 暂停Service中下载地址为url的下载任务.
+     * <p>
+     * Book the download records in the tag database are paused.
      * 同时标记数据库中的下载记录为暂停状态.
      *
      * @param url download url
      */
     public Observable<?> pauseServiceDownload(final String url) {
-        if (mContext == null) {
-            return Observable.error(new Throwable("Context is NULL! You should call " +
-                    "#RxDownload.context(Context context)# first!"));
-        }
         return Observable.just(null).doOnSubscribe(new Action0() {
             @Override
             public void call() {
@@ -173,16 +194,13 @@ public class RxDownload {
 
     /**
      * 取消Service中下载地址为url的下载任务.
+     * <p>
      * 同时标记数据库中的下载记录为取消状态.
      * 不会删除已经下载的文件.
      *
      * @param url download url
      */
     public Observable<?> cancelServiceDownload(final String url) {
-        if (mContext == null) {
-            return Observable.error(new Throwable("Context is NULL! You should call " +
-                    "#RxDownload.context(Context context)# first!"));
-        }
         return Observable.just(null).doOnSubscribe(new Action0() {
             @Override
             public void call() {
@@ -202,16 +220,13 @@ public class RxDownload {
 
     /**
      * 删除Service中下载地址为url的下载任务.
+     * <p>
      * 同时从数据库中删除该下载记录.
      * 不会删除已经下载的文件.
      *
      * @param url download url
      */
     public Observable<?> deleteServiceDownload(final String url) {
-        if (mContext == null) {
-            return Observable.error(new Throwable("Context is NULL! You should call " +
-                    "#RxDownload.context(Context context)# first!"));
-        }
         return Observable.just(null).doOnSubscribe(new Action0() {
             @Override
             public void call() {
@@ -230,137 +245,66 @@ public class RxDownload {
     }
 
     /**
-     * 使用Service下载.
-     * 同时注册了广播接收器接收下载进度.
-     * 取消订阅即可取消注册, 但不会暂停下载.
-     * 同时在数据库中保存下载记录.
+     * Using Service to download. Just download, can't receive download status.
+     * 使用Service下载. 仅仅开始下载, 不会接收下载进度.
+     * <p>
+     * Un subscribe will not pause download.
+     * 取消订阅不会停止下载.
+     * <p>
+     * If you want receive download status, see {@link #receiveDownloadStatus(String)}
+     * <p>
+     * If you want pause download, see {@link #pauseServiceDownload(String)}
+     * <p>
+     * Also save the download records in the database, if you want get record from database,
+     * see  {@link #getDownloadRecord(String)}
      *
-     * @param url      下载文件的Url
-     * @param saveName 下载文件的保存名称
-     * @param savePath 下载文件的保存路径, null使用默认的路径,默认保存在/storage/emulated/0/Download/目录下
+     * @param url      download file Url
+     * @param saveName download file SaveName
+     * @param savePath download file SavePath. If NULL, using default save path {@code /storage/emulated/0/Download/}
      * @return Observable<DownloadStatus>
      */
-    public Observable<DownloadStatus> serviceDownload(@NonNull final String url,
-                                                      @NonNull final String saveName,
-                                                      @Nullable final String savePath) {
-        return serviceDownload(url, saveName, savePath, null, null);
-    }
-
-    /**
-     * 使用Service下载.
-     * 同时注册广播接收器接收下载进度.
-     * 取消订阅即可取消注册, 不会暂停下载.
-     * 同时在数据库中保存下载记录.
-     *
-     * @param url          下载文件的Url
-     * @param saveName     下载文件的保存名称
-     * @param savePath     下载文件的保存路径, null使用默认的路径,默认保存在/storage/emulated/0/Download/目录下
-     * @param displayName  可选参数, 显示在下载记录中的名称. 如需要在下载记录中显示名称,传入此参数保存到下载记录中
-     * @param displayImage 可选参数, 显示在下载记录中的图片. 如需要在下载记录中显示图片或图标,传入此参数保存到下载记录中
-     * @return Observable<DownloadStatus>
-     */
-    public Observable<DownloadStatus> serviceDownload(@NonNull final String url,
-                                                      @NonNull final String saveName,
-                                                      @Nullable final String savePath,
-                                                      @Nullable final String displayName,
-                                                      @Nullable final String displayImage) {
-        if (mContext == null) {
-            return Observable.error(new Throwable("Context is NULL! You should call " +
-                    "#RxDownload.context(Context context)# first!"));
-        }
-
-        PublishSubject<DownloadStatus> subject = PublishSubject.create();
-        final DownloadReceiver receiver = new DownloadReceiver(url, subject);
-
-        Observable<DownloadStatus> observable;
-        observable = subject.doOnSubscribe(new Action0() {
+    public Observable<Object> serviceDownload(@NonNull final String url,
+                                              @NonNull final String saveName,
+                                              @Nullable final String savePath) {
+        return Observable.create(new Observable.OnSubscribe<Object>() {
             @Override
-            public void call() {
-                mContext.registerReceiver(receiver, receiver.getFilter());
+            public void call(final Subscriber<? super Object> subscriber) {
                 if (!bound) {
                     startBindServiceAndDo(new ServiceConnectedCallback() {
                         @Override
                         public void call() {
-                            mDownloadService.startDownload(RxDownload.this,
-                                    url, saveName, savePath, displayName, displayImage);
+                            try {
+                                addDownloadTask(url, saveName, savePath);
+                                subscriber.onNext(null);
+                                subscriber.onCompleted();
+                            } catch (IOException e) {
+                                subscriber.onError(e);
+                            }
                         }
                     });
                 } else {
-                    mDownloadService.startDownload(RxDownload.this,
-                            url, saveName, savePath, displayName, displayImage);
-                }
-            }
-        }).doOnUnsubscribe(new Action0() {
-            @Override
-            public void call() {
-                mContext.unregisterReceiver(receiver);
-            }
-        });
-        return observable;
-    }
-
-    /**
-     * 使用Service下载.
-     * 不会注册广播接收器,接收下载进度请手动注册广播接收器.
-     * 取消订阅不会暂停下载.
-     * 同时在数据库中保存下载记录.
-     *
-     * @param url      下载文件的Url
-     * @param saveName 下载文件的保存名称
-     * @param savePath 下载文件的保存路径, null使用默认的路径,默认保存在/storage/emulated/0/Download/目录下
-     * @return Observable emit a NULL object
-     */
-    public Observable<Object> serviceDownloadNoReceiver(@NonNull final String url,
-                                                        @NonNull final String saveName,
-                                                        @Nullable final String savePath) {
-        return serviceDownloadNoReceiver(url, saveName, savePath, null, null);
-    }
-
-    /**
-     * 使用Service下载.
-     * 不会注册广播接收器,接收下载进度请手动注册广播接收器.
-     * 取消订阅不会暂停下载.
-     * 同时在数据库中保存下载记录.
-     *
-     * @param url          下载文件的Url
-     * @param saveName     下载文件的保存名称
-     * @param savePath     下载文件的保存路径, null使用默认的路径,默认保存在/storage/emulated/0/Download/目录下
-     * @param displayName  可选参数, 显示在下载记录中的名称. 如需要在下载记录中显示名称,传入此参数保存到下载记录中
-     * @param displayImage 可选参数, 显示在下载记录中的图片. 如需要在下载记录中显示图片或图标,传入此参数保存到下载记录中
-     * @return Observable emit a NULL object
-     */
-    public Observable<Object> serviceDownloadNoReceiver(@NonNull final String url,
-                                                        @NonNull final String saveName,
-                                                        @Nullable final String savePath,
-                                                        @Nullable final String displayName,
-                                                        @Nullable final String displayImage) {
-        return Observable.just(null).doOnSubscribe(new Action0() {
-            @Override
-            public void call() {
-                if (!bound) {
-                    startBindServiceAndDo(new ServiceConnectedCallback() {
-                        @Override
-                        public void call() {
-                            mDownloadService.startDownload(RxDownload.this,
-                                    url, saveName, savePath, displayName, displayImage);
-                        }
-                    });
-                } else {
-                    mDownloadService.startDownload(RxDownload.this,
-                            url, saveName, savePath, displayName, displayImage);
+                    try {
+                        addDownloadTask(url, saveName, savePath);
+                        subscriber.onNext(null);
+                        subscriber.onCompleted();
+                    } catch (IOException e) {
+                        subscriber.onError(e);
+                    }
                 }
             }
         });
     }
 
     /**
-     * 普通下载, 不使用Service.
-     * 取消订阅则暂停下载.
-     * 不会在数据库中保存下载记录.
+     * Normal download.
+     * <p>
+     * Un subscribe will  pause download.
+     * <p>
+     * Do not save the download records in the database.
      *
-     * @param url      下载文件的Url
-     * @param saveName 下载文件的保存名称
-     * @param savePath 下载文件的保存路径, null使用默认的路径,默认保存在/storage/emulated/0/Download/目录下
+     * @param url      download file Url
+     * @param saveName download file SaveName
+     * @param savePath download file SavePath. If NULL, using default save path {@code /storage/emulated/0/Download/}
      * @return Observable<DownloadStatus>
      */
     public Observable<DownloadStatus> download(@NonNull final String url,
@@ -370,12 +314,13 @@ public class RxDownload {
     }
 
     /**
-     * 普通下载的Transformer版本.
-     * 提供给RxJava Compose操作符使用.
+     * Normal download version of the Transformer.
+     * <p>
+     * Provide RxJava Compose operator use.
      *
-     * @param url      下载文件的Url
-     * @param saveName 下载文件的保存名称
-     * @param savePath 下载文件的保存路径, null使用默认的路径,默认保存在/storage/emulated/0/Download/目录下
+     * @param url      download file Url
+     * @param saveName download file SaveName
+     * @param savePath download file SavePath. If NULL, using default save path {@code /storage/emulated/0/Download/}
      * @param <T>      T
      * @return Transformer
      */
@@ -396,24 +341,25 @@ public class RxDownload {
     }
 
     /**
-     * ServiceDownload的Transformer版本.
-     * 提供给RxJava Compose操作符使用.
+     * Service download without status version of the Transformer.
+     * <p>
+     * Provide RxJava Compose operator use.
      *
-     * @param url      下载文件的Url
-     * @param saveName 下载文件的保存名称
-     * @param savePath 下载文件的保存路径, null使用默认的路径,默认保存在/storage/emulated/0/Download/目录下
+     * @param url      download file Url
+     * @param saveName download file SaveName
+     * @param savePath download file SavePath. If NULL, using default save path {@code /storage/emulated/0/Download/}
      * @param <T>      T
      * @return Transformer
      */
-    public <T> Observable.Transformer<T, DownloadStatus> transformService(@NonNull final String url,
-                                                                          @NonNull final String saveName,
-                                                                          @Nullable final String savePath) {
-        return new Observable.Transformer<T, DownloadStatus>() {
+    public <T> Observable.Transformer<T, Object> transformService(@NonNull final String url,
+                                                                  @NonNull final String saveName,
+                                                                  @Nullable final String savePath) {
+        return new Observable.Transformer<T, Object>() {
             @Override
-            public Observable<DownloadStatus> call(Observable<T> observable) {
-                return observable.flatMap(new Func1<T, Observable<DownloadStatus>>() {
+            public Observable<Object> call(Observable<T> observable) {
+                return observable.flatMap(new Func1<T, Observable<Object>>() {
                     @Override
-                    public Observable<DownloadStatus> call(T t) {
+                    public Observable<Object> call(T t) {
                         return serviceDownload(url, saveName, savePath);
                     }
                 });
@@ -421,97 +367,32 @@ public class RxDownload {
         };
     }
 
-    /**
-     * 同上
-     *
-     * @param url          url
-     * @param saveName     saveName
-     * @param savePath     savePath
-     * @param displayName  display name in download record
-     * @param displayImage display image in download record
-     * @param <T>          T
-     * @return Transformer
-     */
-    public <T> Observable.Transformer<T, DownloadStatus> transformService(@NonNull final String url,
-                                                                          @NonNull final String saveName,
-                                                                          @Nullable final String savePath,
-                                                                          @Nullable final String displayName,
-                                                                          @Nullable final String displayImage) {
-        return new Observable.Transformer<T, DownloadStatus>() {
-            @Override
-            public Observable<DownloadStatus> call(Observable<T> observable) {
-                return observable.flatMap(new Func1<T, Observable<DownloadStatus>>() {
-                    @Override
-                    public Observable<DownloadStatus> call(T t) {
-                        return serviceDownload(url, saveName, savePath, displayName, displayImage);
-                    }
-                });
-            }
-        };
-    }
-
-    /**
-     * ServiceDownloadNoReceiver的Transformer版本
-     * 提供给RxJava Compose操作符使用.
-     *
-     * @param url      下载文件的Url
-     * @param saveName 下载文件的保存名称
-     * @param savePath 下载文件的保存路径, null使用默认的路径,默认保存在/storage/emulated/0/Download/目录下
-     * @param <T>      T
-     * @return Transformer
-     */
-    public <T> Observable.Transformer<T, Object> transformServiceNoReceiver(@NonNull final String url,
-                                                                            @NonNull final String saveName,
-                                                                            @Nullable final String savePath) {
-        return new Observable.Transformer<T, Object>() {
-            @Override
-            public Observable<Object> call(Observable<T> observable) {
-                return observable.flatMap(new Func1<T, Observable<Object>>() {
-                    @Override
-                    public Observable<Object> call(T t) {
-                        return serviceDownloadNoReceiver(url, saveName, savePath);
-                    }
-                });
-            }
-        };
-    }
-
-    /**
-     * 同上
-     *
-     * @param url          url
-     * @param saveName     saveName
-     * @param savePath     savePath
-     * @param displayName  display name in download record
-     * @param displayImage display image in download record
-     * @param <T>          T
-     * @return Transformer
-     */
-    public <T> Observable.Transformer<T, Object> transformServiceNoReceiver(@NonNull final String url,
-                                                                            @NonNull final String saveName,
-                                                                            @Nullable final String savePath,
-                                                                            @Nullable final String displayName,
-                                                                            @Nullable final String displayImage) {
-        return new Observable.Transformer<T, Object>() {
-            @Override
-            public Observable<Object> call(Observable<T> observable) {
-                return observable.flatMap(new Func1<T, Observable<Object>>() {
-                    @Override
-                    public Observable<Object> call(T t) {
-                        return serviceDownloadNoReceiver(url, saveName, savePath, displayName, displayImage);
-                    }
-                });
-            }
-        };
-    }
-
-    String[] getFileSavePaths(String savePath) {
+    public String[] getRealFileSavePaths(String savePath) {
         return mDownloadHelper.getFileSavePaths(savePath);
+    }
+
+    public File[] getRealFiles(String saveName, String savePath) {
+        String[] filePaths = mDownloadHelper.getRealFilePaths(saveName, savePath);
+        return new File[]{new File(filePaths[0]), new File(filePaths[1]), new File(filePaths[2])};
+    }
+
+    private void addDownloadTask(@NonNull String url, @NonNull String saveName,
+                                 @Nullable String savePath) throws IOException {
+        mDownloadService.addDownloadMission(
+                new DownloadMission.Builder()
+                        .setRxDownload(RxDownload.this)
+                        .setUrl(url)
+                        .setSaveName(saveName)
+                        .setSavePath(savePath)
+                        .build());
     }
 
     private Observable<DownloadStatus> downloadDispatcher(final String url,
                                                           final String saveName,
                                                           final String savePath) {
+        if (mDownloadHelper.isRecordExists(url)) {
+            return Observable.error(new Throwable("This url download task already exists, so do nothing."));
+        }
         try {
             mDownloadHelper.addDownloadRecord(url, saveName, savePath);
         } catch (IOException e) {
@@ -523,12 +404,8 @@ public class RxDownload {
                     public Observable<DownloadStatus> call(DownloadType type) {
                         try {
                             type.prepareDownload();
-                        } catch (IOException | ParseException e) {
-                            return Observable.error(e);
-                        }
-                        try {
                             return type.startDownload();
-                        } catch (IOException e) {
+                        } catch (IOException | ParseException e) {
                             return Observable.error(e);
                         }
                     }
@@ -679,8 +556,12 @@ public class RxDownload {
     }
 
     private void startBindServiceAndDo(final ServiceConnectedCallback callback) {
-        Log.w(TAG, "Download Service is not Start or Bind. So start Service and Bind.");
+        if (mContext == null) {
+            throw new RuntimeException("Context is NULL! You should call " +
+                    "#RxDownload.context(Context context)# first!");
+        }
         Intent intent = new Intent(mContext, DownloadService.class);
+        intent.putExtra(DownloadService.INTENT_KEY, MAX_DOWNLOAD_NUMBER);
         mContext.startService(intent);
         mContext.bindService(intent, new ServiceConnection() {
             @Override

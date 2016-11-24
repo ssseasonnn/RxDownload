@@ -5,15 +5,15 @@ import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.util.Log;
+import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.squareup.picasso.Picasso;
 import com.tbruyelle.rxpermissions.RxPermissions;
-
-import java.io.File;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -22,17 +22,12 @@ import rx.Subscriber;
 import rx.Subscription;
 import rx.android.schedulers.AndroidSchedulers;
 import rx.functions.Action1;
-import rx.schedulers.Schedulers;
 import zlc.season.practicalrecyclerview.AbstractViewHolder;
-import zlc.season.rxdownload.DownloadFlag;
-import zlc.season.rxdownload.DownloadRecord;
-import zlc.season.rxdownload.DownloadStatus;
 import zlc.season.rxdownload.RxDownload;
+import zlc.season.rxdownload.entity.DownloadEvent;
+import zlc.season.rxdownload.function.Utils;
 import zlc.season.rxdownloadproject.DownloadController;
 import zlc.season.rxdownloadproject.R;
-
-import static android.os.Environment.DIRECTORY_DOWNLOADS;
-import static android.os.Environment.getExternalStoragePublicDirectory;
 
 /**
  * Author: Season(ssseasonnn@gmail.com)
@@ -50,73 +45,65 @@ public class AppInfoViewHolder extends AbstractViewHolder<AppInfoBean> {
     @BindView(R.id.action)
     Button mAction;
 
-    private String defaultPath = getExternalStoragePublicDirectory(DIRECTORY_DOWNLOADS).getPath();
-
     private AppInfoBean mData;
     private Context mContext;
     private RxDownload mRxDownload;
     private DownloadController mDownloadController;
+    private Subscription mSubscription;
 
     public AppInfoViewHolder(ViewGroup parent) {
         super(parent, R.layout.app_info_item);
         ButterKnife.bind(this, itemView);
         mContext = parent.getContext();
 
-        mRxDownload = RxDownload.getInstance().context(mContext);
-        mDownloadController = new DownloadController(null, mAction);
+        mRxDownload = RxDownload.getInstance()
+                .context(mContext)
+                .maxDownloadNumber(2);//最大下载数量
+
+        mDownloadController = new DownloadController(new TextView(mContext), mAction);
+        itemView.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                start();
+            }
+        });
     }
 
     @Override
     public void setData(AppInfoBean data) {
         this.mData = data;
-        mDownloadController.setStateAndDisplay(DownloadFlag.NORMAL);
-
         Picasso.with(mContext).load(data.img).into(mHead);
         mTitle.setText(data.name);
         mContent.setText(data.info);
 
-        // 读取下载状态, 如果存在下载记录,则初始化为上次下载的状态
-        Subscription query = mRxDownload.getDownloadRecord(data.downloadUrl)
-                .subscribe(new Action1<DownloadRecord>() {
-                    @Override
-                    public void call(DownloadRecord record) {
-                        //如果有下载记录才会执行到这里, 如果没有下载记录不会执行这里
-                        int flag = record.getDownloadFlag();
-                        //设置下载状态
-                        mDownloadController.setStateAndDisplay(flag);
-
-                        Log.d("AppInfoViewHolder", "flag:" + flag);
-
-                    }
-                });
-
-        //注册广播接收器, 用于接收下载进度
-        Subscription temp = mRxDownload.registerReceiver(data.downloadUrl)
-                .subscribe(new Subscriber<DownloadStatus>() {
+        /**
+         * important!! 如果有订阅没有取消,则取消订阅!防止ViewHolder复用导致界面显示的BUG!
+         */
+        Utils.unSubscribe(mSubscription);
+        mSubscription = mRxDownload.receiveDownloadStatus(mData.downloadUrl)
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(new Subscriber<DownloadEvent>() {
                     @Override
                     public void onCompleted() {
-                        Log.d("AppInfoViewHolder", "complete");
-                        mDownloadController.setStateAndDisplay(DownloadFlag.COMPLETED);
+                        mDownloadController.setState(new DownloadController.Completed());
                     }
 
                     @Override
                     public void onError(Throwable e) {
                         Log.w("TAG", e);
-                        mDownloadController.setStateAndDisplay(DownloadFlag.FAILED);
+                        mDownloadController.setState(new DownloadController.Failed());
                     }
 
                     @Override
-                    public void onNext(final DownloadStatus status) {
+                    public void onNext(final DownloadEvent event) {
+                        mDownloadController.setEvent(event);
                     }
                 });
-        //将subscription收集起来,在Activity销毁的时候取消订阅,以免内存泄漏
-        mData.mSubscriptions.add(temp);
-        mData.mSubscriptions.add(query);
     }
 
     @OnClick(R.id.action)
     public void onClick() {
-        mDownloadController.performClick(new DownloadController.Callback() {
+        mDownloadController.handleClick(new DownloadController.Callback() {
             @Override
             public void startDownload() {
                 start();
@@ -128,6 +115,11 @@ public class AppInfoViewHolder extends AbstractViewHolder<AppInfoBean> {
             }
 
             @Override
+            public void cancelDownload() {
+                cancel();
+            }
+
+            @Override
             public void install() {
                 installApk();
             }
@@ -135,16 +127,14 @@ public class AppInfoViewHolder extends AbstractViewHolder<AppInfoBean> {
     }
 
     private void installApk() {
-        mDownloadController.setStateAndDisplay(DownloadFlag.INSTALL);
-        Uri uri = Uri.fromFile(new File(defaultPath + File.separator + mData.saveName));
+        Uri uri = Uri.fromFile(mRxDownload.getRealFiles(mData.saveName, null)[0]);
         Intent intent = new Intent(Intent.ACTION_VIEW);
         intent.setDataAndType(uri, "application/vnd.android.package-archive");
         mContext.startActivity(intent);
     }
 
     private void start() {
-        //开始下载, 先检查权限
-        Subscription temp = RxPermissions.getInstance(mContext)
+        RxPermissions.getInstance(mContext)
                 .request(Manifest.permission.WRITE_EXTERNAL_STORAGE)
                 .doOnNext(new Action1<Boolean>() {
                     @Override
@@ -154,30 +144,25 @@ public class AppInfoViewHolder extends AbstractViewHolder<AppInfoBean> {
                         }
                     }
                 })
-                .observeOn(Schedulers.io())
-                .compose(mRxDownload.transformServiceNoReceiver(mData.downloadUrl, mData.saveName, null,
-                        mData.name, mData.img))
-                .observeOn(AndroidSchedulers.mainThread())
+                .compose(mRxDownload.transformService(mData.downloadUrl, mData.saveName, null))
                 .subscribe(new Action1<Object>() {
                     @Override
                     public void call(Object o) {
-                        mDownloadController.setStateAndDisplay(DownloadFlag.STARTED);
+                        Toast.makeText(mContext, "下载开始", Toast.LENGTH_SHORT).show();
+                    }
+                }, new Action1<Throwable>() {
+                    @Override
+                    public void call(Throwable throwable) {
+                        Toast.makeText(mContext, "下载任务已存在", Toast.LENGTH_SHORT).show();
                     }
                 });
-        mData.mSubscriptions.add(temp);
     }
 
-    /**
-     * 暂停下载
-     */
     private void pause() {
-        Subscription subscription = mRxDownload.pauseServiceDownload(mData.downloadUrl)
-                .subscribe(new Action1<Object>() {
-                    @Override
-                    public void call(Object o) {
-                        mDownloadController.setStateAndDisplay(DownloadFlag.PAUSED);
-                    }
-                });
-        mData.mSubscriptions.add(subscription);
+        mRxDownload.pauseServiceDownload(mData.downloadUrl).subscribe();
+    }
+
+    private void cancel() {
+        mRxDownload.cancelServiceDownload(mData.downloadUrl).subscribe();
     }
 }

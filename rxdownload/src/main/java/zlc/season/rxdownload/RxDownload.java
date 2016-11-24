@@ -9,6 +9,7 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.util.Log;
 
+import java.io.File;
 import java.io.IOException;
 import java.text.ParseException;
 import java.util.List;
@@ -28,10 +29,10 @@ import zlc.season.rxdownload.entity.DownloadEvent;
 import zlc.season.rxdownload.entity.DownloadMission;
 import zlc.season.rxdownload.entity.DownloadRecord;
 import zlc.season.rxdownload.entity.DownloadStatus;
+import zlc.season.rxdownload.entity.DownloadType;
 import zlc.season.rxdownload.entity.DownloadTypeFactory;
 import zlc.season.rxdownload.function.DownloadHelper;
 import zlc.season.rxdownload.function.DownloadService;
-import zlc.season.rxdownload.entity.DownloadType;
 import zlc.season.rxdownload.function.Utils;
 
 import static zlc.season.rxdownload.function.DownloadHelper.TEST_RANGE_SUPPORT;
@@ -101,8 +102,11 @@ public class RxDownload {
     }
 
     /**
-     * 接收下载地址为url的下载任务的下载进度.
-     * 注意只接收下载地址为url的下载进度.
+     * Receive the download address for the url download event and download status.
+     * 接收下载地址为url的下载事件和下载状态.
+     * <p>
+     * Note that only receive the download address for the URL.
+     * 注意只接收下载地址为url的事件和状态.
      *
      * @param url download url
      * @return Observable<DownloadStatus>
@@ -131,7 +135,8 @@ public class RxDownload {
     }
 
     /**
-     * 从数据库中读取所有的下载任务
+     * Read all the download record from the database
+     * 从数据库中读取所有的下载记录
      *
      * @return Observable<List<DownloadRecord>>
      */
@@ -145,6 +150,7 @@ public class RxDownload {
     }
 
     /**
+     * Read single download record with url.
      * 从数据库中读取下载地址为url的下载记录
      *
      * @param url download url
@@ -160,7 +166,10 @@ public class RxDownload {
     }
 
     /**
+     * Suspended download address for the url download task in Service.
      * 暂停Service中下载地址为url的下载任务.
+     * <p>
+     * Book the download records in the tag database are paused.
      * 同时标记数据库中的下载记录为暂停状态.
      *
      * @param url download url
@@ -185,6 +194,7 @@ public class RxDownload {
 
     /**
      * 取消Service中下载地址为url的下载任务.
+     * <p>
      * 同时标记数据库中的下载记录为取消状态.
      * 不会删除已经下载的文件.
      *
@@ -210,6 +220,7 @@ public class RxDownload {
 
     /**
      * 删除Service中下载地址为url的下载任务.
+     * <p>
      * 同时从数据库中删除该下载记录.
      * 不会删除已经下载的文件.
      *
@@ -235,8 +246,12 @@ public class RxDownload {
 
     /**
      * Using Service to download. Just download, can't receive download status.
+     * 使用Service下载. 仅仅开始下载, 不会接收下载进度.
      * <p>
      * Un subscribe will not pause download.
+     * 取消订阅不会停止下载.
+     * <p>
+     * If you want receive download status, see {@link #receiveDownloadStatus(String)}
      * <p>
      * If you want pause download, see {@link #pauseServiceDownload(String)}
      * <p>
@@ -353,8 +368,13 @@ public class RxDownload {
     }
 
 
-    public String[] getFileSavePaths(String savePath) {
+    public String[] getRealFileSavePaths(String savePath) {
         return mDownloadHelper.getFileSavePaths(savePath);
+    }
+
+    public File[] getRealFiles(String saveName, String savePath) {
+        String[] filePaths = mDownloadHelper.getRealFilePaths(saveName, savePath);
+        return new File[]{new File(filePaths[0]), new File(filePaths[1]), new File(filePaths[2])};
     }
 
     private void addDownloadTask(@NonNull String url, @NonNull String saveName,

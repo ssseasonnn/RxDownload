@@ -16,8 +16,6 @@ import android.widget.Toast;
 import com.squareup.picasso.Picasso;
 import com.tbruyelle.rxpermissions.RxPermissions;
 
-import java.io.File;
-
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
@@ -133,7 +131,7 @@ public class ServiceDownloadActivity extends AppCompatActivity {
     }
 
     private void installApk() {
-        Uri uri = Uri.fromFile(new File(defaultPath + File.separator + saveName));
+        Uri uri = Uri.fromFile(mRxDownload.getRealFiles(saveName, defaultPath)[0]);
         Intent intent = new Intent(Intent.ACTION_VIEW);
         intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
         intent.setDataAndType(uri, "application/vnd.android.package-archive");

@@ -16,6 +16,7 @@ import java.text.ParseException;
 import okhttp3.ResponseBody;
 import retrofit2.Response;
 import rx.Subscriber;
+import zlc.season.rxdownload.BuildConfig;
 import zlc.season.rxdownload.entity.DownloadRange;
 import zlc.season.rxdownload.entity.DownloadStatus;
 
@@ -309,14 +310,14 @@ public class FileHelper {
         for (String each : directoryPaths) {
             File file = new File(each);
             if (file.exists() && file.isDirectory()) {
-                Log.d(TAG, "Directory exists. Do not need create. Path = " + each);
+                if (BuildConfig.DEBUG) Log.d(TAG, "Directory exists. Do not need create. Path = " + each);
             } else {
-                Log.d(TAG, "Directory is not exists.So we need create. Path = " + each);
+                if (BuildConfig.DEBUG) Log.d(TAG, "Directory is not exists.So we need create. Path = " + each);
                 boolean flag = file.mkdir();
                 if (flag) {
-                    Log.d(TAG, "Directory create succeed! Path = " + each);
+                    if (BuildConfig.DEBUG) Log.d(TAG, "Directory create succeed! Path = " + each);
                 } else {
-                    Log.d(TAG, "Directory create failed! Path = " + each);
+                    if (BuildConfig.DEBUG) Log.d(TAG, "Directory create failed! Path = " + each);
                     throw new IOException("Directory create failed!");
                 }
             }

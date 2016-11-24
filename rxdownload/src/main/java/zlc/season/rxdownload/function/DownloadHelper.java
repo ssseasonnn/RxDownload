@@ -60,7 +60,7 @@ public class DownloadHelper {
 
     public void addDownloadRecord(String url, String saveName, String savePath) throws IOException {
         mFileHelper.createDirectories(savePath);
-        mDownloadRecord.put(url, mFileHelper.getRealFilePaths(saveName, savePath));
+        mDownloadRecord.put(url, getRealFilePaths(saveName, savePath));
     }
 
     public boolean isRecordExists(String url) {
@@ -89,6 +89,10 @@ public class DownloadHelper {
 
     public String[] getFileSavePaths(String savePath) {
         return mFileHelper.getRealDirectoryPaths(savePath);
+    }
+
+    public String[] getRealFilePaths(String saveName, String savePath) {
+        return mFileHelper.getRealFilePaths(saveName, savePath);
     }
 
     public boolean downloadFileExists(String url) {

@@ -53,6 +53,7 @@ public class DownloadMission {
                       final AtomicInteger count, final DataBaseHelper helper) {
         nowDownloadMap.put(url, this);
         count.incrementAndGet();
+        final DownloadEventFactory eventFactory = DownloadEventFactory.getSingleton();
         mSubscription = rxDownload.download(url, saveName, savePath)
                 .subscribeOn(Schedulers.io())
                 .onBackpressureLatest()
@@ -65,8 +66,7 @@ public class DownloadMission {
 
                     @Override
                     public void onCompleted() {
-                        subject.onNext(DownloadEventFactory.getSingleton().factory(url, DownloadFlag.COMPLETED,
-                                mStatus));
+                        subject.onNext(eventFactory.factory(url, DownloadFlag.COMPLETED, mStatus));
                         helper.updateRecord(url, DownloadFlag.COMPLETED);
                         count.decrementAndGet();
                         nowDownloadMap.remove(url);
@@ -75,7 +75,7 @@ public class DownloadMission {
                     @Override
                     public void onError(Throwable e) {
                         Log.w("error", e);
-                        subject.onNext(DownloadEventFactory.getSingleton().factory(url, DownloadFlag.FAILED, mStatus));
+                        subject.onNext(eventFactory.factory(url, DownloadFlag.FAILED, mStatus));
                         helper.updateRecord(url, DownloadFlag.FAILED);
                         count.decrementAndGet();
                         nowDownloadMap.remove(url);
@@ -83,7 +83,7 @@ public class DownloadMission {
 
                     @Override
                     public void onNext(DownloadStatus status) {
-                        subject.onNext(DownloadEventFactory.getSingleton().factory(url, DownloadFlag.STARTED, status));
+                        subject.onNext(eventFactory.factory(url, DownloadFlag.STARTED, status));
                         helper.updateRecord(url, status);
                         mStatus = status;
                     }

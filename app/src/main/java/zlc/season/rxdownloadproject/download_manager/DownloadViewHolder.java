@@ -19,8 +19,6 @@ import android.widget.Toast;
 import com.squareup.picasso.Picasso;
 import com.tbruyelle.rxpermissions.RxPermissions;
 
-import java.io.File;
-
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
@@ -153,7 +151,7 @@ public class DownloadViewHolder extends AbstractViewHolder<DownloadBean> {
     }
 
     private void installApk() {
-        Uri uri = Uri.fromFile(new File(mData.mRecord.getSavePath() + File.separator + mData.mRecord.getSaveName()));
+        Uri uri = Uri.fromFile(mRxDownload.getRealFiles(mData.mRecord.getSaveName(), mData.mRecord.getSavePath())[0]);
         Intent intent = new Intent(Intent.ACTION_VIEW);
         intent.setDataAndType(uri, "application/vnd.android.package-archive");
         mContext.startActivity(intent);

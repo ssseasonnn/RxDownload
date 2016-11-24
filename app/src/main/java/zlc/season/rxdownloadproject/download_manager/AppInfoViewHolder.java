@@ -15,8 +15,6 @@ import android.widget.Toast;
 import com.squareup.picasso.Picasso;
 import com.tbruyelle.rxpermissions.RxPermissions;
 
-import java.io.File;
-
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
@@ -30,9 +28,6 @@ import zlc.season.rxdownload.entity.DownloadEvent;
 import zlc.season.rxdownload.function.Utils;
 import zlc.season.rxdownloadproject.DownloadController;
 import zlc.season.rxdownloadproject.R;
-
-import static android.os.Environment.DIRECTORY_DOWNLOADS;
-import static android.os.Environment.getExternalStoragePublicDirectory;
 
 /**
  * Author: Season(ssseasonnn@gmail.com)
@@ -49,8 +44,6 @@ public class AppInfoViewHolder extends AbstractViewHolder<AppInfoBean> {
     TextView mContent;
     @BindView(R.id.action)
     Button mAction;
-
-    private String defaultPath = getExternalStoragePublicDirectory(DIRECTORY_DOWNLOADS).getPath();
 
     private AppInfoBean mData;
     private Context mContext;
@@ -130,7 +123,7 @@ public class AppInfoViewHolder extends AbstractViewHolder<AppInfoBean> {
     }
 
     private void installApk() {
-        Uri uri = Uri.fromFile(new File(defaultPath + File.separator + mData.saveName));
+        Uri uri = Uri.fromFile(mRxDownload.getRealFiles(mData.saveName, null)[0]);
         Intent intent = new Intent(Intent.ACTION_VIEW);
         intent.setDataAndType(uri, "application/vnd.android.package-archive");
         mContext.startActivity(intent);

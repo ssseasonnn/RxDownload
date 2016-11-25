@@ -24,6 +24,7 @@ public class DownloadMission {
     private String url;
     private String saveName;
     private String savePath;
+    private boolean autoInstall;
 
     private DownloadStatus mStatus;
     private Subscription mSubscription;
@@ -49,8 +50,8 @@ public class DownloadMission {
     }
 
     public void start(final Map<String, DownloadMission> nowDownloadMap,
-                      final Subject<DownloadEvent, DownloadEvent> subject,
-                      final AtomicInteger count, final DataBaseHelper helper) {
+                      final AtomicInteger count, final DataBaseHelper helper,
+                      final Map<String, Subject<DownloadEvent, DownloadEvent>> subjectPool) {
         nowDownloadMap.put(url, this);
         count.incrementAndGet();
         final DownloadEventFactory eventFactory = DownloadEventFactory.getSingleton();
@@ -66,7 +67,10 @@ public class DownloadMission {
 
                     @Override
                     public void onCompleted() {
-                        subject.onNext(eventFactory.factory(url, DownloadFlag.COMPLETED, mStatus));
+                        subjectPool.get(url).onNext(eventFactory.factory(url, DownloadFlag.COMPLETED, mStatus));
+                        subjectPool.get(url).onCompleted();
+                        subjectPool.remove(url);
+
                         helper.updateRecord(url, DownloadFlag.COMPLETED);
                         count.decrementAndGet();
                         nowDownloadMap.remove(url);
@@ -75,7 +79,10 @@ public class DownloadMission {
                     @Override
                     public void onError(Throwable e) {
                         Log.w("error", e);
-                        subject.onNext(eventFactory.factory(url, DownloadFlag.FAILED, mStatus));
+                        subjectPool.get(url).onNext(eventFactory.factory(url, DownloadFlag.FAILED, mStatus));
+                        subjectPool.get(url).onError(e);
+                        subjectPool.remove(url);
+
                         helper.updateRecord(url, DownloadFlag.FAILED);
                         count.decrementAndGet();
                         nowDownloadMap.remove(url);
@@ -83,7 +90,7 @@ public class DownloadMission {
 
                     @Override
                     public void onNext(DownloadStatus status) {
-                        subject.onNext(eventFactory.factory(url, DownloadFlag.STARTED, status));
+                        subjectPool.get(url).onNext(eventFactory.factory(url, DownloadFlag.STARTED, status));
                         helper.updateRecord(url, status);
                         mStatus = status;
                     }
@@ -95,6 +102,7 @@ public class DownloadMission {
         String url;
         String saveName;
         String savePath;
+        boolean autoInstall;
 
         public Builder setRxDownload(RxDownload rxDownload) {
             this.rxDownload = rxDownload;
@@ -116,12 +124,18 @@ public class DownloadMission {
             return this;
         }
 
+        public Builder setAutoInstall(boolean autoInstall) {
+            this.autoInstall = autoInstall;
+            return this;
+        }
+
         public DownloadMission build() {
             DownloadMission task = new DownloadMission();
             task.rxDownload = rxDownload;
             task.url = url;
             task.saveName = saveName;
             task.savePath = savePath;
+            task.autoInstall = autoInstall;
             return task;
         }
     }

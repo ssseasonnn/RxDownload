@@ -51,6 +51,13 @@ The download tool based on RxJava . Support multi-threaded download and breakpoi
 - 修复常规下载中, 同一url能够多次下载的BUG
 - 使用方式请看文档
 
+### 2016-11-25 更新
+
+- 修复几个BUG
+- 新增APk下载完成自动安装功能, 可在参数配置中配置
+- 使用方式请下载demo.
+
+
 ### 效果图
 
 <figure class="third">
@@ -71,11 +78,11 @@ The download tool based on RxJava . Support multi-threaded download and breakpoi
 
 1.添加Gradle依赖
 
-[![Download](https://api.bintray.com/packages/ssseasonnn/android/RxDownload/images/download.svg)](https://bintray.com/ssseasonnn/android/RxDownload/_latestVersion)
+[ ![Download](https://api.bintray.com/packages/ssseasonnn/android/RxDownload/images/download.svg) ](https://bintray.com/ssseasonnn/android/RxDownload/_latestVersion)
 
 ```groovy
 	dependencies{
-   		 compile 'zlc.season:rxdownload:1.2.0'
+   		 compile 'zlc.season:rxdownload:1.2.2'
 	}
 ```
 
@@ -130,11 +137,13 @@ Subscription subscription = RxDownload.getInstance()
 
 ```java
 Subscription subscription = RxDownload.getInstance()
-                .maxThread(10)     //设置最大线程
-                .maxRetryCount(10) //设置下载失败重试次数
-                .retrofit(myRetrofit)//若需要自己的retrofit客户端,可在这里指定
-                .defaultSavePath(defaultSavePath)//设置默认的下载路径
-                .download(url,savename,savepath) //开始下载
+                .maxThread(10)                    //设置最大线程
+                .maxRetryCount(10)                //设置下载失败重试次数
+                .retrofit(myRetrofit)             //若需要自己的retrofit客户端,可在这里指定
+                .defaultSavePath(defaultSavePath) //设置默认的下载路径
+                .context(this)                    //自动安装需要Context
+                .autoInstall(true);               //下载完成自动安装
+                .download(url,savename,savepath)  //开始下载
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(new Subscriber<DownloadStatus>() {);
@@ -213,6 +222,7 @@ if (subscription != null && !subscription.isUnsubscribed()) {
 ```java
   RxDownload.getInstance()
                 .context(this)
+                .autoInstall(true); //下载完成自动安装
                 .maxDownloadNumber(3)  //设置同时最大下载数量
                 .serviceDownload(url, saveName, defaultPath)
                 .subscribe(new Action1<Object>() {

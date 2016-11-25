@@ -1,8 +1,12 @@
 package zlc.season.rxdownload.function;
 
+import android.content.Context;
+import android.content.Intent;
+import android.net.Uri;
 import android.text.TextUtils;
 
 import java.io.Closeable;
+import java.io.File;
 import java.io.IOException;
 import java.text.DecimalFormat;
 import java.text.ParseException;
@@ -77,6 +81,15 @@ public class Utils {
 
     public static boolean serverFileNotChange(Response<Void> resp) {
         return resp.code() == 206;
+    }
+
+    public static void installApk(Context context, File file) {
+        Uri uri = Uri.fromFile(file);
+        Intent intent = new Intent(Intent.ACTION_VIEW);
+        intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        intent.setDataAndType(uri, "application/vnd.android.package-archive");
+        context.startActivity(intent);
     }
 
     public static String formatSize(long size) {

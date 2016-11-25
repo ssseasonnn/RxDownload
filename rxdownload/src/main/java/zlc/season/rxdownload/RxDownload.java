@@ -54,6 +54,7 @@ public class RxDownload {
 
     private Context mContext;
 
+    private boolean mAutoInstall;
     private int MAX_DOWNLOAD_NUMBER = 5;
 
     private RxDownload() {
@@ -98,6 +99,11 @@ public class RxDownload {
 
     public RxDownload maxDownloadNumber(int max) {
         this.MAX_DOWNLOAD_NUMBER = max;
+        return this;
+    }
+
+    public RxDownload autoInstall(boolean flag) {
+        this.mAutoInstall = flag;
         return this;
     }
 
@@ -384,6 +390,7 @@ public class RxDownload {
                         .setUrl(url)
                         .setSaveName(saveName)
                         .setSavePath(savePath)
+                        .setAutoInstall(mAutoInstall)
                         .build());
     }
 
@@ -413,6 +420,19 @@ public class RxDownload {
                 .doOnCompleted(new Action0() {
                     @Override
                     public void call() {
+                        try {
+                            //等待1.5秒,以确保文件写入到磁盘中.
+                            Thread.sleep(1500);
+                            if (mAutoInstall) {
+                                if (mContext == null) {
+                                    throw new IllegalStateException("Context is NULL! You should call " +
+                                            "#RxDownload.context(Context context)# first!");
+                                }
+                                Utils.installApk(mContext, getRealFiles(saveName, savePath)[0]);
+                            }
+                        } catch (InterruptedException e) {
+                            throw new IllegalStateException(e);
+                        }
                         mDownloadHelper.deleteDownloadRecord(url);
                     }
                 })

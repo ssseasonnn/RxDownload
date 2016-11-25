@@ -137,7 +137,6 @@ public class DownloadService extends Service {
     public void deleteDownload(String url) {
         suspendDownloadAndSendEvent(url, DownloadFlag.DELETED);
         mDataBaseHelper.deleteRecord(url);
-//        mSubjectPool.remove(url);
     }
 
     private void suspendDownloadAndSendEvent(String url, int flag) {
@@ -173,7 +172,7 @@ public class DownloadService extends Service {
                         continue;
                     }
                     if (mCount.get() < MAX_DOWNLOAD_NUMBER) {
-                        mission.start(mNowDownloading, createAndGet(url), mCount, mDataBaseHelper);
+                        mission.start(mNowDownloading, mCount, mDataBaseHelper, mSubjectPool);
                         mWaitingForDownload.remove();
                         mWaitingForDownloadLookUpMap.remove(url);
                     }

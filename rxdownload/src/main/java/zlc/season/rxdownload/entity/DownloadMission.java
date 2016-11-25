@@ -24,7 +24,6 @@ public class DownloadMission {
     private String url;
     private String saveName;
     private String savePath;
-    private boolean autoInstall;
 
     private DownloadStatus mStatus;
     private Subscription mSubscription;
@@ -102,7 +101,6 @@ public class DownloadMission {
         String url;
         String saveName;
         String savePath;
-        boolean autoInstall;
 
         public Builder setRxDownload(RxDownload rxDownload) {
             this.rxDownload = rxDownload;
@@ -124,18 +122,12 @@ public class DownloadMission {
             return this;
         }
 
-        public Builder setAutoInstall(boolean autoInstall) {
-            this.autoInstall = autoInstall;
-            return this;
-        }
-
         public DownloadMission build() {
             DownloadMission task = new DownloadMission();
             task.rxDownload = rxDownload;
             task.url = url;
             task.saveName = saveName;
             task.savePath = savePath;
-            task.autoInstall = autoInstall;
             return task;
         }
     }

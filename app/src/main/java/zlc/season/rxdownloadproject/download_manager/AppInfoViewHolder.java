@@ -58,7 +58,9 @@ public class AppInfoViewHolder extends AbstractViewHolder<AppInfoBean> {
 
         mRxDownload = RxDownload.getInstance()
                 .context(mContext)
+                .autoInstall(true)  // 下载完成自动安装
                 .maxDownloadNumber(2);//最大下载数量
+
 
         mDownloadController = new DownloadController(new TextView(mContext), mAction);
         itemView.setOnClickListener(new View.OnClickListener() {

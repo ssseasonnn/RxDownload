@@ -390,7 +390,6 @@ public class RxDownload {
                         .setUrl(url)
                         .setSaveName(saveName)
                         .setSavePath(savePath)
-                        .setAutoInstall(mAutoInstall)
                         .build());
     }
 

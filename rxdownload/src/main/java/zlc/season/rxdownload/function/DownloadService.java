@@ -6,7 +6,6 @@ import android.os.Binder;
 import android.os.IBinder;
 import android.support.annotation.Nullable;
 
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
@@ -14,9 +13,8 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import rx.subjects.BehaviorSubject;
-import rx.subjects.SerializedSubject;
-import rx.subjects.Subject;
+import io.reactivex.processors.BehaviorProcessor;
+import io.reactivex.processors.FlowableProcessor;
 import zlc.season.rxdownload.db.DataBaseHelper;
 import zlc.season.rxdownload.entity.DownloadEvent;
 import zlc.season.rxdownload.entity.DownloadEventFactory;
@@ -37,7 +35,7 @@ public class DownloadService extends Service {
     private DataBaseHelper mDataBaseHelper;
     private DownloadEventFactory mEventFactory;
 
-    private volatile Map<String, Subject<DownloadEvent, DownloadEvent>> mSubjectPool;
+    private volatile Map<String, FlowableProcessor<DownloadEvent>> mProcessorPool;
     private volatile AtomicInteger mCount = new AtomicInteger(0);
 
     private Map<String, DownloadMission> mNowDownloading;
@@ -52,7 +50,7 @@ public class DownloadService extends Service {
         super.onCreate();
         mBinder = new DownloadBinder();
 
-        mSubjectPool = new ConcurrentHashMap<>();
+        mProcessorPool = new ConcurrentHashMap<>();
         mWaitingForDownload = new LinkedList<>();
         mWaitingForDownloadLookUpMap = new HashMap<>();
         mNowDownloading = new HashMap<>();
@@ -88,28 +86,30 @@ public class DownloadService extends Service {
         return mBinder;
     }
 
-    public Subject<DownloadEvent, DownloadEvent> getSubject(String url) {
-        Subject<DownloadEvent, DownloadEvent> subject = createAndGet(url);
+    public FlowableProcessor<DownloadEvent> getProcessor(String url) {
+        FlowableProcessor<DownloadEvent> processor = createAndGet(url);
         if (!mDataBaseHelper.recordNotExists(url)) {
             DownloadRecord record = mDataBaseHelper.readSingleRecord(url);
-            subject.onNext(mEventFactory.factory(url, record.getFlag(), record.getStatus()));
+            processor.onNext(mEventFactory.factory(url, record.getFlag(), record.getStatus()));
         }
-        return subject;
+        return processor;
     }
 
-    public Subject<DownloadEvent, DownloadEvent> createAndGet(String url) {
-        if (mSubjectPool.get(url) == null) {
-            Subject<DownloadEvent, DownloadEvent> subject = new SerializedSubject<>(BehaviorSubject.create
-                    (mEventFactory.factory(url, DownloadFlag.NORMAL, null)));
-            mSubjectPool.put(url, subject);
+    public FlowableProcessor<DownloadEvent> createAndGet(String url) {
+        if (mProcessorPool.get(url) == null) {
+            FlowableProcessor<DownloadEvent> processor
+                    = BehaviorProcessor
+                    .createDefault(mEventFactory.factory(url, DownloadFlag.NORMAL, null))
+                    .toSerialized();
+            mProcessorPool.put(url, processor);
         }
-        return mSubjectPool.get(url);
+        return mProcessorPool.get(url);
     }
 
-    public void addDownloadMission(DownloadMission mission) throws IOException {
+    public void addDownloadMission(DownloadMission mission) {
         String url = mission.getUrl();
         if (mWaitingForDownloadLookUpMap.get(url) != null || mNowDownloading.get(url) != null) {
-            throw new IOException("This download mission is exists.");
+            throw new IllegalArgumentException("This download mission is exists.");
         } else {
             if (mDataBaseHelper.recordNotExists(url)) {
                 mDataBaseHelper.insertRecord(mission);
@@ -144,7 +144,7 @@ public class DownloadService extends Service {
             mWaitingForDownloadLookUpMap.get(url).canceled = true;
         }
         if (mNowDownloading.get(url) != null) {
-            Utils.unSubscribe(mNowDownloading.get(url).getSubscription());
+            Utils.dispose(mNowDownloading.get(url).getDisposable());
             createAndGet(url).onNext(mEventFactory.factory(url, flag, mNowDownloading.get(url).getStatus()));
             mCount.decrementAndGet();
             mNowDownloading.remove(url);
@@ -172,7 +172,7 @@ public class DownloadService extends Service {
                         continue;
                     }
                     if (mCount.get() < MAX_DOWNLOAD_NUMBER) {
-                        mission.start(mNowDownloading, mCount, mDataBaseHelper, mSubjectPool);
+                        mission.start(mNowDownloading, mCount, mDataBaseHelper, mProcessorPool);
                         mWaitingForDownload.remove();
                         mWaitingForDownloadLookUpMap.remove(url);
                     }

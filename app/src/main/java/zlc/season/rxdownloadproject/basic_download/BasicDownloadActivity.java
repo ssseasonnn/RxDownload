@@ -14,18 +14,18 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import com.squareup.picasso.Picasso;
-import com.tbruyelle.rxpermissions.RxPermissions;
+import com.tbruyelle.rxpermissions2.RxPermissions;
 
 import java.io.File;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
-import rx.Subscriber;
-import rx.Subscription;
-import rx.android.schedulers.AndroidSchedulers;
-import rx.functions.Action1;
-import rx.schedulers.Schedulers;
+import io.reactivex.Observer;
+import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.disposables.Disposable;
+import io.reactivex.functions.Consumer;
+import io.reactivex.schedulers.Schedulers;
 import zlc.season.rxdownload.RxDownload;
 import zlc.season.rxdownload.entity.DownloadStatus;
 import zlc.season.rxdownload.function.Utils;
@@ -57,7 +57,7 @@ public class BasicDownloadActivity extends AppCompatActivity {
     private String saveName = "weixin.apk";
     private String defaultPath = getExternalStoragePublicDirectory(DIRECTORY_DOWNLOADS).getPath();
     private String url = "http://dldir1.qq.com/weixin/android/weixin6330android920.apk";
-    private Subscription subscription;
+    private Disposable mDisposable;
     private RxDownload mRxDownload;
     private DownloadController mDownloadController;
 
@@ -114,33 +114,37 @@ public class BasicDownloadActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        Utils.unSubscribe(subscription);
+        Utils.dispose(mDisposable);
     }
 
     private void start() {
-        subscription = RxPermissions.getInstance(this)
+        RxPermissions.getInstance(this)
                 .request(Manifest.permission.WRITE_EXTERNAL_STORAGE)
-                .doOnNext(new Action1<Boolean>() {
+                .doOnNext(new Consumer<Boolean>() {
                     @Override
-                    public void call(Boolean granted) {
-                        if (!granted) {
+                    public void accept(Boolean aBoolean) throws Exception {
+                        if (!aBoolean) {
                             throw new RuntimeException("no permission");
                         }
                     }
                 })
                 .observeOn(Schedulers.io())
-                .compose(mRxDownload.transform(url, saveName, null))
+                .compose(mRxDownload.<Boolean>transform(url, saveName, null))
                 .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(new Subscriber<DownloadStatus>() {
+                .subscribe(new Observer<DownloadStatus>() {
                     @Override
-                    public void onStart() {
-                        super.onStart();
+                    public void onSubscribe(Disposable d) {
+                        mDisposable = d;
                         mDownloadController.setState(new DownloadController.Started());
                     }
 
                     @Override
-                    public void onCompleted() {
-                        mDownloadController.setState(new DownloadController.Completed());
+                    public void onNext(DownloadStatus status) {
+                        mProgress.setIndeterminate(status.isChunked);
+                        mProgress.setMax((int) status.getTotalSize());
+                        mProgress.setProgress((int) status.getDownloadSize());
+                        mPercent.setText(status.getPercent());
+                        mSize.setText(status.getFormatStatusString());
                     }
 
                     @Override
@@ -150,19 +154,15 @@ public class BasicDownloadActivity extends AppCompatActivity {
                     }
 
                     @Override
-                    public void onNext(final DownloadStatus status) {
-                        mProgress.setIndeterminate(status.isChunked);
-                        mProgress.setMax((int) status.getTotalSize());
-                        mProgress.setProgress((int) status.getDownloadSize());
-                        mPercent.setText(status.getPercent());
-                        mSize.setText(status.getFormatStatusString());
+                    public void onComplete() {
+                        mDownloadController.setState(new DownloadController.Completed());
                     }
                 });
     }
 
     private void pause() {
         mDownloadController.setState(new DownloadController.Paused());
-        Utils.unSubscribe(subscription);
+        Utils.dispose(mDisposable);
     }
 
     private void installApk() {

@@ -11,19 +11,24 @@ import android.util.Log;
 
 import java.io.File;
 import java.io.IOException;
-import java.text.ParseException;
 import java.util.List;
 
+import io.reactivex.Observable;
+import io.reactivex.ObservableEmitter;
+import io.reactivex.ObservableOnSubscribe;
+import io.reactivex.ObservableSource;
+import io.reactivex.ObservableTransformer;
+import io.reactivex.Single;
+import io.reactivex.SingleEmitter;
+import io.reactivex.SingleOnSubscribe;
+import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.exceptions.CompositeException;
+import io.reactivex.functions.Action;
+import io.reactivex.functions.BiPredicate;
+import io.reactivex.functions.Consumer;
+import io.reactivex.functions.Function;
 import retrofit2.Response;
 import retrofit2.Retrofit;
-import rx.Observable;
-import rx.Subscriber;
-import rx.android.schedulers.AndroidSchedulers;
-import rx.exceptions.CompositeException;
-import rx.functions.Action0;
-import rx.functions.Action1;
-import rx.functions.Func1;
-import rx.functions.Func2;
 import zlc.season.rxdownload.db.DataBaseHelper;
 import zlc.season.rxdownload.entity.DownloadEvent;
 import zlc.season.rxdownload.entity.DownloadMission;
@@ -118,24 +123,24 @@ public class RxDownload {
      * @return Observable<DownloadStatus>
      */
     public Observable<DownloadEvent> receiveDownloadStatus(final String url) {
-        return Observable.create(new Observable.OnSubscribe<Object>() {
+        return Single.create(new SingleOnSubscribe<Object>() {
             @Override
-            public void call(final Subscriber<? super Object> subscriber) {
+            public void subscribe(final SingleEmitter<Object> e) throws Exception {
                 if (!bound) {
                     startBindServiceAndDo(new ServiceConnectedCallback() {
                         @Override
                         public void call() {
-                            subscriber.onNext(null);
+                            e.onSuccess(null);
                         }
                     });
                 } else {
-                    subscriber.onNext(null);
+                    e.onSuccess(null);
                 }
             }
-        }).flatMap(new Func1<Object, Observable<DownloadEvent>>() {
+        }).flatMapObservable(new Function<Object, ObservableSource<? extends DownloadEvent>>() {
             @Override
-            public Observable<DownloadEvent> call(Object o) {
-                return mDownloadService.getSubject(url).asObservable().onBackpressureLatest();
+            public ObservableSource<? extends DownloadEvent> apply(Object o) throws Exception {
+                return mDownloadService.getProcessor(url).toObservable();
             }
         }).observeOn(AndroidSchedulers.mainThread());
     }
@@ -181,19 +186,10 @@ public class RxDownload {
      * @param url download url
      */
     public Observable<?> pauseServiceDownload(final String url) {
-        return Observable.just(null).doOnSubscribe(new Action0() {
+        return createGeneralObservable(new GeneralObservableCallback() {
             @Override
             public void call() {
-                if (!bound) {
-                    startBindServiceAndDo(new ServiceConnectedCallback() {
-                        @Override
-                        public void call() {
-                            mDownloadService.pauseDownload(url);
-                        }
-                    });
-                } else {
-                    mDownloadService.pauseDownload(url);
-                }
+                mDownloadService.pauseDownload(url);
             }
         });
     }
@@ -207,19 +203,10 @@ public class RxDownload {
      * @param url download url
      */
     public Observable<?> cancelServiceDownload(final String url) {
-        return Observable.just(null).doOnSubscribe(new Action0() {
+        return createGeneralObservable(new GeneralObservableCallback() {
             @Override
             public void call() {
-                if (!bound) {
-                    startBindServiceAndDo(new ServiceConnectedCallback() {
-                        @Override
-                        public void call() {
-                            mDownloadService.cancelDownload(url);
-                        }
-                    });
-                } else {
-                    mDownloadService.cancelDownload(url);
-                }
+                mDownloadService.cancelDownload(url);
             }
         });
     }
@@ -233,19 +220,10 @@ public class RxDownload {
      * @param url download url
      */
     public Observable<?> deleteServiceDownload(final String url) {
-        return Observable.just(null).doOnSubscribe(new Action0() {
+        return createGeneralObservable(new GeneralObservableCallback() {
             @Override
             public void call() {
-                if (!bound) {
-                    startBindServiceAndDo(new ServiceConnectedCallback() {
-                        @Override
-                        public void call() {
-                            mDownloadService.deleteDownload(url);
-                        }
-                    });
-                } else {
-                    mDownloadService.deleteDownload(url);
-                }
+                mDownloadService.deleteDownload(url);
             }
         });
     }
@@ -269,34 +247,13 @@ public class RxDownload {
      * @param savePath download file SavePath. If NULL, using default save path {@code /storage/emulated/0/Download/}
      * @return Observable<DownloadStatus>
      */
-    public Observable<Object> serviceDownload(@NonNull final String url,
-                                              @NonNull final String saveName,
-                                              @Nullable final String savePath) {
-        return Observable.create(new Observable.OnSubscribe<Object>() {
+    public Observable<?> serviceDownload(@NonNull final String url,
+                                         @NonNull final String saveName,
+                                         @Nullable final String savePath) {
+        return createGeneralObservable(new GeneralObservableCallback() {
             @Override
-            public void call(final Subscriber<? super Object> subscriber) {
-                if (!bound) {
-                    startBindServiceAndDo(new ServiceConnectedCallback() {
-                        @Override
-                        public void call() {
-                            try {
-                                addDownloadTask(url, saveName, savePath);
-                                subscriber.onNext(null);
-                                subscriber.onCompleted();
-                            } catch (IOException e) {
-                                subscriber.onError(e);
-                            }
-                        }
-                    });
-                } else {
-                    try {
-                        addDownloadTask(url, saveName, savePath);
-                        subscriber.onNext(null);
-                        subscriber.onCompleted();
-                    } catch (IOException e) {
-                        subscriber.onError(e);
-                    }
-                }
+            public void call() {
+                addDownloadTask(url, saveName, savePath);
             }
         });
     }
@@ -324,21 +281,22 @@ public class RxDownload {
      * <p>
      * Provide RxJava Compose operator use.
      *
-     * @param url      download file Url
-     * @param saveName download file SaveName
-     * @param savePath download file SavePath. If NULL, using default save path {@code /storage/emulated/0/Download/}
-     * @param <T>      T
+     * @param url        download file Url
+     * @param saveName   download file SaveName
+     * @param savePath   download file SavePath. If NULL, using default save path {@code /storage/emulated/0/Download/}
+     * @param <Upstream> Upstream
      * @return Transformer
      */
-    public <T> Observable.Transformer<T, DownloadStatus> transform(@NonNull final String url,
-                                                                   @NonNull final String saveName,
-                                                                   @Nullable final String savePath) {
-        return new Observable.Transformer<T, DownloadStatus>() {
+    public <Upstream> ObservableTransformer<Upstream, DownloadStatus> transform(@NonNull final String url,
+                                                                                @NonNull final String saveName,
+                                                                                @Nullable final String savePath) {
+
+        return new ObservableTransformer<Upstream, DownloadStatus>() {
             @Override
-            public Observable<DownloadStatus> call(Observable<T> observable) {
-                return observable.flatMap(new Func1<T, Observable<DownloadStatus>>() {
+            public ObservableSource<DownloadStatus> apply(io.reactivex.Observable<Upstream> upstream) {
+                return upstream.flatMap(new Function<Upstream, ObservableSource<DownloadStatus>>() {
                     @Override
-                    public Observable<DownloadStatus> call(T t) {
+                    public ObservableSource<DownloadStatus> apply(Upstream upstream) throws Exception {
                         return download(url, saveName, savePath);
                     }
                 });
@@ -351,21 +309,22 @@ public class RxDownload {
      * <p>
      * Provide RxJava Compose operator use.
      *
-     * @param url      download file Url
-     * @param saveName download file SaveName
-     * @param savePath download file SavePath. If NULL, using default save path {@code /storage/emulated/0/Download/}
-     * @param <T>      T
+     * @param url        download file Url
+     * @param saveName   download file SaveName
+     * @param savePath   download file SavePath. If NULL, using default save path {@code /storage/emulated/0/Download/}
+     * @param <Upstream> Upstream
      * @return Transformer
      */
-    public <T> Observable.Transformer<T, Object> transformService(@NonNull final String url,
-                                                                  @NonNull final String saveName,
-                                                                  @Nullable final String savePath) {
-        return new Observable.Transformer<T, Object>() {
+    public <Upstream> ObservableTransformer<Upstream, Object> transformService(@NonNull final String url,
+                                                                               @NonNull final String saveName,
+                                                                               @Nullable final String savePath) {
+        return new ObservableTransformer<Upstream, Object>() {
+
             @Override
-            public Observable<Object> call(Observable<T> observable) {
-                return observable.flatMap(new Func1<T, Observable<Object>>() {
+            public ObservableSource<Object> apply(Observable<Upstream> upstream) {
+                return upstream.flatMap(new Function<Upstream, ObservableSource<?>>() {
                     @Override
-                    public Observable<Object> call(T t) {
+                    public ObservableSource<?> apply(Upstream upstream) throws Exception {
                         return serviceDownload(url, saveName, savePath);
                     }
                 });
@@ -382,8 +341,30 @@ public class RxDownload {
         return new File[]{new File(filePaths[0]), new File(filePaths[1]), new File(filePaths[2])};
     }
 
+    private Observable<?> createGeneralObservable(final GeneralObservableCallback callback) {
+        return Observable.create(new ObservableOnSubscribe<Object>() {
+            @Override
+            public void subscribe(final ObservableEmitter<Object> emitter) throws Exception {
+                if (!bound) {
+                    startBindServiceAndDo(new ServiceConnectedCallback() {
+                        @Override
+                        public void call() {
+                            callback.call();
+                            emitter.onNext(null);
+                            emitter.onComplete();
+                        }
+                    });
+                } else {
+                    callback.call();
+                    emitter.onNext(null);
+                    emitter.onComplete();
+                }
+            }
+        });
+    }
+
     private void addDownloadTask(@NonNull String url, @NonNull String saveName,
-                                 @Nullable String savePath) throws IOException {
+                                 @Nullable String savePath) {
         mDownloadService.addDownloadMission(
                 new DownloadMission.Builder()
                         .setRxDownload(RxDownload.this)
@@ -405,51 +386,41 @@ public class RxDownload {
             return Observable.error(e);
         }
         return getDownloadType(url)
-                .flatMap(new Func1<DownloadType, Observable<DownloadStatus>>() {
+                .flatMap(new Function<DownloadType, ObservableSource<DownloadStatus>>() {
                     @Override
-                    public Observable<DownloadStatus> call(DownloadType type) {
-                        try {
-                            type.prepareDownload();
-                            return type.startDownload();
-                        } catch (IOException | ParseException e) {
-                            return Observable.error(e);
-                        }
+                    public ObservableSource<DownloadStatus> apply(DownloadType downloadType) throws Exception {
+                        downloadType.prepareDownload();
+                        return downloadType.startDownload();
                     }
                 })
-                .doOnCompleted(new Action0() {
+                .doOnComplete(new Action() {
                     @Override
-                    public void call() {
-                        try {
-                            //等待1.5秒,以确保文件写入到磁盘中.
-                            Thread.sleep(1500);
-                            if (mAutoInstall) {
-                                if (mContext == null) {
-                                    throw new IllegalStateException("Context is NULL! You should call " +
-                                            "#RxDownload.context(Context context)# first!");
-                                }
-                                Utils.installApk(mContext, getRealFiles(saveName, savePath)[0]);
+                    public void run() throws Exception {
+                        //等待1.5秒,以确保文件写入到磁盘中.
+                        Thread.sleep(1500);
+                        if (mAutoInstall) {
+                            if (mContext == null) {
+                                throw new IllegalStateException("Context is NULL! You should call " +
+                                        "#RxDownload.context(Context context)# first!");
                             }
-                        } catch (InterruptedException e) {
-                            throw new IllegalStateException(e);
+                            Utils.installApk(mContext, getRealFiles(saveName, savePath)[0]);
                         }
                         mDownloadHelper.deleteDownloadRecord(url);
                     }
                 })
-                .doOnError(new Action1<Throwable>() {
+                .doOnError(new Consumer<Throwable>() {
                     @Override
-                    public void call(Throwable throwable) {
+                    public void accept(Throwable throwable) throws Exception {
                         if (throwable instanceof CompositeException) {
-                            //避免打印CompositeException内的所有异常信息
                             Log.w(TAG, throwable.getMessage());
                         } else {
                             Log.w(TAG, throwable);
                         }
-                        mDownloadHelper.deleteDownloadRecord(url);
                     }
                 })
-                .doOnUnsubscribe(new Action0() {
+                .doFinally(new Action() {
                     @Override
-                    public void call() {
+                    public void run() throws Exception {
                         mDownloadHelper.deleteDownloadRecord(url);
                     }
                 });
@@ -470,9 +441,9 @@ public class RxDownload {
     private Observable<DownloadType> getWhenFileNotExists(final String url) {
         return mDownloadHelper.getDownloadApi()
                 .getHttpHeader(TEST_RANGE_SUPPORT, url)
-                .map(new Func1<Response<Void>, DownloadType>() {
+                .map(new Function<Response<Void>, DownloadType>() {
                     @Override
-                    public DownloadType call(Response<Void> response) {
+                    public DownloadType apply(Response<Void> response) throws Exception {
                         if (Utils.notSupportRange(response)) {
                             return mFactory.url(url)
                                     .fileLength(Utils.contentLength(response))
@@ -485,20 +456,22 @@ public class RxDownload {
                                     .buildMultiDownload();
                         }
                     }
-                }).retry(new Func2<Integer, Throwable, Boolean>() {
+                })
+                .retry(new BiPredicate<Integer, Throwable>() {
                     @Override
-                    public Boolean call(Integer integer, Throwable throwable) {
+                    public boolean test(Integer integer, Throwable throwable) throws Exception {
                         return mDownloadHelper.retry(integer, throwable);
                     }
                 });
+
     }
 
     private Observable<DownloadType> getWhenFileExists(final String url) throws IOException {
         return mDownloadHelper.getDownloadApi()
                 .getHttpHeaderWithIfRange(TEST_RANGE_SUPPORT, mDownloadHelper.getLastModify(url), url)
-                .map(new Func1<Response<Void>, DownloadType>() {
+                .map(new Function<Response<Void>, DownloadType>() {
                     @Override
-                    public DownloadType call(Response<Void> resp) {
+                    public DownloadType apply(Response<Void> resp) throws Exception {
                         if (Utils.serverFileNotChange(resp)) {
                             return getWhenServerFileNotChange(resp, url);
                         } else if (Utils.serverFileChanged(resp)) {
@@ -507,9 +480,10 @@ public class RxDownload {
                             throw new RuntimeException("unknown error");
                         }
                     }
-                }).retry(new Func2<Integer, Throwable, Boolean>() {
+                })
+                .retry(new BiPredicate<Integer, Throwable>() {
                     @Override
-                    public Boolean call(Integer integer, Throwable throwable) {
+                    public boolean test(Integer integer, Throwable throwable) throws Exception {
                         return mDownloadHelper.retry(integer, throwable);
                     }
                 });
@@ -576,7 +550,7 @@ public class RxDownload {
 
     private void startBindServiceAndDo(final ServiceConnectedCallback callback) {
         if (mContext == null) {
-            throw new RuntimeException("Context is NULL! You should call " +
+            throw new IllegalArgumentException("Context is NULL! You should call " +
                     "#RxDownload.context(Context context)# first!");
         }
         Intent intent = new Intent(mContext, DownloadService.class);
@@ -598,6 +572,10 @@ public class RxDownload {
                 bound = false;
             }
         }, Context.BIND_AUTO_CREATE);
+    }
+
+    interface GeneralObservableCallback {
+        void call();
     }
 
     private interface ServiceConnectedCallback {

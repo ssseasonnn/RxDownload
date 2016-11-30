@@ -7,13 +7,17 @@ import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.List;
 
+import io.reactivex.BackpressureStrategy;
+import io.reactivex.Flowable;
+import io.reactivex.FlowableEmitter;
+import io.reactivex.FlowableOnSubscribe;
+import io.reactivex.Observable;
+import io.reactivex.ObservableSource;
+import io.reactivex.functions.BiPredicate;
+import io.reactivex.functions.Function;
+import io.reactivex.schedulers.Schedulers;
 import okhttp3.ResponseBody;
 import retrofit2.Response;
-import rx.Observable;
-import rx.Subscriber;
-import rx.functions.Func1;
-import rx.functions.Func2;
-import rx.schedulers.Schedulers;
 import zlc.season.rxdownload.function.DownloadHelper;
 import zlc.season.rxdownload.function.FileHelper;
 
@@ -46,26 +50,27 @@ public abstract class DownloadType {
             Log.i(FileHelper.TAG, "Normal download start!!");
             return mDownloadHelper.getDownloadApi().download(null, mUrl)
                     .subscribeOn(Schedulers.io())
-                    .flatMap(new Func1<Response<ResponseBody>, Observable<DownloadStatus>>() {
+                    .flatMap(new Function<Response<ResponseBody>, ObservableSource<DownloadStatus>>() {
                         @Override
-                        public Observable<DownloadStatus> call(final Response<ResponseBody> response) {
-                            return normalSave(response);
+                        public ObservableSource<DownloadStatus> apply(Response<ResponseBody> resp) throws Exception {
+                            return normalSave(resp);
                         }
-                    }).onBackpressureLatest().retry(new Func2<Integer, Throwable, Boolean>() {
+                    })
+                    .retry(new BiPredicate<Integer, Throwable>() {
                         @Override
-                        public Boolean call(Integer integer, Throwable throwable) {
+                        public boolean test(Integer integer, Throwable throwable) throws Exception {
                             return mDownloadHelper.retry(integer, throwable);
                         }
                     });
         }
 
         private Observable<DownloadStatus> normalSave(final Response<ResponseBody> response) {
-            return Observable.create(new Observable.OnSubscribe<DownloadStatus>() {
+            return Flowable.create(new FlowableOnSubscribe<DownloadStatus>() {
                 @Override
-                public void call(Subscriber<? super DownloadStatus> subscriber) {
-                    mDownloadHelper.saveNormalFile(subscriber, mUrl, response);
+                public void subscribe(FlowableEmitter<DownloadStatus> e) throws Exception {
+                    mDownloadHelper.saveNormalFile(e, mUrl, response);
                 }
-            });
+            }, BackpressureStrategy.LATEST).toObservable();
         }
     }
 
@@ -100,14 +105,15 @@ public abstract class DownloadType {
             String range = "bytes=" + start + "-" + end;
             return mDownloadHelper.getDownloadApi().download(range, mUrl)
                     .subscribeOn(Schedulers.io())
-                    .flatMap(new Func1<Response<ResponseBody>, Observable<DownloadStatus>>() {
+                    .flatMap(new Function<Response<ResponseBody>, ObservableSource<DownloadStatus>>() {
                         @Override
-                        public Observable<DownloadStatus> call(Response<ResponseBody> response) {
-                            return rangeSave(start, end, i, response.body());
+                        public ObservableSource<DownloadStatus> apply(Response<ResponseBody> resp) throws Exception {
+                            return rangeSave(start, end, i, resp.body());
                         }
-                    }).onBackpressureLatest().retry(new Func2<Integer, Throwable, Boolean>() {
+                    })
+                    .retry(new BiPredicate<Integer, Throwable>() {
                         @Override
-                        public Boolean call(Integer integer, Throwable throwable) {
+                        public boolean test(Integer integer, Throwable throwable) throws Exception {
                             return mDownloadHelper.retry(integer, throwable);
                         }
                     });
@@ -124,12 +130,12 @@ public abstract class DownloadType {
          */
         private Observable<DownloadStatus> rangeSave(final long start, final long end, final int i,
                                                      final ResponseBody response) {
-            return Observable.create(new Observable.OnSubscribe<DownloadStatus>() {
+            return Flowable.create(new FlowableOnSubscribe<DownloadStatus>() {
                 @Override
-                public void call(Subscriber<? super DownloadStatus> subscriber) {
-                    mDownloadHelper.saveRangeFile(subscriber, i, start, end, mUrl, response);
+                public void subscribe(FlowableEmitter<DownloadStatus> emitter) throws Exception {
+                    mDownloadHelper.saveRangeFile(emitter, i, start, end, mUrl, response);
                 }
-            });
+            }, BackpressureStrategy.LATEST).toObservable();
         }
     }
 

@@ -14,13 +14,14 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.squareup.picasso.Picasso;
-import com.tbruyelle.rxpermissions.RxPermissions;
+import com.tbruyelle.rxpermissions2.RxPermissions;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
-import rx.Subscriber;
-import rx.functions.Action1;
+import io.reactivex.Observer;
+import io.reactivex.disposables.Disposable;
+import io.reactivex.functions.Consumer;
 import zlc.season.rxdownload.RxDownload;
 import zlc.season.rxdownload.entity.DownloadEvent;
 import zlc.season.rxdownload.entity.DownloadStatus;
@@ -101,10 +102,16 @@ public class ServiceDownloadActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         mRxDownload.receiveDownloadStatus(url)
-                .subscribe(new Subscriber<DownloadEvent>() {
+                .subscribe(new Observer<DownloadEvent>() {
                     @Override
-                    public void onCompleted() {
-                        mDownloadController.setState(new DownloadController.Completed());
+                    public void onSubscribe(Disposable d) {
+
+                    }
+
+                    @Override
+                    public void onNext(DownloadEvent event) {
+                        mDownloadController.setEvent(event);
+                        updateProgress(event);
                     }
 
                     @Override
@@ -114,9 +121,8 @@ public class ServiceDownloadActivity extends AppCompatActivity {
                     }
 
                     @Override
-                    public void onNext(final DownloadEvent event) {
-                        mDownloadController.setEvent(event);
-                        updateProgress(event);
+                    public void onComplete() {
+                        mDownloadController.setState(new DownloadController.Completed());
                     }
                 });
     }
@@ -141,18 +147,18 @@ public class ServiceDownloadActivity extends AppCompatActivity {
     private void start() {
         RxPermissions.getInstance(this)
                 .request(Manifest.permission.WRITE_EXTERNAL_STORAGE)
-                .doOnNext(new Action1<Boolean>() {
+                .doOnNext(new Consumer<Boolean>() {
                     @Override
-                    public void call(Boolean granted) {
+                    public void accept(Boolean granted) throws Exception {
                         if (!granted) {
                             throw new RuntimeException("no permission");
                         }
                     }
                 })
-                .compose(mRxDownload.transformService(url, saveName, defaultPath))
-                .subscribe(new Action1<Object>() {
+                .compose(mRxDownload.<Boolean>transformService(url, saveName, defaultPath))
+                .subscribe(new Consumer<Object>() {
                     @Override
-                    public void call(Object o) {
+                    public void accept(Object o) throws Exception {
                         Toast.makeText(ServiceDownloadActivity.this, "下载开始", Toast.LENGTH_SHORT).show();
                     }
                 });

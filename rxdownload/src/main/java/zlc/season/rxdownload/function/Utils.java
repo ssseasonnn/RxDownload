@@ -15,6 +15,7 @@ import java.util.Date;
 import java.util.Locale;
 import java.util.TimeZone;
 
+import io.reactivex.disposables.Disposable;
 import okhttp3.internal.http.HttpHeaders;
 import retrofit2.Response;
 import rx.Subscription;
@@ -46,6 +47,12 @@ public class Utils {
     public static void close(Closeable closeable) throws IOException {
         if (closeable != null) {
             closeable.close();
+        }
+    }
+
+    public static void dispose(Disposable disposable) {
+        if (disposable != null && !disposable.isDisposed()) {
+            disposable.dispose();
         }
     }
 

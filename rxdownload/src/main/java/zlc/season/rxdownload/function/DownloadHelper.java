@@ -13,11 +13,11 @@ import java.text.ParseException;
 import java.util.HashMap;
 import java.util.Map;
 
+import io.reactivex.FlowableEmitter;
 import okhttp3.ResponseBody;
 import retrofit2.Response;
 import retrofit2.Retrofit;
 import retrofit2.adapter.rxjava.HttpException;
-import rx.Subscriber;
 import rx.exceptions.CompositeException;
 import zlc.season.rxdownload.entity.DownloadRange;
 import zlc.season.rxdownload.entity.DownloadStatus;
@@ -170,8 +170,8 @@ public class DownloadHelper {
         mFileHelper.prepareDownload(getLastModifyFile(url), getFile(url), fileLength, lastModify);
     }
 
-    public void saveNormalFile(Subscriber<? super DownloadStatus> sub, String url, Response<ResponseBody> resp) {
-        mFileHelper.saveFile(sub, getFile(url), resp);
+    public void saveNormalFile(FlowableEmitter<DownloadStatus> emitter, String url, Response<ResponseBody> resp) {
+        mFileHelper.saveFile(emitter, getFile(url), resp);
     }
 
     public DownloadRange readDownloadRange(String url) throws IOException {
@@ -184,9 +184,9 @@ public class DownloadHelper {
                 fileLength, lastModify);
     }
 
-    public void saveRangeFile(Subscriber<? super DownloadStatus> subscriber, int i, long start, long end,
+    public void saveRangeFile(FlowableEmitter<DownloadStatus> emitter, int i, long start, long end,
                               String url, ResponseBody response) {
-        mFileHelper.saveFile(subscriber, i, start, end, getTempFile(url), getFile(url), response);
+        mFileHelper.saveFile(emitter, i, start, end, getTempFile(url), getFile(url), response);
     }
 
     private boolean tempFileDamaged(String url, long fileLength) throws IOException {

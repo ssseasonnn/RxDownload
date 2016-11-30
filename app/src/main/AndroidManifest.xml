@@ -45,8 +45,6 @@
                 android:resource="@xml/provider_paths"/>
         </provider>
 
-        <service android:name=".UpdateService"/>
-
         <activity
             android:name=".service_download.ServiceDownloadActivity"
             android:label="@string/title_activity_service_download"

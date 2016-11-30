@@ -5,12 +5,13 @@ import android.util.Log;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import rx.Subscriber;
-import rx.Subscription;
-import rx.schedulers.Schedulers;
-import rx.subjects.Subject;
+import io.reactivex.Observer;
+import io.reactivex.disposables.Disposable;
+import io.reactivex.processors.FlowableProcessor;
+import io.reactivex.schedulers.Schedulers;
 import zlc.season.rxdownload.RxDownload;
 import zlc.season.rxdownload.db.DataBaseHelper;
+import zlc.season.rxdownload.function.Utils;
 
 /**
  * Author: Season(ssseasonnn@gmail.com)
@@ -26,14 +27,14 @@ public class DownloadMission {
     private String savePath;
 
     private DownloadStatus mStatus;
-    private Subscription mSubscription;
+    private Disposable mDisposable;
+
+    public Disposable getDisposable() {
+        return mDisposable;
+    }
 
     public DownloadStatus getStatus() {
         return mStatus;
-    }
-
-    public Subscription getSubscription() {
-        return mSubscription;
     }
 
     public String getUrl() {
@@ -50,37 +51,34 @@ public class DownloadMission {
 
     public void start(final Map<String, DownloadMission> nowDownloadMap,
                       final AtomicInteger count, final DataBaseHelper helper,
-                      final Map<String, Subject<DownloadEvent, DownloadEvent>> subjectPool) {
+                      final Map<String, FlowableProcessor<DownloadEvent>> processorPool) {
+
         nowDownloadMap.put(url, this);
         count.incrementAndGet();
+
         final DownloadEventFactory eventFactory = DownloadEventFactory.getSingleton();
-        mSubscription = rxDownload.download(url, saveName, savePath)
+        rxDownload.download(url, saveName, savePath)
                 .subscribeOn(Schedulers.io())
-                .onBackpressureLatest()
-                .subscribe(new Subscriber<DownloadStatus>() {
+                .subscribe(new Observer<DownloadStatus>() {
                     @Override
-                    public void onStart() {
-                        super.onStart();
+                    public void onSubscribe(Disposable d) {
                         helper.updateRecord(url, DownloadFlag.STARTED);
+                        mDisposable = d;
                     }
 
                     @Override
-                    public void onCompleted() {
-                        subjectPool.get(url).onNext(eventFactory.factory(url, DownloadFlag.COMPLETED, mStatus));
-                        subjectPool.get(url).onCompleted();
-                        subjectPool.remove(url);
-
-                        helper.updateRecord(url, DownloadFlag.COMPLETED);
-                        count.decrementAndGet();
-                        nowDownloadMap.remove(url);
+                    public void onNext(DownloadStatus value) {
+                        processorPool.get(url).onNext(eventFactory.factory(url, DownloadFlag.STARTED, value));
+                        helper.updateRecord(url, value);
+                        mStatus = value;
                     }
 
                     @Override
                     public void onError(Throwable e) {
                         Log.w("error", e);
-                        subjectPool.get(url).onNext(eventFactory.factory(url, DownloadFlag.FAILED, mStatus));
-                        subjectPool.get(url).onError(e);
-                        subjectPool.remove(url);
+                        processorPool.get(url).onNext(eventFactory.factory(url, DownloadFlag.FAILED, mStatus));
+                        processorPool.get(url).onError(e);
+                        processorPool.remove(url);
 
                         helper.updateRecord(url, DownloadFlag.FAILED);
                         count.decrementAndGet();
@@ -88,10 +86,14 @@ public class DownloadMission {
                     }
 
                     @Override
-                    public void onNext(DownloadStatus status) {
-                        subjectPool.get(url).onNext(eventFactory.factory(url, DownloadFlag.STARTED, status));
-                        helper.updateRecord(url, status);
-                        mStatus = status;
+                    public void onComplete() {
+                        processorPool.get(url).onNext(eventFactory.factory(url, DownloadFlag.COMPLETED, mStatus));
+                        processorPool.get(url).onComplete();
+                        processorPool.remove(url);
+
+                        helper.updateRecord(url, DownloadFlag.COMPLETED);
+                        count.decrementAndGet();
+                        nowDownloadMap.remove(url);
                     }
                 });
     }

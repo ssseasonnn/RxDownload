@@ -7,10 +7,11 @@ import android.database.sqlite.SQLiteDatabase;
 import java.util.ArrayList;
 import java.util.List;
 
-import rx.Observable;
-import rx.Subscriber;
-import rx.android.schedulers.AndroidSchedulers;
-import rx.schedulers.Schedulers;
+import io.reactivex.Observable;
+import io.reactivex.ObservableEmitter;
+import io.reactivex.ObservableOnSubscribe;
+import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.schedulers.Schedulers;
 import zlc.season.rxdownload.entity.DownloadFlag;
 import zlc.season.rxdownload.entity.DownloadMission;
 import zlc.season.rxdownload.entity.DownloadRecord;
@@ -123,9 +124,9 @@ public class DataBaseHelper {
     }
 
     public Observable<List<DownloadRecord>> readAllRecords() {
-        return Observable.create(new Observable.OnSubscribe<List<DownloadRecord>>() {
+        return Observable.create(new ObservableOnSubscribe<List<DownloadRecord>>() {
             @Override
-            public void call(Subscriber<? super List<DownloadRecord>> subscriber) {
+            public void subscribe(ObservableEmitter<List<DownloadRecord>> emitter) throws Exception {
                 Cursor cursor = null;
                 try {
                     cursor = getReadableDatabase().rawQuery("select * from " + TABLE_NAME, new String[]{});
@@ -133,8 +134,8 @@ public class DataBaseHelper {
                     while (cursor.moveToNext()) {
                         result.add(Db.RecordTable.read(cursor));
                     }
-                    subscriber.onNext(result);
-                    subscriber.onCompleted();
+                    emitter.onNext(result);
+                    emitter.onComplete();
                 } finally {
                     if (cursor != null) {
                         cursor.close();
@@ -151,17 +152,17 @@ public class DataBaseHelper {
     }
 
     public Observable<DownloadRecord> readRecord(final String url) {
-        return Observable.create(new Observable.OnSubscribe<DownloadRecord>() {
+        return Observable.create(new ObservableOnSubscribe<DownloadRecord>() {
             @Override
-            public void call(Subscriber<? super DownloadRecord> subscriber) {
+            public void subscribe(ObservableEmitter<DownloadRecord> emitter) throws Exception {
                 Cursor cursor = null;
                 try {
                     cursor = getReadableDatabase().rawQuery("select * from " + TABLE_NAME +
                             " where " + "url=?", new String[]{url});
                     while (cursor.moveToNext()) {
-                        subscriber.onNext(Db.RecordTable.read(cursor));
+                        emitter.onNext(Db.RecordTable.read(cursor));
                     }
-                    subscriber.onCompleted();
+                    emitter.onComplete();
                 } finally {
                     if (cursor != null) {
                         cursor.close();

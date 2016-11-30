@@ -13,9 +13,9 @@ import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.text.ParseException;
 
+import io.reactivex.FlowableEmitter;
 import okhttp3.ResponseBody;
 import retrofit2.Response;
-import rx.Subscriber;
 import zlc.season.rxdownload.BuildConfig;
 import zlc.season.rxdownload.entity.DownloadRange;
 import zlc.season.rxdownload.entity.DownloadStatus;
@@ -110,7 +110,7 @@ public class FileHelper {
         }
     }
 
-    void saveFile(Subscriber<? super DownloadStatus> sub, File saveFile, Response<ResponseBody> resp) {
+    void saveFile(FlowableEmitter<DownloadStatus> emitter, File saveFile, Response<ResponseBody> resp) {
         InputStream inputStream = null;
         OutputStream outputStream = null;
         try {
@@ -134,10 +134,10 @@ public class FileHelper {
                     outputStream.write(buffer, 0, readLen);
                     downloadSize += readLen;
                     status.setDownloadSize(downloadSize);
-                    sub.onNext(status);
+                    emitter.onNext(status);
                 }
                 outputStream.flush(); // This is important!!!
-                sub.onCompleted();
+                emitter.onComplete();
                 Log.i(TAG, "Normal download completed!");
             } finally {
                 Utils.close(inputStream);
@@ -146,7 +146,7 @@ public class FileHelper {
             }
         } catch (IOException e) {
             Log.i(TAG, "Normal download failed or cancel!");
-            sub.onError(e);
+            emitter.onError(e);
         }
     }
 
@@ -186,7 +186,7 @@ public class FileHelper {
         }
     }
 
-    void saveFile(Subscriber<? super DownloadStatus> subscriber, int i, long start, long end,
+    void saveFile(FlowableEmitter<DownloadStatus> emitter, int i, long start, long end,
                   File tempFile, File saveFile, ResponseBody response) {
         RandomAccessFile record = null;
         FileChannel recordChannel = null;
@@ -218,11 +218,11 @@ public class FileHelper {
                     recordBuffer.putLong(i * EACH_RECORD_SIZE, recordBuffer.getLong(i * EACH_RECORD_SIZE) + readLen);
 
                     status.setDownloadSize(totalSize - getResidue(recordBuffer));
-                    subscriber.onNext(status);
+                    emitter.onNext(status);
                 }
                 Log.i(TAG, Thread.currentThread().getName() + " complete download! Download size is " +
                         response.contentLength() + " bytes");
-                subscriber.onCompleted();
+                emitter.onComplete();
             } finally {
                 Utils.close(record);
                 Utils.close(recordChannel);
@@ -233,7 +233,7 @@ public class FileHelper {
             }
         } catch (IOException e) {
             Log.i(TAG, Thread.currentThread().getName() + " download failed or cancel!");
-            subscriber.onError(e);
+            emitter.onError(e);
         }
     }
 

@@ -1,11 +1,12 @@
 package zlc.season.rxdownload.function;
 
+import com.jakewharton.retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory;
+
 import java.util.concurrent.TimeUnit;
 
 import okhttp3.OkHttpClient;
 import okhttp3.logging.HttpLoggingInterceptor;
 import retrofit2.Retrofit;
-import retrofit2.adapter.rxjava.RxJavaCallAdapterFactory;
 import retrofit2.converter.gson.GsonConverterFactory;
 import zlc.season.rxdownload.BuildConfig;
 
@@ -60,7 +61,7 @@ public class RetrofitProvider {
             return new Retrofit.Builder().baseUrl(ENDPOINT)
                     .client(builder.build())
                     .addConverterFactory(GsonConverterFactory.create())
-                    .addCallAdapterFactory(RxJavaCallAdapterFactory.create())
+                    .addCallAdapterFactory(RxJava2CallAdapterFactory.create())
                     .build();
         }
     }

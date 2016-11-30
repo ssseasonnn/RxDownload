@@ -18,7 +18,6 @@ import java.util.TimeZone;
 import io.reactivex.disposables.Disposable;
 import okhttp3.internal.http.HttpHeaders;
 import retrofit2.Response;
-import rx.Subscription;
 
 /**
  * Author: Season(ssseasonnn@gmail.com)
@@ -54,16 +53,6 @@ public class Utils {
         if (disposable != null && !disposable.isDisposed()) {
             disposable.dispose();
         }
-    }
-
-    public static void unSubscribe(Subscription subscription) {
-        if (subscription != null && !subscription.isUnsubscribed()) {
-            subscription.unsubscribe();
-        }
-    }
-
-    public static boolean isNullOrUnsubscribed(Subscription subscription) {
-        return subscription == null || subscription.isUnsubscribed();
     }
 
     public static String lastModify(Response<?> response) {

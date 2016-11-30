@@ -2,6 +2,8 @@ package zlc.season.rxdownload.function;
 
 import android.util.Log;
 
+import com.jakewharton.retrofit2.adapter.rxjava2.HttpException;
+
 import java.io.File;
 import java.io.IOException;
 import java.net.ConnectException;
@@ -14,11 +16,10 @@ import java.util.HashMap;
 import java.util.Map;
 
 import io.reactivex.FlowableEmitter;
+import io.reactivex.exceptions.CompositeException;
 import okhttp3.ResponseBody;
 import retrofit2.Response;
 import retrofit2.Retrofit;
-import retrofit2.adapter.rxjava.HttpException;
-import rx.exceptions.CompositeException;
 import zlc.season.rxdownload.entity.DownloadRange;
 import zlc.season.rxdownload.entity.DownloadStatus;
 

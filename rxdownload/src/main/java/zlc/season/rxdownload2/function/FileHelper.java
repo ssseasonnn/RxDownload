@@ -1,4 +1,4 @@
-package zlc.season.rxdownload.function;
+package zlc.season.rxdownload2.function;
 
 import android.text.TextUtils;
 import android.util.Log;
@@ -16,9 +16,9 @@ import java.text.ParseException;
 import io.reactivex.FlowableEmitter;
 import okhttp3.ResponseBody;
 import retrofit2.Response;
-import zlc.season.rxdownload.BuildConfig;
-import zlc.season.rxdownload.entity.DownloadRange;
-import zlc.season.rxdownload.entity.DownloadStatus;
+import zlc.season.rxdownload2.BuildConfig;
+import zlc.season.rxdownload2.entity.DownloadRange;
+import zlc.season.rxdownload2.entity.DownloadStatus;
 
 import static android.os.Environment.DIRECTORY_DOWNLOADS;
 import static android.os.Environment.getExternalStoragePublicDirectory;

@@ -1,4 +1,4 @@
-package zlc.season.rxdownload.entity;
+package zlc.season.rxdownload2.entity;
 
 import android.util.Log;
 
@@ -19,8 +19,8 @@ import io.reactivex.functions.Function;
 import io.reactivex.schedulers.Schedulers;
 import okhttp3.ResponseBody;
 import retrofit2.Response;
-import zlc.season.rxdownload.function.DownloadHelper;
-import zlc.season.rxdownload.function.FileHelper;
+import zlc.season.rxdownload2.function.DownloadHelper;
+import zlc.season.rxdownload2.function.FileHelper;
 
 
 /**

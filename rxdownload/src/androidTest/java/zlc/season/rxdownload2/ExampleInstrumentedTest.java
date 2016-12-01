@@ -1,4 +1,4 @@
-package zlc.season.rxdownload;
+package zlc.season.rxdownload2;
 
 import android.content.Context;
 import android.support.test.InstrumentationRegistry;

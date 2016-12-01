@@ -1,4 +1,4 @@
-package zlc.season.rxdownload;
+package zlc.season.rxdownload2;
 
 import org.junit.Test;
 
@@ -7,7 +7,7 @@ import rx.Subscriber;
 import rx.Subscription;
 import rx.functions.Action1;
 import rx.schedulers.Schedulers;
-import zlc.season.rxdownload.function.Utils;
+import zlc.season.rxdownload2.function.Utils;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 

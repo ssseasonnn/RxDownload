@@ -1,4 +1,4 @@
-package zlc.season.rxdownload.entity;
+package zlc.season.rxdownload2.entity;
 
 import android.util.Log;
 
@@ -9,9 +9,8 @@ import io.reactivex.Observer;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.processors.FlowableProcessor;
 import io.reactivex.schedulers.Schedulers;
-import zlc.season.rxdownload.RxDownload;
-import zlc.season.rxdownload.db.DataBaseHelper;
-import zlc.season.rxdownload.function.Utils;
+import zlc.season.rxdownload2.RxDownload;
+import zlc.season.rxdownload2.db.DataBaseHelper;
 
 /**
  * Author: Season(ssseasonnn@gmail.com)

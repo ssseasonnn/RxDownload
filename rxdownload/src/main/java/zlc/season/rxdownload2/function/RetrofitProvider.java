@@ -1,4 +1,4 @@
-package zlc.season.rxdownload.function;
+package zlc.season.rxdownload2.function;
 
 import com.jakewharton.retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory;
 
@@ -8,7 +8,7 @@ import okhttp3.OkHttpClient;
 import okhttp3.logging.HttpLoggingInterceptor;
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
-import zlc.season.rxdownload.BuildConfig;
+import zlc.season.rxdownload2.BuildConfig;
 
 /**
  * Author: Season(ssseasonnn@gmail.com)

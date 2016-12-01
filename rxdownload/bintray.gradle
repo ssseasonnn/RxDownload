@@ -2,7 +2,7 @@ apply plugin: 'com.github.dcendents.android-maven'
 apply plugin: 'com.jfrog.bintray'
 
 // This is the library version used when deploying the artifact
-version = "1.2.2"
+version = "1.0.0"
 
 def siteUrl = 'https://github.com/ssseasonnn/RxDownload'      // 项目的主页
 def gitUrl = 'https://github.com/ssseasonnn/RxDownload.git'   // Git仓库的url
@@ -15,7 +15,7 @@ install {
             project {
                 packaging 'aar'
                 // Add your description here
-                name 'RxDownload'
+                name 'RxDownload2'
                 url siteUrl
                 // Set your license
                 licenses {
@@ -64,7 +64,7 @@ bintray {
     configurations = ['archives']
     pkg {
         repo = "android"
-        name = "RxDownload"    //发布到JCenter上的项目名字
+        name = "RxDownload2"    //发布到JCenter上的项目名字
         websiteUrl = siteUrl
         vcsUrl = gitUrl
         licenses = ["Apache-2.0"]

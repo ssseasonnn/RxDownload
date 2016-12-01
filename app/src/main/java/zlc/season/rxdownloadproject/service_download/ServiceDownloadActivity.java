@@ -22,9 +22,9 @@ import butterknife.OnClick;
 import io.reactivex.Observer;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.functions.Consumer;
-import zlc.season.rxdownload.RxDownload;
-import zlc.season.rxdownload.entity.DownloadEvent;
-import zlc.season.rxdownload.entity.DownloadStatus;
+import zlc.season.rxdownload2.RxDownload;
+import zlc.season.rxdownload2.entity.DownloadEvent;
+import zlc.season.rxdownload2.entity.DownloadStatus;
 import zlc.season.rxdownloadproject.DownloadController;
 import zlc.season.rxdownloadproject.R;
 

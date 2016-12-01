@@ -1,12 +1,12 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-          package="zlc.season.rxdownload">
+          package="zlc.season.rxdownload2">
 
     <application
         android:allowBackup="true"
         android:label="@string/app_name"
         android:supportsRtl="true">
         <service
-            android:name=".function.DownloadService"/>
+            android:name="zlc.season.rxdownload2.function.DownloadService"/>
     </application>
 
 </manifest>

@@ -1,4 +1,4 @@
-package zlc.season.rxdownload.function;
+package zlc.season.rxdownload2.function;
 
 import android.util.Log;
 
@@ -20,8 +20,8 @@ import io.reactivex.exceptions.CompositeException;
 import okhttp3.ResponseBody;
 import retrofit2.Response;
 import retrofit2.Retrofit;
-import zlc.season.rxdownload.entity.DownloadRange;
-import zlc.season.rxdownload.entity.DownloadStatus;
+import zlc.season.rxdownload2.entity.DownloadRange;
+import zlc.season.rxdownload2.entity.DownloadStatus;
 
 import static android.text.TextUtils.concat;
 

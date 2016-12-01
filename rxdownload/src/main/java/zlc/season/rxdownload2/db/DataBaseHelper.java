@@ -1,4 +1,4 @@
-package zlc.season.rxdownload.db;
+package zlc.season.rxdownload2.db;
 
 import android.content.Context;
 import android.database.Cursor;
@@ -12,19 +12,19 @@ import io.reactivex.ObservableEmitter;
 import io.reactivex.ObservableOnSubscribe;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.schedulers.Schedulers;
-import zlc.season.rxdownload.entity.DownloadFlag;
-import zlc.season.rxdownload.entity.DownloadMission;
-import zlc.season.rxdownload.entity.DownloadRecord;
-import zlc.season.rxdownload.entity.DownloadStatus;
+import zlc.season.rxdownload2.entity.DownloadFlag;
+import zlc.season.rxdownload2.entity.DownloadMission;
+import zlc.season.rxdownload2.entity.DownloadRecord;
+import zlc.season.rxdownload2.entity.DownloadStatus;
 
-import static zlc.season.rxdownload.db.Db.RecordTable.COLUMN_DOWNLOAD_FLAG;
-import static zlc.season.rxdownload.db.Db.RecordTable.COLUMN_DOWNLOAD_SIZE;
-import static zlc.season.rxdownload.db.Db.RecordTable.COLUMN_ID;
-import static zlc.season.rxdownload.db.Db.RecordTable.COLUMN_IS_CHUNKED;
-import static zlc.season.rxdownload.db.Db.RecordTable.COLUMN_TOTAL_SIZE;
-import static zlc.season.rxdownload.db.Db.RecordTable.TABLE_NAME;
-import static zlc.season.rxdownload.db.Db.RecordTable.insert;
-import static zlc.season.rxdownload.db.Db.RecordTable.update;
+import static zlc.season.rxdownload2.db.Db.RecordTable.COLUMN_DOWNLOAD_FLAG;
+import static zlc.season.rxdownload2.db.Db.RecordTable.COLUMN_DOWNLOAD_SIZE;
+import static zlc.season.rxdownload2.db.Db.RecordTable.COLUMN_ID;
+import static zlc.season.rxdownload2.db.Db.RecordTable.COLUMN_IS_CHUNKED;
+import static zlc.season.rxdownload2.db.Db.RecordTable.COLUMN_TOTAL_SIZE;
+import static zlc.season.rxdownload2.db.Db.RecordTable.TABLE_NAME;
+import static zlc.season.rxdownload2.db.Db.RecordTable.insert;
+import static zlc.season.rxdownload2.db.Db.RecordTable.update;
 
 /**
  * Author: Season(ssseasonnn@gmail.com)

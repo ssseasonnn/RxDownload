@@ -1,4 +1,4 @@
-package zlc.season.rxdownload;
+package zlc.season.rxdownload2;
 
 import android.content.ComponentName;
 import android.content.Context;
@@ -32,19 +32,19 @@ import io.reactivex.functions.Function;
 import io.reactivex.plugins.RxJavaPlugins;
 import retrofit2.Response;
 import retrofit2.Retrofit;
-import zlc.season.rxdownload.db.DataBaseHelper;
-import zlc.season.rxdownload.entity.DownloadEvent;
-import zlc.season.rxdownload.entity.DownloadMission;
-import zlc.season.rxdownload.entity.DownloadRecord;
-import zlc.season.rxdownload.entity.DownloadStatus;
-import zlc.season.rxdownload.entity.DownloadType;
-import zlc.season.rxdownload.entity.DownloadTypeFactory;
-import zlc.season.rxdownload.function.DownloadHelper;
-import zlc.season.rxdownload.function.DownloadService;
-import zlc.season.rxdownload.function.Utils;
+import zlc.season.rxdownload2.db.DataBaseHelper;
+import zlc.season.rxdownload2.entity.DownloadEvent;
+import zlc.season.rxdownload2.entity.DownloadMission;
+import zlc.season.rxdownload2.entity.DownloadRecord;
+import zlc.season.rxdownload2.entity.DownloadStatus;
+import zlc.season.rxdownload2.entity.DownloadType;
+import zlc.season.rxdownload2.entity.DownloadTypeFactory;
+import zlc.season.rxdownload2.function.DownloadHelper;
+import zlc.season.rxdownload2.function.DownloadService;
+import zlc.season.rxdownload2.function.Utils;
 
-import static zlc.season.rxdownload.function.DownloadHelper.TEST_RANGE_SUPPORT;
-import static zlc.season.rxdownload.function.FileHelper.TAG;
+import static zlc.season.rxdownload2.function.DownloadHelper.TEST_RANGE_SUPPORT;
+import static zlc.season.rxdownload2.function.FileHelper.TAG;
 
 
 /**

@@ -1,6 +1,6 @@
-package zlc.season.rxdownload.entity;
+package zlc.season.rxdownload2.entity;
 
-import zlc.season.rxdownload.function.DownloadHelper;
+import zlc.season.rxdownload2.function.DownloadHelper;
 
 /**
  * Author: Season(ssseasonnn@gmail.com)

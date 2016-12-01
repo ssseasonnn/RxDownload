@@ -1,11 +1,11 @@
-package zlc.season.rxdownload.entity;
+package zlc.season.rxdownload2.entity;
 
 import android.os.Parcel;
 import android.os.Parcelable;
 
 import java.text.NumberFormat;
 
-import static zlc.season.rxdownload.function.Utils.formatSize;
+import static zlc.season.rxdownload2.function.Utils.formatSize;
 
 /**
  * User: Season(ssseasonnn@gmail.com)

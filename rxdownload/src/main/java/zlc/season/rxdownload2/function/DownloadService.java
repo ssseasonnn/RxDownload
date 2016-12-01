@@ -1,4 +1,4 @@
-package zlc.season.rxdownload.function;
+package zlc.season.rxdownload2.function;
 
 import android.app.Service;
 import android.content.Intent;
@@ -16,12 +16,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import io.reactivex.processors.BehaviorProcessor;
 import io.reactivex.processors.FlowableProcessor;
-import zlc.season.rxdownload.db.DataBaseHelper;
-import zlc.season.rxdownload.entity.DownloadEvent;
-import zlc.season.rxdownload.entity.DownloadEventFactory;
-import zlc.season.rxdownload.entity.DownloadFlag;
-import zlc.season.rxdownload.entity.DownloadMission;
-import zlc.season.rxdownload.entity.DownloadRecord;
+import zlc.season.rxdownload2.db.DataBaseHelper;
+import zlc.season.rxdownload2.entity.DownloadEvent;
+import zlc.season.rxdownload2.entity.DownloadEventFactory;
+import zlc.season.rxdownload2.entity.DownloadFlag;
+import zlc.season.rxdownload2.entity.DownloadMission;
+import zlc.season.rxdownload2.entity.DownloadRecord;
 
 
 /**

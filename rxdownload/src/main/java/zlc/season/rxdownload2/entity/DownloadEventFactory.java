@@ -1,4 +1,4 @@
-package zlc.season.rxdownload.entity;
+package zlc.season.rxdownload2.entity;
 
 import java.util.HashMap;
 import java.util.Map;

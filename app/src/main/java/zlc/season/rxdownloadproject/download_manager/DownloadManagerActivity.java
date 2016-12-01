@@ -14,8 +14,8 @@ import butterknife.ButterKnife;
 import io.reactivex.functions.Consumer;
 import io.reactivex.functions.Function;
 import zlc.season.practicalrecyclerview.PracticalRecyclerView;
-import zlc.season.rxdownload.RxDownload;
-import zlc.season.rxdownload.entity.DownloadRecord;
+import zlc.season.rxdownload2.RxDownload;
+import zlc.season.rxdownload2.entity.DownloadRecord;
 import zlc.season.rxdownloadproject.R;
 
 public class DownloadManagerActivity extends AppCompatActivity {

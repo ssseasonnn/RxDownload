@@ -19,4 +19,8 @@ cache:
     - $HOME/.gradle
 
 before_install:
-     - chmod +x gradlew
+    - chmod +x gradlew
+
+script:
+    - ./gradlew clean
+    - ./gradlew build

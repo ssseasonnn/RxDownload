@@ -10,9 +10,6 @@ The download tool based on RxJava . Support multi-threaded download and breakpoi
 
 ---
 
-## 基于RxJava打造的下载工具, 支持多线程和断点续传,同时具备后台下载的能力
-## Download tool based on RxJava. Support multi-thread and breakpoint download. Also have background download ability.
-
 ### 主要功能:
 
 - 使用Retrofit+OKHTTP来进行网络请求
@@ -58,6 +55,14 @@ The download tool based on RxJava . Support multi-threaded download and breakpoi
 - 使用方式请下载demo.
 
 
+### 2016-12-1 更新
+
+- 发布基于RxJava2修改的版本RxDownload2, 使用方式请看文档
+- 新版本在rxjava2分支中, 若需查看源码请git clone后切换至该分支查看.
+- PS: 注意最好不要用网页上的download下载源码, 可能出现未知的错误.
+
+
+
 ### 效果图
 
 <figure class="third">
@@ -78,7 +83,7 @@ The download tool based on RxJava . Support multi-threaded download and breakpoi
 
 1.添加Gradle依赖
 
-[ ![Download](https://api.bintray.com/packages/ssseasonnn/android/RxDownload/images/download.svg) ](https://bintray.com/ssseasonnn/android/RxDownload/_latestVersion)
+ [ ![Download](https://api.bintray.com/packages/ssseasonnn/android/RxDownload/images/download.svg) ](https://bintray.com/ssseasonnn/android/RxDownload/_latestVersion)
 
 ```groovy
 	dependencies{
@@ -86,7 +91,19 @@ The download tool based on RxJava . Support multi-threaded download and breakpoi
 	}
 ```
 
-2.配置权限
+2.For RxJava2
+
+RxDownload 现在支持RxJava2, 只需将包名改为 ```zlc.season.rxdownload2.``` 
+
+[ ![Download](https://api.bintray.com/packages/ssseasonnn/android/RxDownload2/images/download.svg) ](https://bintray.com/ssseasonnn/android/RxDownload2/_latestVersion)
+
+```groovy
+	dependencies{
+   		 compile 'zlc.season:rxdownload2:1.0.0'
+	}
+```
+
+3.配置权限
 
 ```xml
  	<!-- 在XML中设置权限 -->

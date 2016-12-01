@@ -2,6 +2,8 @@ package zlc.season.rxdownload.entity;
 
 import android.util.Log;
 
+import org.reactivestreams.Publisher;
+
 import java.io.IOException;
 import java.text.ParseException;
 import java.util.ArrayList;
@@ -12,7 +14,6 @@ import io.reactivex.Flowable;
 import io.reactivex.FlowableEmitter;
 import io.reactivex.FlowableOnSubscribe;
 import io.reactivex.Observable;
-import io.reactivex.ObservableSource;
 import io.reactivex.functions.BiPredicate;
 import io.reactivex.functions.Function;
 import io.reactivex.schedulers.Schedulers;
@@ -50,10 +51,10 @@ public abstract class DownloadType {
             Log.i(FileHelper.TAG, "Normal download start!!");
             return mDownloadHelper.getDownloadApi().download(null, mUrl)
                     .subscribeOn(Schedulers.io())
-                    .flatMap(new Function<Response<ResponseBody>, ObservableSource<DownloadStatus>>() {
+                    .flatMap(new Function<Response<ResponseBody>, Publisher<DownloadStatus>>() {
                         @Override
-                        public ObservableSource<DownloadStatus> apply(Response<ResponseBody> resp) throws Exception {
-                            return normalSave(resp);
+                        public Publisher<DownloadStatus> apply(Response<ResponseBody> response) throws Exception {
+                            return normalSave(response);
                         }
                     })
                     .retry(new BiPredicate<Integer, Throwable>() {
@@ -61,16 +62,17 @@ public abstract class DownloadType {
                         public boolean test(Integer integer, Throwable throwable) throws Exception {
                             return mDownloadHelper.retry(integer, throwable);
                         }
-                    });
+                    })
+                    .toObservable();
         }
 
-        private Observable<DownloadStatus> normalSave(final Response<ResponseBody> response) {
+        private Flowable<DownloadStatus> normalSave(final Response<ResponseBody> response) {
             return Flowable.create(new FlowableOnSubscribe<DownloadStatus>() {
                 @Override
                 public void subscribe(FlowableEmitter<DownloadStatus> e) throws Exception {
                     mDownloadHelper.saveNormalFile(e, mUrl, response);
                 }
-            }, BackpressureStrategy.LATEST).toObservable();
+            }, BackpressureStrategy.BUFFER);
         }
     }
 
@@ -84,13 +86,13 @@ public abstract class DownloadType {
         @Override
         public Observable<DownloadStatus> startDownload() throws IOException {
             DownloadRange range = mDownloadHelper.readDownloadRange(mUrl);
-            List<Observable<DownloadStatus>> tasks = new ArrayList<>();
+            List<Flowable<DownloadStatus>> tasks = new ArrayList<>();
             for (int i = 0; i < mDownloadHelper.getMaxThreads(); i++) {
                 if (range.start[i] <= range.end[i]) {
                     tasks.add(rangeDownloadTask(range.start[i], range.end[i], i));
                 }
             }
-            return Observable.mergeDelayError(tasks);
+            return Flowable.mergeDelayError(tasks).toObservable();
         }
 
         /**
@@ -101,14 +103,14 @@ public abstract class DownloadType {
          * @param i     下载编号
          * @return Observable
          */
-        private Observable<DownloadStatus> rangeDownloadTask(final long start, final long end, final int i) {
+        private Flowable<DownloadStatus> rangeDownloadTask(final long start, final long end, final int i) {
             String range = "bytes=" + start + "-" + end;
             return mDownloadHelper.getDownloadApi().download(range, mUrl)
                     .subscribeOn(Schedulers.io())
-                    .flatMap(new Function<Response<ResponseBody>, ObservableSource<DownloadStatus>>() {
+                    .flatMap(new Function<Response<ResponseBody>, Publisher<DownloadStatus>>() {
                         @Override
-                        public ObservableSource<DownloadStatus> apply(Response<ResponseBody> resp) throws Exception {
-                            return rangeSave(start, end, i, resp.body());
+                        public Publisher<DownloadStatus> apply(Response<ResponseBody> response) throws Exception {
+                            return rangeSave(start, end, i, response.body());
                         }
                     })
                     .retry(new BiPredicate<Integer, Throwable>() {
@@ -128,14 +130,14 @@ public abstract class DownloadType {
          * @param response 响应值
          * @return Observable
          */
-        private Observable<DownloadStatus> rangeSave(final long start, final long end, final int i,
-                                                     final ResponseBody response) {
+        private Flowable<DownloadStatus> rangeSave(final long start, final long end, final int i,
+                                                   final ResponseBody response) {
             return Flowable.create(new FlowableOnSubscribe<DownloadStatus>() {
                 @Override
                 public void subscribe(FlowableEmitter<DownloadStatus> emitter) throws Exception {
                     mDownloadHelper.saveRangeFile(emitter, i, start, end, mUrl, response);
                 }
-            }, BackpressureStrategy.LATEST).toObservable();
+            }, BackpressureStrategy.LATEST);
         }
     }
 

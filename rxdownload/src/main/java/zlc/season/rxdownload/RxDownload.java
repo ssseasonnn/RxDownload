@@ -11,6 +11,8 @@ import android.util.Log;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InterruptedIOException;
+import java.net.SocketException;
 import java.util.List;
 
 import io.reactivex.Observable;
@@ -27,6 +29,7 @@ import io.reactivex.functions.Action;
 import io.reactivex.functions.BiPredicate;
 import io.reactivex.functions.Consumer;
 import io.reactivex.functions.Function;
+import io.reactivex.plugins.RxJavaPlugins;
 import retrofit2.Response;
 import retrofit2.Retrofit;
 import zlc.season.rxdownload.db.DataBaseHelper;
@@ -53,12 +56,26 @@ import static zlc.season.rxdownload.function.FileHelper.TAG;
 public class RxDownload {
     private static DownloadService mDownloadService;
     private static boolean bound = false;
+    private static Object object = new Object();
+
+    static {
+        RxJavaPlugins.setErrorHandler(new Consumer<Throwable>() {
+            @Override
+            public void accept(Throwable throwable) throws Exception {
+                if (throwable instanceof InterruptedException) {
+                    Log.d(TAG, "Thread interrupted");
+                } else if (throwable instanceof InterruptedIOException) {
+                    Log.d(TAG, "Io interrupted");
+                } else if (throwable instanceof SocketException) {
+                    Log.d(TAG, "Socket error");
+                }
+            }
+        });
+    }
 
     private DownloadHelper mDownloadHelper;
     private DownloadTypeFactory mFactory;
-
     private Context mContext;
-
     private boolean mAutoInstall;
     private int MAX_DOWNLOAD_NUMBER = 5;
 
@@ -130,11 +147,11 @@ public class RxDownload {
                     startBindServiceAndDo(new ServiceConnectedCallback() {
                         @Override
                         public void call() {
-                            e.onSuccess(null);
+                            e.onSuccess(object);
                         }
                     });
                 } else {
-                    e.onSuccess(null);
+                    e.onSuccess(object);
                 }
             }
         }).flatMapObservable(new Function<Object, ObservableSource<? extends DownloadEvent>>() {
@@ -350,13 +367,13 @@ public class RxDownload {
                         @Override
                         public void call() {
                             callback.call();
-                            emitter.onNext(null);
+                            emitter.onNext(object);
                             emitter.onComplete();
                         }
                     });
                 } else {
                     callback.call();
-                    emitter.onNext(null);
+                    emitter.onNext(object);
                     emitter.onComplete();
                 }
             }
@@ -405,7 +422,6 @@ public class RxDownload {
                             }
                             Utils.installApk(mContext, getRealFiles(saveName, savePath)[0]);
                         }
-                        mDownloadHelper.deleteDownloadRecord(url);
                     }
                 })
                 .doOnError(new Consumer<Throwable>() {
@@ -574,7 +590,7 @@ public class RxDownload {
         }, Context.BIND_AUTO_CREATE);
     }
 
-    interface GeneralObservableCallback {
+    private interface GeneralObservableCallback {
         void call();
     }
 

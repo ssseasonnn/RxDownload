@@ -149,7 +149,7 @@ public class BasicDownloadActivity extends AppCompatActivity {
 
                     @Override
                     public void onError(Throwable e) {
-                        Log.w("TAG", e);
+//                        Log.w("TAG", e);
                         mDownloadController.setState(new DownloadController.Paused());
                     }
 

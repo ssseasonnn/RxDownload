@@ -1,5 +1,6 @@
 package zlc.season.rxdownload.function;
 
+import io.reactivex.Flowable;
 import io.reactivex.Observable;
 import okhttp3.ResponseBody;
 import retrofit2.Response;
@@ -18,7 +19,7 @@ import retrofit2.http.Url;
 public interface DownloadApi {
     @GET
     @Streaming
-    Observable<Response<ResponseBody>> download(@Header("Range") String range, @Url String url);
+    Flowable<Response<ResponseBody>> download(@Header("Range") String range, @Url String url);
 
     @HEAD
     Observable<Response<Void>> getHttpHeader(@Header("Range") String range, @Url String url);

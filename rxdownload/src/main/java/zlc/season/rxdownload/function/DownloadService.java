@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.os.Binder;
 import android.os.IBinder;
 import android.support.annotation.Nullable;
+import android.util.Log;
 
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -109,7 +110,7 @@ public class DownloadService extends Service {
     public void addDownloadMission(DownloadMission mission) {
         String url = mission.getUrl();
         if (mWaitingForDownloadLookUpMap.get(url) != null || mNowDownloading.get(url) != null) {
-            throw new IllegalArgumentException("This download mission is exists.");
+            Log.d("DownloadService", "This download mission is exists.");
         } else {
             if (mDataBaseHelper.recordNotExists(url)) {
                 mDataBaseHelper.insertRecord(mission);

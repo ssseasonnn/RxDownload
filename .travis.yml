@@ -17,5 +17,3 @@ sudo: false
 cache:
   directories:
     - $HOME/.gradle
-
-script: ./gradlew test

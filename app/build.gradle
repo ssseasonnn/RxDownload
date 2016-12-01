@@ -38,5 +38,5 @@ dependencies {
     compile 'com.tbruyelle.rxpermissions2:rxpermissions:0.8.2@aar'
 
     testCompile 'junit:junit:4.12'
-    compile project(path: ':rxdownload')
+    compile project(path: ':rxdownload2')
 }

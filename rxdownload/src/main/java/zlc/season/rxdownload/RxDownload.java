@@ -386,9 +386,8 @@ public class RxDownload {
         };
     }
 
-    private void addDownloadTask(@NonNull String url,
-                                 @NonNull String saveName,
-                                 @Nullable String savePath) throws IOException {
+    private void addDownloadTask(@NonNull String url, @NonNull String saveName, @Nullable String savePath)
+            throws IOException {
         mDownloadService.addDownloadMission(
                 new DownloadMission.Builder()
                         .setRxDownload(RxDownload.this)
@@ -398,8 +397,7 @@ public class RxDownload {
                         .build());
     }
 
-    private Observable<DownloadStatus> downloadDispatcher(final String url,
-                                                          final String saveName,
+    private Observable<DownloadStatus> downloadDispatcher(final String url, final String saveName,
                                                           final String savePath) {
         if (mDownloadHelper.isRecordExists(url)) {
             return Observable.error(new Throwable("This url download task already exists, so do nothing."));

@@ -89,6 +89,19 @@ public class RxDownload {
     }
 
     /**
+     * get Files.
+     * File[] {DownloadFile, TempFile, LastModifyFile}
+     *
+     * @param saveName saveName
+     * @param savePath savePath
+     * @return Files
+     */
+    public File[] getRealFiles(String saveName, String savePath) {
+        String[] filePaths = mDownloadHelper.getRealFilePaths(saveName, savePath);
+        return new File[]{new File(filePaths[0]), new File(filePaths[1]), new File(filePaths[2])};
+    }
+
+    /**
      * 普通下载时不需要context, 使用Service下载时需要context;
      *
      * @param context context
@@ -349,13 +362,15 @@ public class RxDownload {
         };
     }
 
-    public String[] getRealFileSavePaths(String savePath) {
-        return mDownloadHelper.getFileSavePaths(savePath);
-    }
 
-    public File[] getRealFiles(String saveName, String savePath) {
-        String[] filePaths = mDownloadHelper.getRealFilePaths(saveName, savePath);
-        return new File[]{new File(filePaths[0]), new File(filePaths[1]), new File(filePaths[2])};
+    private void addDownloadTask(@NonNull String url, @NonNull String saveName, @Nullable String savePath) {
+        mDownloadService.addDownloadMission(
+                new DownloadMission.Builder()
+                        .setRxDownload(RxDownload.this)
+                        .setUrl(url)
+                        .setSaveName(saveName)
+                        .setSavePath(savePath)
+                        .build());
     }
 
     private Observable<?> createGeneralObservable(final GeneralObservableCallback callback) {
@@ -380,19 +395,7 @@ public class RxDownload {
         });
     }
 
-    private void addDownloadTask(@NonNull String url, @NonNull String saveName,
-                                 @Nullable String savePath) {
-        mDownloadService.addDownloadMission(
-                new DownloadMission.Builder()
-                        .setRxDownload(RxDownload.this)
-                        .setUrl(url)
-                        .setSaveName(saveName)
-                        .setSavePath(savePath)
-                        .build());
-    }
-
-    private Observable<DownloadStatus> downloadDispatcher(final String url,
-                                                          final String saveName,
+    private Observable<DownloadStatus> downloadDispatcher(final String url, final String saveName,
                                                           final String savePath) {
         if (mDownloadHelper.isRecordExists(url)) {
             return Observable.error(new Throwable("This url download task already exists, so do nothing."));

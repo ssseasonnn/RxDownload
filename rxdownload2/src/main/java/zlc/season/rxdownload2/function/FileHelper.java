@@ -104,7 +104,12 @@ public class FileHelper {
         RandomAccessFile file = null;
         try {
             file = new RandomAccessFile(saveFile, "rws");
-            file.setLength(fileLength);//设置下载文件的长度
+            if (fileLength != -1) {
+                file.setLength(fileLength);//设置下载文件的长度
+            } else {
+                Log.i(TAG, "Chunked download.");
+                //Chunked 下载, 无需设置文件大小.
+            }
         } finally {
             Utils.close(file);
         }
@@ -124,7 +129,7 @@ public class FileHelper {
                 outputStream = new FileOutputStream(saveFile);
 
                 long contentLength = resp.body().contentLength();
-                boolean isChunked = !TextUtils.isEmpty(Utils.transferEncoding(resp));
+                boolean isChunked = Utils.isChunked(resp);
                 if (isChunked || contentLength == -1) {
                     status.isChunked = true;
                 }

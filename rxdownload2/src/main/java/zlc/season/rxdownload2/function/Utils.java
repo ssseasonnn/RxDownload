@@ -63,12 +63,12 @@ public class Utils {
         return HttpHeaders.contentLength(response.headers());
     }
 
-    public static String transferEncoding(Response<?> response) {
-        return response.headers().get("Transfer-Encoding");
+    public static boolean isChunked(Response<?> response) {
+        return "chunked".equals(transferEncoding(response));
     }
 
     public static boolean notSupportRange(Response<?> response) {
-        return TextUtils.isEmpty(contentRange(response)) || contentLength(response) == -1;
+        return TextUtils.isEmpty(contentRange(response)) || contentLength(response) == -1 || isChunked(response);
     }
 
     public static boolean serverFileChanged(Response<Void> resp) {
@@ -111,6 +111,10 @@ public class Utils {
             hrSize = dec.format(b).concat(" B");
         }
         return hrSize;
+    }
+
+    private static String transferEncoding(Response<?> response) {
+        return response.headers().get("Transfer-Encoding");
     }
 
     private static String contentRange(Response<?> response) {

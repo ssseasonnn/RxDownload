@@ -108,6 +108,19 @@ public class RxDownload {
     }
 
     /**
+     * get Files.
+     * File[] {DownloadFile, TempFile, LastModifyFile}
+     *
+     * @param saveName saveName
+     * @param savePath savePath
+     * @return Files
+     */
+    public File[] getRealFiles(String saveName, String savePath) {
+        String[] filePaths = mDownloadHelper.getRealFilePaths(saveName, savePath);
+        return new File[]{new File(filePaths[0]), new File(filePaths[1]), new File(filePaths[2])};
+    }
+
+    /**
      * Receive the download address for the url download event and download status.
      * 接收下载地址为url的下载事件和下载状态.
      * <p>
@@ -373,17 +386,8 @@ public class RxDownload {
         };
     }
 
-    public String[] getRealFileSavePaths(String savePath) {
-        return mDownloadHelper.getFileSavePaths(savePath);
-    }
-
-    public File[] getRealFiles(String saveName, String savePath) {
-        String[] filePaths = mDownloadHelper.getRealFilePaths(saveName, savePath);
-        return new File[]{new File(filePaths[0]), new File(filePaths[1]), new File(filePaths[2])};
-    }
-
-    private void addDownloadTask(@NonNull String url, @NonNull String saveName,
-                                 @Nullable String savePath) throws IOException {
+    private void addDownloadTask(@NonNull String url, @NonNull String saveName, @Nullable String savePath)
+            throws IOException {
         mDownloadService.addDownloadMission(
                 new DownloadMission.Builder()
                         .setRxDownload(RxDownload.this)
@@ -393,8 +397,7 @@ public class RxDownload {
                         .build());
     }
 
-    private Observable<DownloadStatus> downloadDispatcher(final String url,
-                                                          final String saveName,
+    private Observable<DownloadStatus> downloadDispatcher(final String url, final String saveName,
                                                           final String savePath) {
         if (mDownloadHelper.isRecordExists(url)) {
             return Observable.error(new Throwable("This url download task already exists, so do nothing."));

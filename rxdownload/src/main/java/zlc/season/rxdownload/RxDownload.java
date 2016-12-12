@@ -148,7 +148,7 @@ public class RxDownload {
         }).flatMap(new Func1<Object, Observable<DownloadEvent>>() {
             @Override
             public Observable<DownloadEvent> call(Object o) {
-                return mDownloadService.getSubject(url).asObservable().onBackpressureLatest();
+                return mDownloadService.getSubject(RxDownload.this, url).asObservable().onBackpressureLatest();
             }
         }).observeOn(AndroidSchedulers.mainThread());
     }

@@ -6,6 +6,7 @@ import android.os.Binder;
 import android.os.IBinder;
 import android.support.annotation.Nullable;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -17,6 +18,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import rx.subjects.BehaviorSubject;
 import rx.subjects.SerializedSubject;
 import rx.subjects.Subject;
+import zlc.season.rxdownload.RxDownload;
 import zlc.season.rxdownload.db.DataBaseHelper;
 import zlc.season.rxdownload.entity.DownloadEvent;
 import zlc.season.rxdownload.entity.DownloadEventFactory;
@@ -88,11 +90,14 @@ public class DownloadService extends Service {
         return mBinder;
     }
 
-    public Subject<DownloadEvent, DownloadEvent> getSubject(String url) {
+    public Subject<DownloadEvent, DownloadEvent> getSubject(RxDownload rxDownload, String url) {
         Subject<DownloadEvent, DownloadEvent> subject = createAndGet(url);
         if (!mDataBaseHelper.recordNotExists(url)) {
             DownloadRecord record = mDataBaseHelper.readSingleRecord(url);
-            subject.onNext(mEventFactory.factory(url, record.getFlag(), record.getStatus()));
+            File file = rxDownload.getRealFiles(record.getSaveName(), record.getSavePath())[0];
+            if (file.exists()) {
+                subject.onNext(mEventFactory.factory(url, record.getFlag(), record.getStatus()));
+            }
         }
         return subject;
     }

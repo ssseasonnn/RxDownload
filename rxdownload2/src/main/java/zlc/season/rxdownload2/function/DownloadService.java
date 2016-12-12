@@ -7,6 +7,7 @@ import android.os.IBinder;
 import android.support.annotation.Nullable;
 import android.util.Log;
 
+import java.io.File;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
@@ -16,6 +17,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import io.reactivex.processors.BehaviorProcessor;
 import io.reactivex.processors.FlowableProcessor;
+import zlc.season.rxdownload2.RxDownload;
 import zlc.season.rxdownload2.db.DataBaseHelper;
 import zlc.season.rxdownload2.entity.DownloadEvent;
 import zlc.season.rxdownload2.entity.DownloadEventFactory;
@@ -87,11 +89,14 @@ public class DownloadService extends Service {
         return mBinder;
     }
 
-    public FlowableProcessor<DownloadEvent> getProcessor(String url) {
+    public FlowableProcessor<DownloadEvent> getProcessor(RxDownload rxDownload, String url) {
         FlowableProcessor<DownloadEvent> processor = createAndGet(url);
         if (!mDataBaseHelper.recordNotExists(url)) {
             DownloadRecord record = mDataBaseHelper.readSingleRecord(url);
-            processor.onNext(mEventFactory.factory(url, record.getFlag(), record.getStatus()));
+            File file = rxDownload.getRealFiles(record.getSaveName(), record.getSavePath())[0];
+            if (file.exists()) {
+                processor.onNext(mEventFactory.factory(url, record.getFlag(), record.getStatus()));
+            }
         }
         return processor;
     }

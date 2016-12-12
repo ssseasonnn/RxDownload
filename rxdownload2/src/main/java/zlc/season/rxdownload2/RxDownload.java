@@ -170,7 +170,7 @@ public class RxDownload {
         }).flatMapObservable(new Function<Object, ObservableSource<? extends DownloadEvent>>() {
             @Override
             public ObservableSource<? extends DownloadEvent> apply(Object o) throws Exception {
-                return mDownloadService.getProcessor(url).toObservable();
+                return mDownloadService.getProcessor(RxDownload.this, url).toObservable();
             }
         }).observeOn(AndroidSchedulers.mainThread());
     }

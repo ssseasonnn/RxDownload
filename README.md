@@ -73,6 +73,12 @@ The download tool based on RxJava . Support multi-threaded download and breakpoi
 - 移除Manifest中多余的配置
 
 
+### 2016-12-13 更新
+
+- 修复LastModify日期bug
+
+
+
 
 ### 效果图
 
@@ -98,7 +104,7 @@ The download tool based on RxJava . Support multi-threaded download and breakpoi
 
 ```groovy
 	dependencies{
-   		 compile 'zlc.season:rxdownload:1.2.4'
+   		 compile 'zlc.season:rxdownload:1.2.5'
 	}
 ```
 
@@ -110,7 +116,7 @@ RxDownload 现在支持RxJava2, 只需将包名改为 ```zlc.season.rxdownload2.
 
 ```groovy
 	dependencies{
-   		 compile 'zlc.season:rxdownload2:1.0.2'
+   		 compile 'zlc.season:rxdownload2:1.0.3'
 	}
 ```
 

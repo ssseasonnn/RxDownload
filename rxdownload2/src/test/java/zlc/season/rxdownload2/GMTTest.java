@@ -13,7 +13,7 @@ import zlc.season.rxdownload2.function.Utils;
 public class GMTTest {
     @Test
     public void GMTToLong() throws Exception {
-        long l = Utils.GMTToLong("Fri, 28 Oct 2016 00:35:29 GMT");
+        long l = Utils.GMTToLong("Fri, 04 Oct 2016 00:35:29 GMT");
         System.out.println(l);
         long a = Utils.GMTToLong(null);
         System.out.println(a);
@@ -21,7 +21,7 @@ public class GMTTest {
 
     @Test
     public void longToGMT() throws Exception {
-        String str = Utils.longToGMT(0L);
+        String str = Utils.longToGMT(1475541329000L);
         System.out.println(str);
     }
 

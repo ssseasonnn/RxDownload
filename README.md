@@ -78,7 +78,13 @@ The download tool based on RxJava . Support multi-threaded download and breakpoi
 - 修复LastModify日期bug
 
 
+### 2016-12-14 更新
 
+- 修复service下载接收下载进度中, 当收到error事件或者Complete事件之后, 就不再收到其余事件的BUG
+- 在本次修改中取消掉了receiveDownloadStatus()中的onError()和onComplete(). 
+- 也就是说接收下载进度过程中不会再调用onError和onComplete,  所有的处理都放到了onNext中.
+- 在DownloadEvent中增加了mError属性,  当收到DownloadFlag = Failed时, 就可以从event中取出异常信息进行处理. 
+- 具体信息请仔细阅读文档.
 
 ### 效果图
 
@@ -104,7 +110,7 @@ The download tool based on RxJava . Support multi-threaded download and breakpoi
 
 ```groovy
 	dependencies{
-   		 compile 'zlc.season:rxdownload:1.2.5'
+   		 compile 'zlc.season:rxdownload:1.2.6'
 	}
 ```
 
@@ -116,7 +122,7 @@ RxDownload 现在支持RxJava2, 只需将包名改为 ```zlc.season.rxdownload2.
 
 ```groovy
 	dependencies{
-   		 compile 'zlc.season:rxdownload2:1.0.3'
+   		 compile 'zlc.season:rxdownload2:1.0.4'
 	}
 ```
 
@@ -183,7 +189,7 @@ Subscription subscription = RxDownload.getInstance()
                 .subscribe(new Subscriber<DownloadStatus>() {);
 ```
 
- **Tips: **
+**Tips: **
 
 - RxDownload.getInstance() 每次返回的是一个全新的对象. 
 - 每个实例都可以单独设置最大线程, 默认路径等参数.
@@ -269,24 +275,18 @@ if (subscription != null && !subscription.isUnsubscribed()) {
 
 **serviceDownload()不再使用广播的方式,也不再接收下载进度, 因此无需异步操作, 也无需取消订阅.**
 
-2.接收下载事件和下载状态. 
+2.接收下载事件和下载状态.  取消订阅即可取消接收. 
 
 ```java
  Subscription temp =  mRxDownload.receiveDownloadStatus(url)
-                .subscribe(new Subscriber<DownloadEvent>() {
+                .subscribe(new Action1<DownloadEvent>() {
                     @Override
-                    public void onCompleted() {
-                        mDownloadController.setState(new DownloadController.Completed());
-                    }
-
-                    @Override
-                    public void onError(Throwable e) {
-                        Log.w("TAG", e);
-                        mDownloadController.setState(new DownloadController.Failed());
-                    }
-
-                    @Override
-                    public void onNext(final DownloadEvent event) {
+                    public void call(DownloadEvent event) {
+                        //当事件为Failed时, 才会有异常信息, 其余时候为null.
+                        if (event.getFlag() == DownloadFlag.FAILED) { 
+                            Throwable throwable = event.getError();
+                            Log.w("Error", throwable);
+                        }
                         mDownloadController.setEvent(event);
                         updateProgress(event);
                     }
@@ -298,6 +298,7 @@ if (subscription != null && !subscription.isUnsubscribed()) {
 
 - 不管任务是否开始下载, 都能获取到该url对应的事件和状态.
 - 无需再单独从数据库中读取下载记录了.
+- 注意, 现在接受下载进度不会再收到onError事件和onComplete事件了, 都放在DownloadEvent中了.
 
 3.下载事件DownloadEvent说明
 

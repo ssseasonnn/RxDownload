@@ -19,11 +19,10 @@ import com.tbruyelle.rxpermissions2.RxPermissions;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
-import io.reactivex.Observer;
-import io.reactivex.disposables.Disposable;
 import io.reactivex.functions.Consumer;
 import zlc.season.rxdownload2.RxDownload;
 import zlc.season.rxdownload2.entity.DownloadEvent;
+import zlc.season.rxdownload2.entity.DownloadFlag;
 import zlc.season.rxdownload2.entity.DownloadStatus;
 import zlc.season.rxdownloadproject.DownloadController;
 import zlc.season.rxdownloadproject.R;
@@ -102,27 +101,15 @@ public class ServiceDownloadActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         mRxDownload.receiveDownloadStatus(url)
-                .subscribe(new Observer<DownloadEvent>() {
+                .subscribe(new Consumer<DownloadEvent>() {
                     @Override
-                    public void onSubscribe(Disposable d) {
-
-                    }
-
-                    @Override
-                    public void onNext(DownloadEvent event) {
-                        mDownloadController.setEvent(event);
-                        updateProgress(event);
-                    }
-
-                    @Override
-                    public void onError(Throwable e) {
-                        Log.w("TAG", e);
-                        mDownloadController.setState(new DownloadController.Failed());
-                    }
-
-                    @Override
-                    public void onComplete() {
-                        mDownloadController.setState(new DownloadController.Completed());
+                    public void accept(DownloadEvent downloadEvent) throws Exception {
+                        if (downloadEvent.getFlag() == DownloadFlag.FAILED) {
+                            Throwable throwable = downloadEvent.getError();
+                            Log.w("Error", throwable);
+                        }
+                        mDownloadController.setEvent(downloadEvent);
+                        updateProgress(downloadEvent);
                     }
                 });
     }

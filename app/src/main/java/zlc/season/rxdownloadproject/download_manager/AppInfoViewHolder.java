@@ -18,12 +18,12 @@ import com.tbruyelle.rxpermissions2.RxPermissions;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
-import io.reactivex.Observer;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.functions.Consumer;
 import zlc.season.practicalrecyclerview.AbstractViewHolder;
 import zlc.season.rxdownload2.RxDownload;
 import zlc.season.rxdownload2.entity.DownloadEvent;
+import zlc.season.rxdownload2.entity.DownloadFlag;
 import zlc.season.rxdownload2.function.Utils;
 import zlc.season.rxdownloadproject.DownloadController;
 import zlc.season.rxdownloadproject.R;
@@ -77,31 +77,19 @@ public class AppInfoViewHolder extends AbstractViewHolder<AppInfoBean> {
         mTitle.setText(data.name);
         mContent.setText(data.info);
 
-        mRxDownload.receiveDownloadStatus(mData.downloadUrl)
-                .subscribe(new Observer<DownloadEvent>() {
+        /**
+         * important!! 如果有订阅没有取消,则取消订阅!防止ViewHolder复用导致界面显示的BUG!
+         */
+        Utils.dispose(mDisposable);
+        mDisposable = mRxDownload.receiveDownloadStatus(mData.downloadUrl)
+                .subscribe(new Consumer<DownloadEvent>() {
                     @Override
-                    public void onSubscribe(Disposable d) {
-                        /**
-                         * important!! 如果有订阅没有取消,则取消订阅!防止ViewHolder复用导致界面显示的BUG!
-                         */
-                        Utils.dispose(mDisposable);
-                        mDisposable = d;
-                    }
-
-                    @Override
-                    public void onNext(DownloadEvent event) {
-                        mDownloadController.setEvent(event);
-                    }
-
-                    @Override
-                    public void onError(Throwable e) {
-                        Log.w("TAG", e);
-                        mDownloadController.setState(new DownloadController.Failed());
-                    }
-
-                    @Override
-                    public void onComplete() {
-                        mDownloadController.setState(new DownloadController.Completed());
+                    public void accept(DownloadEvent downloadEvent) throws Exception {
+                        if (downloadEvent.getFlag() == DownloadFlag.FAILED) {
+                            Throwable throwable = downloadEvent.getError();
+                            Log.w("Error", throwable);
+                        }
+                        mDownloadController.setEvent(downloadEvent);
                     }
                 });
     }

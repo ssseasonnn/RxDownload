@@ -83,6 +83,10 @@ public class Utils {
         return resp.code() == 206;
     }
 
+    public static boolean requestRangeNotSatisfiable(Response<Void> resp) {
+        return resp.code() == 416;
+    }
+
     public static void installApk(Context context, File file) {
         Uri uri = Uri.fromFile(file);
         Intent intent = new Intent(Intent.ACTION_VIEW);

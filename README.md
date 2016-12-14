@@ -100,6 +100,12 @@ The download tool based on RxJava . Support multi-threaded download and breakpoi
 	<img src="https://github.com/ssseasonnn/RxDownload/blob/master/download.png?raw=true" title="下载流程图">
 </figure>
 
+
+
+# 注意,请仔细阅读这行文字:
+
+Demo中所有的下载链接均是从网上随意找的, 经常会出现地址失效或者下载失败等等各种错误, 如果你下载Demo运行发现结果不对, 请先行替换下载链接进行测试.
+
 ### 使用方式
 
 #### 一、准备工作

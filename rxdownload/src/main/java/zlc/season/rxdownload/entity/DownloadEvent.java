@@ -9,6 +9,7 @@ package zlc.season.rxdownload.entity;
 public class DownloadEvent {
     private int flag = DownloadFlag.NORMAL;
     private DownloadStatus downloadStatus = new DownloadStatus();
+    private Throwable mError;
 
     public int getFlag() {
         return flag;
@@ -24,5 +25,13 @@ public class DownloadEvent {
 
     public void setDownloadStatus(DownloadStatus downloadStatus) {
         this.downloadStatus = downloadStatus;
+    }
+
+    public Throwable getError() {
+        return mError;
+    }
+
+    public void setError(Throwable error) {
+        mError = error;
     }
 }

@@ -68,4 +68,13 @@ public class DownloadTypeFactory {
         type.mDownloadHelper = this.mDownloadHelper;
         return type;
     }
+
+    public DownloadType buildRequestRangeNotSatisfiable() {
+        DownloadType type = new DownloadType.RequestRangeNotSatisfiable();
+        type.mUrl = this.mUrl;
+        type.mFileLength = this.mFileLength;
+        type.mLastModify = this.mLastModify;
+        type.mDownloadHelper = this.mDownloadHelper;
+        return type;
+    }
 }

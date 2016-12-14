@@ -14,6 +14,7 @@ import io.reactivex.Flowable;
 import io.reactivex.FlowableEmitter;
 import io.reactivex.FlowableOnSubscribe;
 import io.reactivex.Observable;
+import io.reactivex.ObservableSource;
 import io.reactivex.functions.BiPredicate;
 import io.reactivex.functions.Function;
 import io.reactivex.schedulers.Schedulers;
@@ -165,6 +166,30 @@ public abstract class DownloadType {
         @Override
         public Observable<DownloadStatus> startDownload() throws IOException {
             return Observable.just(new DownloadStatus(mFileLength, mFileLength));
+        }
+    }
+
+    static class RequestRangeNotSatisfiable extends DownloadType {
+
+        @Override
+        public void prepareDownload() throws IOException, ParseException {
+
+        }
+
+        @Override
+        public Observable<DownloadStatus> startDownload() throws IOException {
+            return mDownloadHelper.requestHeaderWithIfRangeByGet(mUrl)
+                    .flatMap(new Function<DownloadType, ObservableSource<DownloadStatus>>() {
+                        @Override
+                        public ObservableSource<DownloadStatus> apply(DownloadType downloadType) throws Exception {
+                            try {
+                                downloadType.prepareDownload();
+                                return downloadType.startDownload();
+                            } catch (IOException | ParseException e) {
+                                return Observable.error(e);
+                            }
+                        }
+                    });
         }
     }
 }

@@ -10,7 +10,6 @@ import android.support.annotation.Nullable;
 import android.util.Log;
 
 import java.io.File;
-import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.net.SocketException;
 import java.util.List;
@@ -24,26 +23,18 @@ import io.reactivex.Single;
 import io.reactivex.SingleEmitter;
 import io.reactivex.SingleOnSubscribe;
 import io.reactivex.android.schedulers.AndroidSchedulers;
-import io.reactivex.exceptions.CompositeException;
-import io.reactivex.functions.Action;
-import io.reactivex.functions.BiPredicate;
 import io.reactivex.functions.Consumer;
 import io.reactivex.functions.Function;
 import io.reactivex.plugins.RxJavaPlugins;
-import retrofit2.Response;
 import retrofit2.Retrofit;
 import zlc.season.rxdownload2.db.DataBaseHelper;
 import zlc.season.rxdownload2.entity.DownloadEvent;
 import zlc.season.rxdownload2.entity.DownloadMission;
 import zlc.season.rxdownload2.entity.DownloadRecord;
 import zlc.season.rxdownload2.entity.DownloadStatus;
-import zlc.season.rxdownload2.entity.DownloadType;
-import zlc.season.rxdownload2.entity.DownloadTypeFactory;
 import zlc.season.rxdownload2.function.DownloadHelper;
 import zlc.season.rxdownload2.function.DownloadService;
-import zlc.season.rxdownload2.function.Utils;
 
-import static zlc.season.rxdownload2.function.DownloadHelper.TEST_RANGE_SUPPORT;
 import static zlc.season.rxdownload2.function.FileHelper.TAG;
 
 
@@ -74,14 +65,12 @@ public class RxDownload {
     }
 
     private DownloadHelper mDownloadHelper;
-    private DownloadTypeFactory mFactory;
     private Context mContext;
     private boolean mAutoInstall;
     private int MAX_DOWNLOAD_NUMBER = 5;
 
     private RxDownload() {
         mDownloadHelper = new DownloadHelper();
-        mFactory = new DownloadTypeFactory(mDownloadHelper);
     }
 
     public static RxDownload getInstance() {
@@ -303,7 +292,7 @@ public class RxDownload {
     public Observable<DownloadStatus> download(@NonNull final String url,
                                                @NonNull final String saveName,
                                                @Nullable final String savePath) {
-        return downloadDispatcher(url, saveName, savePath);
+        return mDownloadHelper.downloadDispatcher(url, saveName, savePath, mContext, mAutoInstall);
     }
 
     /**
@@ -393,178 +382,6 @@ public class RxDownload {
                 }
             }
         });
-    }
-
-    private Observable<DownloadStatus> downloadDispatcher(final String url, final String saveName,
-                                                          final String savePath) {
-        if (mDownloadHelper.isRecordExists(url)) {
-            return Observable.error(new Throwable("This url download task already exists, so do nothing."));
-        }
-        try {
-            mDownloadHelper.addDownloadRecord(url, saveName, savePath);
-        } catch (IOException e) {
-            return Observable.error(e);
-        }
-        return getDownloadType(url)
-                .flatMap(new Function<DownloadType, ObservableSource<DownloadStatus>>() {
-                    @Override
-                    public ObservableSource<DownloadStatus> apply(DownloadType downloadType) throws Exception {
-                        downloadType.prepareDownload();
-                        return downloadType.startDownload();
-                    }
-                })
-                .doOnComplete(new Action() {
-                    @Override
-                    public void run() throws Exception {
-                        //等待1.5秒,以确保文件写入到磁盘中.
-                        Thread.sleep(1500);
-                        if (mAutoInstall) {
-                            if (mContext == null) {
-                                throw new IllegalStateException("Context is NULL! You should call " +
-                                        "#RxDownload.context(Context context)# first!");
-                            }
-                            Utils.installApk(mContext, getRealFiles(saveName, savePath)[0]);
-                        }
-                    }
-                })
-                .doOnError(new Consumer<Throwable>() {
-                    @Override
-                    public void accept(Throwable throwable) throws Exception {
-                        if (throwable instanceof CompositeException) {
-                            Log.w(TAG, throwable.getMessage());
-                        } else {
-                            Log.w(TAG, throwable);
-                        }
-                    }
-                })
-                .doFinally(new Action() {
-                    @Override
-                    public void run() throws Exception {
-                        mDownloadHelper.deleteDownloadRecord(url);
-                    }
-                });
-    }
-
-    private Observable<DownloadType> getDownloadType(String url) {
-        if (mDownloadHelper.downloadFileExists(url)) {
-            try {
-                return getWhenFileExists(url);
-            } catch (IOException e) {
-                return getWhenFileNotExists(url);
-            }
-        } else {
-            return getWhenFileNotExists(url);
-        }
-    }
-
-    private Observable<DownloadType> getWhenFileNotExists(final String url) {
-        return mDownloadHelper.getDownloadApi()
-                .getHttpHeader(TEST_RANGE_SUPPORT, url)
-                .map(new Function<Response<Void>, DownloadType>() {
-                    @Override
-                    public DownloadType apply(Response<Void> response) throws Exception {
-                        if (Utils.notSupportRange(response)) {
-                            return mFactory.url(url)
-                                    .fileLength(Utils.contentLength(response))
-                                    .lastModify(Utils.lastModify(response))
-                                    .buildNormalDownload();
-                        } else {
-                            return mFactory.url(url)
-                                    .lastModify(Utils.lastModify(response))
-                                    .fileLength(Utils.contentLength(response))
-                                    .buildMultiDownload();
-                        }
-                    }
-                })
-                .retry(new BiPredicate<Integer, Throwable>() {
-                    @Override
-                    public boolean test(Integer integer, Throwable throwable) throws Exception {
-                        return mDownloadHelper.retry(integer, throwable);
-                    }
-                });
-
-    }
-
-    private Observable<DownloadType> getWhenFileExists(final String url) throws IOException {
-        return mDownloadHelper.getDownloadApi()
-                .getHttpHeaderWithIfRange(TEST_RANGE_SUPPORT, mDownloadHelper.getLastModify(url), url)
-                .map(new Function<Response<Void>, DownloadType>() {
-                    @Override
-                    public DownloadType apply(Response<Void> resp) throws Exception {
-                        if (Utils.serverFileNotChange(resp)) {
-                            return getWhenServerFileNotChange(resp, url);
-                        } else if (Utils.serverFileChanged(resp)) {
-                            return getWhenServerFileChanged(resp, url);
-                        } else {
-                            throw new RuntimeException("unknown error");
-                        }
-                    }
-                })
-                .retry(new BiPredicate<Integer, Throwable>() {
-                    @Override
-                    public boolean test(Integer integer, Throwable throwable) throws Exception {
-                        return mDownloadHelper.retry(integer, throwable);
-                    }
-                });
-    }
-
-    private DownloadType getWhenServerFileChanged(Response<Void> resp, String url) {
-        if (Utils.notSupportRange(resp)) {
-            return mFactory.url(url)
-                    .fileLength(Utils.contentLength(resp))
-                    .lastModify(Utils.lastModify(resp))
-                    .buildNormalDownload();
-        } else {
-            return mFactory.url(url)
-                    .fileLength(Utils.contentLength(resp))
-                    .lastModify(Utils.lastModify(resp))
-                    .buildMultiDownload();
-        }
-    }
-
-    private DownloadType getWhenServerFileNotChange(Response<Void> resp, String url) {
-        if (Utils.notSupportRange(resp)) {
-            return getWhenNotSupportRange(resp, url);
-        } else {
-            return getWhenSupportRange(resp, url);
-        }
-    }
-
-    private DownloadType getWhenSupportRange(Response<Void> resp, String url) {
-        long contentLength = Utils.contentLength(resp);
-        try {
-            if (mDownloadHelper.needReDownload(url, contentLength)) {
-                return mFactory.url(url)
-                        .fileLength(contentLength)
-                        .lastModify(Utils.lastModify(resp))
-                        .buildMultiDownload();
-            }
-            if (mDownloadHelper.downloadNotComplete(url)) {
-                return mFactory.url(url)
-                        .fileLength(contentLength)
-                        .lastModify(Utils.lastModify(resp))
-                        .buildContinueDownload();
-            }
-        } catch (IOException e) {
-            Log.w(TAG, "download record file may be damaged,so we will re download");
-            return mFactory.url(url)
-                    .fileLength(contentLength)
-                    .lastModify(Utils.lastModify(resp))
-                    .buildMultiDownload();
-        }
-        return mFactory.fileLength(contentLength).buildAlreadyDownload();
-    }
-
-    private DownloadType getWhenNotSupportRange(Response<Void> resp, String url) {
-        long contentLength = Utils.contentLength(resp);
-        if (mDownloadHelper.downloadNotComplete(url, contentLength)) {
-            return mFactory.url(url)
-                    .fileLength(contentLength)
-                    .lastModify(Utils.lastModify(resp))
-                    .buildNormalDownload();
-        } else {
-            return mFactory.fileLength(contentLength).buildAlreadyDownload();
-        }
     }
 
     private void startBindServiceAndDo(final ServiceConnectedCallback callback) {

@@ -75,6 +75,10 @@ public class Utils {
         return resp.code() == 200;
     }
 
+    public static boolean requestRangeNotSatisfiable(Response<Void> resp) {
+        return resp.code() == 416;
+    }
+
     public static boolean serverFileNotChange(Response<Void> resp) {
         return resp.code() == 206;
     }

@@ -159,4 +159,28 @@ public abstract class DownloadType {
             return Observable.just(new DownloadStatus(mFileLength, mFileLength));
         }
     }
+
+    static class RequestRangeNotSatisfiable extends DownloadType {
+
+        @Override
+        public void prepareDownload() throws IOException, ParseException {
+
+        }
+
+        @Override
+        public Observable<DownloadStatus> startDownload() throws IOException {
+            return mDownloadHelper.requestHeaderWithIfRangeByGet(mUrl)
+                    .flatMap(new Func1<DownloadType, Observable<DownloadStatus>>() {
+                        @Override
+                        public Observable<DownloadStatus> call(DownloadType type) {
+                            try {
+                                type.prepareDownload();
+                                return type.startDownload();
+                            } catch (IOException | ParseException e) {
+                                return Observable.error(e);
+                            }
+                        }
+                    });
+        }
+    }
 }

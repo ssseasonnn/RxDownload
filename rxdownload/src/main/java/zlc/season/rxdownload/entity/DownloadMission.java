@@ -67,8 +67,6 @@ public class DownloadMission {
                     @Override
                     public void onCompleted() {
                         subjectPool.get(url).onNext(eventFactory.factory(url, DownloadFlag.COMPLETED, mStatus));
-                        subjectPool.get(url).onCompleted();
-                        subjectPool.remove(url);
 
                         helper.updateRecord(url, DownloadFlag.COMPLETED);
                         count.decrementAndGet();
@@ -78,9 +76,7 @@ public class DownloadMission {
                     @Override
                     public void onError(Throwable e) {
                         Log.w("error", e);
-                        subjectPool.get(url).onNext(eventFactory.factory(url, DownloadFlag.FAILED, mStatus));
-                        subjectPool.get(url).onError(e);
-                        subjectPool.remove(url);
+                        subjectPool.get(url).onNext(eventFactory.factory(url, DownloadFlag.FAILED, mStatus, e));
 
                         helper.updateRecord(url, DownloadFlag.FAILED);
                         count.decrementAndGet();

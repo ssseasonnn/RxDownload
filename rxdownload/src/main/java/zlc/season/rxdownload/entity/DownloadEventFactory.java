@@ -1,5 +1,7 @@
 package zlc.season.rxdownload.entity;
 
+import android.support.annotation.NonNull;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -28,6 +30,19 @@ public class DownloadEventFactory {
     }
 
     public DownloadEvent factory(String url, int flag, DownloadStatus status) {
+        DownloadEvent event = createEvent(url, flag, status);
+        event.setError(null);
+        return event;
+    }
+
+    public DownloadEvent factory(String url, int flag, DownloadStatus status, Throwable throwable) {
+        DownloadEvent event = createEvent(url, flag, status);
+        event.setError(throwable);
+        return event;
+    }
+
+    @NonNull
+    private DownloadEvent createEvent(String url, int flag, DownloadStatus status) {
         DownloadEvent event = map.get(url);
         if (event == null) {
             event = new DownloadEvent();
@@ -37,4 +52,5 @@ public class DownloadEventFactory {
         event.setFlag(flag);
         return event;
     }
+
 }

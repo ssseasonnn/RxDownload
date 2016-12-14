@@ -22,13 +22,13 @@ import com.tbruyelle.rxpermissions.RxPermissions;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
-import rx.Subscriber;
 import rx.Subscription;
 import rx.functions.Action1;
 import zlc.season.practicalrecyclerview.AbstractAdapter;
 import zlc.season.practicalrecyclerview.AbstractViewHolder;
 import zlc.season.rxdownload.RxDownload;
 import zlc.season.rxdownload.entity.DownloadEvent;
+import zlc.season.rxdownload.entity.DownloadFlag;
 import zlc.season.rxdownload.entity.DownloadStatus;
 import zlc.season.rxdownload.function.Utils;
 import zlc.season.rxdownloadproject.DownloadController;
@@ -89,20 +89,13 @@ public class DownloadViewHolder extends AbstractViewHolder<DownloadBean> {
          */
         Utils.unSubscribe(mSubscription);
         mSubscription = mRxDownload.receiveDownloadStatus(mData.mRecord.getUrl())
-                .subscribe(new Subscriber<DownloadEvent>() {
+                .subscribe(new Action1<DownloadEvent>() {
                     @Override
-                    public void onCompleted() {
-                        mDownloadController.setState(new DownloadController.Completed());
-                    }
-
-                    @Override
-                    public void onError(Throwable e) {
-                        Log.w("TAG", e);
-                        mDownloadController.setState(new DownloadController.Failed());
-                    }
-
-                    @Override
-                    public void onNext(final DownloadEvent event) {
+                    public void call(DownloadEvent event) {
+                        if (event.getFlag() == DownloadFlag.FAILED) {
+                            Throwable throwable = event.getError();
+                            Log.w("Error", throwable);
+                        }
                         mDownloadController.setEvent(event);
                         updateProgressStatus(event.getDownloadStatus());
                     }

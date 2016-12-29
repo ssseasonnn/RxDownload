@@ -154,8 +154,8 @@ public class DownloadHelper {
         mFileHelper.saveFile(emitter, getFile(url), resp);
     }
 
-    public DownloadRange readDownloadRange(String url) throws IOException {
-        return mFileHelper.readDownloadRange(getTempFile(url));
+    public DownloadRange readDownloadRange(String url, int i) throws IOException {
+        return mFileHelper.readDownloadRange(getTempFile(url), i);
     }
 
     public void prepareMultiThreadDownload(String url, long fileLength, String lastModify) throws IOException,
@@ -191,8 +191,6 @@ public class DownloadHelper {
                 .doOnComplete(new Action() {
                     @Override
                     public void run() throws Exception {
-                        //等待1.5秒,以确保文件写入到磁盘中.
-                        Thread.sleep(1500);
                         if (autoInstall) {
                             if (context == null) {
                                 throw new IllegalStateException("Context is NULL! You should call " +

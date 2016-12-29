@@ -47,6 +47,15 @@ public abstract class DownloadType {
             mDownloadHelper.prepareNormalDownload(mUrl, mFileLength, mLastModify);
         }
 
+        private Flowable<DownloadStatus> normalSave(final Response<ResponseBody> response) {
+            return Flowable.create(new FlowableOnSubscribe<DownloadStatus>() {
+                @Override
+                public void subscribe(FlowableEmitter<DownloadStatus> e) throws Exception {
+                    mDownloadHelper.saveNormalFile(e, mUrl, response);
+                }
+            }, BackpressureStrategy.BUFFER);
+        }
+
         @Override
         public Observable<DownloadStatus> startDownload() {
             Log.i(FileHelper.TAG, "Normal download start!!");
@@ -66,60 +75,44 @@ public abstract class DownloadType {
                     })
                     .toObservable();
         }
-
-        private Flowable<DownloadStatus> normalSave(final Response<ResponseBody> response) {
-            return Flowable.create(new FlowableOnSubscribe<DownloadStatus>() {
-                @Override
-                public void subscribe(FlowableEmitter<DownloadStatus> e) throws Exception {
-                    mDownloadHelper.saveNormalFile(e, mUrl, response);
-                }
-            }, BackpressureStrategy.BUFFER);
-        }
     }
 
     static class ContinueDownload extends DownloadType {
 
-        @Override
-        public void prepareDownload() throws IOException, ParseException {
-            Log.i(FileHelper.TAG, "Continue download start!!");
-        }
-
-        @Override
-        public Observable<DownloadStatus> startDownload() throws IOException {
-            DownloadRange range = mDownloadHelper.readDownloadRange(mUrl);
-            List<Flowable<DownloadStatus>> tasks = new ArrayList<>();
-            for (int i = 0; i < mDownloadHelper.getMaxThreads(); i++) {
-                if (range.start[i] <= range.end[i]) {
-                    tasks.add(rangeDownloadTask(range.start[i], range.end[i], i));
-                }
-            }
-            return Flowable.mergeDelayError(tasks).toObservable();
-        }
-
         /**
          * 分段下载的任务
          *
-         * @param start 从start字节开始
-         * @param end   到end字节结束
-         * @param i     下载编号
+         * @param i 下载编号
          * @return Observable
          */
-        private Flowable<DownloadStatus> rangeDownloadTask(final long start, final long end, final int i) {
-            String range = "bytes=" + start + "-" + end;
-            return mDownloadHelper.getDownloadApi().download(range, mUrl)
-                    .subscribeOn(Schedulers.io())
-                    .flatMap(new Function<Response<ResponseBody>, Publisher<DownloadStatus>>() {
-                        @Override
-                        public Publisher<DownloadStatus> apply(Response<ResponseBody> response) throws Exception {
-                            return rangeSave(start, end, i, response.body());
-                        }
-                    })
-                    .retry(new BiPredicate<Integer, Throwable>() {
-                        @Override
-                        public boolean test(Integer integer, Throwable throwable) throws Exception {
-                            return mDownloadHelper.retry(integer, throwable);
-                        }
-                    });
+        private Flowable<DownloadStatus> rangeDownloadTask(final int i) {
+            return Flowable.create(new FlowableOnSubscribe<DownloadRange>() {
+                @Override
+                public void subscribe(FlowableEmitter<DownloadRange> emitter) throws Exception {
+                    DownloadRange range = mDownloadHelper.readDownloadRange(mUrl, i);
+                    if (range.start <= range.end) {
+                        emitter.onNext(range);
+                    }
+                    emitter.onComplete();
+                }
+            }, BackpressureStrategy.LATEST).subscribeOn(Schedulers.io()).flatMap(new Function<DownloadRange, Publisher<DownloadStatus>>() {
+                @Override
+                public Publisher<DownloadStatus> apply(final DownloadRange downloadRange) throws Exception {
+                    String range = "bytes=" + downloadRange.start + "-" + downloadRange.end;
+                    return mDownloadHelper.getDownloadApi().download(range, mUrl)
+                            .flatMap(new Function<Response<ResponseBody>, Publisher<DownloadStatus>>() {
+                                @Override
+                                public Publisher<DownloadStatus> apply(Response<ResponseBody> response) throws Exception {
+                                    return rangeSave(downloadRange.start, downloadRange.end, i, response.body());
+                                }
+                            });
+                }
+            }).retry(new BiPredicate<Integer, Throwable>() {
+                @Override
+                public boolean test(Integer integer, Throwable throwable) throws Exception {
+                    return mDownloadHelper.retry(integer, throwable);
+                }
+            });
         }
 
         /**
@@ -139,6 +132,20 @@ public abstract class DownloadType {
                     mDownloadHelper.saveRangeFile(emitter, i, start, end, mUrl, response);
                 }
             }, BackpressureStrategy.LATEST);
+        }
+
+        @Override
+        public void prepareDownload() throws IOException, ParseException {
+            Log.i(FileHelper.TAG, "Continue download start!!");
+        }
+
+        @Override
+        public Observable<DownloadStatus> startDownload() throws IOException {
+            List<Flowable<DownloadStatus>> tasks = new ArrayList<>();
+            for (int i = 0; i < mDownloadHelper.getMaxThreads(); i++) {
+                tasks.add(rangeDownloadTask(i));
+            }
+            return Flowable.mergeDelayError(tasks).toObservable();
         }
     }
 

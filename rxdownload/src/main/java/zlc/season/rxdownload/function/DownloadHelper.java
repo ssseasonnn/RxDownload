@@ -152,8 +152,8 @@ public class DownloadHelper {
         mFileHelper.saveFile(sub, getFile(url), resp);
     }
 
-    public DownloadRange readDownloadRange(String url) throws IOException {
-        return mFileHelper.readDownloadRange(getTempFile(url));
+    public DownloadRange readDownloadRange(String url, int i) throws IOException {
+        return mFileHelper.readDownloadRange(getTempFile(url), i);
     }
 
     public void prepareMultiThreadDownload(String url, long fileLength, String lastModify) throws IOException,
@@ -193,18 +193,12 @@ public class DownloadHelper {
                 .doOnCompleted(new Action0() {
                     @Override
                     public void call() {
-                        try {
-                            //等待1.5秒,以确保文件写入到磁盘中.
-                            Thread.sleep(1500);
-                            if (autoInstall) {
-                                if (context == null) {
-                                    throw new IllegalStateException("Context is NULL! You should call " +
-                                            "#RxDownload.context(Context context)# first!");
-                                }
-                                Utils.installApk(context, new File(getRealFilePaths(saveName, savePath)[0]));
+                        if (autoInstall) {
+                            if (context == null) {
+                                throw new IllegalStateException("Context is NULL! You should call " +
+                                        "#RxDownload.context(Context context)# first!");
                             }
-                        } catch (InterruptedException e) {
-                            throw new IllegalStateException(e);
+                            Utils.installApk(context, new File(getRealFilePaths(saveName, savePath)[0]));
                         }
                         deleteDownloadRecord(url);
                     }

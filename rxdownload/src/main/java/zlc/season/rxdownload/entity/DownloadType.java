@@ -41,6 +41,15 @@ public abstract class DownloadType {
             mDownloadHelper.prepareNormalDownload(mUrl, mFileLength, mLastModify);
         }
 
+        private Observable<DownloadStatus> normalSave(final Response<ResponseBody> response) {
+            return Observable.create(new Observable.OnSubscribe<DownloadStatus>() {
+                @Override
+                public void call(Subscriber<? super DownloadStatus> subscriber) {
+                    mDownloadHelper.saveNormalFile(subscriber, mUrl, response);
+                }
+            });
+        }
+
         @Override
         public Observable<DownloadStatus> startDownload() {
             Log.i(FileHelper.TAG, "Normal download start!!");
@@ -58,60 +67,49 @@ public abstract class DownloadType {
                         }
                     });
         }
-
-        private Observable<DownloadStatus> normalSave(final Response<ResponseBody> response) {
-            return Observable.create(new Observable.OnSubscribe<DownloadStatus>() {
-                @Override
-                public void call(Subscriber<? super DownloadStatus> subscriber) {
-                    mDownloadHelper.saveNormalFile(subscriber, mUrl, response);
-                }
-            });
-        }
     }
 
     static class ContinueDownload extends DownloadType {
-
-        @Override
-        public void prepareDownload() throws IOException, ParseException {
-            Log.i(FileHelper.TAG, "Continue download start!!");
-        }
-
-        @Override
-        public Observable<DownloadStatus> startDownload() throws IOException {
-            DownloadRange range = mDownloadHelper.readDownloadRange(mUrl);
-            List<Observable<DownloadStatus>> tasks = new ArrayList<>();
-            for (int i = 0; i < mDownloadHelper.getMaxThreads(); i++) {
-                if (range.start[i] <= range.end[i]) {
-                    tasks.add(rangeDownloadTask(range.start[i], range.end[i], i));
-                }
-            }
-            return Observable.mergeDelayError(tasks);
-        }
-
         /**
          * 分段下载的任务
          *
-         * @param start 从start字节开始
-         * @param end   到end字节结束
-         * @param i     下载编号
+         * @param i 下载编号
          * @return Observable
          */
-        private Observable<DownloadStatus> rangeDownloadTask(final long start, final long end, final int i) {
-            String range = "bytes=" + start + "-" + end;
-            return mDownloadHelper.getDownloadApi().download(range, mUrl)
-                    .subscribeOn(Schedulers.io())
-                    .flatMap(new Func1<Response<ResponseBody>, Observable<DownloadStatus>>() {
-                        @Override
-                        public Observable<DownloadStatus> call(Response<ResponseBody> response) {
-                            return rangeSave(start, end, i, response.body());
+        private Observable<DownloadStatus> rangeDownloadTask(final int i) {
+            return Observable.create(new Observable.OnSubscribe<DownloadRange>() {
+                @Override
+                public void call(Subscriber<? super DownloadRange> subscriber) {
+                    try {
+                        DownloadRange range = mDownloadHelper.readDownloadRange(mUrl, i);
+                        if (range.start <= range.end) {
+                            subscriber.onNext(range);
                         }
-                    }).onBackpressureLatest().retry(new Func2<Integer, Throwable, Boolean>() {
-                        @Override
-                        public Boolean call(Integer integer, Throwable throwable) {
-                            return mDownloadHelper.retry(integer, throwable);
-                        }
-                    });
+                        subscriber.onCompleted();
+                    } catch (IOException e) {
+                        subscriber.onError(e);
+                    }
+                }
+            }).subscribeOn(Schedulers.io()).flatMap(new Func1<DownloadRange, Observable<DownloadStatus>>() {
+                @Override
+                public Observable<DownloadStatus> call(final DownloadRange downloadRange) {
+                    String range = "bytes=" + downloadRange.start + "-" + downloadRange.end;
+                    return mDownloadHelper.getDownloadApi().download(range, mUrl)
+                            .flatMap(new Func1<Response<ResponseBody>, Observable<DownloadStatus>>() {
+                                @Override
+                                public Observable<DownloadStatus> call(Response<ResponseBody> response) {
+                                    return rangeSave(downloadRange.start, downloadRange.end, i, response.body());
+                                }
+                            });
+                }
+            }).onBackpressureLatest().retry(new Func2<Integer, Throwable, Boolean>() {
+                @Override
+                public Boolean call(Integer integer, Throwable throwable) {
+                    return mDownloadHelper.retry(integer, throwable);
+                }
+            });
         }
+
 
         /**
          * 保存断点下载的文件,以及下载进度
@@ -130,6 +128,20 @@ public abstract class DownloadType {
                     mDownloadHelper.saveRangeFile(subscriber, i, start, end, mUrl, response);
                 }
             });
+        }
+
+        @Override
+        public void prepareDownload() throws IOException, ParseException {
+            Log.i(FileHelper.TAG, "Continue download start!!");
+        }
+
+        @Override
+        public Observable<DownloadStatus> startDownload() throws IOException {
+            List<Observable<DownloadStatus>> tasks = new ArrayList<>();
+            for (int i = 0; i < mDownloadHelper.getMaxThreads(); i++) {
+                tasks.add(rangeDownloadTask(i));
+            }
+            return Observable.mergeDelayError(tasks);
         }
     }
 

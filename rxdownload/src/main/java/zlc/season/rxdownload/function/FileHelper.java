@@ -111,7 +111,7 @@ public class FileHelper {
                 //Chunked 下载, 无需设置文件大小.
             }
         } finally {
-            Utils.close(file);
+            Utils.closeQuietly(file);
         }
     }
 
@@ -142,12 +142,12 @@ public class FileHelper {
                     sub.onNext(status);
                 }
                 outputStream.flush(); // This is important!!!
-                sub.onCompleted();
-                Log.i(TAG, "Normal download completed!");
             } finally {
-                Utils.close(inputStream);
-                Utils.close(outputStream);
-                Utils.close(resp.body());
+                Utils.closeQuietly(inputStream);
+                Utils.closeQuietly(outputStream);
+                Utils.closeQuietly(resp.body());
+                Log.i(TAG, "Normal download completed!");
+                sub.onCompleted();
             }
         } catch (IOException e) {
             Log.i(TAG, "Normal download failed or cancel!");
@@ -185,9 +185,9 @@ public class FileHelper {
                 buffer.putLong(end);
             }
         } finally {
-            Utils.close(channel);
-            Utils.close(rRecord);
-            Utils.close(rFile);
+            Utils.closeQuietly(channel);
+            Utils.closeQuietly(rRecord);
+            Utils.closeQuietly(rFile);
         }
     }
 
@@ -225,16 +225,16 @@ public class FileHelper {
                     status.setDownloadSize(totalSize - getResidue(recordBuffer));
                     subscriber.onNext(status);
                 }
+            } finally {
+                Utils.closeQuietly(record);
+                Utils.closeQuietly(recordChannel);
+                Utils.closeQuietly(save);
+                Utils.closeQuietly(saveChannel);
+                Utils.closeQuietly(inStream);
+                Utils.closeQuietly(response);
                 Log.i(TAG, Thread.currentThread().getName() + " complete download! Download size is " +
                         response.contentLength() + " bytes");
                 subscriber.onCompleted();
-            } finally {
-                Utils.close(record);
-                Utils.close(recordChannel);
-                Utils.close(save);
-                Utils.close(saveChannel);
-                Utils.close(inStream);
-                Utils.close(response);
             }
         } catch (IOException e) {
             Log.i(TAG, Thread.currentThread().getName() + " download failed or cancel!");
@@ -260,8 +260,8 @@ public class FileHelper {
             }
             return false;
         } finally {
-            Utils.close(channel);
-            Utils.close(record);
+            Utils.closeQuietly(channel);
+            Utils.closeQuietly(record);
         }
     }
 
@@ -275,8 +275,8 @@ public class FileHelper {
             long recordTotalSize = buffer.getLong(RECORD_FILE_TOTAL_SIZE - 8) + 1;
             return recordTotalSize != fileLength;
         } finally {
-            Utils.close(channel);
-            Utils.close(record);
+            Utils.closeQuietly(channel);
+            Utils.closeQuietly(record);
         }
     }
 
@@ -295,8 +295,8 @@ public class FileHelper {
             }
             return new DownloadRange(startByteArray, endByteArray);
         } finally {
-            Utils.close(channel);
-            Utils.close(record);
+            Utils.closeQuietly(channel);
+            Utils.closeQuietly(record);
         }
     }
 
@@ -307,7 +307,7 @@ public class FileHelper {
             record.seek(0);
             return Utils.longToGMT(record.readLong());
         } finally {
-            Utils.close(record);
+            Utils.closeQuietly(record);
         }
     }
 
@@ -337,7 +337,7 @@ public class FileHelper {
             record.seek(0);
             record.writeLong(Utils.GMTToLong(lastModify));
         } finally {
-            Utils.close(record);
+            Utils.closeQuietly(record);
         }
     }
 

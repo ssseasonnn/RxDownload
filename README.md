@@ -86,13 +86,22 @@ The download tool based on RxJava . Support multi-threaded download and breakpoi
 - 在DownloadEvent中增加了mError属性,  当收到DownloadFlag = Failed时, 就可以从event中取出异常信息进行处理. 
 - 具体信息请仔细阅读文档.
 
+### 2016-12-29 更新
+
+- 修复下载进度可能超过100%的BUG
+- 修复其余一些BUG
+
+
+
 ### 效果图
+
 
 <figure class="third">
     <img title="普通下载" width="300" src="https://github.com/ssseasonnn/RxDownload/blob/master/gif/basic_download.gif?raw=true">
     <img title="Service下载" width="300" src="https://github.com/ssseasonnn/RxDownload/blob/master/gif/service_download.gif?raw=true">
     <img title="下载管理" width="300" src="https://github.com/ssseasonnn/RxDownload/blob/master/gif/download_manager.gif?raw=true">
 </figure>
+
 
 ### 下载流程图
 
@@ -116,7 +125,7 @@ Demo中所有的下载链接均是从网上随意找的, 经常会出现地址�
 
 ```groovy
 	dependencies{
-   		 compile 'zlc.season:rxdownload:1.2.6'
+   		 compile 'zlc.season:rxdownload:1.2.8'
 	}
 ```
 
@@ -128,7 +137,7 @@ RxDownload 现在支持RxJava2, 只需将包名改为 ```zlc.season.rxdownload2.
 
 ```groovy
 	dependencies{
-   		 compile 'zlc.season:rxdownload2:1.0.4'
+   		 compile 'zlc.season:rxdownload2:1.0.6'
 	}
 ```
 

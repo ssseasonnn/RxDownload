@@ -142,12 +142,12 @@ public class FileHelper {
                     sub.onNext(status);
                 }
                 outputStream.flush(); // This is important!!!
+                Log.i(TAG, "Normal download completed!");
+                sub.onCompleted();
             } finally {
                 Utils.closeQuietly(inputStream);
                 Utils.closeQuietly(outputStream);
                 Utils.closeQuietly(resp.body());
-                Log.i(TAG, "Normal download completed!");
-                sub.onCompleted();
             }
         } catch (IOException e) {
             Log.i(TAG, "Normal download failed or cancel!");
@@ -225,6 +225,9 @@ public class FileHelper {
                     status.setDownloadSize(totalSize - getResidue(recordBuffer));
                     subscriber.onNext(status);
                 }
+                Log.i(TAG, Thread.currentThread().getName() + " complete download! Download size is " +
+                        response.contentLength() + " bytes");
+                subscriber.onCompleted();
             } finally {
                 Utils.closeQuietly(record);
                 Utils.closeQuietly(recordChannel);
@@ -232,9 +235,6 @@ public class FileHelper {
                 Utils.closeQuietly(saveChannel);
                 Utils.closeQuietly(inStream);
                 Utils.closeQuietly(response);
-                Log.i(TAG, Thread.currentThread().getName() + " complete download! Download size is " +
-                        response.contentLength() + " bytes");
-                subscriber.onCompleted();
             }
         } catch (IOException e) {
             Log.i(TAG, Thread.currentThread().getName() + " download failed or cancel!");
@@ -280,20 +280,16 @@ public class FileHelper {
         }
     }
 
-    DownloadRange readDownloadRange(File tempFile) throws IOException {
+    DownloadRange readDownloadRange(File tempFile, int i) throws IOException {
         RandomAccessFile record = null;
         FileChannel channel = null;
         try {
             record = new RandomAccessFile(tempFile, "rws");
             channel = record.getChannel();
-            MappedByteBuffer buffer = channel.map(READ_WRITE, 0, RECORD_FILE_TOTAL_SIZE);
-            long[] startByteArray = new long[MAX_THREADS];
-            long[] endByteArray = new long[MAX_THREADS];
-            for (int i = 0; i < MAX_THREADS; i++) {
-                startByteArray[i] = buffer.getLong();
-                endByteArray[i] = buffer.getLong();
-            }
-            return new DownloadRange(startByteArray, endByteArray);
+            MappedByteBuffer buffer = channel.map(READ_WRITE, i * EACH_RECORD_SIZE, (i + 1) * EACH_RECORD_SIZE);
+            long startByte = buffer.getLong();
+            long endByte = buffer.getLong();
+            return new DownloadRange(startByte, endByte);
         } finally {
             Utils.closeQuietly(channel);
             Utils.closeQuietly(record);
@@ -315,9 +311,11 @@ public class FileHelper {
         for (String each : directoryPaths) {
             File file = new File(each);
             if (file.exists() && file.isDirectory()) {
-                if (BuildConfig.DEBUG) Log.d(TAG, "Directory exists. Do not need create. Path = " + each);
+                if (BuildConfig.DEBUG)
+                    Log.d(TAG, "Directory exists. Do not need create. Path = " + each);
             } else {
-                if (BuildConfig.DEBUG) Log.d(TAG, "Directory is not exists.So we need create. Path = " + each);
+                if (BuildConfig.DEBUG)
+                    Log.d(TAG, "Directory is not exists.So we need create. Path = " + each);
                 boolean flag = file.mkdir();
                 if (flag) {
                     if (BuildConfig.DEBUG) Log.d(TAG, "Directory create succeed! Path = " + each);

@@ -7,10 +7,10 @@ package zlc.season.rxdownload.entity;
  * Download Range
  */
 public class DownloadRange {
-    public long[] start;
-    public long[] end;
+    public long start;
+    public long end;
 
-    public DownloadRange(long[] start, long[] end) {
+    public DownloadRange(long start, long end) {
         this.start = start;
         this.end = end;
     }

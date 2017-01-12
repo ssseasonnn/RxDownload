@@ -11,11 +11,11 @@ import java.util.List;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
-import rx.functions.Action1;
-import rx.functions.Func1;
+import io.reactivex.functions.Consumer;
+import io.reactivex.functions.Function;
 import zlc.season.practicalrecyclerview.PracticalRecyclerView;
-import zlc.season.rxdownload.RxDownload;
-import zlc.season.rxdownload.entity.DownloadRecord;
+import zlc.season.rxdownload2.RxDownload;
+import zlc.season.rxdownload2.entity.DownloadRecord;
 import zlc.season.rxdownloadproject.R;
 
 public class DownloadManagerActivity extends AppCompatActivity {
@@ -44,9 +44,9 @@ public class DownloadManagerActivity extends AppCompatActivity {
 
     private void loadData() {
         RxDownload.getInstance().context(this).getTotalDownloadRecords()
-                .map(new Func1<List<DownloadRecord>, List<DownloadBean>>() {
+                .map(new Function<List<DownloadRecord>, List<DownloadBean>>() {
                     @Override
-                    public List<DownloadBean> call(List<DownloadRecord> downloadRecords) {
+                    public List<DownloadBean> apply(List<DownloadRecord> downloadRecords) throws Exception {
                         List<DownloadBean> result = new ArrayList<>();
                         for (DownloadRecord each : downloadRecords) {
                             DownloadBean bean = new DownloadBean();
@@ -56,9 +56,9 @@ public class DownloadManagerActivity extends AppCompatActivity {
                         return result;
                     }
                 })
-                .subscribe(new Action1<List<DownloadBean>>() {
+                .subscribe(new Consumer<List<DownloadBean>>() {
                     @Override
-                    public void call(List<DownloadBean> downloadBeen) {
+                    public void accept(List<DownloadBean> downloadBeen) throws Exception {
                         mAdapter.addAll(downloadBeen);
                     }
                 });

@@ -1,4 +1,4 @@
-package zlc.season.rxdownloadproject.service_download;
+﻿package zlc.season.rxdownloadproject.service_download;
 
 import android.Manifest;
 import android.content.Intent;
@@ -14,16 +14,16 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.squareup.picasso.Picasso;
-import com.tbruyelle.rxpermissions.RxPermissions;
+import com.tbruyelle.rxpermissions2.RxPermissions;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
-import rx.functions.Action1;
-import zlc.season.rxdownload.RxDownload;
-import zlc.season.rxdownload.entity.DownloadEvent;
-import zlc.season.rxdownload.entity.DownloadFlag;
-import zlc.season.rxdownload.entity.DownloadStatus;
+import io.reactivex.functions.Consumer;
+import zlc.season.rxdownload2.RxDownload;
+import zlc.season.rxdownload2.entity.DownloadEvent;
+import zlc.season.rxdownload2.entity.DownloadFlag;
+import zlc.season.rxdownload2.entity.DownloadStatus;
 import zlc.season.rxdownloadproject.DownloadController;
 import zlc.season.rxdownloadproject.R;
 
@@ -101,15 +101,15 @@ public class ServiceDownloadActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         mRxDownload.receiveDownloadStatus(url)
-                .subscribe(new Action1<DownloadEvent>() {
+                .subscribe(new Consumer<DownloadEvent>() {
                     @Override
-                    public void call(DownloadEvent event) {
-                        if (event.getFlag() == DownloadFlag.FAILED) {
-                            Throwable throwable = event.getError();
+                    public void accept(DownloadEvent downloadEvent) throws Exception {
+                        if (downloadEvent.getFlag() == DownloadFlag.FAILED) {
+                            Throwable throwable = downloadEvent.getError();
                             Log.w("Error", throwable);
                         }
-                        mDownloadController.setEvent(event);
-                        updateProgress(event);
+                        mDownloadController.setEvent(downloadEvent);
+                        updateProgress(downloadEvent);
                     }
                 });
     }
@@ -134,18 +134,18 @@ public class ServiceDownloadActivity extends AppCompatActivity {
     private void start() {
         RxPermissions.getInstance(this)
                 .request(Manifest.permission.WRITE_EXTERNAL_STORAGE)
-                .doOnNext(new Action1<Boolean>() {
+                .doOnNext(new Consumer<Boolean>() {
                     @Override
-                    public void call(Boolean granted) {
+                    public void accept(Boolean granted) throws Exception {
                         if (!granted) {
                             throw new RuntimeException("no permission");
                         }
                     }
                 })
-                .compose(mRxDownload.transformService(url, saveName, defaultPath))
-                .subscribe(new Action1<Object>() {
+                .compose(mRxDownload.<Boolean>transformService(url, saveName, defaultPath))
+                .subscribe(new Consumer<Object>() {
                     @Override
-                    public void call(Object o) {
+                    public void accept(Object o) throws Exception {
                         Toast.makeText(ServiceDownloadActivity.this, "下载开始", Toast.LENGTH_SHORT).show();
                     }
                 });

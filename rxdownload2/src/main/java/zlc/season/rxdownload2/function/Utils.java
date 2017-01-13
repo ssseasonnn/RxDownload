@@ -4,20 +4,42 @@ import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.text.TextUtils;
+import android.util.Log;
+
+import com.jakewharton.retrofit2.adapter.rxjava2.HttpException;
 
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
+import java.net.ConnectException;
+import java.net.ProtocolException;
+import java.net.SocketException;
+import java.net.SocketTimeoutException;
+import java.net.UnknownHostException;
 import java.text.DecimalFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
-import java.util.TimeZone;
 
+import io.reactivex.Observable;
+import io.reactivex.ObservableSource;
+import io.reactivex.ObservableTransformer;
 import io.reactivex.disposables.Disposable;
+import io.reactivex.exceptions.CompositeException;
+import io.reactivex.functions.BiPredicate;
 import okhttp3.internal.http.HttpHeaders;
 import retrofit2.Response;
+
+import static java.lang.String.format;
+import static java.util.Locale.getDefault;
+import static java.util.TimeZone.getTimeZone;
+import static zlc.season.rxdownload2.function.Constant.DIR_CREATE_FAILED;
+import static zlc.season.rxdownload2.function.Constant.DIR_CREATE_SUCCESS;
+import static zlc.season.rxdownload2.function.Constant.DIR_EXISTS_HINT;
+import static zlc.season.rxdownload2.function.Constant.DIR_NOT_EXISTS_HINT;
+import static zlc.season.rxdownload2.function.Constant.RETRY_HINT;
+import static zlc.season.rxdownload2.function.Constant.TAG;
 
 /**
  * Author: Season(ssseasonnn@gmail.com)
@@ -26,10 +48,23 @@ import retrofit2.Response;
  * 工具类
  */
 public class Utils {
+
+    public static void log(String message) {
+        Log.i(TAG, message);
+    }
+
+    public static void log(String message, Object... args) {
+        log(format(getDefault(), message, args));
+    }
+
+    public static void log(Throwable throwable) {
+        Log.w(TAG, throwable);
+    }
+
     public static String longToGMT(long lastModify) {
         Date d = new Date(lastModify);
         SimpleDateFormat sdf = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss z", Locale.US);
-        sdf.setTimeZone(TimeZone.getTimeZone("GMT"));
+        sdf.setTimeZone(getTimeZone("GMT"));
         return sdf.format(d);
     }
 
@@ -38,7 +73,7 @@ public class Utils {
             return new Date().getTime();
         }
         SimpleDateFormat sdf = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss z", Locale.US);
-        sdf.setTimeZone(TimeZone.getTimeZone("GMT"));
+        sdf.setTimeZone(getTimeZone("GMT"));
         Date date = sdf.parse(GMT);
         return date.getTime();
     }
@@ -58,6 +93,20 @@ public class Utils {
             } catch (Exception ignored) {
             }
         }
+    }
+
+    public static <U> ObservableTransformer<U, U> retry(final int MAX_RETRY_COUNT) {
+        return new ObservableTransformer<U, U>() {
+            @Override
+            public ObservableSource<U> apply(Observable<U> upstream) {
+                return upstream.retry(new BiPredicate<Integer, Throwable>() {
+                    @Override
+                    public boolean test(Integer integer, Throwable throwable) throws Exception {
+                        return retry(MAX_RETRY_COUNT, integer, throwable);
+                    }
+                });
+            }
+        };
     }
 
     public static void dispose(Disposable disposable) {
@@ -126,11 +175,76 @@ public class Utils {
         return hrSize;
     }
 
+    public static Boolean retry(int MAX_RETRY_COUNT, Integer integer, Throwable throwable) {
+        if (throwable instanceof ProtocolException) {
+            if (integer < MAX_RETRY_COUNT + 1) {
+                log(RETRY_HINT, Thread.currentThread().getName(), "ProtocolException", integer);
+                return true;
+            }
+            return false;
+        } else if (throwable instanceof UnknownHostException) {
+            if (integer < MAX_RETRY_COUNT + 1) {
+                log(RETRY_HINT, Thread.currentThread().getName(), "UnknownHostException", integer);
+                return true;
+            }
+            return false;
+        } else if (throwable instanceof HttpException) {
+            if (integer < MAX_RETRY_COUNT + 1) {
+                log(RETRY_HINT, Thread.currentThread().getName(), "HttpException", integer);
+                return true;
+            }
+            return false;
+        } else if (throwable instanceof SocketTimeoutException) {
+            if (integer < MAX_RETRY_COUNT + 1) {
+                log(RETRY_HINT, Thread.currentThread().getName(), "SocketTimeoutException",
+                        integer);
+                return true;
+            }
+            return false;
+        } else if (throwable instanceof ConnectException) {
+            if (integer < MAX_RETRY_COUNT + 1) {
+                log(RETRY_HINT, Thread.currentThread().getName(), "ConnectException", integer);
+                return true;
+            }
+            return false;
+        } else if (throwable instanceof SocketException) {
+            if (integer < MAX_RETRY_COUNT + 1) {
+                log(RETRY_HINT, Thread.currentThread().getName(), "SocketException", integer);
+                return true;
+            }
+            return false;
+        } else if (throwable instanceof CompositeException) {
+            log(RETRY_HINT, Thread.currentThread().getName(), throwable.getMessage(), integer);
+            return false;
+        } else {
+            log(throwable);
+            return false;
+        }
+    }
+
     private static String transferEncoding(Response<?> response) {
         return response.headers().get("Transfer-Encoding");
     }
 
     private static String contentRange(Response<?> response) {
         return response.headers().get("Content-Range");
+    }
+
+    public static void mkdirs(String... paths) throws IOException {
+        for (String each : paths) {
+            File file = new File(each);
+            if (file.exists() && file.isDirectory()) {
+                log(DIR_EXISTS_HINT, each);
+            } else {
+                log(DIR_NOT_EXISTS_HINT, each);
+                boolean flag = file.mkdir();
+                if (flag) {
+                    log(DIR_CREATE_SUCCESS, each);
+                } else {
+                    log(DIR_CREATE_FAILED, each);
+                    throw new IOException(format(getDefault(), DIR_CREATE_FAILED, each));
+                }
+            }
+        }
     }
 }

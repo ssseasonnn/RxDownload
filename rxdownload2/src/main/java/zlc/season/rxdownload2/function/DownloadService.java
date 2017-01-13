@@ -5,7 +5,6 @@ import android.content.Intent;
 import android.os.Binder;
 import android.os.IBinder;
 import android.support.annotation.Nullable;
-import android.util.Log;
 
 import java.io.File;
 import java.util.HashMap;
@@ -24,6 +23,9 @@ import zlc.season.rxdownload2.entity.DownloadEventFactory;
 import zlc.season.rxdownload2.entity.DownloadFlag;
 import zlc.season.rxdownload2.entity.DownloadMission;
 import zlc.season.rxdownload2.entity.DownloadRecord;
+
+import static zlc.season.rxdownload2.function.Constant.DOWNLOAD_URL_EXISTS;
+import static zlc.season.rxdownload2.function.Utils.log;
 
 /**
  * Author: Season(ssseasonnn@gmail.com)
@@ -112,7 +114,7 @@ public class DownloadService extends Service {
     public void addDownloadMission(DownloadMission mission) {
         String url = mission.getUrl();
         if (mWaitingForDownloadLookUpMap.get(url) != null || mNowDownloading.get(url) != null) {
-            Log.d("DownloadService", "This download mission is exists.");
+            log(DOWNLOAD_URL_EXISTS);
         } else {
             if (mDataBaseHelper.recordNotExists(url)) {
                 mDataBaseHelper.insertRecord(mission);
@@ -120,7 +122,7 @@ public class DownloadService extends Service {
             } else {
                 mDataBaseHelper.updateRecord(url, DownloadFlag.WAITING);
                 createAndGet(url).onNext(mEventFactory.factory(url, DownloadFlag.WAITING,
-                                                               mDataBaseHelper.readStatus(url)));
+                        mDataBaseHelper.readStatus(url)));
             }
             mWaitingForDownload.offer(mission);
             mWaitingForDownloadLookUpMap.put(url, mission);

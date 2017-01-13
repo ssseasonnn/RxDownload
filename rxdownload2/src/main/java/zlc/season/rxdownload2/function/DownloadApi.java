@@ -19,18 +19,22 @@ import retrofit2.http.Url;
 public interface DownloadApi {
     @GET
     @Streaming
-    Flowable<Response<ResponseBody>> download(@Header("Range") String range, @Url String url);
+    Flowable<Response<ResponseBody>> download(
+            @Header("Range") String range, @Url String url);
 
     @HEAD
-    Observable<Response<Void>> getHttpHeader(@Header("Range") String range, @Url String url);
+    Observable<Response<Void>> HEAD(
+            @Header("Range") String range, @Url String url);
 
     @HEAD
-    Observable<Response<Void>> getHttpHeaderWithIfRange(@Header("Range") final String range,
-                                                        @Header("If-Range") final String lastModify,
-                                                        @Url String url);
+    Observable<Response<Void>> HEAD_withIfRange(
+            @Header("Range") final String range,
+            @Header("If-Range") final String lastModify,
+            @Url String url);
 
     @GET
-    Observable<Response<Void>> requestWithIfRange(@Header("Range") final String range,
-                                                  @Header("If-Range") final String lastModify,
-                                                  @Url String url);
+    Observable<Response<Void>> GET_withIfRange(
+            @Header("Range") final String range,
+            @Header("If-Range") final String lastModify,
+            @Url String url);
 }

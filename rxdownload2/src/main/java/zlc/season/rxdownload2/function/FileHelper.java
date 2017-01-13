@@ -1,7 +1,6 @@
 ﻿package zlc.season.rxdownload2.function;
 
 import android.text.TextUtils;
-import android.util.Log;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -16,7 +15,6 @@ import java.text.ParseException;
 import io.reactivex.FlowableEmitter;
 import okhttp3.ResponseBody;
 import retrofit2.Response;
-import zlc.season.rxdownload2.BuildConfig;
 import zlc.season.rxdownload2.entity.DownloadRange;
 import zlc.season.rxdownload2.entity.DownloadStatus;
 
@@ -25,6 +23,14 @@ import static android.os.Environment.getExternalStoragePublicDirectory;
 import static android.text.TextUtils.concat;
 import static java.io.File.separator;
 import static java.nio.channels.FileChannel.MapMode.READ_WRITE;
+import static zlc.season.rxdownload2.function.Constant.CHUNKED_DOWNLOAD_HINT;
+import static zlc.season.rxdownload2.function.Constant.NORMAL_DOWNLOAD_COMPLETED;
+import static zlc.season.rxdownload2.function.Constant.NORMAL_DOWNLOAD_FAILED;
+import static zlc.season.rxdownload2.function.Constant.RANGE_DOWNLOAD_COMPLETED;
+import static zlc.season.rxdownload2.function.Constant.RANGE_DOWNLOAD_FAILED;
+import static zlc.season.rxdownload2.function.Constant.RANGE_DOWNLOAD_STARTED;
+import static zlc.season.rxdownload2.function.Utils.log;
+import static zlc.season.rxdownload2.function.Utils.mkdirs;
 
 /**
  * Author: Season(ssseasonnn@gmail.com)
@@ -33,7 +39,6 @@ import static java.nio.channels.FileChannel.MapMode.READ_WRITE;
  * FIXME
  */
 public class FileHelper {
-    public static final String TAG = "RxDownload";
 
     private static final String TMP_SUFFIX = ".tmp";  //temp file
     private static final String LMF_SUFFIX = ".lmf";  //last modify file
@@ -74,7 +79,7 @@ public class FileHelper {
     }
 
     void createDirectories(String savePath) throws IOException {
-        createDirectories(getRealDirectoryPaths(savePath));
+        mkdirs(getRealDirectoryPaths(savePath));
     }
 
     String[] getRealDirectoryPaths(String savePath) {
@@ -99,24 +104,13 @@ public class FileHelper {
     }
 
     void prepareDownload(File lastModifyFile, File saveFile, long fileLength,
-                         String lastModify) throws IOException, ParseException {
+            String lastModify) throws IOException, ParseException {
         writeLastModify(lastModifyFile, lastModify);
-        RandomAccessFile file = null;
-        try {
-            file = new RandomAccessFile(saveFile, "rws");
-            if (fileLength != -1) {
-                file.setLength(fileLength);//设置下载文件的长度
-            } else {
-                Log.i(TAG, "Chunked download.");
-                //Chunked 下载, 无需设置文件大小.
-            }
-        } finally {
-            Utils.closeQuietly(file);
-        }
+        createSaveFile(saveFile, fileLength);
     }
 
     void saveFile(FlowableEmitter<DownloadStatus> emitter, File saveFile,
-                  Response<ResponseBody> resp) {
+            Response<ResponseBody> resp) {
         InputStream inputStream = null;
         OutputStream outputStream = null;
         try {
@@ -141,20 +135,20 @@ public class FileHelper {
                 }
                 outputStream.flush(); // This is important!!!
                 emitter.onComplete();
-                Log.i(TAG, "Normal download completed!");
+                log(NORMAL_DOWNLOAD_COMPLETED);
             } finally {
                 Utils.closeQuietly(inputStream);
                 Utils.closeQuietly(outputStream);
                 Utils.closeQuietly(resp.body());
             }
         } catch (IOException e) {
-            Log.i(TAG, "Normal download failed or cancel!");
+            log(NORMAL_DOWNLOAD_FAILED);
             emitter.onError(e);
         }
     }
 
     void prepareDownload(File lastModifyFile, File tempFile, File saveFile,
-                         long fileLength, String lastModify) throws IOException, ParseException {
+            long fileLength, String lastModify) throws IOException, ParseException {
         writeLastModify(lastModifyFile, lastModify);
         RandomAccessFile rFile = null;
         RandomAccessFile rRecord = null;
@@ -188,7 +182,7 @@ public class FileHelper {
     }
 
     void saveFile(FlowableEmitter<DownloadStatus> emitter, int i, long start, long end,
-                  File tempFile, File saveFile, ResponseBody response) {
+            File tempFile, File saveFile, ResponseBody response) {
         RandomAccessFile record = null;
         FileChannel recordChannel = null;
         RandomAccessFile save = null;
@@ -196,32 +190,35 @@ public class FileHelper {
         InputStream inStream = null;
         try {
             try {
-                Log.i(TAG,
-                      Thread.currentThread().getName() + " start download from " + start + " to " +
-                              end + "!");
                 int readLen;
                 byte[] buffer = new byte[8192];
+
                 DownloadStatus status = new DownloadStatus();
                 record = new RandomAccessFile(tempFile, "rws");
                 recordChannel = record.getChannel();
                 MappedByteBuffer recordBuffer = recordChannel
                         .map(READ_WRITE, 0, RECORD_FILE_TOTAL_SIZE);
+
                 long totalSize = recordBuffer.getLong(RECORD_FILE_TOTAL_SIZE - 8) + 1;
                 status.setTotalSize(totalSize);
+
                 save = new RandomAccessFile(saveFile, "rws");
                 saveChannel = save.getChannel();
                 MappedByteBuffer saveBuffer = saveChannel.map(READ_WRITE, start, end - start + 1);
                 inStream = response.byteStream();
+
+                log(RANGE_DOWNLOAD_STARTED, Thread.currentThread().getName(), start, end);
+
                 while ((readLen = inStream.read(buffer)) != -1) {
                     saveBuffer.put(buffer, 0, readLen);
                     recordBuffer.putLong(i * EACH_RECORD_SIZE,
-                                         recordBuffer.getLong(i * EACH_RECORD_SIZE) + readLen);
+                            recordBuffer.getLong(i * EACH_RECORD_SIZE) + readLen);
                     status.setDownloadSize(totalSize - getResidue(recordBuffer));
                     emitter.onNext(status);
                 }
-                Log.i(TAG,
-                      Thread.currentThread().getName() + " complete download! Download size is " +
-                              response.contentLength() + " bytes");
+
+                log(RANGE_DOWNLOAD_COMPLETED, Thread.currentThread().getName(),
+                        response.contentLength() + "");
                 emitter.onComplete();
             } finally {
                 Utils.closeQuietly(record);
@@ -232,7 +229,7 @@ public class FileHelper {
                 Utils.closeQuietly(response);
             }
         } catch (IOException e) {
-            Log.i(TAG, Thread.currentThread().getName() + " download failed or cancel!");
+            log(RANGE_DOWNLOAD_FAILED, Thread.currentThread().getName());
             emitter.onError(e);
         }
     }
@@ -244,6 +241,7 @@ public class FileHelper {
             record = new RandomAccessFile(tempFile, "rws");
             channel = record.getChannel();
             MappedByteBuffer buffer = channel.map(READ_WRITE, 0, RECORD_FILE_TOTAL_SIZE);
+
             long startByte;
             long endByte;
             for (int i = 0; i < MAX_THREADS; i++) {
@@ -303,23 +301,18 @@ public class FileHelper {
         }
     }
 
-    private void createDirectories(String... directoryPaths) throws IOException {
-        for (String each : directoryPaths) {
-            File file = new File(each);
-            if (file.exists() && file.isDirectory()) {
-                if (BuildConfig.DEBUG)
-                    Log.d(TAG, "Directory exists. Do not need create. Path = " + each);
+    private void createSaveFile(File saveFile, long fileLength) throws IOException {
+        RandomAccessFile file = null;
+        try {
+            file = new RandomAccessFile(saveFile, "rws");
+            if (fileLength != -1) {
+                file.setLength(fileLength);//设置下载文件的长度
             } else {
-                if (BuildConfig.DEBUG)
-                    Log.d(TAG, "Directory is not exists.So we need create. Path = " + each);
-                boolean flag = file.mkdir();
-                if (flag) {
-                    if (BuildConfig.DEBUG) Log.d(TAG, "Directory create succeed! Path = " + each);
-                } else {
-                    if (BuildConfig.DEBUG) Log.d(TAG, "Directory create failed! Path = " + each);
-                    throw new IOException("Directory create failed!");
-                }
+                log(CHUNKED_DOWNLOAD_HINT);
+                //Chunked 下载, 无需设置文件大小.
             }
+        } finally {
+            Utils.closeQuietly(file);
         }
     }
 

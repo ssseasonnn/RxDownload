@@ -9,71 +9,51 @@ import zlc.season.rxdownload2.function.DownloadHelper;
  * Download Type Factory
  */
 public class DownloadTypeFactory {
-    private String mUrl;
-    private long mFileLength;
-    private String mLastModify;
     private DownloadHelper mDownloadHelper;
 
     public DownloadTypeFactory(DownloadHelper downloadHelper) {
         this.mDownloadHelper = downloadHelper;
     }
 
-    public DownloadTypeFactory url(String url) {
-        this.mUrl = url;
-        return this;
-    }
-
-    public DownloadTypeFactory fileLength(long fileLength) {
-        this.mFileLength = fileLength;
-        return this;
-    }
-
-    public DownloadTypeFactory lastModify(String lastModify) {
-        this.mLastModify = lastModify;
-        return this;
-    }
-
-    public DownloadType buildNormalDownload() {
+    public DownloadType normal(String url, long fileLength, String lastModify) {
         DownloadType type = new DownloadType.NormalDownload();
-        type.mUrl = this.mUrl;
-        type.mFileLength = this.mFileLength;
-        type.mLastModify = this.mLastModify;
+        type.mUrl = url;
+        type.mFileLength = fileLength;
+        type.mLastModify = lastModify;
         type.mDownloadHelper = this.mDownloadHelper;
         return type;
     }
 
-    public DownloadType buildContinueDownload() {
+    public DownloadType continued(String url, long fileLength, String lastModify) {
         DownloadType type = new DownloadType.ContinueDownload();
-        type.mUrl = this.mUrl;
-        type.mFileLength = this.mFileLength;
-        type.mLastModify = this.mLastModify;
+        type.mUrl = url;
+        type.mFileLength = fileLength;
+        type.mLastModify = lastModify;
         type.mDownloadHelper = this.mDownloadHelper;
         return type;
     }
 
-    public DownloadType buildMultiDownload() {
+    public DownloadType multithread(String url, long fileLength, String lastModify) {
         DownloadType type = new DownloadType.MultiThreadDownload();
-        type.mUrl = this.mUrl;
-        type.mFileLength = this.mFileLength;
-        type.mLastModify = this.mLastModify;
+        type.mUrl = url;
+        type.mFileLength = fileLength;
+        type.mLastModify = lastModify;
         type.mDownloadHelper = this.mDownloadHelper;
         return type;
     }
 
-    public DownloadType buildAlreadyDownload() {
+    public DownloadType already(long fileLength) {
         DownloadType type = new DownloadType.AlreadyDownloaded();
-        type.mUrl = this.mUrl;
-        type.mFileLength = this.mFileLength;
-        type.mLastModify = this.mLastModify;
+        type.mFileLength = fileLength;
         type.mDownloadHelper = this.mDownloadHelper;
         return type;
     }
 
-    public DownloadType buildRequestRangeNotSatisfiable() {
+    public DownloadType needGET(String url, long fileLength, String lastModify) {
         DownloadType type = new DownloadType.RequestRangeNotSatisfiable();
-        type.mUrl = this.mUrl;
-        type.mFileLength = this.mFileLength;
-        type.mLastModify = this.mLastModify;
+        type.mUrl = url;
+        type.mFileLength = fileLength;
+        type.mLastModify = lastModify;
         type.mDownloadHelper = this.mDownloadHelper;
         return type;
     }

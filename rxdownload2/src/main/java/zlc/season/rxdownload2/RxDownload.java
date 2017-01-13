@@ -35,7 +35,8 @@ import zlc.season.rxdownload2.entity.DownloadStatus;
 import zlc.season.rxdownload2.function.DownloadHelper;
 import zlc.season.rxdownload2.function.DownloadService;
 
-import static zlc.season.rxdownload2.function.FileHelper.TAG;
+import static android.content.ContentValues.TAG;
+import static zlc.season.rxdownload2.function.Constant.CONTEXT_NULL_HINT;
 
 /**
  * Author: Season(ssseasonnn@gmail.com)
@@ -44,8 +45,6 @@ import static zlc.season.rxdownload2.function.FileHelper.TAG;
  * RxDownload
  */
 public class RxDownload {
-    private static final String CONTEXT_NULL_HINT
-            = "Context is NULL! You should call #RxDownload.context(Context context)# first!";
 
     private static DownloadService mDownloadService;
     private static boolean bound = false;
@@ -275,8 +274,8 @@ public class RxDownload {
      * @return Observable<DownloadStatus>
      */
     public Observable<?> serviceDownload(@NonNull final String url,
-                                         @NonNull final String saveName,
-                                         @Nullable final String savePath) {
+            @NonNull final String saveName,
+            @Nullable final String savePath) {
         return createGeneralObservable(new GeneralObservableCallback() {
             @Override
             public void call() {
@@ -300,8 +299,8 @@ public class RxDownload {
      * @return Observable<DownloadStatus>
      */
     public Observable<DownloadStatus> download(@NonNull final String url,
-                                               @NonNull final String saveName,
-                                               @Nullable final String savePath) {
+            @NonNull final String saveName,
+            @Nullable final String savePath) {
         return mDownloadHelper.downloadDispatcher(url, saveName, savePath, mContext, mAutoInstall);
     }
 
@@ -369,7 +368,7 @@ public class RxDownload {
     }
 
     private void addDownloadTask(@NonNull String url, @NonNull String saveName,
-                                 @Nullable String savePath) {
+            @Nullable String savePath) {
         mDownloadService.addDownloadMission(
                 new DownloadMission.Builder()
                         .setRxDownload(RxDownload.this)

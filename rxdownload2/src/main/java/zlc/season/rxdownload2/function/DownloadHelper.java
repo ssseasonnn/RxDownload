@@ -1,17 +1,9 @@
 package zlc.season.rxdownload2.function;
 
 import android.content.Context;
-import android.util.Log;
-
-import com.jakewharton.retrofit2.adapter.rxjava2.HttpException;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.ConnectException;
-import java.net.ProtocolException;
-import java.net.SocketException;
-import java.net.SocketTimeoutException;
-import java.net.UnknownHostException;
 import java.text.ParseException;
 import java.util.HashMap;
 import java.util.Map;
@@ -21,7 +13,6 @@ import io.reactivex.Observable;
 import io.reactivex.ObservableSource;
 import io.reactivex.exceptions.CompositeException;
 import io.reactivex.functions.Action;
-import io.reactivex.functions.BiPredicate;
 import io.reactivex.functions.Consumer;
 import io.reactivex.functions.Function;
 import okhttp3.ResponseBody;
@@ -32,8 +23,13 @@ import zlc.season.rxdownload2.entity.DownloadStatus;
 import zlc.season.rxdownload2.entity.DownloadType;
 import zlc.season.rxdownload2.entity.DownloadTypeFactory;
 
-import static android.text.TextUtils.concat;
-import static zlc.season.rxdownload2.function.FileHelper.TAG;
+import static zlc.season.rxdownload2.function.Constant.CONTEXT_NULL_HINT;
+import static zlc.season.rxdownload2.function.Constant.DOWNLOAD_RECORD_FILE_DAMAGED;
+import static zlc.season.rxdownload2.function.Constant.DOWNLOAD_URL_EXISTS;
+import static zlc.season.rxdownload2.function.Constant.TEST_RANGE_SUPPORT;
+import static zlc.season.rxdownload2.function.Utils.contentLength;
+import static zlc.season.rxdownload2.function.Utils.lastModify;
+import static zlc.season.rxdownload2.function.Utils.log;
 
 /**
  * Author: Season(ssseasonnn@gmail.com)
@@ -42,7 +38,6 @@ import static zlc.season.rxdownload2.function.FileHelper.TAG;
  * Download helper 类
  */
 public class DownloadHelper {
-    private static final String TEST_RANGE_SUPPORT = "bytes=0-";
 
     private int MAX_RETRY_COUNT = 3;
 
@@ -84,61 +79,6 @@ public class DownloadHelper {
         return mDownloadApi;
     }
 
-    public Boolean retry(Integer integer, Throwable throwable) {
-        if (throwable instanceof ProtocolException) {
-            if (integer < MAX_RETRY_COUNT + 1) {
-                Log.w(FileHelper.TAG, Thread.currentThread().getName() +
-                        " we got an error in the underlying protocol, such as a TCP error, retry " +
-                        "to connect " + integer + " times");
-                return true;
-            }
-            return false;
-        } else if (throwable instanceof UnknownHostException) {
-            if (integer < MAX_RETRY_COUNT + 1) {
-                Log.w(FileHelper.TAG, Thread.currentThread().getName() +
-                        " no network, retry to connect " + integer + " times");
-                return true;
-            }
-            return false;
-        } else if (throwable instanceof HttpException) {
-            if (integer < MAX_RETRY_COUNT + 1) {
-                Log.w(FileHelper.TAG, Thread.currentThread().getName() +
-                        " had non-2XX http error, retry to connect " + integer + " times");
-                return true;
-            }
-            return false;
-        } else if (throwable instanceof SocketTimeoutException) {
-            if (integer < MAX_RETRY_COUNT + 1) {
-                Log.w(FileHelper.TAG, Thread.currentThread().getName() +
-                        " socket time out,retry to connect " + integer + " times");
-                return true;
-            }
-            return false;
-        } else if (throwable instanceof ConnectException) {
-            if (integer < MAX_RETRY_COUNT + 1) {
-                Log.w(FileHelper.TAG,
-                      concat(Thread.currentThread().getName(), " ", throwable.getMessage(),
-                             ". retry to connect ", String.valueOf(integer), " times").toString());
-                return true;
-            }
-            return false;
-        } else if (throwable instanceof SocketException) {
-            if (integer < MAX_RETRY_COUNT + 1) {
-                Log.w(FileHelper.TAG, Thread.currentThread().getName() +
-                        " a network or conversion error happened, retry to connect " + integer +
-                        " times");
-                return true;
-            }
-            return false;
-        } else if (throwable instanceof CompositeException) {
-            Log.w(FileHelper.TAG, throwable.getMessage());
-            return false;
-        } else {
-            Log.w(FileHelper.TAG, throwable);
-            return false;
-        }
-    }
-
     public int getMaxThreads() {
         return mFileHelper.getMaxThreads();
     }
@@ -148,13 +88,12 @@ public class DownloadHelper {
     }
 
     public void prepareNormalDownload(String url, long fileLength, String lastModify)
-            throws IOException,
-                   ParseException {
+            throws IOException, ParseException {
         mFileHelper.prepareDownload(getLastModifyFile(url), getFile(url), fileLength, lastModify);
     }
 
-    public void saveNormalFile(FlowableEmitter<DownloadStatus> emitter, String url,
-                               Response<ResponseBody> resp) {
+    public void saveNormalFile(FlowableEmitter<DownloadStatus> emitter,
+            String url, Response<ResponseBody> resp) {
         mFileHelper.saveFile(emitter, getFile(url), resp);
     }
 
@@ -163,28 +102,22 @@ public class DownloadHelper {
     }
 
     public void prepareMultiThreadDownload(String url, long fileLength, String lastModify)
-            throws IOException,
-                   ParseException {
+            throws IOException, ParseException {
         mFileHelper.prepareDownload(getLastModifyFile(url), getTempFile(url), getFile(url),
-                                    fileLength, lastModify);
+                fileLength, lastModify
+        );
     }
 
-    public void saveRangeFile(FlowableEmitter<DownloadStatus> emitter, int i, long start, long end,
-                              String url, ResponseBody response) {
+    public void saveRangeFile(FlowableEmitter<DownloadStatus> emitter,
+            int i, long start, long end, String url, ResponseBody response) {
         mFileHelper.saveFile(emitter, i, start, end, getTempFile(url), getFile(url), response);
     }
 
     public Observable<DownloadStatus> downloadDispatcher(final String url, final String saveName,
-                                                         final String savePath,
-                                                         final Context context,
-                                                         final boolean autoInstall) {
-        if (isRecordExists(url)) {
-            return Observable
-                    .error(new Throwable("This url download task already exists, so do nothing."));
-        }
+            final String savePath, final Context context, final boolean autoInstall) {
         try {
-            addDownloadRecord(url, saveName, savePath);
-        } catch (IOException e) {
+            beforeDownload(url, saveName, savePath);
+        } catch (Exception e) {
             return Observable.error(e);
         }
         return getDownloadType(url)
@@ -199,25 +132,13 @@ public class DownloadHelper {
                 .doOnComplete(new Action() {
                     @Override
                     public void run() throws Exception {
-                        if (autoInstall) {
-                            if (context == null) {
-                                throw new IllegalStateException(
-                                        "Context is NULL! You should call " +
-                                                "#RxDownload.context(Context context)# first!");
-                            }
-                            Utils.installApk(context,
-                                             new File(getRealFilePaths(saveName, savePath)[0]));
-                        }
+                        autoInstall(autoInstall, context, saveName, savePath);
                     }
                 })
                 .doOnError(new Consumer<Throwable>() {
                     @Override
                     public void accept(Throwable throwable) throws Exception {
-                        if (throwable instanceof CompositeException) {
-                            Log.w(TAG, throwable.getMessage());
-                        } else {
-                            Log.w(TAG, throwable);
-                        }
+                        logThrowable(throwable);
                     }
                 })
                 .doFinally(new Action() {
@@ -230,11 +151,12 @@ public class DownloadHelper {
 
     public Observable<DownloadType> requestHeaderWithIfRangeByGet(final String url)
             throws IOException {
-        return getDownloadApi()
-                .requestWithIfRange(TEST_RANGE_SUPPORT, getLastModify(url), url)
+        return mDownloadApi
+                .GET_withIfRange(Constant.TEST_RANGE_SUPPORT, getLastModify(url), url)
                 .map(new Function<Response<Void>, DownloadType>() {
                     @Override
-                    public DownloadType apply(Response<Void> response) throws Exception {
+                    public DownloadType apply(Response<Void> response)
+                            throws Exception {
                         if (Utils.serverFileNotChange(response)) {
                             return getWhenServerFileNotChange(response, url);
                         } else if (Utils.serverFileChanged(response)) {
@@ -243,12 +165,34 @@ public class DownloadHelper {
                             throw new RuntimeException("unknown error");
                         }
                     }
-                }).retry(new BiPredicate<Integer, Throwable>() {
-                    @Override
-                    public boolean test(Integer integer, Throwable throwable) throws Exception {
-                        return retry(integer, throwable);
-                    }
-                });
+                })
+                .compose(Utils.<DownloadType>retry(MAX_RETRY_COUNT));
+    }
+
+    private void logThrowable(Throwable throwable) {
+        if (throwable instanceof CompositeException) {
+            log(throwable.getMessage());
+        } else {
+            log(throwable);
+        }
+    }
+
+    private void autoInstall(boolean autoInstall, Context context,
+            String saveName, String savePath) {
+        if (autoInstall) {
+            if (context == null) {
+                throw new IllegalStateException(CONTEXT_NULL_HINT);
+            }
+            Utils.installApk(context, new File(getRealFilePaths(saveName, savePath)[0]));
+        }
+    }
+
+    private void beforeDownload(String url, String saveName, String savePath)
+            throws Exception {
+        if (isRecordExists(url)) {
+            throw new Exception(DOWNLOAD_URL_EXISTS);
+        }
+        addDownloadRecord(url, saveName, savePath);
     }
 
     private void addDownloadRecord(String url, String saveName, String savePath)
@@ -318,35 +262,29 @@ public class DownloadHelper {
     }
 
     private Observable<DownloadType> getWhenFileNotExists(final String url) {
-        return getDownloadApi()
-                .getHttpHeader(TEST_RANGE_SUPPORT, url)
+        return mDownloadApi
+                .HEAD(TEST_RANGE_SUPPORT, url)
                 .map(new Function<Response<Void>, DownloadType>() {
                     @Override
                     public DownloadType apply(Response<Void> response) throws Exception {
                         if (Utils.notSupportRange(response)) {
-                            return mFactory.url(url)
-                                    .fileLength(Utils.contentLength(response))
-                                    .lastModify(Utils.lastModify(response))
-                                    .buildNormalDownload();
+                            return mFactory
+                                    .normal(url, contentLength(response),
+                                            lastModify(response));
                         } else {
-                            return mFactory.url(url)
-                                    .lastModify(Utils.lastModify(response))
-                                    .fileLength(Utils.contentLength(response))
-                                    .buildMultiDownload();
+                            return mFactory
+                                    .multithread(url, contentLength(response),
+                                            lastModify(response));
                         }
                     }
                 })
-                .retry(new BiPredicate<Integer, Throwable>() {
-                    @Override
-                    public boolean test(Integer integer, Throwable throwable) throws Exception {
-                        return retry(integer, throwable);
-                    }
-                });
+                .compose(Utils.<DownloadType>retry(MAX_RETRY_COUNT));
     }
 
-    private Observable<DownloadType> getWhenFileExists(final String url) throws IOException {
-        return getDownloadApi()
-                .getHttpHeaderWithIfRange(TEST_RANGE_SUPPORT, getLastModify(url), url)
+    private Observable<DownloadType> getWhenFileExists(final String url)
+            throws IOException {
+        return mDownloadApi
+                .HEAD_withIfRange(TEST_RANGE_SUPPORT, getLastModify(url), url)
                 .map(new Function<Response<Void>, DownloadType>() {
                     @Override
                     public DownloadType apply(Response<Void> resp) throws Exception {
@@ -355,34 +293,20 @@ public class DownloadHelper {
                         } else if (Utils.serverFileChanged(resp)) {
                             return getWhenServerFileChanged(resp, url);
                         } else if (Utils.requestRangeNotSatisfiable(resp)) {
-                            return mFactory.url(url)
-                                    .fileLength(Utils.contentLength(resp))
-                                    .lastModify(Utils.lastModify(resp))
-                                    .buildRequestRangeNotSatisfiable();
+                            return mFactory.needGET(url, contentLength(resp), lastModify(resp));
                         } else {
                             throw new RuntimeException("unknown error");
                         }
                     }
                 })
-                .retry(new BiPredicate<Integer, Throwable>() {
-                    @Override
-                    public boolean test(Integer integer, Throwable throwable) throws Exception {
-                        return retry(integer, throwable);
-                    }
-                });
+                .compose(Utils.<DownloadType>retry(MAX_RETRY_COUNT));
     }
 
     private DownloadType getWhenServerFileChanged(Response<Void> resp, String url) {
         if (Utils.notSupportRange(resp)) {
-            return mFactory.url(url)
-                    .fileLength(Utils.contentLength(resp))
-                    .lastModify(Utils.lastModify(resp))
-                    .buildNormalDownload();
+            return mFactory.normal(url, contentLength(resp), lastModify(resp));
         } else {
-            return mFactory.url(url)
-                    .fileLength(Utils.contentLength(resp))
-                    .lastModify(Utils.lastModify(resp))
-                    .buildMultiDownload();
+            return mFactory.multithread(url, contentLength(resp), lastModify(resp));
         }
     }
 
@@ -395,39 +319,27 @@ public class DownloadHelper {
     }
 
     private DownloadType getWhenSupportRange(Response<Void> resp, String url) {
-        long contentLength = Utils.contentLength(resp);
+        long contentLength = contentLength(resp);
         try {
             if (needReDownload(url, contentLength)) {
-                return mFactory.url(url)
-                        .fileLength(contentLength)
-                        .lastModify(Utils.lastModify(resp))
-                        .buildMultiDownload();
+                return mFactory.multithread(url, contentLength(resp), lastModify(resp));
             }
             if (downloadNotComplete(url)) {
-                return mFactory.url(url)
-                        .fileLength(contentLength)
-                        .lastModify(Utils.lastModify(resp))
-                        .buildContinueDownload();
+                return mFactory.continued(url, contentLength, lastModify(resp));
             }
         } catch (IOException e) {
-            Log.w(TAG, "download record file may be damaged,so we will re download");
-            return mFactory.url(url)
-                    .fileLength(contentLength)
-                    .lastModify(Utils.lastModify(resp))
-                    .buildMultiDownload();
+            log(DOWNLOAD_RECORD_FILE_DAMAGED);
+            return mFactory.multithread(url, contentLength(resp), lastModify(resp));
         }
-        return mFactory.fileLength(contentLength).buildAlreadyDownload();
+        return mFactory.already(contentLength);
     }
 
     private DownloadType getWhenNotSupportRange(Response<Void> resp, String url) {
-        long contentLength = Utils.contentLength(resp);
+        long contentLength = contentLength(resp);
         if (downloadNotComplete(url, contentLength)) {
-            return mFactory.url(url)
-                    .fileLength(contentLength)
-                    .lastModify(Utils.lastModify(resp))
-                    .buildNormalDownload();
+            return mFactory.normal(url, contentLength(resp), lastModify(resp));
         } else {
-            return mFactory.fileLength(contentLength).buildAlreadyDownload();
+            return mFactory.already(contentLength);
         }
     }
 }

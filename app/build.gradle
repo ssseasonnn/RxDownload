@@ -27,16 +27,11 @@ dependencies {
     })
     compile 'com.android.support:appcompat-v7:25.0.1'
     compile 'com.android.support:design:25.0.1'
-
     compile 'com.jakewharton:butterknife:8.4.0'
     apt 'com.jakewharton:butterknife-compiler:8.4.0'
-
     compile 'com.squareup.picasso:picasso:2.5.2'
-
     compile 'zlc.season:practicalrecyclerview:1.0.8'
-
     compile 'com.tbruyelle.rxpermissions2:rxpermissions:0.8.2@aar'
-
     testCompile 'junit:junit:4.12'
-    compile project(path: ':rxdownload2')
+    compile project(':rxdownload2')
 }

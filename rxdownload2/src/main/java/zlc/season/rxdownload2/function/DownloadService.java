@@ -97,7 +97,6 @@ public class DownloadService extends Service {
             if (file.exists()) {
                 processor.onNext(mEventFactory.factory(url, record.getFlag(), record.getStatus()));
             }
-            }
         }
         return processor;
     }

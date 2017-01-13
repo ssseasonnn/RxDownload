@@ -60,9 +60,6 @@ public class Utils {
         }
     }
 
-        }
-    }
-
     public static void dispose(Disposable disposable) {
         if (disposable != null && !disposable.isDisposed()) {
             disposable.dispose();
@@ -87,10 +84,6 @@ public class Utils {
 
     public static boolean serverFileChanged(Response<Void> resp) {
         return resp.code() == 200;
-    }
-
-    public static boolean requestRangeNotSatisfiable(Response<Void> resp) {
-        return resp.code() == 416;
     }
 
     public static boolean serverFileNotChange(Response<Void> resp) {

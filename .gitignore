@@ -1,7 +1,7 @@
 *.iml
 .gradle
 .idea
-/rxdownload2
+/rxdownload
 /local.properties
 .DS_Store
 /build

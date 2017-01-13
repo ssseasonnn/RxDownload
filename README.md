@@ -396,6 +396,8 @@ File file = mRxDownload.getRealFiles(saveName, defaultPath)[0];
 
 QQ : 270362455
 
+QQ群：603610731
+
 Gmail: ssseasonnn@gmail.com
 
 ### License

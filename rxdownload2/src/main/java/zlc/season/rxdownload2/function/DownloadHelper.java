@@ -28,8 +28,13 @@ import static zlc.season.rxdownload2.function.Constant.DOWNLOAD_RECORD_FILE_DAMA
 import static zlc.season.rxdownload2.function.Constant.DOWNLOAD_URL_EXISTS;
 import static zlc.season.rxdownload2.function.Constant.TEST_RANGE_SUPPORT;
 import static zlc.season.rxdownload2.function.Utils.contentLength;
+import static zlc.season.rxdownload2.function.Utils.installApk;
 import static zlc.season.rxdownload2.function.Utils.lastModify;
 import static zlc.season.rxdownload2.function.Utils.log;
+import static zlc.season.rxdownload2.function.Utils.notSupportRange;
+import static zlc.season.rxdownload2.function.Utils.requestRangeNotSatisfiable;
+import static zlc.season.rxdownload2.function.Utils.serverFileChanged;
+import static zlc.season.rxdownload2.function.Utils.serverFileNotChange;
 
 /**
  * Author: Season(ssseasonnn@gmail.com)
@@ -43,7 +48,7 @@ public class DownloadHelper {
 
     private DownloadApi mDownloadApi;
     private FileHelper mFileHelper;
-    private DownloadTypeFactory mFactory;
+    private DownloadTypeFactory typeFactory;
 
     //Record : { "url" : new String[] { "file path" , "temp file path" , "last modify file path" }}
     private Map<String, String[]> mDownloadRecord;
@@ -52,7 +57,7 @@ public class DownloadHelper {
         mDownloadRecord = new HashMap<>();
         mFileHelper = new FileHelper();
         mDownloadApi = RetrofitProvider.getInstance().create(DownloadApi.class);
-        mFactory = new DownloadTypeFactory(this);
+        typeFactory = new DownloadTypeFactory(this);
     }
 
     public void setRetrofit(Retrofit retrofit) {
@@ -61,6 +66,10 @@ public class DownloadHelper {
 
     public void setDefaultSavePath(String defaultSavePath) {
         mFileHelper.setDefaultSavePath(defaultSavePath);
+    }
+
+    public int getMaxRetryCount() {
+        return MAX_RETRY_COUNT;
     }
 
     public void setMaxRetryCount(int MAX_RETRY_COUNT) {
@@ -89,37 +98,48 @@ public class DownloadHelper {
 
     public void prepareNormalDownload(String url, long fileLength, String lastModify)
             throws IOException, ParseException {
-        mFileHelper.prepareDownload(getLastModifyFile(url), getFile(url), fileLength, lastModify);
+
+        mFileHelper.prepareDownload(getLastModifyFile(url),
+                getFile(url), fileLength, lastModify);
     }
 
     public void saveNormalFile(FlowableEmitter<DownloadStatus> emitter,
             String url, Response<ResponseBody> resp) {
+
         mFileHelper.saveFile(emitter, getFile(url), resp);
     }
 
-    public DownloadRange readDownloadRange(String url, int i) throws IOException {
+    public DownloadRange readDownloadRange(String url, int i)
+            throws IOException {
         return mFileHelper.readDownloadRange(getTempFile(url), i);
     }
 
     public void prepareMultiThreadDownload(String url, long fileLength, String lastModify)
             throws IOException, ParseException {
-        mFileHelper.prepareDownload(getLastModifyFile(url), getTempFile(url), getFile(url),
-                fileLength, lastModify
-        );
+
+        mFileHelper.prepareDownload(getLastModifyFile(url),
+                getTempFile(url), getFile(url),
+                fileLength, lastModify);
     }
 
     public void saveRangeFile(FlowableEmitter<DownloadStatus> emitter,
-            int i, long start, long end, String url, ResponseBody response) {
-        mFileHelper.saveFile(emitter, i, start, end, getTempFile(url), getFile(url), response);
+            int i, long start, long end,
+            String url, ResponseBody response) {
+
+        mFileHelper.saveFile(emitter, i, start, end,
+                getTempFile(url), getFile(url), response);
     }
 
-    public Observable<DownloadStatus> downloadDispatcher(final String url, final String saveName,
-            final String savePath, final Context context, final boolean autoInstall) {
+    public Observable<DownloadStatus> downloadDispatcher(final String url,
+            final String saveName, final String savePath,
+            final Context context, final boolean autoInstall) {
+
         try {
             beforeDownload(url, saveName, savePath);
-        } catch (Exception e) {
+        } catch (IOException e) {
             return Observable.error(e);
         }
+
         return getDownloadType(url)
                 .flatMap(new Function<DownloadType, ObservableSource<DownloadStatus>>() {
                     @Override
@@ -149,17 +169,19 @@ public class DownloadHelper {
                 });
     }
 
-    public Observable<DownloadType> requestHeaderWithIfRangeByGet(final String url)
+    public Observable<DownloadType> notSupportHead(final String url)
             throws IOException {
+
         return mDownloadApi
-                .GET_withIfRange(Constant.TEST_RANGE_SUPPORT, getLastModify(url), url)
+                .GET_withIfRange(TEST_RANGE_SUPPORT, readLastModify(url), url)
                 .map(new Function<Response<Void>, DownloadType>() {
                     @Override
                     public DownloadType apply(Response<Void> response)
                             throws Exception {
-                        if (Utils.serverFileNotChange(response)) {
+
+                        if (serverFileNotChange(response)) {
                             return getWhenServerFileNotChange(response, url);
-                        } else if (Utils.serverFileChanged(response)) {
+                        } else if (serverFileChanged(response)) {
                             return getWhenServerFileChanged(response, url);
                         } else {
                             throw new RuntimeException("unknown error");
@@ -181,27 +203,29 @@ public class DownloadHelper {
             String saveName, String savePath) {
         if (autoInstall) {
             if (context == null) {
-                throw new IllegalStateException(CONTEXT_NULL_HINT);
+                throw new IllegalArgumentException(CONTEXT_NULL_HINT);
             }
-            Utils.installApk(context, new File(getRealFilePaths(saveName, savePath)[0]));
+            installApk(context, new File(getRealFilePaths(saveName, savePath)[0]));
         }
     }
 
     private void beforeDownload(String url, String saveName, String savePath)
-            throws Exception {
-        if (isRecordExists(url)) {
-            throw new Exception(DOWNLOAD_URL_EXISTS);
+            throws IOException {
+
+        if (recordExists(url)) {
+            throw new IOException(DOWNLOAD_URL_EXISTS);
         }
         addDownloadRecord(url, saveName, savePath);
     }
 
     private void addDownloadRecord(String url, String saveName, String savePath)
             throws IOException {
+
         mFileHelper.createDirectories(savePath);
         mDownloadRecord.put(url, getRealFilePaths(saveName, savePath));
     }
 
-    private boolean isRecordExists(String url) {
+    private boolean recordExists(String url) {
         return mDownloadRecord.get(url) != null;
     }
 
@@ -209,11 +233,13 @@ public class DownloadHelper {
         mDownloadRecord.remove(url);
     }
 
-    private String getLastModify(String url) throws IOException {
+    private String readLastModify(String url)
+            throws IOException {
         return mFileHelper.getLastModify(getLastModifyFile(url));
     }
 
-    private boolean downloadNotComplete(String url) throws IOException {
+    private boolean downloadNotComplete(String url)
+            throws IOException {
         return mFileHelper.downloadNotComplete(getTempFile(url));
     }
 
@@ -221,7 +247,8 @@ public class DownloadHelper {
         return getFile(url).length() != contentLength;
     }
 
-    private boolean needReDownload(String url, long contentLength) throws IOException {
+    private boolean needReDownload(String url, long contentLength)
+            throws IOException {
         return tempFileNotExists(url) || tempFileDamaged(url, contentLength);
     }
 
@@ -229,7 +256,8 @@ public class DownloadHelper {
         return getFile(url).exists();
     }
 
-    private boolean tempFileDamaged(String url, long fileLength) throws IOException {
+    private boolean tempFileDamaged(String url, long fileLength)
+            throws IOException {
         return mFileHelper.tempFileDamaged(getTempFile(url), fileLength);
     }
 
@@ -266,15 +294,15 @@ public class DownloadHelper {
                 .HEAD(TEST_RANGE_SUPPORT, url)
                 .map(new Function<Response<Void>, DownloadType>() {
                     @Override
-                    public DownloadType apply(Response<Void> response) throws Exception {
-                        if (Utils.notSupportRange(response)) {
-                            return mFactory
-                                    .normal(url, contentLength(response),
-                                            lastModify(response));
+                    public DownloadType apply(Response<Void> response)
+                            throws Exception {
+
+                        if (notSupportRange(response)) {
+                            return typeFactory.normal(url, contentLength(response),
+                                    lastModify(response));
                         } else {
-                            return mFactory
-                                    .multithread(url, contentLength(response),
-                                            lastModify(response));
+                            return typeFactory.multithread(url, contentLength(response),
+                                    lastModify(response));
                         }
                     }
                 })
@@ -283,17 +311,24 @@ public class DownloadHelper {
 
     private Observable<DownloadType> getWhenFileExists(final String url)
             throws IOException {
+
         return mDownloadApi
-                .HEAD_withIfRange(TEST_RANGE_SUPPORT, getLastModify(url), url)
+                .HEAD_WithIfRange(TEST_RANGE_SUPPORT, readLastModify(url), url)
                 .map(new Function<Response<Void>, DownloadType>() {
                     @Override
-                    public DownloadType apply(Response<Void> resp) throws Exception {
-                        if (Utils.serverFileNotChange(resp)) {
+                    public DownloadType apply(Response<Void> resp)
+                            throws Exception {
+
+                        if (serverFileNotChange(resp)) {
+
                             return getWhenServerFileNotChange(resp, url);
-                        } else if (Utils.serverFileChanged(resp)) {
+                        } else if (serverFileChanged(resp)) {
+
                             return getWhenServerFileChanged(resp, url);
-                        } else if (Utils.requestRangeNotSatisfiable(resp)) {
-                            return mFactory.needGET(url, contentLength(resp), lastModify(resp));
+                        } else if (requestRangeNotSatisfiable(resp)) {
+
+                            return typeFactory.needGET(url,
+                                    contentLength(resp), lastModify(resp));
                         } else {
                             throw new RuntimeException("unknown error");
                         }
@@ -303,15 +338,17 @@ public class DownloadHelper {
     }
 
     private DownloadType getWhenServerFileChanged(Response<Void> resp, String url) {
-        if (Utils.notSupportRange(resp)) {
-            return mFactory.normal(url, contentLength(resp), lastModify(resp));
+        if (notSupportRange(resp)) {
+            return typeFactory.normal(url,
+                    contentLength(resp), lastModify(resp));
         } else {
-            return mFactory.multithread(url, contentLength(resp), lastModify(resp));
+            return typeFactory.multithread(url,
+                    contentLength(resp), lastModify(resp));
         }
     }
 
     private DownloadType getWhenServerFileNotChange(Response<Void> resp, String url) {
-        if (Utils.notSupportRange(resp)) {
+        if (notSupportRange(resp)) {
             return getWhenNotSupportRange(resp, url);
         } else {
             return getWhenSupportRange(resp, url);
@@ -322,24 +359,24 @@ public class DownloadHelper {
         long contentLength = contentLength(resp);
         try {
             if (needReDownload(url, contentLength)) {
-                return mFactory.multithread(url, contentLength(resp), lastModify(resp));
+                return typeFactory.multithread(url, contentLength(resp), lastModify(resp));
             }
             if (downloadNotComplete(url)) {
-                return mFactory.continued(url, contentLength, lastModify(resp));
+                return typeFactory.continued(url, contentLength, lastModify(resp));
             }
         } catch (IOException e) {
             log(DOWNLOAD_RECORD_FILE_DAMAGED);
-            return mFactory.multithread(url, contentLength(resp), lastModify(resp));
+            return typeFactory.multithread(url, contentLength(resp), lastModify(resp));
         }
-        return mFactory.already(contentLength);
+        return typeFactory.already(contentLength);
     }
 
     private DownloadType getWhenNotSupportRange(Response<Void> resp, String url) {
         long contentLength = contentLength(resp);
         if (downloadNotComplete(url, contentLength)) {
-            return mFactory.normal(url, contentLength(resp), lastModify(resp));
+            return typeFactory.normal(url, contentLength(resp), lastModify(resp));
         } else {
-            return mFactory.already(contentLength);
+            return typeFactory.already(contentLength);
         }
     }
 }

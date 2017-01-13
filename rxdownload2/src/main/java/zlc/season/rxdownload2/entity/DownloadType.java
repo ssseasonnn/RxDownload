@@ -1,7 +1,5 @@
 package zlc.season.rxdownload2.entity;
 
-import android.util.Log;
-
 import org.reactivestreams.Publisher;
 
 import java.io.IOException;
@@ -15,13 +13,14 @@ import io.reactivex.FlowableEmitter;
 import io.reactivex.FlowableOnSubscribe;
 import io.reactivex.Observable;
 import io.reactivex.ObservableSource;
-import io.reactivex.functions.BiPredicate;
 import io.reactivex.functions.Function;
 import io.reactivex.schedulers.Schedulers;
 import okhttp3.ResponseBody;
 import retrofit2.Response;
 import zlc.season.rxdownload2.function.DownloadHelper;
-import zlc.season.rxdownload2.function.FileHelper;
+import zlc.season.rxdownload2.function.Utils;
+
+import static zlc.season.rxdownload2.function.Utils.log;
 
 /**
  * Author: Season(ssseasonnn@gmail.com)
@@ -44,12 +43,15 @@ public abstract class DownloadType {
         @Override
         public void prepareDownload() throws IOException, ParseException {
             mDownloadHelper.prepareNormalDownload(mUrl, mFileLength, mLastModify);
+            log("Normal download prepare...");
         }
 
         @Override
         public Observable<DownloadStatus> startDownload() {
-            Log.i(FileHelper.TAG, "Normal download start!!");
-            return mDownloadHelper.getDownloadApi().download(null, mUrl)
+            log("Normal download start!!");
+            return mDownloadHelper
+                    .getDownloadApi()
+                    .download(null, mUrl)
                     .subscribeOn(Schedulers.io())
                     .flatMap(new Function<Response<ResponseBody>, Publisher<DownloadStatus>>() {
                         @Override
@@ -58,22 +60,19 @@ public abstract class DownloadType {
                             return normalSave(response);
                         }
                     })
-                    .retry(new BiPredicate<Integer, Throwable>() {
-                        @Override
-                        public boolean test(Integer integer, Throwable throwable) throws Exception {
-                            return mDownloadHelper.retry(integer, throwable);
-                        }
-                    })
+                    .compose(Utils.<DownloadStatus>retry2(mDownloadHelper.getMaxRetryCount()))
                     .toObservable();
         }
 
         private Flowable<DownloadStatus> normalSave(final Response<ResponseBody> response) {
-            return Flowable.create(new FlowableOnSubscribe<DownloadStatus>() {
-                @Override
-                public void subscribe(FlowableEmitter<DownloadStatus> e) throws Exception {
-                    mDownloadHelper.saveNormalFile(e, mUrl, response);
-                }
-            }, BackpressureStrategy.BUFFER);
+            return Flowable
+                    .create(new FlowableOnSubscribe<DownloadStatus>() {
+                        @Override
+                        public void subscribe(FlowableEmitter<DownloadStatus> e)
+                                throws Exception {
+                            mDownloadHelper.saveNormalFile(e, mUrl, response);
+                        }
+                    }, BackpressureStrategy.BUFFER);
         }
     }
 
@@ -81,7 +80,7 @@ public abstract class DownloadType {
 
         @Override
         public void prepareDownload() throws IOException, ParseException {
-            Log.i(FileHelper.TAG, "Continue download start!!");
+            log("Continue download start!!");
         }
 
         @Override
@@ -101,41 +100,38 @@ public abstract class DownloadType {
          * @return Observable
          */
         private Flowable<DownloadStatus> rangeDownloadTask(final int i) {
-            return Flowable.create(new FlowableOnSubscribe<DownloadRange>() {
-                @Override
-                public void subscribe(FlowableEmitter<DownloadRange> emitter) throws Exception {
-                    DownloadRange range = mDownloadHelper.readDownloadRange(mUrl, i);
-                    if (range.start <= range.end) {
-                        emitter.onNext(range);
-                    }
-                    emitter.onComplete();
-                }
-            }, BackpressureStrategy.LATEST).subscribeOn(Schedulers.io())
-                    .flatMap(new Function<DownloadRange, Publisher<DownloadStatus>>() {
+
+            return Flowable
+                    .create(new FlowableOnSubscribe<DownloadRange>() {
                         @Override
-                        public Publisher<DownloadStatus> apply(final DownloadRange downloadRange)
+                        public void subscribe(FlowableEmitter<DownloadRange> emitter)
                                 throws Exception {
-                            String range = "bytes=" + downloadRange.start + "-" + downloadRange.end;
-                            return mDownloadHelper.getDownloadApi().download(range, mUrl)
-                                    .flatMap(
-                                            new Function<Response<ResponseBody>,
-                                                    Publisher<DownloadStatus>>() {
-                                                @Override
-                                                public Publisher<DownloadStatus> apply(
-                                                        Response<ResponseBody> response)
-                                                        throws Exception {
-                                                    return rangeSave(downloadRange.start,
-                                                                     downloadRange.end, i,
-                                                                     response.body());
-                                                }
-                                            });
+                            DownloadRange range = mDownloadHelper.readDownloadRange(mUrl, i);
+                            if (range.start <= range.end) {
+                                emitter.onNext(range);
+                            }
+                            emitter.onComplete();
                         }
-                    }).retry(new BiPredicate<Integer, Throwable>() {
+                    }, BackpressureStrategy.LATEST)
+                    .subscribeOn(Schedulers.io())
+                    .flatMap(new Function<DownloadRange, Publisher<Response<ResponseBody>>>() {
                         @Override
-                        public boolean test(Integer integer, Throwable throwable) throws Exception {
-                            return mDownloadHelper.retry(integer, throwable);
+                        public Publisher<Response<ResponseBody>> apply(final DownloadRange range)
+                                throws Exception {
+                            String rangeStr = "bytes=" + range.start + "-" + range.end;
+                            return mDownloadHelper.getDownloadApi().download(rangeStr, mUrl);
                         }
-                    });
+                    })
+                    .flatMap(new Function<Response<ResponseBody>,
+                            Publisher<DownloadStatus>>() {
+                        @Override
+                        public Publisher<DownloadStatus> apply(Response<ResponseBody> resp)
+                                throws Exception {
+                            DownloadRange range = mDownloadHelper.readDownloadRange(mUrl, i);
+                            return rangeSave(range.start, range.end, i, resp.body());
+                        }
+                    })
+                    .compose(Utils.<DownloadStatus>retry2(mDownloadHelper.getMaxRetryCount()));
         }
 
         /**
@@ -149,13 +145,15 @@ public abstract class DownloadType {
          * @return Observable
          */
         private Flowable<DownloadStatus> rangeSave(final long start, final long end, final int i,
-                                                   final ResponseBody response) {
-            return Flowable.create(new FlowableOnSubscribe<DownloadStatus>() {
-                @Override
-                public void subscribe(FlowableEmitter<DownloadStatus> emitter) throws Exception {
-                    mDownloadHelper.saveRangeFile(emitter, i, start, end, mUrl, response);
-                }
-            }, BackpressureStrategy.LATEST);
+                final ResponseBody response) {
+            return Flowable
+                    .create(new FlowableOnSubscribe<DownloadStatus>() {
+                        @Override
+                        public void subscribe(FlowableEmitter<DownloadStatus> emitter)
+                                throws Exception {
+                            mDownloadHelper.saveRangeFile(emitter, i, start, end, mUrl, response);
+                        }
+                    }, BackpressureStrategy.LATEST);
         }
     }
 
@@ -168,7 +166,7 @@ public abstract class DownloadType {
 
         @Override
         public Observable<DownloadStatus> startDownload() throws IOException {
-            Log.i(FileHelper.TAG, "Multi Thread download start!!");
+            log("Multi Thread download start!!");
             return super.startDownload();
         }
     }
@@ -177,7 +175,7 @@ public abstract class DownloadType {
 
         @Override
         public void prepareDownload() throws IOException, ParseException {
-            Log.i(FileHelper.TAG, "File Already downloaded!!");
+            log("File Already downloaded!!");
         }
 
         @Override
@@ -186,7 +184,7 @@ public abstract class DownloadType {
         }
     }
 
-    static class RequestRangeNotSatisfiable extends DownloadType {
+    static class NotSupportHEAD extends DownloadType {
 
         @Override
         public void prepareDownload() throws IOException, ParseException {
@@ -194,7 +192,8 @@ public abstract class DownloadType {
 
         @Override
         public Observable<DownloadStatus> startDownload() throws IOException {
-            return mDownloadHelper.requestHeaderWithIfRangeByGet(mUrl)
+            return mDownloadHelper
+                    .notSupportHead(mUrl)
                     .flatMap(new Function<DownloadType, ObservableSource<DownloadStatus>>() {
                         @Override
                         public ObservableSource<DownloadStatus> apply(DownloadType downloadType)

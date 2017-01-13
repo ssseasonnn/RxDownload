@@ -50,7 +50,7 @@ public class DownloadTypeFactory {
     }
 
     public DownloadType needGET(String url, long fileLength, String lastModify) {
-        DownloadType type = new DownloadType.RequestRangeNotSatisfiable();
+        DownloadType type = new DownloadType.NotSupportHEAD();
         type.mUrl = url;
         type.mFileLength = fileLength;
         type.mLastModify = lastModify;

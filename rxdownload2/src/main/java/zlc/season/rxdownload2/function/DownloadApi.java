@@ -27,7 +27,7 @@ public interface DownloadApi {
             @Header("Range") String range, @Url String url);
 
     @HEAD
-    Observable<Response<Void>> HEAD_withIfRange(
+    Observable<Response<Void>> HEAD_WithIfRange(
             @Header("Range") final String range,
             @Header("If-Range") final String lastModify,
             @Url String url);

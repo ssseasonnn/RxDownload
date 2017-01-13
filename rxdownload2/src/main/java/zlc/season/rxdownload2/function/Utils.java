@@ -8,6 +8,8 @@ import android.util.Log;
 
 import com.jakewharton.retrofit2.adapter.rxjava2.HttpException;
 
+import org.reactivestreams.Publisher;
+
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
@@ -22,6 +24,8 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
 
+import io.reactivex.Flowable;
+import io.reactivex.FlowableTransformer;
 import io.reactivex.Observable;
 import io.reactivex.ObservableSource;
 import io.reactivex.ObservableTransformer;
@@ -99,6 +103,20 @@ public class Utils {
         return new ObservableTransformer<U, U>() {
             @Override
             public ObservableSource<U> apply(Observable<U> upstream) {
+                return upstream.retry(new BiPredicate<Integer, Throwable>() {
+                    @Override
+                    public boolean test(Integer integer, Throwable throwable) throws Exception {
+                        return retry(MAX_RETRY_COUNT, integer, throwable);
+                    }
+                });
+            }
+        };
+    }
+
+    public static <U> FlowableTransformer<U, U> retry2(final int MAX_RETRY_COUNT) {
+        return new FlowableTransformer<U, U>() {
+            @Override
+            public Publisher<U> apply(Flowable<U> upstream) {
                 return upstream.retry(new BiPredicate<Integer, Throwable>() {
                     @Override
                     public boolean test(Integer integer, Throwable throwable) throws Exception {
@@ -222,14 +240,6 @@ public class Utils {
         }
     }
 
-    private static String transferEncoding(Response<?> response) {
-        return response.headers().get("Transfer-Encoding");
-    }
-
-    private static String contentRange(Response<?> response) {
-        return response.headers().get("Content-Range");
-    }
-
     public static void mkdirs(String... paths) throws IOException {
         for (String each : paths) {
             File file = new File(each);
@@ -246,5 +256,13 @@ public class Utils {
                 }
             }
         }
+    }
+
+    private static String transferEncoding(Response<?> response) {
+        return response.headers().get("Transfer-Encoding");
+    }
+
+    private static String contentRange(Response<?> response) {
+        return response.headers().get("Content-Range");
     }
 }

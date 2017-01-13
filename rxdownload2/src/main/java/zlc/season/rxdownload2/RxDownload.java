@@ -7,7 +7,6 @@ import android.content.ServiceConnection;
 import android.os.IBinder;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
-import android.util.Log;
 
 import java.io.File;
 import java.io.InterruptedIOException;
@@ -35,8 +34,8 @@ import zlc.season.rxdownload2.entity.DownloadStatus;
 import zlc.season.rxdownload2.function.DownloadHelper;
 import zlc.season.rxdownload2.function.DownloadService;
 
-import static android.content.ContentValues.TAG;
 import static zlc.season.rxdownload2.function.Constant.CONTEXT_NULL_HINT;
+import static zlc.season.rxdownload2.function.Utils.log;
 
 /**
  * Author: Season(ssseasonnn@gmail.com)
@@ -55,11 +54,11 @@ public class RxDownload {
             @Override
             public void accept(Throwable throwable) throws Exception {
                 if (throwable instanceof InterruptedException) {
-                    Log.d(TAG, "Thread interrupted");
+                    log("Thread interrupted");
                 } else if (throwable instanceof InterruptedIOException) {
-                    Log.d(TAG, "Io interrupted");
+                    log("Io interrupted");
                 } else if (throwable instanceof SocketException) {
-                    Log.d(TAG, "Socket error");
+                    log("Socket error");
                 }
             }
         });

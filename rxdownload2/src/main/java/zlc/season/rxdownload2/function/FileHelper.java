@@ -29,7 +29,9 @@ import static zlc.season.rxdownload2.function.Constant.NORMAL_DOWNLOAD_FAILED;
 import static zlc.season.rxdownload2.function.Constant.RANGE_DOWNLOAD_COMPLETED;
 import static zlc.season.rxdownload2.function.Constant.RANGE_DOWNLOAD_FAILED;
 import static zlc.season.rxdownload2.function.Constant.RANGE_DOWNLOAD_STARTED;
+import static zlc.season.rxdownload2.function.Utils.closeQuietly;
 import static zlc.season.rxdownload2.function.Utils.log;
+import static zlc.season.rxdownload2.function.Utils.longToGMT;
 import static zlc.season.rxdownload2.function.Utils.mkdirs;
 
 /**
@@ -78,7 +80,8 @@ public class FileHelper {
         RECORD_FILE_TOTAL_SIZE = EACH_RECORD_SIZE * MAX_THREADS;
     }
 
-    void createDirectories(String savePath) throws IOException {
+    void createDirectories(String savePath)
+            throws IOException {
         mkdirs(getRealDirectoryPaths(savePath));
     }
 
@@ -103,14 +106,17 @@ public class FileHelper {
         return new String[]{filePath, tempPath, lmfPath};
     }
 
-    void prepareDownload(File lastModifyFile, File saveFile, long fileLength,
-            String lastModify) throws IOException, ParseException {
+    void prepareDownload(File lastModifyFile, File saveFile,
+            long fileLength, String lastModify)
+            throws IOException, ParseException {
+
         writeLastModify(lastModifyFile, lastModify);
-        createSaveFile(saveFile, fileLength);
+        prepareFile(saveFile, fileLength);
     }
 
-    void saveFile(FlowableEmitter<DownloadStatus> emitter, File saveFile,
-            Response<ResponseBody> resp) {
+    void saveFile(FlowableEmitter<DownloadStatus> emitter,
+            File saveFile, Response<ResponseBody> resp) {
+
         InputStream inputStream = null;
         OutputStream outputStream = null;
         try {
@@ -118,28 +124,34 @@ public class FileHelper {
                 int readLen;
                 int downloadSize = 0;
                 byte[] buffer = new byte[8192];
+
                 DownloadStatus status = new DownloadStatus();
                 inputStream = resp.body().byteStream();
                 outputStream = new FileOutputStream(saveFile);
+
                 long contentLength = resp.body().contentLength();
+
                 boolean isChunked = Utils.isChunked(resp);
                 if (isChunked || contentLength == -1) {
                     status.isChunked = true;
                 }
+
                 status.setTotalSize(contentLength);
+
                 while ((readLen = inputStream.read(buffer)) != -1) {
                     outputStream.write(buffer, 0, readLen);
                     downloadSize += readLen;
                     status.setDownloadSize(downloadSize);
                     emitter.onNext(status);
                 }
+
                 outputStream.flush(); // This is important!!!
                 emitter.onComplete();
                 log(NORMAL_DOWNLOAD_COMPLETED);
             } finally {
-                Utils.closeQuietly(inputStream);
-                Utils.closeQuietly(outputStream);
-                Utils.closeQuietly(resp.body());
+                closeQuietly(inputStream);
+                closeQuietly(outputStream);
+                closeQuietly(resp.body());
             }
         } catch (IOException e) {
             log(NORMAL_DOWNLOAD_FAILED);
@@ -148,41 +160,18 @@ public class FileHelper {
     }
 
     void prepareDownload(File lastModifyFile, File tempFile, File saveFile,
-            long fileLength, String lastModify) throws IOException, ParseException {
+            long fileLength, String lastModify)
+            throws IOException, ParseException {
+
         writeLastModify(lastModifyFile, lastModify);
-        RandomAccessFile rFile = null;
-        RandomAccessFile rRecord = null;
-        FileChannel channel = null;
-        try {
-            rFile = new RandomAccessFile(saveFile, "rws");
-            rFile.setLength(fileLength);//设置下载文件的长度
-            rRecord = new RandomAccessFile(tempFile, "rws");
-            rRecord.setLength(RECORD_FILE_TOTAL_SIZE); //设置指针记录文件的大小
-            channel = rRecord.getChannel();
-            MappedByteBuffer buffer = channel.map(READ_WRITE, 0, RECORD_FILE_TOTAL_SIZE);
-            long start;
-            long end;
-            int eachSize = (int) (fileLength / MAX_THREADS);
-            for (int i = 0; i < MAX_THREADS; i++) {
-                if (i == MAX_THREADS - 1) {
-                    start = i * eachSize;
-                    end = fileLength - 1;
-                } else {
-                    start = i * eachSize;
-                    end = (i + 1) * eachSize - 1;
-                }
-                buffer.putLong(start);
-                buffer.putLong(end);
-            }
-        } finally {
-            Utils.closeQuietly(channel);
-            Utils.closeQuietly(rRecord);
-            Utils.closeQuietly(rFile);
-        }
+        prepareFile(tempFile, saveFile, fileLength);
     }
 
-    void saveFile(FlowableEmitter<DownloadStatus> emitter, int i, long start, long end,
-            File tempFile, File saveFile, ResponseBody response) {
+    void saveFile(FlowableEmitter<DownloadStatus> emitter,
+            int i, long start, long end,
+            File tempFile, File saveFile,
+            ResponseBody response) {
+
         RandomAccessFile record = null;
         FileChannel recordChannel = null;
         RandomAccessFile save = null;
@@ -221,12 +210,12 @@ public class FileHelper {
                         response.contentLength() + "");
                 emitter.onComplete();
             } finally {
-                Utils.closeQuietly(record);
-                Utils.closeQuietly(recordChannel);
-                Utils.closeQuietly(save);
-                Utils.closeQuietly(saveChannel);
-                Utils.closeQuietly(inStream);
-                Utils.closeQuietly(response);
+                closeQuietly(record);
+                closeQuietly(recordChannel);
+                closeQuietly(save);
+                closeQuietly(saveChannel);
+                closeQuietly(inStream);
+                closeQuietly(response);
             }
         } catch (IOException e) {
             log(RANGE_DOWNLOAD_FAILED, Thread.currentThread().getName());
@@ -234,7 +223,9 @@ public class FileHelper {
         }
     }
 
-    boolean downloadNotComplete(File tempFile) throws IOException {
+    boolean downloadNotComplete(File tempFile)
+            throws IOException {
+
         RandomAccessFile record = null;
         FileChannel channel = null;
         try {
@@ -253,12 +244,14 @@ public class FileHelper {
             }
             return false;
         } finally {
-            Utils.closeQuietly(channel);
-            Utils.closeQuietly(record);
+            closeQuietly(channel);
+            closeQuietly(record);
         }
     }
 
-    boolean tempFileDamaged(File tempFile, long fileLength) throws IOException {
+    boolean tempFileDamaged(File tempFile, long fileLength)
+            throws IOException {
+
         RandomAccessFile record = null;
         FileChannel channel = null;
         try {
@@ -268,12 +261,14 @@ public class FileHelper {
             long recordTotalSize = buffer.getLong(RECORD_FILE_TOTAL_SIZE - 8) + 1;
             return recordTotalSize != fileLength;
         } finally {
-            Utils.closeQuietly(channel);
-            Utils.closeQuietly(record);
+            closeQuietly(channel);
+            closeQuietly(record);
         }
     }
 
-    DownloadRange readDownloadRange(File tempFile, int i) throws IOException {
+    DownloadRange readDownloadRange(File tempFile, int i)
+            throws IOException {
+
         RandomAccessFile record = null;
         FileChannel channel = null;
         try {
@@ -285,23 +280,64 @@ public class FileHelper {
             long endByte = buffer.getLong();
             return new DownloadRange(startByte, endByte);
         } finally {
-            Utils.closeQuietly(channel);
-            Utils.closeQuietly(record);
+            closeQuietly(channel);
+            closeQuietly(record);
         }
     }
 
-    String getLastModify(File file) throws IOException {
+    String getLastModify(File file)
+            throws IOException {
+
         RandomAccessFile record = null;
         try {
             record = new RandomAccessFile(file, "rws");
             record.seek(0);
-            return Utils.longToGMT(record.readLong());
+            return longToGMT(record.readLong());
         } finally {
-            Utils.closeQuietly(record);
+            closeQuietly(record);
         }
     }
 
-    private void createSaveFile(File saveFile, long fileLength) throws IOException {
+    private void prepareFile(File tempFile, File saveFile, long fileLength)
+            throws IOException {
+        RandomAccessFile rFile = null;
+        RandomAccessFile rRecord = null;
+        FileChannel channel = null;
+        try {
+            rFile = new RandomAccessFile(saveFile, "rws");
+            rFile.setLength(fileLength);//设置下载文件的长度
+
+            rRecord = new RandomAccessFile(tempFile, "rws");
+            rRecord.setLength(RECORD_FILE_TOTAL_SIZE); //设置指针记录文件的大小
+
+            channel = rRecord.getChannel();
+            MappedByteBuffer buffer = channel.map(READ_WRITE, 0, RECORD_FILE_TOTAL_SIZE);
+
+            long start;
+            long end;
+            int eachSize = (int) (fileLength / MAX_THREADS);
+
+            for (int i = 0; i < MAX_THREADS; i++) {
+                if (i == MAX_THREADS - 1) {
+                    start = i * eachSize;
+                    end = fileLength - 1;
+                } else {
+                    start = i * eachSize;
+                    end = (i + 1) * eachSize - 1;
+                }
+                buffer.putLong(start);
+                buffer.putLong(end);
+            }
+        } finally {
+            closeQuietly(channel);
+            closeQuietly(rRecord);
+            closeQuietly(rFile);
+        }
+    }
+
+    private void prepareFile(File saveFile, long fileLength)
+            throws IOException {
+
         RandomAccessFile file = null;
         try {
             file = new RandomAccessFile(saveFile, "rws");
@@ -312,11 +348,13 @@ public class FileHelper {
                 //Chunked 下载, 无需设置文件大小.
             }
         } finally {
-            Utils.closeQuietly(file);
+            closeQuietly(file);
         }
     }
 
-    private void writeLastModify(File file, String lastModify) throws IOException, ParseException {
+    private void writeLastModify(File file, String lastModify)
+            throws IOException, ParseException {
+
         RandomAccessFile record = null;
         try {
             record = new RandomAccessFile(file, "rws");
@@ -324,7 +362,7 @@ public class FileHelper {
             record.seek(0);
             record.writeLong(Utils.GMTToLong(lastModify));
         } finally {
-            Utils.closeQuietly(record);
+            closeQuietly(record);
         }
     }
 

@@ -25,7 +25,6 @@ import zlc.season.rxdownload2.entity.DownloadFlag;
 import zlc.season.rxdownload2.entity.DownloadMission;
 import zlc.season.rxdownload2.entity.DownloadRecord;
 
-
 /**
  * Author: Season(ssseasonnn@gmail.com)
  * Date: 2016/11/10
@@ -52,12 +51,10 @@ public class DownloadService extends Service {
     public void onCreate() {
         super.onCreate();
         mBinder = new DownloadBinder();
-
         mProcessorPool = new ConcurrentHashMap<>();
         mWaitingForDownload = new LinkedList<>();
         mWaitingForDownloadLookUpMap = new HashMap<>();
         mNowDownloading = new HashMap<>();
-
         mDataBaseHelper = DataBaseHelper.getSingleton(this);
         mEventFactory = DownloadEventFactory.getSingleton();
     }
@@ -123,7 +120,7 @@ public class DownloadService extends Service {
             } else {
                 mDataBaseHelper.updateRecord(url, DownloadFlag.WAITING);
                 createAndGet(url).onNext(mEventFactory.factory(url, DownloadFlag.WAITING,
-                        mDataBaseHelper.readStatus(url)));
+                                                               mDataBaseHelper.readStatus(url)));
             }
             mWaitingForDownload.offer(mission);
             mWaitingForDownloadLookUpMap.put(url, mission);
@@ -151,11 +148,13 @@ public class DownloadService extends Service {
         }
         if (mNowDownloading.get(url) != null) {
             Utils.dispose(mNowDownloading.get(url).getDisposable());
-            createAndGet(url).onNext(mEventFactory.factory(url, flag, mNowDownloading.get(url).getStatus()));
+            createAndGet(url)
+                    .onNext(mEventFactory.factory(url, flag, mNowDownloading.get(url).getStatus()));
             mCount.decrementAndGet();
             mNowDownloading.remove(url);
         } else {
-            createAndGet(url).onNext(mEventFactory.factory(url, flag, mDataBaseHelper.readStatus(url)));
+            createAndGet(url)
+                    .onNext(mEventFactory.factory(url, flag, mDataBaseHelper.readStatus(url)));
         }
     }
 

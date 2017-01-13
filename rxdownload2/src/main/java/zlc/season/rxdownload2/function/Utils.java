@@ -79,7 +79,8 @@ public class Utils {
     }
 
     public static boolean notSupportRange(Response<?> response) {
-        return TextUtils.isEmpty(contentRange(response)) || contentLength(response) == -1 || isChunked(response);
+        return TextUtils.isEmpty(contentRange(response)) || contentLength(response) == -1 ||
+                isChunked(response);
     }
 
     public static boolean serverFileChanged(Response<Void> resp) {
@@ -105,15 +106,12 @@ public class Utils {
 
     public static String formatSize(long size) {
         String hrSize;
-
         double b = size;
         double k = size / 1024.0;
         double m = ((size / 1024.0) / 1024.0);
         double g = (((size / 1024.0) / 1024.0) / 1024.0);
         double t = ((((size / 1024.0) / 1024.0) / 1024.0) / 1024.0);
-
         DecimalFormat dec = new DecimalFormat("0.00");
-
         if (t > 1) {
             hrSize = dec.format(t).concat(" TB");
         } else if (g > 1) {

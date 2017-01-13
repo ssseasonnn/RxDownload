@@ -51,10 +51,8 @@ public class DownloadMission {
     public void start(final Map<String, DownloadMission> nowDownloadMap,
                       final AtomicInteger count, final DataBaseHelper helper,
                       final Map<String, FlowableProcessor<DownloadEvent>> processorPool) {
-
         nowDownloadMap.put(url, this);
         count.incrementAndGet();
-
         final DownloadEventFactory eventFactory = DownloadEventFactory.getSingleton();
         rxDownload.download(url, saveName, savePath)
                 .subscribeOn(Schedulers.io())
@@ -67,7 +65,8 @@ public class DownloadMission {
 
                     @Override
                     public void onNext(DownloadStatus value) {
-                        processorPool.get(url).onNext(eventFactory.factory(url, DownloadFlag.STARTED, value));
+                        processorPool.get(url)
+                                .onNext(eventFactory.factory(url, DownloadFlag.STARTED, value));
                         helper.updateRecord(url, value);
                         mStatus = value;
                     }
@@ -75,8 +74,8 @@ public class DownloadMission {
                     @Override
                     public void onError(Throwable e) {
                         Log.w("error", e);
-                        processorPool.get(url).onNext(eventFactory.factory(url, DownloadFlag.FAILED, mStatus, e));
-
+                        processorPool.get(url)
+                                .onNext(eventFactory.factory(url, DownloadFlag.FAILED, mStatus, e));
                         helper.updateRecord(url, DownloadFlag.FAILED);
                         count.decrementAndGet();
                         nowDownloadMap.remove(url);
@@ -84,8 +83,8 @@ public class DownloadMission {
 
                     @Override
                     public void onComplete() {
-                        processorPool.get(url).onNext(eventFactory.factory(url, DownloadFlag.COMPLETED, mStatus));
-
+                        processorPool.get(url)
+                                .onNext(eventFactory.factory(url, DownloadFlag.COMPLETED, mStatus));
                         helper.updateRecord(url, DownloadFlag.COMPLETED);
                         count.decrementAndGet();
                         nowDownloadMap.remove(url);

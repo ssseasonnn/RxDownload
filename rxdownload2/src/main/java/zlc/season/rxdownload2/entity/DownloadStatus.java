@@ -14,7 +14,8 @@ import static zlc.season.rxdownload2.function.Utils.formatSize;
  * 表示下载状态, 如果isChunked为true, totalSize 可能不存在
  */
 public class DownloadStatus implements Parcelable {
-    public static final Parcelable.Creator<DownloadStatus> CREATOR = new Parcelable.Creator<DownloadStatus>() {
+    public static final Parcelable.Creator<DownloadStatus> CREATOR
+            = new Parcelable.Creator<DownloadStatus>() {
         @Override
         public DownloadStatus createFromParcel(Parcel source) {
             return new DownloadStatus(source);

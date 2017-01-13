@@ -88,8 +88,8 @@ public class DownloadHelper {
         if (throwable instanceof ProtocolException) {
             if (integer < MAX_RETRY_COUNT + 1) {
                 Log.w(FileHelper.TAG, Thread.currentThread().getName() +
-                        " we got an error in the underlying protocol, such as a TCP error, retry to connect " +
-                        integer + " times");
+                        " we got an error in the underlying protocol, such as a TCP error, retry " +
+                        "to connect " + integer + " times");
                 return true;
             }
             return false;
@@ -116,15 +116,17 @@ public class DownloadHelper {
             return false;
         } else if (throwable instanceof ConnectException) {
             if (integer < MAX_RETRY_COUNT + 1) {
-                Log.w(FileHelper.TAG, concat(Thread.currentThread().getName(), " ", throwable.getMessage(),
-                        ". retry to connect ", String.valueOf(integer), " times").toString());
+                Log.w(FileHelper.TAG,
+                      concat(Thread.currentThread().getName(), " ", throwable.getMessage(),
+                             ". retry to connect ", String.valueOf(integer), " times").toString());
                 return true;
             }
             return false;
         } else if (throwable instanceof SocketException) {
             if (integer < MAX_RETRY_COUNT + 1) {
                 Log.w(FileHelper.TAG, Thread.currentThread().getName() +
-                        " a network or conversion error happened, retry to connect " + integer + " times");
+                        " a network or conversion error happened, retry to connect " + integer +
+                        " times");
                 return true;
             }
             return false;
@@ -145,12 +147,14 @@ public class DownloadHelper {
         mFileHelper.setMaxThreads(MAX_THREADS);
     }
 
-    public void prepareNormalDownload(String url, long fileLength, String lastModify) throws IOException,
-            ParseException {
+    public void prepareNormalDownload(String url, long fileLength, String lastModify)
+            throws IOException,
+                   ParseException {
         mFileHelper.prepareDownload(getLastModifyFile(url), getFile(url), fileLength, lastModify);
     }
 
-    public void saveNormalFile(FlowableEmitter<DownloadStatus> emitter, String url, Response<ResponseBody> resp) {
+    public void saveNormalFile(FlowableEmitter<DownloadStatus> emitter, String url,
+                               Response<ResponseBody> resp) {
         mFileHelper.saveFile(emitter, getFile(url), resp);
     }
 
@@ -158,10 +162,11 @@ public class DownloadHelper {
         return mFileHelper.readDownloadRange(getTempFile(url), i);
     }
 
-    public void prepareMultiThreadDownload(String url, long fileLength, String lastModify) throws IOException,
-            ParseException {
+    public void prepareMultiThreadDownload(String url, long fileLength, String lastModify)
+            throws IOException,
+                   ParseException {
         mFileHelper.prepareDownload(getLastModifyFile(url), getTempFile(url), getFile(url),
-                fileLength, lastModify);
+                                    fileLength, lastModify);
     }
 
     public void saveRangeFile(FlowableEmitter<DownloadStatus> emitter, int i, long start, long end,
@@ -170,10 +175,12 @@ public class DownloadHelper {
     }
 
     public Observable<DownloadStatus> downloadDispatcher(final String url, final String saveName,
-                                                         final String savePath, final Context context,
+                                                         final String savePath,
+                                                         final Context context,
                                                          final boolean autoInstall) {
         if (isRecordExists(url)) {
-            return Observable.error(new Throwable("This url download task already exists, so do nothing."));
+            return Observable
+                    .error(new Throwable("This url download task already exists, so do nothing."));
         }
         try {
             addDownloadRecord(url, saveName, savePath);
@@ -183,7 +190,8 @@ public class DownloadHelper {
         return getDownloadType(url)
                 .flatMap(new Function<DownloadType, ObservableSource<DownloadStatus>>() {
                     @Override
-                    public ObservableSource<DownloadStatus> apply(DownloadType downloadType) throws Exception {
+                    public ObservableSource<DownloadStatus> apply(DownloadType downloadType)
+                            throws Exception {
                         downloadType.prepareDownload();
                         return downloadType.startDownload();
                     }
@@ -193,10 +201,12 @@ public class DownloadHelper {
                     public void run() throws Exception {
                         if (autoInstall) {
                             if (context == null) {
-                                throw new IllegalStateException("Context is NULL! You should call " +
-                                        "#RxDownload.context(Context context)# first!");
+                                throw new IllegalStateException(
+                                        "Context is NULL! You should call " +
+                                                "#RxDownload.context(Context context)# first!");
                             }
-                            Utils.installApk(context, new File(getRealFilePaths(saveName, savePath)[0]));
+                            Utils.installApk(context,
+                                             new File(getRealFilePaths(saveName, savePath)[0]));
                         }
                     }
                 })
@@ -218,7 +228,8 @@ public class DownloadHelper {
                 });
     }
 
-    public Observable<DownloadType> requestHeaderWithIfRangeByGet(final String url) throws IOException {
+    public Observable<DownloadType> requestHeaderWithIfRangeByGet(final String url)
+            throws IOException {
         return getDownloadApi()
                 .requestWithIfRange(TEST_RANGE_SUPPORT, getLastModify(url), url)
                 .map(new Function<Response<Void>, DownloadType>() {
@@ -240,7 +251,8 @@ public class DownloadHelper {
                 });
     }
 
-    private void addDownloadRecord(String url, String saveName, String savePath) throws IOException {
+    private void addDownloadRecord(String url, String saveName, String savePath)
+            throws IOException {
         mFileHelper.createDirectories(savePath);
         mDownloadRecord.put(url, getRealFilePaths(saveName, savePath));
     }
@@ -330,7 +342,6 @@ public class DownloadHelper {
                         return retry(integer, throwable);
                     }
                 });
-
     }
 
     private Observable<DownloadType> getWhenFileExists(final String url) throws IOException {

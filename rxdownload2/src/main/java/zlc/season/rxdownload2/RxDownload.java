@@ -37,7 +37,6 @@ import zlc.season.rxdownload2.function.DownloadService;
 
 import static zlc.season.rxdownload2.function.FileHelper.TAG;
 
-
 /**
  * Author: Season(ssseasonnn@gmail.com)
  * Date: 2016/10/19
@@ -45,6 +44,9 @@ import static zlc.season.rxdownload2.function.FileHelper.TAG;
  * RxDownload
  */
 public class RxDownload {
+    private static final String CONTEXT_NULL_HINT
+            = "Context is NULL! You should call #RxDownload.context(Context context)# first!";
+
     private static DownloadService mDownloadService;
     private static boolean bound = false;
     private static Object object = new Object();
@@ -83,6 +85,7 @@ public class RxDownload {
      *
      * @param saveName saveName
      * @param savePath savePath
+     *
      * @return Files
      */
     public File[] getRealFiles(String saveName, String savePath) {
@@ -94,6 +97,7 @@ public class RxDownload {
      * 普通下载时不需要context, 使用Service下载时需要context;
      *
      * @param context context
+     *
      * @return RxDownload
      */
     public RxDownload context(Context context) {
@@ -139,6 +143,7 @@ public class RxDownload {
      * 注意只接收下载地址为url的事件和状态.
      *
      * @param url download url
+     *
      * @return Observable<DownloadStatus>
      */
     public Observable<DownloadEvent> receiveDownloadStatus(final String url) {
@@ -172,10 +177,10 @@ public class RxDownload {
      */
     public Observable<List<DownloadRecord>> getTotalDownloadRecords() {
         if (mContext == null) {
-            return Observable.error(new Throwable("Context is NULL! You should call " +
-                    "#RxDownload.context(Context context)# first!"));
+            return Observable.error(new Throwable(CONTEXT_NULL_HINT));
         }
-        DataBaseHelper dataBaseHelper = DataBaseHelper.getSingleton(mContext);
+        DataBaseHelper dataBaseHelper = DataBaseHelper
+                .getSingleton(mContext.getApplicationContext());
         return dataBaseHelper.readAllRecords();
     }
 
@@ -184,14 +189,15 @@ public class RxDownload {
      * 从数据库中读取下载地址为url的下载记录
      *
      * @param url download url
+     *
      * @return Observable<DownloadStatus>
      */
     public Observable<DownloadRecord> getDownloadRecord(String url) {
         if (mContext == null) {
-            return Observable.error(new Throwable("Context is NULL! You should call " +
-                    "#RxDownload.context(Context context)# first!"));
+            return Observable.error(new Throwable(CONTEXT_NULL_HINT));
         }
-        DataBaseHelper dataBaseHelper = DataBaseHelper.getSingleton(mContext);
+        DataBaseHelper dataBaseHelper = DataBaseHelper
+                .getSingleton(mContext.getApplicationContext());
         return dataBaseHelper.readRecord(url);
     }
 
@@ -263,7 +269,9 @@ public class RxDownload {
      *
      * @param url      download file Url
      * @param saveName download file SaveName
-     * @param savePath download file SavePath. If NULL, using default save path {@code /storage/emulated/0/Download/}
+     * @param savePath download file SavePath. If NULL, using default save path {@code
+     *                 /storage/emulated/0/Download/}
+     *
      * @return Observable<DownloadStatus>
      */
     public Observable<?> serviceDownload(@NonNull final String url,
@@ -286,7 +294,9 @@ public class RxDownload {
      *
      * @param url      download file Url
      * @param saveName download file SaveName
-     * @param savePath download file SavePath. If NULL, using default save path {@code /storage/emulated/0/Download/}
+     * @param savePath download file SavePath. If NULL, using default save path {@code
+     *                 /storage/emulated/0/Download/}
+     *
      * @return Observable<DownloadStatus>
      */
     public Observable<DownloadStatus> download(@NonNull final String url,
@@ -302,20 +312,24 @@ public class RxDownload {
      *
      * @param url        download file Url
      * @param saveName   download file SaveName
-     * @param savePath   download file SavePath. If NULL, using default save path {@code /storage/emulated/0/Download/}
+     * @param savePath   download file SavePath. If NULL, using default save path {@code
+     *                   /storage/emulated/0/Download/}
      * @param <Upstream> Upstream
+     *
      * @return Transformer
      */
-    public <Upstream> ObservableTransformer<Upstream, DownloadStatus> transform(@NonNull final String url,
-                                                                                @NonNull final String saveName,
-                                                                                @Nullable final String savePath) {
-
+    public <Upstream> ObservableTransformer<Upstream, DownloadStatus> transform(
+            @NonNull final String url,
+            @NonNull final String saveName,
+            @Nullable final String savePath) {
         return new ObservableTransformer<Upstream, DownloadStatus>() {
             @Override
-            public ObservableSource<DownloadStatus> apply(io.reactivex.Observable<Upstream> upstream) {
+            public ObservableSource<DownloadStatus> apply(
+                    io.reactivex.Observable<Upstream> upstream) {
                 return upstream.flatMap(new Function<Upstream, ObservableSource<DownloadStatus>>() {
                     @Override
-                    public ObservableSource<DownloadStatus> apply(Upstream upstream) throws Exception {
+                    public ObservableSource<DownloadStatus> apply(Upstream upstream)
+                            throws Exception {
                         return download(url, saveName, savePath);
                     }
                 });
@@ -330,13 +344,16 @@ public class RxDownload {
      *
      * @param url        download file Url
      * @param saveName   download file SaveName
-     * @param savePath   download file SavePath. If NULL, using default save path {@code /storage/emulated/0/Download/}
+     * @param savePath   download file SavePath. If NULL, using default save path {@code
+     *                   /storage/emulated/0/Download/}
      * @param <Upstream> Upstream
+     *
      * @return Transformer
      */
-    public <Upstream> ObservableTransformer<Upstream, Object> transformService(@NonNull final String url,
-                                                                               @NonNull final String saveName,
-                                                                               @Nullable final String savePath) {
+    public <Upstream> ObservableTransformer<Upstream, Object> transformService(
+            @NonNull final String url,
+            @NonNull final String saveName,
+            @Nullable final String savePath) {
         return new ObservableTransformer<Upstream, Object>() {
 
             @Override
@@ -351,8 +368,8 @@ public class RxDownload {
         };
     }
 
-
-    private void addDownloadTask(@NonNull String url, @NonNull String saveName, @Nullable String savePath) {
+    private void addDownloadTask(@NonNull String url, @NonNull String saveName,
+                                 @Nullable String savePath) {
         mDownloadService.addDownloadMission(
                 new DownloadMission.Builder()
                         .setRxDownload(RxDownload.this)
@@ -386,8 +403,7 @@ public class RxDownload {
 
     private void startBindServiceAndDo(final ServiceConnectedCallback callback) {
         if (mContext == null) {
-            throw new IllegalArgumentException("Context is NULL! You should call " +
-                    "#RxDownload.context(Context context)# first!");
+            throw new IllegalArgumentException(CONTEXT_NULL_HINT);
         }
         Intent intent = new Intent(mContext, DownloadService.class);
         intent.putExtra(DownloadService.INTENT_KEY, MAX_DOWNLOAD_NUMBER);
@@ -395,7 +411,8 @@ public class RxDownload {
         mContext.bindService(intent, new ServiceConnection() {
             @Override
             public void onServiceConnected(ComponentName name, IBinder binder) {
-                DownloadService.DownloadBinder downloadBinder = (DownloadService.DownloadBinder) binder;
+                DownloadService.DownloadBinder downloadBinder
+                        = (DownloadService.DownloadBinder) binder;
                 mDownloadService = downloadBinder.getService();
                 mContext.unbindService(this);
                 bound = true;

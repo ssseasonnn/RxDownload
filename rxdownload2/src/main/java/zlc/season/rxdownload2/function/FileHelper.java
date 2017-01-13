@@ -115,7 +115,8 @@ public class FileHelper {
         }
     }
 
-    void saveFile(FlowableEmitter<DownloadStatus> emitter, File saveFile, Response<ResponseBody> resp) {
+    void saveFile(FlowableEmitter<DownloadStatus> emitter, File saveFile,
+                  Response<ResponseBody> resp) {
         InputStream inputStream = null;
         OutputStream outputStream = null;
         try {
@@ -123,18 +124,15 @@ public class FileHelper {
                 int readLen;
                 int downloadSize = 0;
                 byte[] buffer = new byte[8192];
-
                 DownloadStatus status = new DownloadStatus();
                 inputStream = resp.body().byteStream();
                 outputStream = new FileOutputStream(saveFile);
-
                 long contentLength = resp.body().contentLength();
                 boolean isChunked = Utils.isChunked(resp);
                 if (isChunked || contentLength == -1) {
                     status.isChunked = true;
                 }
                 status.setTotalSize(contentLength);
-
                 while ((readLen = inputStream.read(buffer)) != -1) {
                     outputStream.write(buffer, 0, readLen);
                     downloadSize += readLen;
@@ -144,7 +142,6 @@ public class FileHelper {
                 outputStream.flush(); // This is important!!!
                 emitter.onComplete();
                 Log.i(TAG, "Normal download completed!");
-                sub.onCompleted();
             } finally {
                 Utils.closeQuietly(inputStream);
                 Utils.closeQuietly(outputStream);
@@ -165,12 +162,10 @@ public class FileHelper {
         try {
             rFile = new RandomAccessFile(saveFile, "rws");
             rFile.setLength(fileLength);//设置下载文件的长度
-
             rRecord = new RandomAccessFile(tempFile, "rws");
             rRecord.setLength(RECORD_FILE_TOTAL_SIZE); //设置指针记录文件的大小
             channel = rRecord.getChannel();
             MappedByteBuffer buffer = channel.map(READ_WRITE, 0, RECORD_FILE_TOTAL_SIZE);
-
             long start;
             long end;
             int eachSize = (int) (fileLength / MAX_THREADS);
@@ -196,38 +191,37 @@ public class FileHelper {
                   File tempFile, File saveFile, ResponseBody response) {
         RandomAccessFile record = null;
         FileChannel recordChannel = null;
-
         RandomAccessFile save = null;
         FileChannel saveChannel = null;
-
         InputStream inStream = null;
         try {
             try {
-                Log.i(TAG, Thread.currentThread().getName() + " start download from " + start + " to " + end + "!");
+                Log.i(TAG,
+                      Thread.currentThread().getName() + " start download from " + start + " to " +
+                              end + "!");
                 int readLen;
                 byte[] buffer = new byte[8192];
                 DownloadStatus status = new DownloadStatus();
-
                 record = new RandomAccessFile(tempFile, "rws");
                 recordChannel = record.getChannel();
-                MappedByteBuffer recordBuffer = recordChannel.map(READ_WRITE, 0, RECORD_FILE_TOTAL_SIZE);
+                MappedByteBuffer recordBuffer = recordChannel
+                        .map(READ_WRITE, 0, RECORD_FILE_TOTAL_SIZE);
                 long totalSize = recordBuffer.getLong(RECORD_FILE_TOTAL_SIZE - 8) + 1;
                 status.setTotalSize(totalSize);
-
                 save = new RandomAccessFile(saveFile, "rws");
                 saveChannel = save.getChannel();
                 MappedByteBuffer saveBuffer = saveChannel.map(READ_WRITE, start, end - start + 1);
-
                 inStream = response.byteStream();
                 while ((readLen = inStream.read(buffer)) != -1) {
                     saveBuffer.put(buffer, 0, readLen);
-                    recordBuffer.putLong(i * EACH_RECORD_SIZE, recordBuffer.getLong(i * EACH_RECORD_SIZE) + readLen);
-
+                    recordBuffer.putLong(i * EACH_RECORD_SIZE,
+                                         recordBuffer.getLong(i * EACH_RECORD_SIZE) + readLen);
                     status.setDownloadSize(totalSize - getResidue(recordBuffer));
                     emitter.onNext(status);
                 }
-                Log.i(TAG, Thread.currentThread().getName() + " complete download! Download size is " +
-                        response.contentLength() + " bytes");
+                Log.i(TAG,
+                      Thread.currentThread().getName() + " complete download! Download size is " +
+                              response.contentLength() + " bytes");
                 emitter.onComplete();
             } finally {
                 Utils.closeQuietly(record);
@@ -287,7 +281,8 @@ public class FileHelper {
         try {
             record = new RandomAccessFile(tempFile, "rws");
             channel = record.getChannel();
-            MappedByteBuffer buffer = channel.map(READ_WRITE, i * EACH_RECORD_SIZE, (i + 1) * EACH_RECORD_SIZE);
+            MappedByteBuffer buffer = channel
+                    .map(READ_WRITE, i * EACH_RECORD_SIZE, (i + 1) * EACH_RECORD_SIZE);
             long startByte = buffer.getLong();
             long endByte = buffer.getLong();
             return new DownloadRange(startByte, endByte);
@@ -344,6 +339,7 @@ public class FileHelper {
      * 还剩多少字节没有下载
      *
      * @param recordBuffer buffer
+     *
      * @return 剩余的字节
      */
     private long getResidue(MappedByteBuffer recordBuffer) {

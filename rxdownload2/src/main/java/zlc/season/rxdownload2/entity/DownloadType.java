@@ -23,7 +23,6 @@ import retrofit2.Response;
 import zlc.season.rxdownload2.function.DownloadHelper;
 import zlc.season.rxdownload2.function.FileHelper;
 
-
 /**
  * Author: Season(ssseasonnn@gmail.com)
  * Date: 2016/11/3
@@ -47,15 +46,6 @@ public abstract class DownloadType {
             mDownloadHelper.prepareNormalDownload(mUrl, mFileLength, mLastModify);
         }
 
-        private Flowable<DownloadStatus> normalSave(final Response<ResponseBody> response) {
-            return Flowable.create(new FlowableOnSubscribe<DownloadStatus>() {
-                @Override
-                public void subscribe(FlowableEmitter<DownloadStatus> e) throws Exception {
-                    mDownloadHelper.saveNormalFile(e, mUrl, response);
-                }
-            }, BackpressureStrategy.BUFFER);
-        }
-
         @Override
         public Observable<DownloadStatus> startDownload() {
             Log.i(FileHelper.TAG, "Normal download start!!");
@@ -63,7 +53,8 @@ public abstract class DownloadType {
                     .subscribeOn(Schedulers.io())
                     .flatMap(new Function<Response<ResponseBody>, Publisher<DownloadStatus>>() {
                         @Override
-                        public Publisher<DownloadStatus> apply(Response<ResponseBody> response) throws Exception {
+                        public Publisher<DownloadStatus> apply(Response<ResponseBody> response)
+                                throws Exception {
                             return normalSave(response);
                         }
                     })
@@ -75,64 +66,18 @@ public abstract class DownloadType {
                     })
                     .toObservable();
         }
+
+        private Flowable<DownloadStatus> normalSave(final Response<ResponseBody> response) {
+            return Flowable.create(new FlowableOnSubscribe<DownloadStatus>() {
+                @Override
+                public void subscribe(FlowableEmitter<DownloadStatus> e) throws Exception {
+                    mDownloadHelper.saveNormalFile(e, mUrl, response);
+                }
+            }, BackpressureStrategy.BUFFER);
+        }
     }
 
     static class ContinueDownload extends DownloadType {
-
-        /**
-         * 分段下载的任务
-         *
-         * @param i 下载编号
-         * @return Observable
-         */
-        private Flowable<DownloadStatus> rangeDownloadTask(final int i) {
-            return Flowable.create(new FlowableOnSubscribe<DownloadRange>() {
-                @Override
-                public void subscribe(FlowableEmitter<DownloadRange> emitter) throws Exception {
-                    DownloadRange range = mDownloadHelper.readDownloadRange(mUrl, i);
-                    if (range.start <= range.end) {
-                        emitter.onNext(range);
-                    }
-                    emitter.onComplete();
-                }
-            }, BackpressureStrategy.LATEST).subscribeOn(Schedulers.io()).flatMap(new Function<DownloadRange, Publisher<DownloadStatus>>() {
-                @Override
-                public Publisher<DownloadStatus> apply(final DownloadRange downloadRange) throws Exception {
-                    String range = "bytes=" + downloadRange.start + "-" + downloadRange.end;
-                    return mDownloadHelper.getDownloadApi().download(range, mUrl)
-                            .flatMap(new Function<Response<ResponseBody>, Publisher<DownloadStatus>>() {
-                                @Override
-                                public Publisher<DownloadStatus> apply(Response<ResponseBody> response) throws Exception {
-                                    return rangeSave(downloadRange.start, downloadRange.end, i, response.body());
-                                }
-                            });
-                }
-            }).retry(new BiPredicate<Integer, Throwable>() {
-                @Override
-                public boolean test(Integer integer, Throwable throwable) throws Exception {
-                    return mDownloadHelper.retry(integer, throwable);
-                }
-            });
-        }
-
-        /**
-         * 保存断点下载的文件,以及下载进度
-         *
-         * @param start    从start开始
-         * @param end      到end结束
-         * @param i        下载编号
-         * @param response 响应值
-         * @return Observable
-         */
-        private Flowable<DownloadStatus> rangeSave(final long start, final long end, final int i,
-                                                   final ResponseBody response) {
-            return Flowable.create(new FlowableOnSubscribe<DownloadStatus>() {
-                @Override
-                public void subscribe(FlowableEmitter<DownloadStatus> emitter) throws Exception {
-                    mDownloadHelper.saveRangeFile(emitter, i, start, end, mUrl, response);
-                }
-            }, BackpressureStrategy.LATEST);
-        }
 
         @Override
         public void prepareDownload() throws IOException, ParseException {
@@ -146,6 +91,71 @@ public abstract class DownloadType {
                 tasks.add(rangeDownloadTask(i));
             }
             return Flowable.mergeDelayError(tasks).toObservable();
+        }
+
+        /**
+         * 分段下载的任务
+         *
+         * @param i 下载编号
+         *
+         * @return Observable
+         */
+        private Flowable<DownloadStatus> rangeDownloadTask(final int i) {
+            return Flowable.create(new FlowableOnSubscribe<DownloadRange>() {
+                @Override
+                public void subscribe(FlowableEmitter<DownloadRange> emitter) throws Exception {
+                    DownloadRange range = mDownloadHelper.readDownloadRange(mUrl, i);
+                    if (range.start <= range.end) {
+                        emitter.onNext(range);
+                    }
+                    emitter.onComplete();
+                }
+            }, BackpressureStrategy.LATEST).subscribeOn(Schedulers.io())
+                    .flatMap(new Function<DownloadRange, Publisher<DownloadStatus>>() {
+                        @Override
+                        public Publisher<DownloadStatus> apply(final DownloadRange downloadRange)
+                                throws Exception {
+                            String range = "bytes=" + downloadRange.start + "-" + downloadRange.end;
+                            return mDownloadHelper.getDownloadApi().download(range, mUrl)
+                                    .flatMap(
+                                            new Function<Response<ResponseBody>,
+                                                    Publisher<DownloadStatus>>() {
+                                                @Override
+                                                public Publisher<DownloadStatus> apply(
+                                                        Response<ResponseBody> response)
+                                                        throws Exception {
+                                                    return rangeSave(downloadRange.start,
+                                                                     downloadRange.end, i,
+                                                                     response.body());
+                                                }
+                                            });
+                        }
+                    }).retry(new BiPredicate<Integer, Throwable>() {
+                        @Override
+                        public boolean test(Integer integer, Throwable throwable) throws Exception {
+                            return mDownloadHelper.retry(integer, throwable);
+                        }
+                    });
+        }
+
+        /**
+         * 保存断点下载的文件,以及下载进度
+         *
+         * @param start    从start开始
+         * @param end      到end结束
+         * @param i        下载编号
+         * @param response 响应值
+         *
+         * @return Observable
+         */
+        private Flowable<DownloadStatus> rangeSave(final long start, final long end, final int i,
+                                                   final ResponseBody response) {
+            return Flowable.create(new FlowableOnSubscribe<DownloadStatus>() {
+                @Override
+                public void subscribe(FlowableEmitter<DownloadStatus> emitter) throws Exception {
+                    mDownloadHelper.saveRangeFile(emitter, i, start, end, mUrl, response);
+                }
+            }, BackpressureStrategy.LATEST);
         }
     }
 
@@ -180,7 +190,6 @@ public abstract class DownloadType {
 
         @Override
         public void prepareDownload() throws IOException, ParseException {
-
         }
 
         @Override
@@ -188,7 +197,8 @@ public abstract class DownloadType {
             return mDownloadHelper.requestHeaderWithIfRangeByGet(mUrl)
                     .flatMap(new Function<DownloadType, ObservableSource<DownloadStatus>>() {
                         @Override
-                        public ObservableSource<DownloadStatus> apply(DownloadType downloadType) throws Exception {
+                        public ObservableSource<DownloadStatus> apply(DownloadType downloadType)
+                                throws Exception {
                             try {
                                 downloadType.prepareDownload();
                                 return downloadType.startDownload();

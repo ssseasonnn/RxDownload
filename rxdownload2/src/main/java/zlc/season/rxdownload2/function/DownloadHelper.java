@@ -184,7 +184,7 @@ public class DownloadHelper {
                         } else if (serverFileChanged(response)) {
                             return getWhenServerFileChanged(response, url);
                         } else {
-                            throw new RuntimeException("unknown error");
+                            return typeFactory.unable();
                         }
                     }
                 })
@@ -296,7 +296,6 @@ public class DownloadHelper {
                     @Override
                     public DownloadType apply(Response<Void> response)
                             throws Exception {
-
                         if (notSupportRange(response)) {
                             return typeFactory.normal(url, contentLength(response),
                                     lastModify(response));
@@ -318,19 +317,15 @@ public class DownloadHelper {
                     @Override
                     public DownloadType apply(Response<Void> resp)
                             throws Exception {
-
                         if (serverFileNotChange(resp)) {
-
                             return getWhenServerFileNotChange(resp, url);
                         } else if (serverFileChanged(resp)) {
-
                             return getWhenServerFileChanged(resp, url);
                         } else if (requestRangeNotSatisfiable(resp)) {
-
                             return typeFactory.needGET(url,
                                     contentLength(resp), lastModify(resp));
                         } else {
-                            throw new RuntimeException("unknown error");
+                            return typeFactory.unable();
                         }
                     }
                 })

@@ -57,4 +57,8 @@ public class DownloadTypeFactory {
         type.mDownloadHelper = this.mDownloadHelper;
         return type;
     }
+
+    public DownloadType unable(){
+        return new DownloadType.UnableDownload();
+    }
 }

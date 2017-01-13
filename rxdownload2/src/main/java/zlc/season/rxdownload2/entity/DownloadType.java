@@ -34,7 +34,8 @@ public abstract class DownloadType {
     String mLastModify;
     DownloadHelper mDownloadHelper;
 
-    public abstract void prepareDownload() throws IOException, ParseException;
+    public abstract void prepareDownload()
+            throws IOException, ParseException;
 
     public abstract Observable<DownloadStatus> startDownload() throws IOException;
 
@@ -206,6 +207,19 @@ public abstract class DownloadType {
                             }
                         }
                     });
+        }
+    }
+
+    static class UnableDownload extends DownloadType {
+
+        @Override
+        public void prepareDownload() throws IOException, ParseException {
+
+        }
+
+        @Override
+        public Observable<DownloadStatus> startDownload() throws IOException {
+            return Observable.error(new UnableDownloadException());
         }
     }
 }

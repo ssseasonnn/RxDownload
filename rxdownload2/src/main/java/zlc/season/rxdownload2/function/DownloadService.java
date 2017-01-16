@@ -20,11 +20,15 @@ import zlc.season.rxdownload2.RxDownload;
 import zlc.season.rxdownload2.db.DataBaseHelper;
 import zlc.season.rxdownload2.entity.DownloadEvent;
 import zlc.season.rxdownload2.entity.DownloadEventFactory;
-import zlc.season.rxdownload2.entity.DownloadFlag;
 import zlc.season.rxdownload2.entity.DownloadMission;
 import zlc.season.rxdownload2.entity.DownloadRecord;
 
+import static zlc.season.rxdownload2.entity.DownloadFlag.CANCELED;
+import static zlc.season.rxdownload2.entity.DownloadFlag.DELETED;
+import static zlc.season.rxdownload2.entity.DownloadFlag.PAUSED;
+import static zlc.season.rxdownload2.entity.DownloadFlag.WAITING;
 import static zlc.season.rxdownload2.function.Constant.DOWNLOAD_URL_EXISTS;
+import static zlc.season.rxdownload2.function.Utils.dispose;
 import static zlc.season.rxdownload2.function.Utils.log;
 
 /**
@@ -35,8 +39,9 @@ import static zlc.season.rxdownload2.function.Utils.log;
  */
 public class DownloadService extends Service {
     public static final String INTENT_KEY = "zlc_season_rxdownload_max_download_number";
+
     private DownloadBinder mBinder;
-    private DataBaseHelper mDataBaseHelper;
+    private DataBaseHelper mDb;
     private DownloadEventFactory mEventFactory;
 
     private volatile Map<String, FlowableProcessor<DownloadEvent>> mProcessorPool;
@@ -57,13 +62,13 @@ public class DownloadService extends Service {
         mWaitingForDownload = new LinkedList<>();
         mWaitingForDownloadLookUpMap = new HashMap<>();
         mNowDownloading = new HashMap<>();
-        mDataBaseHelper = DataBaseHelper.getSingleton(this);
+        mDb = DataBaseHelper.getSingleton(getApplicationContext());
         mEventFactory = DownloadEventFactory.getSingleton();
     }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        mDataBaseHelper.repairErrorFlag();
+        mDb.repairErrorFlag();
         if (intent != null) {
             MAX_DOWNLOAD_NUMBER = intent.getIntExtra(INTENT_KEY, 5);
         }
@@ -77,7 +82,7 @@ public class DownloadService extends Service {
         for (String each : mNowDownloading.keySet()) {
             pauseDownload(each);
         }
-        mDataBaseHelper.closeDataBase();
+        mDb.closeDataBase();
     }
 
     @Nullable
@@ -88,24 +93,22 @@ public class DownloadService extends Service {
         return mBinder;
     }
 
-    public FlowableProcessor<DownloadEvent> getProcessor(RxDownload rxDownload, String url) {
-        FlowableProcessor<DownloadEvent> processor = createAndGet(url);
-        if (!mDataBaseHelper.recordNotExists(url)) {
-            DownloadRecord record = mDataBaseHelper.readSingleRecord(url);
+    public FlowableProcessor<DownloadEvent> processor(RxDownload rxDownload, String url) {
+        FlowableProcessor<DownloadEvent> processor = processor(url);
+        if (!mDb.recordNotExists(url)) {
+            DownloadRecord record = mDb.readSingleRecord(url);
             File file = rxDownload.getRealFiles(record.getSaveName(), record.getSavePath())[0];
             if (file.exists()) {
-                processor.onNext(mEventFactory.factory(url, record.getFlag(), record.getStatus()));
+                processor.onNext(mEventFactory.create(url, record.getFlag(), record.getStatus()));
             }
         }
         return processor;
     }
 
-    public FlowableProcessor<DownloadEvent> createAndGet(String url) {
+    public FlowableProcessor<DownloadEvent> processor(String url) {
         if (mProcessorPool.get(url) == null) {
             FlowableProcessor<DownloadEvent> processor
-                    = BehaviorProcessor
-                    .createDefault(mEventFactory.factory(url, DownloadFlag.NORMAL, null))
-                    .toSerialized();
+                    = BehaviorProcessor.createDefault(mEventFactory.normal(url)).toSerialized();
             mProcessorPool.put(url, processor);
         }
         return mProcessorPool.get(url);
@@ -116,13 +119,12 @@ public class DownloadService extends Service {
         if (mWaitingForDownloadLookUpMap.get(url) != null || mNowDownloading.get(url) != null) {
             log(DOWNLOAD_URL_EXISTS);
         } else {
-            if (mDataBaseHelper.recordNotExists(url)) {
-                mDataBaseHelper.insertRecord(mission);
-                createAndGet(url).onNext(mEventFactory.factory(url, DownloadFlag.WAITING, null));
+            if (mDb.recordNotExists(url)) {
+                mDb.insertRecord(mission);
+                processor(url).onNext(mEventFactory.waiting(url));
             } else {
-                mDataBaseHelper.updateRecord(url, DownloadFlag.WAITING);
-                createAndGet(url).onNext(mEventFactory.factory(url, DownloadFlag.WAITING,
-                        mDataBaseHelper.readStatus(url)));
+                mDb.updateRecord(url, WAITING);
+                processor(url).onNext(mEventFactory.create(url, WAITING, mDb.readStatus(url)));
             }
             mWaitingForDownload.offer(mission);
             mWaitingForDownloadLookUpMap.put(url, mission);
@@ -130,33 +132,45 @@ public class DownloadService extends Service {
     }
 
     public void pauseDownload(String url) {
-        suspendDownloadAndSendEvent(url, DownloadFlag.PAUSED);
-        mDataBaseHelper.updateRecord(url, DownloadFlag.PAUSED);
+        suspendAndSend(url, PAUSED);
+        mDb.updateRecord(url, PAUSED);
     }
 
     public void cancelDownload(String url) {
-        suspendDownloadAndSendEvent(url, DownloadFlag.CANCELED);
-        mDataBaseHelper.updateRecord(url, DownloadFlag.CANCELED);
+        suspendAndSend(url, CANCELED);
+        mDb.updateRecord(url, CANCELED);
     }
 
-    public void deleteDownload(String url) {
-        suspendDownloadAndSendEvent(url, DownloadFlag.DELETED);
-        mDataBaseHelper.deleteRecord(url);
+    public void deleteDownload(String url, boolean deleteFile, RxDownload rxDownload) {
+        suspendAndSend(url, DELETED);
+        if (deleteFile) {
+            DownloadRecord record = mDb.readSingleRecord(url);
+            File[] files = rxDownload.getRealFiles(record.getSaveName(), record.getSavePath());
+            Utils.deleteFile(files);
+        }
+        mDb.deleteRecord(url);
     }
 
-    private void suspendDownloadAndSendEvent(String url, int flag) {
+    private void suspendAndSend(String url, int flag) {
         if (mWaitingForDownloadLookUpMap.get(url) != null) {
             mWaitingForDownloadLookUpMap.get(url).canceled = true;
         }
         if (mNowDownloading.get(url) != null) {
-            Utils.dispose(mNowDownloading.get(url).getDisposable());
-            createAndGet(url)
-                    .onNext(mEventFactory.factory(url, flag, mNowDownloading.get(url).getStatus()));
+            dispose(mNowDownloading.get(url).getDisposable());
+
+            processor(url).onNext(mEventFactory.create(url, flag,
+                    mNowDownloading.get(url).getStatus()));
+
             mCount.decrementAndGet();
             mNowDownloading.remove(url);
         } else {
-            createAndGet(url)
-                    .onNext(mEventFactory.factory(url, flag, mDataBaseHelper.readStatus(url)));
+            processor(url).onNext(mEventFactory.create(url, flag, mDb.readStatus(url)));
+        }
+        /**
+         * send normal event when deleted!
+         */
+        if (flag == DELETED) {
+            processor(url).onNext(mEventFactory.normal(url));
         }
     }
 
@@ -179,7 +193,7 @@ public class DownloadService extends Service {
                         continue;
                     }
                     if (mCount.get() < MAX_DOWNLOAD_NUMBER) {
-                        mission.start(mNowDownloading, mCount, mDataBaseHelper, mProcessorPool);
+                        mission.start(mNowDownloading, mCount, mDb, mProcessorPool);
                         mWaitingForDownload.remove();
                         mWaitingForDownloadLookUpMap.remove(url);
                     }

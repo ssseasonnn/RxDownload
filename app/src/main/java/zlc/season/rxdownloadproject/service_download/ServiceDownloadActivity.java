@@ -33,7 +33,8 @@ import static android.os.Environment.getExternalStoragePublicDirectory;
 public class ServiceDownloadActivity extends AppCompatActivity {
     final String saveName = "梦幻西游.apk";
     final String defaultPath = getExternalStoragePublicDirectory(DIRECTORY_DOWNLOADS).getPath();
-    final String url = "http://downali.game.uc.cn/wm/6/6/MY-1.98.0_uc_platform2_3306918_082452919a00.apk";
+    final String url
+            = "http://downali.game.uc.cn/s/1/9/20170103112151d02a45_MY-1.110.0_uc_platform2.apk";
 
     @BindView(R.id.toolbar)
     Toolbar mToolbar;
@@ -101,17 +102,17 @@ public class ServiceDownloadActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         mRxDownload.receiveDownloadStatus(url)
-                .subscribe(new Consumer<DownloadEvent>() {
-                    @Override
-                    public void accept(DownloadEvent downloadEvent) throws Exception {
-                        if (downloadEvent.getFlag() == DownloadFlag.FAILED) {
-                            Throwable throwable = downloadEvent.getError();
-                            Log.w("Error", throwable);
-                        }
-                        mDownloadController.setEvent(downloadEvent);
-                        updateProgress(downloadEvent);
-                    }
-                });
+                   .subscribe(new Consumer<DownloadEvent>() {
+                       @Override
+                       public void accept(DownloadEvent downloadEvent) throws Exception {
+                           if (downloadEvent.getFlag() == DownloadFlag.FAILED) {
+                               Throwable throwable = downloadEvent.getError();
+                               Log.w("Error", throwable);
+                           }
+                           mDownloadController.setEvent(downloadEvent);
+                           updateProgress(downloadEvent);
+                       }
+                   });
     }
 
     private void updateProgress(DownloadEvent event) {
@@ -133,22 +134,23 @@ public class ServiceDownloadActivity extends AppCompatActivity {
 
     private void start() {
         RxPermissions.getInstance(this)
-                .request(Manifest.permission.WRITE_EXTERNAL_STORAGE)
-                .doOnNext(new Consumer<Boolean>() {
-                    @Override
-                    public void accept(Boolean granted) throws Exception {
-                        if (!granted) {
-                            throw new RuntimeException("no permission");
-                        }
-                    }
-                })
-                .compose(mRxDownload.<Boolean>transformService(url, saveName, defaultPath))
-                .subscribe(new Consumer<Object>() {
-                    @Override
-                    public void accept(Object o) throws Exception {
-                        Toast.makeText(ServiceDownloadActivity.this, "下载开始", Toast.LENGTH_SHORT).show();
-                    }
-                });
+                     .request(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                     .doOnNext(new Consumer<Boolean>() {
+                         @Override
+                         public void accept(Boolean granted) throws Exception {
+                             if (!granted) {
+                                 throw new RuntimeException("no permission");
+                             }
+                         }
+                     })
+                     .compose(mRxDownload.<Boolean>transformService(url, saveName, defaultPath))
+                     .subscribe(new Consumer<Object>() {
+                         @Override
+                         public void accept(Object o) throws Exception {
+                             Toast.makeText(ServiceDownloadActivity.this, "下载开始",
+                                     Toast.LENGTH_SHORT).show();
+                         }
+                     });
     }
 
     private void pause() {

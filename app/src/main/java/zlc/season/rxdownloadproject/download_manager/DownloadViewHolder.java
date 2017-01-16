@@ -88,17 +88,18 @@ public class DownloadViewHolder extends AbstractViewHolder<DownloadBean> {
          */
         Utils.dispose(mDisposable);
         mDisposable = mRxDownload.receiveDownloadStatus(mData.mRecord.getUrl())
-                .subscribe(new Consumer<DownloadEvent>() {
-                    @Override
-                    public void accept(DownloadEvent downloadEvent) throws Exception {
-                        if (downloadEvent.getFlag() == DownloadFlag.FAILED) {
-                            Throwable throwable = downloadEvent.getError();
-                            Log.w("Error", throwable);
-                        }
-                        mDownloadController.setEvent(downloadEvent);
-                        updateProgressStatus(downloadEvent.getDownloadStatus());
-                    }
-                });
+                                 .subscribe(new Consumer<DownloadEvent>() {
+                                     @Override
+                                     public void accept(DownloadEvent downloadEvent)
+                                             throws Exception {
+                                         if (downloadEvent.getFlag() == DownloadFlag.FAILED) {
+                                             Throwable throwable = downloadEvent.getError();
+                                             Log.w("Error", throwable);
+                                         }
+                                         mDownloadController.setEvent(downloadEvent);
+                                         updateProgressStatus(downloadEvent.getDownloadStatus());
+                                     }
+                                 });
     }
 
     @OnClick({R.id.action, R.id.more})
@@ -133,7 +134,6 @@ public class DownloadViewHolder extends AbstractViewHolder<DownloadBean> {
         }
     }
 
-
     private void updateProgressStatus(DownloadStatus status) {
         mProgress.setIndeterminate(status.isChunked);
         mProgress.setMax((int) status.getTotalSize());
@@ -143,7 +143,8 @@ public class DownloadViewHolder extends AbstractViewHolder<DownloadBean> {
     }
 
     private void installApk() {
-        Uri uri = Uri.fromFile(mRxDownload.getRealFiles(mData.mRecord.getSaveName(), mData.mRecord.getSavePath())[0]);
+        Uri uri = Uri.fromFile(mRxDownload
+                .getRealFiles(mData.mRecord.getSaveName(), mData.mRecord.getSavePath())[0]);
         Intent intent = new Intent(Intent.ACTION_VIEW);
         intent.setDataAndType(uri, "application/vnd.android.package-archive");
         mContext.startActivity(intent);
@@ -155,22 +156,22 @@ public class DownloadViewHolder extends AbstractViewHolder<DownloadBean> {
         String savePath = mData.mRecord.getSavePath();
 
         RxPermissions.getInstance(mContext)
-                .request(Manifest.permission.WRITE_EXTERNAL_STORAGE)
-                .doOnNext(new Consumer<Boolean>() {
-                    @Override
-                    public void accept(Boolean granted) throws Exception {
-                        if (!granted) {
-                            throw new RuntimeException("no permission");
-                        }
-                    }
-                })
-                .compose(mRxDownload.<Boolean>transformService(url, saveName, savePath))
-                .subscribe(new Consumer<Object>() {
-                    @Override
-                    public void accept(Object o) throws Exception {
-                        Toast.makeText(mContext, "下载开始", Toast.LENGTH_SHORT).show();
-                    }
-                });
+                     .request(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                     .doOnNext(new Consumer<Boolean>() {
+                         @Override
+                         public void accept(Boolean granted) throws Exception {
+                             if (!granted) {
+                                 throw new RuntimeException("no permission");
+                             }
+                         }
+                     })
+                     .compose(mRxDownload.<Boolean>transformService(url, saveName, savePath))
+                     .subscribe(new Consumer<Object>() {
+                         @Override
+                         public void accept(Object o) throws Exception {
+                             Toast.makeText(mContext, "下载开始", Toast.LENGTH_SHORT).show();
+                         }
+                     });
     }
 
     private void pause() {
@@ -182,14 +183,14 @@ public class DownloadViewHolder extends AbstractViewHolder<DownloadBean> {
     }
 
     private void delete() {
-        mRxDownload.deleteServiceDownload(mData.mRecord.getUrl())
-                .subscribe(new Consumer<Object>() {
-                    @Override
-                    public void accept(Object o) throws Exception {
-                        Utils.dispose(mDisposable);
-                        mAdapter.remove(getAdapterPosition());
-                    }
-                });
+        mRxDownload.deleteServiceDownload(mData.mRecord.getUrl(), true)
+                   .subscribe(new Consumer<Object>() {
+                       @Override
+                       public void accept(Object o) throws Exception {
+                           Utils.dispose(mDisposable);
+                           mAdapter.remove(getAdapterPosition());
+                       }
+                   });
     }
 
     private void showPopUpWindow(View view) {

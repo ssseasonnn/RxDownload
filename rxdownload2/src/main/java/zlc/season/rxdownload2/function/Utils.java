@@ -43,6 +43,8 @@ import static zlc.season.rxdownload2.function.Constant.DIR_CREATE_FAILED;
 import static zlc.season.rxdownload2.function.Constant.DIR_CREATE_SUCCESS;
 import static zlc.season.rxdownload2.function.Constant.DIR_EXISTS_HINT;
 import static zlc.season.rxdownload2.function.Constant.DIR_NOT_EXISTS_HINT;
+import static zlc.season.rxdownload2.function.Constant.FILE_DELETE_FAILED;
+import static zlc.season.rxdownload2.function.Constant.FILE_DELETE_SUCCESS;
 import static zlc.season.rxdownload2.function.Constant.RETRY_HINT;
 import static zlc.season.rxdownload2.function.Constant.TAG;
 
@@ -295,6 +297,24 @@ public class Utils {
                 } else {
                     log(DIR_CREATE_FAILED, each);
                     throw new IOException(format(getDefault(), DIR_CREATE_FAILED, each));
+                }
+            }
+        }
+    }
+
+    /**
+     * delete files
+     *
+     * @param files files
+     */
+    public static void deleteFile(File... files) {
+        for (File each : files) {
+            if (each.exists()) {
+                boolean flag = each.delete();
+                if (flag) {
+                    log(format(getDefault(), FILE_DELETE_SUCCESS, each.getName()));
+                } else {
+                    log(format(getDefault(), FILE_DELETE_FAILED, each.getName()));
                 }
             }
         }

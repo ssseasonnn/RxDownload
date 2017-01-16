@@ -162,7 +162,7 @@ public class RxDownload {
         }).flatMapObservable(new Function<Object, ObservableSource<? extends DownloadEvent>>() {
             @Override
             public ObservableSource<? extends DownloadEvent> apply(Object o) throws Exception {
-                return mDownloadService.getProcessor(RxDownload.this, url).toObservable();
+                return mDownloadService.processor(RxDownload.this, url).toObservable();
             }
         }).observeOn(AndroidSchedulers.mainThread());
     }
@@ -238,15 +238,17 @@ public class RxDownload {
      * 删除Service中下载地址为url的下载任务.
      * <p>
      * 同时从数据库中删除该下载记录.
-     * 不会删除已经下载的文件.
+     * <p>
+     * when deleteFile is true, the downloaded file will be deleted.
      *
-     * @param url download url
+     * @param url        download url
+     * @param deleteFile whether delete  file
      */
-    public Observable<?> deleteServiceDownload(final String url) {
+    public Observable<?> deleteServiceDownload(final String url, final boolean deleteFile) {
         return createGeneralObservable(new GeneralObservableCallback() {
             @Override
             public void call() {
-                mDownloadService.deleteDownload(url);
+                mDownloadService.deleteDownload(url, deleteFile, RxDownload.this);
             }
         });
     }

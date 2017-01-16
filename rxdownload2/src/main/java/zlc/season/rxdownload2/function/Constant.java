@@ -64,4 +64,6 @@ public final class Constant {
             "Path [%s] not exists, so create.";
     public static final String DIR_CREATE_SUCCESS = "Path [%s] create success.";
     public static final String DIR_CREATE_FAILED = "Path [%s] create failed.";
+    public static final String FILE_DELETE_SUCCESS = "File [%s] delete success.";
+    public static final String FILE_DELETE_FAILED = "File [%s] delete failed.";
 }

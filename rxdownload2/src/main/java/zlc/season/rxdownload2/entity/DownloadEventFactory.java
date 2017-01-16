@@ -2,10 +2,11 @@ package zlc.season.rxdownload2.entity;
 
 import android.support.annotation.NonNull;
 
-import android.support.annotation.NonNull;
-
 import java.util.HashMap;
 import java.util.Map;
+
+import static zlc.season.rxdownload2.entity.DownloadFlag.NORMAL;
+import static zlc.season.rxdownload2.entity.DownloadFlag.WAITING;
 
 /**
  * Author: Season(ssseasonnn@gmail.com)
@@ -31,13 +32,21 @@ public class DownloadEventFactory {
         return singleton;
     }
 
-    public DownloadEvent factory(String url, int flag, DownloadStatus status) {
+    public DownloadEvent normal(String url) {
+        return create(url, NORMAL, null);
+    }
+
+    public DownloadEvent waiting(String url) {
+        return create(url, WAITING, null);
+    }
+
+    public DownloadEvent create(String url, int flag, DownloadStatus status) {
         DownloadEvent event = createEvent(url, flag, status);
         event.setError(null);
         return event;
     }
 
-    public DownloadEvent factory(String url, int flag, DownloadStatus status, Throwable throwable) {
+    public DownloadEvent create(String url, int flag, DownloadStatus status, Throwable throwable) {
         DownloadEvent event = createEvent(url, flag, status);
         event.setError(throwable);
         return event;
@@ -54,5 +63,4 @@ public class DownloadEventFactory {
         event.setFlag(flag);
         return event;
     }
-
 }

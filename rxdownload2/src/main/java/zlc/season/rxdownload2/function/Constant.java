@@ -50,7 +50,7 @@ public final class Constant {
             "[%s] start download! From [%s] to [%s] !";
 
     public static final String RANGE_DOWNLOAD_COMPLETED =
-            "[%s] download completed! Download size is [%d] bytes!";
+            "[%s] download completed!";
 
     public static final String RANGE_DOWNLOAD_FAILED =
             "[%s] download failed or cancel!";

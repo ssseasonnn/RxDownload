@@ -118,8 +118,6 @@ public abstract class DownloadType {
 
     static class ContinueDownload extends DownloadType {
 
-        DownloadRange mRange;
-
         @Override
         public void prepareDownload() throws IOException, ParseException {
             log(prepareLog());
@@ -183,7 +181,7 @@ public abstract class DownloadType {
                         @Override
                         public void subscribe(FlowableEmitter<DownloadRange> emitter)
                                 throws Exception {
-                            mRange = mDownloadHelper.readDownloadRange(mUrl, index);
+                            DownloadRange mRange = mDownloadHelper.readDownloadRange(mUrl, index);
                             if (mRange.legal()) {
                                 emitter.onNext(mRange);
                             }
@@ -207,23 +205,28 @@ public abstract class DownloadType {
                     .doOnComplete(new Action() {
                         @Override
                         public void run() throws Exception {
-                            log(RANGE_DOWNLOAD_COMPLETED, currentThread().getName(), mRange.size);
+                            log(RANGE_DOWNLOAD_COMPLETED, currentThread().getName());
                         }
                     })
-                    .flatMap(new Function<DownloadRange, Publisher<Response<ResponseBody>>>() {
+                    .flatMap(new Function<DownloadRange, Publisher<DownloadStatus>>() {
                         @Override
-                        public Publisher<Response<ResponseBody>> apply(final DownloadRange range)
+                        public Publisher<DownloadStatus> apply(final DownloadRange range)
                                 throws Exception {
+
                             String rangeStr = "bytes=" + range.start + "-" + range.end;
-                            return mDownloadHelper.getDownloadApi().download(rangeStr, mUrl);
-                        }
-                    })
-                    .flatMap(new Function<Response<ResponseBody>,
-                            Publisher<DownloadStatus>>() {
-                        @Override
-                        public Publisher<DownloadStatus> apply(Response<ResponseBody> resp)
-                                throws Exception {
-                            return rangeSave(mRange.start, mRange.end, index, resp.body());
+                            return mDownloadHelper
+                                    .getDownloadApi()
+                                    .download(rangeStr, mUrl)
+                                    .flatMap(new Function<Response<ResponseBody>,
+                                            Publisher<DownloadStatus>>() {
+                                        @Override
+                                        public Publisher<DownloadStatus> apply(
+                                                Response<ResponseBody> resp)
+                                                throws Exception {
+                                            return rangeSave(range.start, range.end,
+                                                    index, resp.body());
+                                        }
+                                    });
                         }
                     })
                     .compose(Utils.<DownloadStatus>retry2(mDownloadHelper.getMaxRetryCount()));

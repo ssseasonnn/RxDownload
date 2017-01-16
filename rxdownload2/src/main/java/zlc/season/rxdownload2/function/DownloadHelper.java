@@ -11,7 +11,6 @@ import java.util.Map;
 import io.reactivex.FlowableEmitter;
 import io.reactivex.Observable;
 import io.reactivex.ObservableSource;
-import io.reactivex.exceptions.CompositeException;
 import io.reactivex.functions.Action;
 import io.reactivex.functions.Consumer;
 import io.reactivex.functions.Function;
@@ -103,7 +102,8 @@ public class DownloadHelper {
                 getFile(url), fileLength, lastModify);
     }
 
-    public void saveNormalFile(FlowableEmitter<DownloadStatus> emitter,
+    public void saveNormalFile(
+            FlowableEmitter<DownloadStatus> emitter,
             String url, Response<ResponseBody> resp) {
 
         mFileHelper.saveFile(emitter, getFile(url), resp);
@@ -114,7 +114,8 @@ public class DownloadHelper {
         return mFileHelper.readDownloadRange(getTempFile(url), i);
     }
 
-    public void prepareMultiThreadDownload(String url, long fileLength, String lastModify)
+    public void prepareMultiThreadDownload(
+            String url, long fileLength, String lastModify)
             throws IOException, ParseException {
 
         mFileHelper.prepareDownload(getLastModifyFile(url),
@@ -122,7 +123,8 @@ public class DownloadHelper {
                 fileLength, lastModify);
     }
 
-    public void saveRangeFile(FlowableEmitter<DownloadStatus> emitter,
+    public void saveRangeFile(
+            FlowableEmitter<DownloadStatus> emitter,
             int i, long start, long end,
             String url, ResponseBody response) {
 
@@ -130,6 +132,17 @@ public class DownloadHelper {
                 getTempFile(url), getFile(url), response);
     }
 
+    /**
+     * dispatch download
+     *
+     * @param url         url for download
+     * @param saveName    save name
+     * @param savePath    save path
+     * @param context     context
+     * @param autoInstall auto install
+     *
+     * @return DownloadStatus
+     */
     public Observable<DownloadStatus> downloadDispatcher(final String url,
             final String saveName, final String savePath,
             final Context context, final boolean autoInstall) {
@@ -158,7 +171,7 @@ public class DownloadHelper {
                 .doOnError(new Consumer<Throwable>() {
                     @Override
                     public void accept(Throwable throwable) throws Exception {
-                        logThrowable(throwable);
+                        log(throwable);
                     }
                 })
                 .doFinally(new Action() {
@@ -169,6 +182,15 @@ public class DownloadHelper {
                 });
     }
 
+    /**
+     * some server such IIS does not support HEAD method, use GET.
+     *
+     * @param url url
+     *
+     * @return DownloadType
+     *
+     * @throws IOException
+     */
     public Observable<DownloadType> notSupportHead(final String url)
             throws IOException {
 
@@ -178,7 +200,6 @@ public class DownloadHelper {
                     @Override
                     public DownloadType apply(Response<Void> response)
                             throws Exception {
-
                         if (serverFileNotChange(response)) {
                             return getWhenServerFileNotChange(response, url);
                         } else if (serverFileChanged(response)) {
@@ -189,14 +210,6 @@ public class DownloadHelper {
                     }
                 })
                 .compose(Utils.<DownloadType>retry(MAX_RETRY_COUNT));
-    }
-
-    private void logThrowable(Throwable throwable) {
-        if (throwable instanceof CompositeException) {
-            log(throwable.getMessage());
-        } else {
-            log(throwable);
-        }
     }
 
     private void autoInstall(boolean autoInstall, Context context,
@@ -221,7 +234,7 @@ public class DownloadHelper {
     private void addDownloadRecord(String url, String saveName, String savePath)
             throws IOException {
 
-        mFileHelper.createDirectories(savePath);
+        mFileHelper.createDownloadDirs(savePath);
         mDownloadRecord.put(url, getRealFilePaths(saveName, savePath));
     }
 
@@ -354,14 +367,14 @@ public class DownloadHelper {
         long contentLength = contentLength(resp);
         try {
             if (needReDownload(url, contentLength)) {
-                return typeFactory.multithread(url, contentLength(resp), lastModify(resp));
+                return typeFactory.multithread(url, contentLength, lastModify(resp));
             }
             if (downloadNotComplete(url)) {
                 return typeFactory.continued(url, contentLength, lastModify(resp));
             }
         } catch (IOException e) {
             log(DOWNLOAD_RECORD_FILE_DAMAGED);
-            return typeFactory.multithread(url, contentLength(resp), lastModify(resp));
+            return typeFactory.multithread(url, contentLength, lastModify(resp));
         }
         return typeFactory.already(contentLength);
     }
@@ -369,7 +382,7 @@ public class DownloadHelper {
     private DownloadType getWhenNotSupportRange(Response<Void> resp, String url) {
         long contentLength = contentLength(resp);
         if (downloadNotComplete(url, contentLength)) {
-            return typeFactory.normal(url, contentLength(resp), lastModify(resp));
+            return typeFactory.normal(url, contentLength, lastModify(resp));
         } else {
             return typeFactory.already(contentLength);
         }

@@ -36,6 +36,7 @@ import okhttp3.internal.http.HttpHeaders;
 import retrofit2.Response;
 
 import static java.lang.String.format;
+import static java.lang.Thread.currentThread;
 import static java.util.Locale.getDefault;
 import static java.util.TimeZone.getTimeZone;
 import static zlc.season.rxdownload2.function.Constant.DIR_CREATE_FAILED;
@@ -62,9 +63,28 @@ public class Utils {
     }
 
     public static void log(Throwable throwable) {
-        Log.w(TAG, throwable);
+        if (throwable instanceof CompositeException) {
+            Log.w(TAG, throwable.getMessage());
+        } else {
+            Log.w(TAG, throwable);
+        }
     }
 
+    public static boolean notEmpty(String string) {
+        return !TextUtils.isEmpty(string);
+    }
+
+    public static boolean empty(String string) {
+        return TextUtils.isEmpty(string);
+    }
+
+    /**
+     * convert long to GMT string
+     *
+     * @param lastModify long
+     *
+     * @return String
+     */
     public static String longToGMT(long lastModify) {
         Date d = new Date(lastModify);
         SimpleDateFormat sdf = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss z", Locale.US);
@@ -72,6 +92,15 @@ public class Utils {
         return sdf.format(d);
     }
 
+    /**
+     * convert GMT string to long
+     *
+     * @param GMT String
+     *
+     * @return long
+     *
+     * @throws ParseException
+     */
     public static long GMTToLong(String GMT) throws ParseException {
         if (GMT == null || "".equals(GMT)) {
             return new Date().getTime();
@@ -171,6 +200,13 @@ public class Utils {
         context.startActivity(intent);
     }
 
+    /**
+     * Format file size to String
+     *
+     * @param size long
+     *
+     * @return String
+     */
     public static String formatSize(long size) {
         String hrSize;
         double b = size;
@@ -196,50 +232,56 @@ public class Utils {
     public static Boolean retry(int MAX_RETRY_COUNT, Integer integer, Throwable throwable) {
         if (throwable instanceof ProtocolException) {
             if (integer < MAX_RETRY_COUNT + 1) {
-                log(RETRY_HINT, Thread.currentThread().getName(), "ProtocolException", integer);
+                log(RETRY_HINT, currentThread().getName(), "ProtocolException", integer);
                 return true;
             }
             return false;
         } else if (throwable instanceof UnknownHostException) {
             if (integer < MAX_RETRY_COUNT + 1) {
-                log(RETRY_HINT, Thread.currentThread().getName(), "UnknownHostException", integer);
+                log(RETRY_HINT, currentThread().getName(), "UnknownHostException", integer);
                 return true;
             }
             return false;
         } else if (throwable instanceof HttpException) {
             if (integer < MAX_RETRY_COUNT + 1) {
-                log(RETRY_HINT, Thread.currentThread().getName(), "HttpException", integer);
+                log(RETRY_HINT, currentThread().getName(), "HttpException", integer);
                 return true;
             }
             return false;
         } else if (throwable instanceof SocketTimeoutException) {
             if (integer < MAX_RETRY_COUNT + 1) {
-                log(RETRY_HINT, Thread.currentThread().getName(), "SocketTimeoutException",
-                        integer);
+                log(RETRY_HINT, currentThread().getName(), "SocketTimeoutException", integer);
                 return true;
             }
             return false;
         } else if (throwable instanceof ConnectException) {
             if (integer < MAX_RETRY_COUNT + 1) {
-                log(RETRY_HINT, Thread.currentThread().getName(), "ConnectException", integer);
+                log(RETRY_HINT, currentThread().getName(), "ConnectException", integer);
                 return true;
             }
             return false;
         } else if (throwable instanceof SocketException) {
             if (integer < MAX_RETRY_COUNT + 1) {
-                log(RETRY_HINT, Thread.currentThread().getName(), "SocketException", integer);
+                log(RETRY_HINT, currentThread().getName(), "SocketException", integer);
                 return true;
             }
             return false;
         } else if (throwable instanceof CompositeException) {
-            log(RETRY_HINT, Thread.currentThread().getName(), throwable.getMessage(), integer);
+            log(RETRY_HINT, currentThread().getName(), throwable.getMessage(), integer);
             return false;
         } else {
-            log(throwable);
+//            log(throwable);
             return false;
         }
     }
 
+    /**
+     * create dirs with params path
+     *
+     * @param paths paths
+     *
+     * @throws IOException
+     */
     public static void mkdirs(String... paths) throws IOException {
         for (String each : paths) {
             File file = new File(each);

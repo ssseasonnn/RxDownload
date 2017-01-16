@@ -1,7 +1,5 @@
 ﻿package zlc.season.rxdownload2.function;
 
-import android.text.TextUtils;
-
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -22,17 +20,19 @@ import static android.os.Environment.DIRECTORY_DOWNLOADS;
 import static android.os.Environment.getExternalStoragePublicDirectory;
 import static android.text.TextUtils.concat;
 import static java.io.File.separator;
+import static java.lang.Thread.currentThread;
 import static java.nio.channels.FileChannel.MapMode.READ_WRITE;
 import static zlc.season.rxdownload2.function.Constant.CHUNKED_DOWNLOAD_HINT;
-import static zlc.season.rxdownload2.function.Constant.NORMAL_DOWNLOAD_COMPLETED;
-import static zlc.season.rxdownload2.function.Constant.NORMAL_DOWNLOAD_FAILED;
 import static zlc.season.rxdownload2.function.Constant.RANGE_DOWNLOAD_COMPLETED;
 import static zlc.season.rxdownload2.function.Constant.RANGE_DOWNLOAD_FAILED;
 import static zlc.season.rxdownload2.function.Constant.RANGE_DOWNLOAD_STARTED;
+import static zlc.season.rxdownload2.function.Utils.GMTToLong;
 import static zlc.season.rxdownload2.function.Utils.closeQuietly;
+import static zlc.season.rxdownload2.function.Utils.isChunked;
 import static zlc.season.rxdownload2.function.Utils.log;
 import static zlc.season.rxdownload2.function.Utils.longToGMT;
 import static zlc.season.rxdownload2.function.Utils.mkdirs;
+import static zlc.season.rxdownload2.function.Utils.notEmpty;
 
 /**
  * Author: Season(ssseasonnn@gmail.com)
@@ -80,7 +80,7 @@ public class FileHelper {
         RECORD_FILE_TOTAL_SIZE = EACH_RECORD_SIZE * MAX_THREADS;
     }
 
-    void createDirectories(String savePath)
+    void createDownloadDirs(String savePath)
             throws IOException {
         mkdirs(getRealDirectoryPaths(savePath));
     }
@@ -88,7 +88,7 @@ public class FileHelper {
     String[] getRealDirectoryPaths(String savePath) {
         String fileDirectory;
         String cacheDirectory;
-        if (!TextUtils.isEmpty(savePath)) {
+        if (notEmpty(savePath)) {
             fileDirectory = savePath;
             cacheDirectory = concat(savePath, separator, CACHE).toString();
         } else {
@@ -131,7 +131,7 @@ public class FileHelper {
 
                 long contentLength = resp.body().contentLength();
 
-                boolean isChunked = Utils.isChunked(resp);
+                boolean isChunked = isChunked(resp);
                 if (isChunked || contentLength == -1) {
                     status.isChunked = true;
                 }
@@ -147,14 +147,12 @@ public class FileHelper {
 
                 outputStream.flush(); // This is important!!!
                 emitter.onComplete();
-                log(NORMAL_DOWNLOAD_COMPLETED);
             } finally {
                 closeQuietly(inputStream);
                 closeQuietly(outputStream);
                 closeQuietly(resp.body());
             }
         } catch (IOException e) {
-            log(NORMAL_DOWNLOAD_FAILED);
             emitter.onError(e);
         }
     }
@@ -196,7 +194,7 @@ public class FileHelper {
                 MappedByteBuffer saveBuffer = saveChannel.map(READ_WRITE, start, end - start + 1);
                 inStream = response.byteStream();
 
-                log(RANGE_DOWNLOAD_STARTED, Thread.currentThread().getName(), start, end);
+                log(RANGE_DOWNLOAD_STARTED, currentThread().getName(), start, end);
 
                 while ((readLen = inStream.read(buffer)) != -1) {
                     saveBuffer.put(buffer, 0, readLen);
@@ -206,8 +204,7 @@ public class FileHelper {
                     emitter.onNext(status);
                 }
 
-                log(RANGE_DOWNLOAD_COMPLETED, Thread.currentThread().getName(),
-                        response.contentLength() + "");
+                log(RANGE_DOWNLOAD_COMPLETED, currentThread().getName(), response.contentLength());
                 emitter.onComplete();
             } finally {
                 closeQuietly(record);
@@ -218,7 +215,7 @@ public class FileHelper {
                 closeQuietly(response);
             }
         } catch (IOException e) {
-            log(RANGE_DOWNLOAD_FAILED, Thread.currentThread().getName());
+            log(RANGE_DOWNLOAD_FAILED, currentThread().getName());
             emitter.onError(e);
         }
     }
@@ -360,7 +357,7 @@ public class FileHelper {
             record = new RandomAccessFile(file, "rws");
             record.setLength(8);
             record.seek(0);
-            record.writeLong(Utils.GMTToLong(lastModify));
+            record.writeLong(GMTToLong(lastModify));
         } finally {
             closeQuietly(record);
         }

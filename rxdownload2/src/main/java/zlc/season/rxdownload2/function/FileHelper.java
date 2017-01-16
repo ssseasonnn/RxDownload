@@ -20,12 +20,8 @@ import static android.os.Environment.DIRECTORY_DOWNLOADS;
 import static android.os.Environment.getExternalStoragePublicDirectory;
 import static android.text.TextUtils.concat;
 import static java.io.File.separator;
-import static java.lang.Thread.currentThread;
 import static java.nio.channels.FileChannel.MapMode.READ_WRITE;
 import static zlc.season.rxdownload2.function.Constant.CHUNKED_DOWNLOAD_HINT;
-import static zlc.season.rxdownload2.function.Constant.RANGE_DOWNLOAD_COMPLETED;
-import static zlc.season.rxdownload2.function.Constant.RANGE_DOWNLOAD_FAILED;
-import static zlc.season.rxdownload2.function.Constant.RANGE_DOWNLOAD_STARTED;
 import static zlc.season.rxdownload2.function.Utils.GMTToLong;
 import static zlc.season.rxdownload2.function.Utils.closeQuietly;
 import static zlc.season.rxdownload2.function.Utils.isChunked;
@@ -38,7 +34,8 @@ import static zlc.season.rxdownload2.function.Utils.notEmpty;
  * Author: Season(ssseasonnn@gmail.com)
  * Date: 2016/11/17
  * Time: 10:35
- * FIXME
+ * <p>
+ * File Helper
  */
 public class FileHelper {
 
@@ -194,8 +191,6 @@ public class FileHelper {
                 MappedByteBuffer saveBuffer = saveChannel.map(READ_WRITE, start, end - start + 1);
                 inStream = response.byteStream();
 
-                log(RANGE_DOWNLOAD_STARTED, currentThread().getName(), start, end);
-
                 while ((readLen = inStream.read(buffer)) != -1) {
                     saveBuffer.put(buffer, 0, readLen);
                     recordBuffer.putLong(i * EACH_RECORD_SIZE,
@@ -203,8 +198,6 @@ public class FileHelper {
                     status.setDownloadSize(totalSize - getResidue(recordBuffer));
                     emitter.onNext(status);
                 }
-
-                log(RANGE_DOWNLOAD_COMPLETED, currentThread().getName(), response.contentLength());
                 emitter.onComplete();
             } finally {
                 closeQuietly(record);
@@ -215,7 +208,6 @@ public class FileHelper {
                 closeQuietly(response);
             }
         } catch (IOException e) {
-            log(RANGE_DOWNLOAD_FAILED, currentThread().getName());
             emitter.onError(e);
         }
     }

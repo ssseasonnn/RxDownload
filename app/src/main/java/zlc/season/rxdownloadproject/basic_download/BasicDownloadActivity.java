@@ -106,7 +106,7 @@ public class BasicDownloadActivity extends AppCompatActivity {
         mRxDownload = RxDownload.getInstance()
                 .maxThread(10)
                 .context(this)      // 自动安装需要Context
-                .autoInstall(true); //下载完成自动安装
+                .autoInstall(false); //下载完成自动安装
         mDownloadController = new DownloadController(mStatus, mAction);
         mDownloadController.setState(new DownloadController.Normal());
     }

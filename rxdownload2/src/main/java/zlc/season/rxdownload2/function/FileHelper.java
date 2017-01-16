@@ -1,4 +1,4 @@
-﻿package zlc.season.rxdownload2.function;
+package zlc.season.rxdownload2.function;
 
 import java.io.File;
 import java.io.FileOutputStream;

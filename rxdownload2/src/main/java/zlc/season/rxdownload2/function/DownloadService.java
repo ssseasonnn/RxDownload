@@ -1,4 +1,4 @@
-﻿package zlc.season.rxdownload2.function;
+package zlc.season.rxdownload2.function;
 
 import android.app.Service;
 import android.content.Intent;

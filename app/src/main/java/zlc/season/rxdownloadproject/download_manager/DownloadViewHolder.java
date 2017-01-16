@@ -1,4 +1,4 @@
-﻿package zlc.season.rxdownloadproject.download_manager;
+package zlc.season.rxdownloadproject.download_manager;
 
 import android.Manifest;
 import android.content.Context;

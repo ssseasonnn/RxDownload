@@ -191,11 +191,11 @@ public abstract class DownloadType {
                         }
                     }, BackpressureStrategy.ERROR)
                     .subscribeOn(Schedulers.io())
-                    .doOnSubscribe(new Consumer<Subscription>() {
+                    .doOnNext(new Consumer<DownloadRange>() {
                         @Override
-                        public void accept(Subscription subscription) throws Exception {
+                        public void accept(DownloadRange range) throws Exception {
                             log(RANGE_DOWNLOAD_STARTED, currentThread().getName(),
-                                    mRange.start, mRange.end);
+                                    range.start, range.end);
                         }
                     })
                     .doOnError(new Consumer<Throwable>() {

@@ -1,4 +1,4 @@
-﻿package zlc.season.rxdownload2.entity;
+package zlc.season.rxdownload2.entity;
 
 import android.util.Log;
 

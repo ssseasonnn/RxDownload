@@ -71,7 +71,7 @@ RxDownload 现在支持RxJava2, 只需将包名改为 ```zlc.season.rxdownload2.
 
 ```groovy
 	dependencies{
-   		 compile 'zlc.season:rxdownload2:1.1.0'
+   		 compile 'zlc.season:rxdownload2:1.1.1'
 	}
 ```
 

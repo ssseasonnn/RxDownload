@@ -159,6 +159,15 @@ public class DataBaseHelper {
                 new String[]{DownloadFlag.WAITING + "", DownloadFlag.STARTED + ""});
     }
 
+    /**
+     * 获得url对应的下载记录
+     * <p>
+     * ps: 如果数据库中没有记录，则返回一个空的DownloadRecord.
+     *
+     * @param url url
+     *
+     * @return record
+     */
     public Observable<DownloadRecord> readRecord(final String url) {
         return Observable.create(new ObservableOnSubscribe<DownloadRecord>() {
             @Override
@@ -167,7 +176,10 @@ public class DataBaseHelper {
                 try {
                     cursor = getReadableDatabase().rawQuery("select * from " + TABLE_NAME +
                             " where " + "url=?", new String[]{url});
-                    while (cursor.moveToNext()) {
+                    if (cursor.getCount() == 0) {
+                        emitter.onNext(new DownloadRecord());
+                    } else {
+                        cursor.moveToFirst();
                         emitter.onNext(Db.RecordTable.read(cursor));
                     }
                     emitter.onComplete();

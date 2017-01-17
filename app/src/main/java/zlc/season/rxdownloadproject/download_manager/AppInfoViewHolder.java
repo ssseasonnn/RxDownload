@@ -87,7 +87,7 @@ public class AppInfoViewHolder extends AbstractViewHolder<AppInfoBean> {
                     public void accept(DownloadEvent downloadEvent) throws Exception {
                         if (downloadEvent.getFlag() == DownloadFlag.FAILED) {
                             Throwable throwable = downloadEvent.getError();
-                            Log.w("aaa", throwable);
+                            Log.w("TAG", throwable);
                         }
                         mDownloadController.setEvent(downloadEvent);
                     }

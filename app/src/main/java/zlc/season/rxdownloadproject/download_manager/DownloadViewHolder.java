@@ -94,7 +94,7 @@ public class DownloadViewHolder extends AbstractViewHolder<DownloadBean> {
                                              throws Exception {
                                          if (downloadEvent.getFlag() == DownloadFlag.FAILED) {
                                              Throwable throwable = downloadEvent.getError();
-                                             Log.w("aaa", throwable);
+                                             Log.w("TAG", throwable);
                                          }
                                          mDownloadController.setEvent(downloadEvent);
                                          updateProgressStatus(downloadEvent.getDownloadStatus());

@@ -14,16 +14,16 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.squareup.picasso.Picasso;
-import com.tbruyelle.rxpermissions.RxPermissions;
+import com.tbruyelle.rxpermissions2.RxPermissions;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
-import rx.functions.Action1;
-import zlc.season.rxdownload.RxDownload;
-import zlc.season.rxdownload.entity.DownloadEvent;
-import zlc.season.rxdownload.entity.DownloadFlag;
-import zlc.season.rxdownload.entity.DownloadStatus;
+import io.reactivex.functions.Consumer;
+import zlc.season.rxdownload2.RxDownload;
+import zlc.season.rxdownload2.entity.DownloadEvent;
+import zlc.season.rxdownload2.entity.DownloadFlag;
+import zlc.season.rxdownload2.entity.DownloadStatus;
 import zlc.season.rxdownloadproject.DownloadController;
 import zlc.season.rxdownloadproject.R;
 
@@ -33,7 +33,8 @@ import static android.os.Environment.getExternalStoragePublicDirectory;
 public class ServiceDownloadActivity extends AppCompatActivity {
     final String saveName = "梦幻西游.apk";
     final String defaultPath = getExternalStoragePublicDirectory(DIRECTORY_DOWNLOADS).getPath();
-    final String url = "http://downali.game.uc.cn/wm/6/6/MY-1.98.0_uc_platform2_3306918_082452919a00.apk";
+    final String url
+            = "http://downali.game.uc.cn/s/1/9/20170103112151d02a45_MY-1.110.0_uc_platform2.apk";
 
     @BindView(R.id.toolbar)
     Toolbar mToolbar;
@@ -101,17 +102,17 @@ public class ServiceDownloadActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         mRxDownload.receiveDownloadStatus(url)
-                .subscribe(new Action1<DownloadEvent>() {
-                    @Override
-                    public void call(DownloadEvent event) {
-                        if (event.getFlag() == DownloadFlag.FAILED) {
-                            Throwable throwable = event.getError();
-                            Log.w("Error", throwable);
-                        }
-                        mDownloadController.setEvent(event);
-                        updateProgress(event);
-                    }
-                });
+                   .subscribe(new Consumer<DownloadEvent>() {
+                       @Override
+                       public void accept(DownloadEvent downloadEvent) throws Exception {
+                           if (downloadEvent.getFlag() == DownloadFlag.FAILED) {
+                               Throwable throwable = downloadEvent.getError();
+                               Log.w("Error", throwable);
+                           }
+                           mDownloadController.setEvent(downloadEvent);
+                           updateProgress(downloadEvent);
+                       }
+                   });
     }
 
     private void updateProgress(DownloadEvent event) {
@@ -133,22 +134,23 @@ public class ServiceDownloadActivity extends AppCompatActivity {
 
     private void start() {
         RxPermissions.getInstance(this)
-                .request(Manifest.permission.WRITE_EXTERNAL_STORAGE)
-                .doOnNext(new Action1<Boolean>() {
-                    @Override
-                    public void call(Boolean granted) {
-                        if (!granted) {
-                            throw new RuntimeException("no permission");
-                        }
-                    }
-                })
-                .compose(mRxDownload.transformService(url, saveName, defaultPath))
-                .subscribe(new Action1<Object>() {
-                    @Override
-                    public void call(Object o) {
-                        Toast.makeText(ServiceDownloadActivity.this, "下载开始", Toast.LENGTH_SHORT).show();
-                    }
-                });
+                     .request(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                     .doOnNext(new Consumer<Boolean>() {
+                         @Override
+                         public void accept(Boolean granted) throws Exception {
+                             if (!granted) {
+                                 throw new RuntimeException("no permission");
+                             }
+                         }
+                     })
+                     .compose(mRxDownload.<Boolean>transformService(url, saveName, defaultPath))
+                     .subscribe(new Consumer<Object>() {
+                         @Override
+                         public void accept(Object o) throws Exception {
+                             Toast.makeText(ServiceDownloadActivity.this, "下载开始",
+                                     Toast.LENGTH_SHORT).show();
+                         }
+                     });
     }
 
     private void pause() {

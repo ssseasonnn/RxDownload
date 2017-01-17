@@ -1,16 +1,17 @@
-apply plugin: 'com.android.application'
-apply plugin: 'android-apt'
+apply plugin: 'com.android.library'
 
 android {
     compileSdkVersion 25
     buildToolsVersion "25"
+
     defaultConfig {
-        applicationId "zlc.season.rxdownloadproject"
         minSdkVersion 11
         targetSdkVersion 25
         versionCode 1
         versionName "1.0"
+
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+
     }
     buildTypes {
         release {
@@ -26,12 +27,17 @@ dependencies {
         exclude group: 'com.android.support', module: 'support-annotations'
     })
     compile 'com.android.support:appcompat-v7:25.0.1'
-    compile 'com.android.support:design:25.0.1'
-    compile 'com.jakewharton:butterknife:8.4.0'
-    apt 'com.jakewharton:butterknife-compiler:8.4.0'
-    compile 'com.squareup.picasso:picasso:2.5.2'
-    compile 'zlc.season:practicalrecyclerview:1.0.8'
-    compile 'com.tbruyelle.rxpermissions2:rxpermissions:0.8.2@aar'
     testCompile 'junit:junit:4.12'
-    compile project(':rxdownload2')
+    //retrofit
+    compile 'com.squareup.retrofit2:retrofit:2.1.0'
+    compile 'com.squareup.retrofit2:converter-gson:2.1.0'
+    compile 'com.jakewharton.retrofit:retrofit2-rxjava2-adapter:1.0.0'
+
+    compile 'com.squareup.okhttp3:okhttp:3.4.1'
+    compile 'com.squareup.okhttp3:logging-interceptor:3.4.1'
+
+    compile 'io.reactivex.rxjava2:rxjava:2.0.1'
+    compile 'io.reactivex.rxjava2:rxandroid:2.0.1'
 }
+
+apply from: "bintray.gradle"

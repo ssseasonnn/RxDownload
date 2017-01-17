@@ -1,0 +1,9 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+          package="zlc.season.rxdownload2">
+
+    <application>
+        <service
+            android:name="zlc.season.rxdownload2.function.DownloadService"/>
+    </application>
+
+</manifest>

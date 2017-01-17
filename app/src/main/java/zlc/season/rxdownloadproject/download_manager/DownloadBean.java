@@ -1,7 +1,7 @@
 package zlc.season.rxdownloadproject.download_manager;
 
 import zlc.season.practicalrecyclerview.ItemType;
-import zlc.season.rxdownload.entity.DownloadRecord;
+import zlc.season.rxdownload2.entity.DownloadRecord;
 
 /**
  * Author: Season(ssseasonnn@gmail.com)

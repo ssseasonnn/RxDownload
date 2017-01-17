@@ -168,7 +168,7 @@ public class RxDownload {
     }
 
     /**
-     * Read all the download record from the database
+     * Read all the download record from the database.
      * 从数据库中读取所有的下载记录
      *
      * @return Observable<List<DownloadRecord>>
@@ -184,7 +184,10 @@ public class RxDownload {
 
     /**
      * Read single download record with url.
-     * 从数据库中读取下载地址为url的下载记录
+     * If record exists, return correct record, else return empty record.
+     * <p>
+     * 从数据库中读取下载地址为url的下载记录, 如果数据库中存在该记录，则正常返回.
+     * 如果不存在该记录，则返回一个空的DownloadRecord(url = null, saveName = null.)
      *
      * @param url download url
      *

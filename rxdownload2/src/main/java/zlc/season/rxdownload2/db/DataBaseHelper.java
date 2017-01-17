@@ -54,6 +54,10 @@ public class DataBaseHelper {
         return singleton;
     }
 
+    public boolean recordExists(String url) {
+        return !recordNotExists(url);
+    }
+
     public boolean recordNotExists(String url) {
         Cursor cursor = null;
         try {
@@ -86,7 +90,8 @@ public class DataBaseHelper {
     public DownloadRecord readSingleRecord(String url) {
         Cursor cursor = null;
         try {
-            cursor = getReadableDatabase().rawQuery("select * from " + TABLE_NAME + " where url=?", new String[]{url});
+            cursor = getReadableDatabase()
+                    .rawQuery("select * from " + TABLE_NAME + " where url=?", new String[]{url});
             cursor.moveToFirst();
             return Db.RecordTable.read(cursor);
         } finally {
@@ -100,7 +105,8 @@ public class DataBaseHelper {
         Cursor cursor = null;
         try {
             cursor = getReadableDatabase().query(
-                    TABLE_NAME, new String[]{COLUMN_DOWNLOAD_SIZE, COLUMN_TOTAL_SIZE, COLUMN_IS_CHUNKED},
+                    TABLE_NAME,
+                    new String[]{COLUMN_DOWNLOAD_SIZE, COLUMN_TOTAL_SIZE, COLUMN_IS_CHUNKED},
                     "url=?", new String[]{url}, null, null, null);
             if (cursor.getCount() == 0) {
                 return new DownloadStatus();
@@ -126,10 +132,12 @@ public class DataBaseHelper {
     public Observable<List<DownloadRecord>> readAllRecords() {
         return Observable.create(new ObservableOnSubscribe<List<DownloadRecord>>() {
             @Override
-            public void subscribe(ObservableEmitter<List<DownloadRecord>> emitter) throws Exception {
+            public void subscribe(ObservableEmitter<List<DownloadRecord>> emitter)
+                    throws Exception {
                 Cursor cursor = null;
                 try {
-                    cursor = getReadableDatabase().rawQuery("select * from " + TABLE_NAME, new String[]{});
+                    cursor = getReadableDatabase()
+                            .rawQuery("select * from " + TABLE_NAME, new String[]{});
                     List<DownloadRecord> result = new ArrayList<>();
                     while (cursor.moveToNext()) {
                         result.add(Db.RecordTable.read(cursor));

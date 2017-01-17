@@ -5,7 +5,10 @@ import android.support.annotation.NonNull;
 import java.util.HashMap;
 import java.util.Map;
 
+import static zlc.season.rxdownload2.entity.DownloadFlag.COMPLETED;
+import static zlc.season.rxdownload2.entity.DownloadFlag.FAILED;
 import static zlc.season.rxdownload2.entity.DownloadFlag.NORMAL;
+import static zlc.season.rxdownload2.entity.DownloadFlag.STARTED;
 import static zlc.season.rxdownload2.entity.DownloadFlag.WAITING;
 
 /**
@@ -38,6 +41,22 @@ public class DownloadEventFactory {
 
     public DownloadEvent waiting(String url) {
         return create(url, WAITING, null);
+    }
+
+    public DownloadEvent waiting(String url, DownloadStatus status) {
+        return create(url, WAITING, status);
+    }
+
+    public DownloadEvent started(String url, DownloadStatus status) {
+        return create(url, STARTED, status);
+    }
+
+    public DownloadEvent completed(String url, DownloadStatus status) {
+        return create(url, COMPLETED, status);
+    }
+
+    public DownloadEvent failed(String url, DownloadStatus status, Throwable throwable) {
+        return create(url, FAILED, status, throwable);
     }
 
     public DownloadEvent create(String url, int flag, DownloadStatus status) {

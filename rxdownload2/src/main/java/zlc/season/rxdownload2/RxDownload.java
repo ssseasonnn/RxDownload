@@ -299,10 +299,13 @@ public class RxDownload {
      *
      * @return Observable<DownloadStatus>
      */
-    public Observable<DownloadStatus> download(@NonNull final String url,
+    public Observable<DownloadStatus> download(
+            @NonNull final String url,
             @NonNull final String saveName,
             @Nullable final String savePath) {
-        return mDownloadHelper.downloadDispatcher(url, saveName, savePath, mContext, mAutoInstall);
+
+        return mDownloadHelper.downloadDispatcher(url, saveName, savePath,
+                mContext, mAutoInstall);
     }
 
     /**

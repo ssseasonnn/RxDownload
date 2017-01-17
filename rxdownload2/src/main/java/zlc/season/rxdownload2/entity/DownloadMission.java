@@ -1,7 +1,5 @@
 package zlc.season.rxdownload2.entity;
 
-import android.util.Log;
-
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -73,17 +71,14 @@ public class DownloadMission {
 
                       @Override
                       public void onNext(DownloadStatus value) {
-                          processorPool.get(url)
-                                       .onNext(eventFactory.create(url, STARTED, value));
+                          processorPool.get(url).onNext(eventFactory.started(url, value));
                           helper.updateRecord(url, value);
                           mStatus = value;
                       }
 
                       @Override
                       public void onError(Throwable e) {
-                          Log.w("error", e);
-                          processorPool.get(url)
-                                       .onNext(eventFactory.create(url, FAILED, mStatus, e));
+                          processorPool.get(url).onNext(eventFactory.failed(url, mStatus, e));
                           helper.updateRecord(url, FAILED);
                           count.decrementAndGet();
                           nowDownloadMap.remove(url);
@@ -91,8 +86,7 @@ public class DownloadMission {
 
                       @Override
                       public void onComplete() {
-                          processorPool.get(url)
-                                       .onNext(eventFactory.create(url, COMPLETED, mStatus));
+                          processorPool.get(url).onNext(eventFactory.completed(url, mStatus));
                           helper.updateRecord(url, COMPLETED);
                           count.decrementAndGet();
                           nowDownloadMap.remove(url);

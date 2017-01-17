@@ -95,20 +95,24 @@ public class DownloadService extends Service {
 
     public FlowableProcessor<DownloadEvent> processor(RxDownload rxDownload, String url) {
         FlowableProcessor<DownloadEvent> processor = processor(url);
-        if (!mDb.recordNotExists(url)) {
+        if (mDb.recordExists(url)) {
             DownloadRecord record = mDb.readSingleRecord(url);
             File file = rxDownload.getRealFiles(record.getSaveName(), record.getSavePath())[0];
             if (file.exists()) {
                 processor.onNext(mEventFactory.create(url, record.getFlag(), record.getStatus()));
+            } else {
+                processor.onNext(mEventFactory.normal(url));
             }
+        } else {
+            processor.onNext(mEventFactory.normal(url));
         }
         return processor;
     }
 
     public FlowableProcessor<DownloadEvent> processor(String url) {
         if (mProcessorPool.get(url) == null) {
-            FlowableProcessor<DownloadEvent> processor
-                    = BehaviorProcessor.createDefault(mEventFactory.normal(url)).toSerialized();
+            FlowableProcessor<DownloadEvent> processor = BehaviorProcessor.<DownloadEvent>create()
+                    .toSerialized();
             mProcessorPool.put(url, processor);
         }
         return mProcessorPool.get(url);
@@ -124,7 +128,7 @@ public class DownloadService extends Service {
                 processor(url).onNext(mEventFactory.waiting(url));
             } else {
                 mDb.updateRecord(url, WAITING);
-                processor(url).onNext(mEventFactory.create(url, WAITING, mDb.readStatus(url)));
+                processor(url).onNext(mEventFactory.waiting(url, mDb.readStatus(url)));
             }
             mWaitingForDownload.offer(mission);
             mWaitingForDownloadLookUpMap.put(url, mission);

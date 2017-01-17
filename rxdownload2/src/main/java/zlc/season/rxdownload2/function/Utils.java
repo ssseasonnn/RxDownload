@@ -30,7 +30,6 @@ import io.reactivex.Observable;
 import io.reactivex.ObservableSource;
 import io.reactivex.ObservableTransformer;
 import io.reactivex.disposables.Disposable;
-import io.reactivex.exceptions.CompositeException;
 import io.reactivex.functions.BiPredicate;
 import okhttp3.internal.http.HttpHeaders;
 import retrofit2.Response;
@@ -65,11 +64,7 @@ public class Utils {
     }
 
     public static void log(Throwable throwable) {
-        if (throwable instanceof CompositeException) {
-            Log.w(TAG, throwable.getMessage());
-        } else {
-            Log.w(TAG, throwable);
-        }
+        Log.w(TAG, throwable);
     }
 
     public static boolean notEmpty(String string) {
@@ -268,11 +263,7 @@ public class Utils {
                 return true;
             }
             return false;
-        } else if (throwable instanceof CompositeException) {
-            log(RETRY_HINT, currentThread().getName(), throwable.getMessage(), integer);
-            return false;
         } else {
-//            log(throwable);
             return false;
         }
     }

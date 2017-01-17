@@ -52,11 +52,14 @@ public final class Constant {
     public static final String RANGE_DOWNLOAD_COMPLETED =
             "[%s] download completed!";
 
+    public static final String RANGE_DOWNLOAD_CANCELED =
+            "[%s] download canceled!";
+
     public static final String RANGE_DOWNLOAD_FAILED =
             "[%s] download failed or cancel!";
 
     public static final String RETRY_HINT =
-            "[%s] got an [%s] error! A [%d] attempt reconnection!";
+            "[%s] got an [%s] error! [%d] attempt reconnection!";
 
     //Dir hint
     public static final String DIR_EXISTS_HINT = "Path [%s] exists.";

@@ -6,11 +6,13 @@ import java.io.File;
 import java.io.IOException;
 import java.text.ParseException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import io.reactivex.FlowableEmitter;
 import io.reactivex.Observable;
 import io.reactivex.ObservableSource;
+import io.reactivex.exceptions.CompositeException;
 import io.reactivex.functions.Action;
 import io.reactivex.functions.Consumer;
 import io.reactivex.functions.Function;
@@ -171,7 +173,15 @@ public class DownloadHelper {
                 .doOnError(new Consumer<Throwable>() {
                     @Override
                     public void accept(Throwable throwable) throws Exception {
-                        log(throwable);
+                        if (throwable instanceof CompositeException) {
+                            CompositeException realException = (CompositeException) throwable;
+                            List<Throwable> exceptions = realException.getExceptions();
+                            for (Throwable each : exceptions) {
+                                log(each);
+                            }
+                        } else {
+                            log(throwable);
+                        }
                     }
                 })
                 .doFinally(new Action() {
@@ -290,6 +300,13 @@ public class DownloadHelper {
         return new File(mDownloadRecord.get(url)[2]);
     }
 
+    /**
+     * 获取下载类型
+     *
+     * @param url url
+     *
+     * @return download type
+     */
     private Observable<DownloadType> getDownloadType(String url) {
         if (downloadFileExists(url)) {
             try {

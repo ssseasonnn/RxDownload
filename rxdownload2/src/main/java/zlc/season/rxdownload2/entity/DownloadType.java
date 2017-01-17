@@ -39,7 +39,6 @@ import static zlc.season.rxdownload2.function.Constant.NORMAL_DOWNLOAD_PREPARE;
 import static zlc.season.rxdownload2.function.Constant.NORMAL_DOWNLOAD_STARTED;
 import static zlc.season.rxdownload2.function.Constant.NOT_SUPPORT_HEAD_HINT;
 import static zlc.season.rxdownload2.function.Constant.RANGE_DOWNLOAD_COMPLETED;
-import static zlc.season.rxdownload2.function.Constant.RANGE_DOWNLOAD_FAILED;
 import static zlc.season.rxdownload2.function.Constant.RANGE_DOWNLOAD_STARTED;
 import static zlc.season.rxdownload2.function.Constant.UNABLE_DOWNLOAD_HINT;
 import static zlc.season.rxdownload2.function.Utils.log;
@@ -104,7 +103,7 @@ public abstract class DownloadType {
                     .toObservable();
         }
 
-        private Flowable<DownloadStatus> normalSave(final Response<ResponseBody> response) {
+        private Publisher<DownloadStatus> normalSave(final Response<ResponseBody> response) {
             return Flowable
                     .create(new FlowableOnSubscribe<DownloadStatus>() {
                         @Override
@@ -125,7 +124,7 @@ public abstract class DownloadType {
 
         @Override
         public Observable<DownloadStatus> startDownload() throws IOException {
-            List<Flowable<DownloadStatus>> tasks = new ArrayList<>();
+            List<Publisher<DownloadStatus>> tasks = new ArrayList<>();
             for (int i = 0; i < mDownloadHelper.getMaxThreads(); i++) {
                 tasks.add(rangeDownloadTask(i));
             }
@@ -174,7 +173,7 @@ public abstract class DownloadType {
          *
          * @return Observable
          */
-        private Flowable<DownloadStatus> rangeDownloadTask(final int index) {
+        private Publisher<DownloadStatus> rangeDownloadTask(final int index) {
 
             return Flowable
                     .create(new FlowableOnSubscribe<DownloadRange>() {
@@ -196,10 +195,12 @@ public abstract class DownloadType {
                                     range.start, range.end);
                         }
                     })
-                    .doOnError(new Consumer<Throwable>() {
+                    .flatMap(new Function<DownloadRange, Publisher<DownloadStatus>>() {
                         @Override
-                        public void accept(Throwable throwable) throws Exception {
-                            log(RANGE_DOWNLOAD_FAILED, currentThread().getName());
+                        public Publisher<DownloadStatus> apply(final DownloadRange range)
+                                throws Exception {
+
+                            return startRangeDownload(range, index);
                         }
                     })
                     .doOnComplete(new Action() {
@@ -208,28 +209,31 @@ public abstract class DownloadType {
                             log(RANGE_DOWNLOAD_COMPLETED, currentThread().getName());
                         }
                     })
-                    .flatMap(new Function<DownloadRange, Publisher<DownloadStatus>>() {
-                        @Override
-                        public Publisher<DownloadStatus> apply(final DownloadRange range)
-                                throws Exception {
-
-                            String rangeStr = "bytes=" + range.start + "-" + range.end;
-                            return mDownloadHelper
-                                    .getDownloadApi()
-                                    .download(rangeStr, mUrl)
-                                    .flatMap(new Function<Response<ResponseBody>,
-                                            Publisher<DownloadStatus>>() {
-                                        @Override
-                                        public Publisher<DownloadStatus> apply(
-                                                Response<ResponseBody> resp)
-                                                throws Exception {
-                                            return rangeSave(range.start, range.end,
-                                                    index, resp.body());
-                                        }
-                                    });
-                        }
-                    })
                     .compose(Utils.<DownloadStatus>retry2(mDownloadHelper.getMaxRetryCount()));
+        }
+
+        /**
+         * 开始下载
+         *
+         * @param range Range
+         * @param index index
+         *
+         * @return DownloadStatus
+         */
+        private Publisher<DownloadStatus> startRangeDownload(final DownloadRange range,
+                final int index) {
+
+            String rangeStr = "bytes=" + range.start + "-" + range.end;
+            return mDownloadHelper
+                    .getDownloadApi()
+                    .download(rangeStr, mUrl)
+                    .flatMap(new Function<Response<ResponseBody>, Publisher<DownloadStatus>>() {
+                        @Override
+                        public Publisher<DownloadStatus> apply(Response<ResponseBody> resp)
+                                throws Exception {
+                            return rangeSave(range.start, range.end, index, resp.body());
+                        }
+                    });
         }
 
         /**
@@ -240,9 +244,9 @@ public abstract class DownloadType {
          * @param index    下载编号
          * @param response 响应值
          *
-         * @return Observable
+         * @return Flowable
          */
-        private Flowable<DownloadStatus> rangeSave(
+        private Publisher<DownloadStatus> rangeSave(
                 final long start, final long end,
                 final int index,
                 final ResponseBody response) {

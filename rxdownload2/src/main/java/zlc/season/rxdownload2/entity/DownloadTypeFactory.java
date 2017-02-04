@@ -49,7 +49,7 @@ public class DownloadTypeFactory {
         return type;
     }
 
-    public DownloadType needGET(String url, long fileLength, String lastModify) {
+    public DownloadType useGET(String url, long fileLength, String lastModify) {
         DownloadType type = new DownloadType.NotSupportHEAD();
         type.mUrl = url;
         type.mFileLength = fileLength;

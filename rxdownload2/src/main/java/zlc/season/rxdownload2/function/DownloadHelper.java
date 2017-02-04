@@ -151,8 +151,10 @@ public class DownloadHelper {
      * @return DownloadStatus
      */
     public Observable<DownloadStatus> downloadDispatcher(final String url,
-                                                         final String saveName, final String savePath,
-                                                         final Context context, final boolean autoInstall) {
+                                                         final String saveName,
+                                                         final String savePath,
+                                                         final Context context,
+                                                         final boolean autoInstall) {
 
         try {
             beforeDownload(url, saveName, savePath);
@@ -214,9 +216,9 @@ public class DownloadHelper {
                     public DownloadType apply(Response<Void> response)
                             throws Exception {
                         if (serverFileNotChange(response)) {
-                            return getServerFileNotChangedType(response, url);
+                            return getFileNotChangeType(response, url);
                         } else if (serverFileChanged(response)) {
-                            return getServerFileChangedType(response, url);
+                            return getFileChangedType(response, url);
                         } else {
                             return type.unable();
                         }
@@ -310,9 +312,9 @@ public class DownloadHelper {
                     @Override
                     public ObservableSource<DownloadType> apply(Integer integer) throws Exception {
                         TemporaryRecord record = recordTable.get(url);
-                        boolean isEmpty = empty(record.getSaveName());
+                        boolean nameIsEmpty = empty(record.getSaveName());
 
-                        if (isEmpty) {
+                        if (nameIsEmpty) {
                             return getEmptyNameType(url);
                         } else {
                             return getNotEmptyType(url);
@@ -343,7 +345,6 @@ public class DownloadHelper {
                             fileName = url.substring(url.lastIndexOf("/"));
                         }
                         recordTable.update(url, fileName);
-                        recordTable.update(url, Utils.notSupportRange(resp));
                     }
                 })
                 .flatMap(new Function<Response<Void>, ObservableSource<DownloadType>>() {
@@ -353,30 +354,42 @@ public class DownloadHelper {
                             try {
                                 return getFileExistsType(url);
                             } catch (IOException e) {
-                                return getFileNotExistsType(url, resp);
+                                return getFileNotExistsType(resp, url);
                             }
                         } else {
-                            return getFileNotExistsType(url, resp);
+                            return getFileNotExistsType(resp, url);
                         }
                     }
                 });
     }
 
-    private Observable<DownloadType> getFileNotExistsType(final String url,
-                                                          final Response<Void> response) {
-        return Observable.just(1)
-                .map(new Function<Integer, DownloadType>() {
-                    @Override
-                    public DownloadType apply(Integer integer) throws Exception {
-                        if (notSupportRange(response)) {
-                            return type.normal(url, contentLength(response), lastModify(response));
-                        } else {
-                            return type.multithread(url, contentLength(response), lastModify(response));
-                        }
-                    }
-                });
+    /**
+     * Gets the download type of file non-existence.
+     *
+     * @param response Http Response
+     * @param url      file url
+     * @return Download Type
+     */
+    private Observable<DownloadType> getFileNotExistsType(final Response<Void> response,
+                                                          final String url) {
+        return Observable.just(1).map(new Function<Integer, DownloadType>() {
+            @Override
+            public DownloadType apply(Integer integer) throws Exception {
+                if (notSupportRange(response)) {
+                    return type.normal(url, contentLength(response), lastModify(response));
+                } else {
+                    return type.multithread(url, contentLength(response), lastModify(response));
+                }
+            }
+        });
     }
 
+    /**
+     * Gets the download type of file non-existence.
+     *
+     * @param url file url
+     * @return Download Type
+     */
     private Observable<DownloadType> getFileNotExistsType(final String url) {
         return mDownloadApi.HEAD(TEST_RANGE_SUPPORT, url)
                 .map(new Function<Response<Void>, DownloadType>() {
@@ -393,19 +406,24 @@ public class DownloadHelper {
                 .compose(Utils.<DownloadType>retry(MAX_RETRY_COUNT));
     }
 
-    private Observable<DownloadType> getFileExistsType(final String url)
-            throws IOException {
+    /**
+     * Gets the download type of file existence.
+     *
+     * @param url file url
+     * @return Download Type
+     * @throws IOException
+     */
+    private Observable<DownloadType> getFileExistsType(final String url) throws IOException {
         return mDownloadApi.HEAD(TEST_RANGE_SUPPORT, readLastModify(url), url)
                 .map(new Function<Response<Void>, DownloadType>() {
                     @Override
-                    public DownloadType apply(Response<Void> resp)
-                            throws Exception {
+                    public DownloadType apply(Response<Void> resp) throws Exception {
                         if (serverFileNotChange(resp)) {
-                            return getServerFileNotChangedType(resp, url);
+                            return getFileNotChangeType(resp, url);
                         } else if (serverFileChanged(resp)) {
-                            return getServerFileChangedType(resp, url);
+                            return getFileChangedType(resp, url);
                         } else if (requestRangeNotSatisfiable(resp)) {
-                            return type.needGET(url, contentLength(resp), lastModify(resp));
+                            return type.useGET(url, contentLength(resp), lastModify(resp));
                         } else {
                             return type.unable();
                         }
@@ -414,7 +432,7 @@ public class DownloadHelper {
                 .compose(Utils.<DownloadType>retry(MAX_RETRY_COUNT));
     }
 
-    private DownloadType getServerFileChangedType(Response<Void> resp, String url) {
+    private DownloadType getFileChangedType(Response<Void> resp, String url) {
         if (notSupportRange(resp)) {
             return type.normal(url,
                     contentLength(resp), lastModify(resp));
@@ -424,7 +442,7 @@ public class DownloadHelper {
         }
     }
 
-    private DownloadType getServerFileNotChangedType(Response<Void> resp, String url) {
+    private DownloadType getFileNotChangeType(Response<Void> resp, String url) {
         if (notSupportRange(resp)) {
             return getNotSupportRangeType(resp, url);
         } else {

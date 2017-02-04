@@ -104,14 +104,13 @@ public abstract class DownloadType {
         }
 
         private Publisher<DownloadStatus> normalSave(final Response<ResponseBody> response) {
-            return Flowable
-                    .create(new FlowableOnSubscribe<DownloadStatus>() {
-                        @Override
-                        public void subscribe(FlowableEmitter<DownloadStatus> e)
-                                throws Exception {
-                            mDownloadHelper.saveNormalFile(e, mUrl, response);
-                        }
-                    }, BackpressureStrategy.LATEST);
+            return Flowable.create(new FlowableOnSubscribe<DownloadStatus>() {
+                @Override
+                public void subscribe(FlowableEmitter<DownloadStatus> e)
+                        throws Exception {
+                    mDownloadHelper.saveNormalFile(e, mUrl, response);
+                }
+            }, BackpressureStrategy.LATEST);
         }
     }
 
@@ -128,8 +127,7 @@ public abstract class DownloadType {
             for (int i = 0; i < mDownloadHelper.getMaxThreads(); i++) {
                 tasks.add(rangeDownloadTask(i));
             }
-            return Flowable
-                    .mergeDelayError(tasks)
+            return Flowable.mergeDelayError(tasks)
                     .doOnSubscribe(new Consumer<Subscription>() {
                         @Override
                         public void accept(Subscription subscription) throws Exception {
@@ -170,7 +168,6 @@ public abstract class DownloadType {
          * 分段下载的任务
          *
          * @param index 下载编号
-         *
          * @return Observable
          */
         private Publisher<DownloadStatus> rangeDownloadTask(final int index) {
@@ -217,11 +214,10 @@ public abstract class DownloadType {
          *
          * @param range Range
          * @param index index
-         *
          * @return DownloadStatus
          */
         private Publisher<DownloadStatus> startRangeDownload(final DownloadRange range,
-                final int index) {
+                                                             final int index) {
 
             String rangeStr = "bytes=" + range.start + "-" + range.end;
             return mDownloadHelper
@@ -243,7 +239,6 @@ public abstract class DownloadType {
          * @param end      到end结束
          * @param index    下载编号
          * @param response 响应值
-         *
          * @return Flowable
          */
         private Publisher<DownloadStatus> rangeSave(

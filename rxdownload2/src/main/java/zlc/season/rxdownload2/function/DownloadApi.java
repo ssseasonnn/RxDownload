@@ -20,20 +20,22 @@ public interface DownloadApi {
     @GET
     @Streaming
     Flowable<Response<ResponseBody>> download(
-            @Header("Range") String range, @Url String url);
+            @Header("Range") String range,
+            @Url String url);
 
     @HEAD
     Observable<Response<Void>> HEAD(
-            @Header("Range") String range, @Url String url);
+            @Header("Range") String range,
+            @Url String url);
 
     @HEAD
-    Observable<Response<Void>> HEAD_WithIfRange(
+    Observable<Response<Void>> HEAD(
             @Header("Range") final String range,
             @Header("If-Range") final String lastModify,
             @Url String url);
 
     @GET
-    Observable<Response<Void>> GET_withIfRange(
+    Observable<Response<Void>> GET(
             @Header("Range") final String range,
             @Header("If-Range") final String lastModify,
             @Url String url);

@@ -83,7 +83,6 @@ public class RxDownload {
      *
      * @param saveName saveName
      * @param savePath savePath
-     *
      * @return Files
      */
     public File[] getRealFiles(String saveName, String savePath) {
@@ -95,7 +94,6 @@ public class RxDownload {
      * 普通下载时不需要context, 使用Service下载时需要context;
      *
      * @param context context
-     *
      * @return RxDownload
      */
     public RxDownload context(Context context) {
@@ -141,7 +139,6 @@ public class RxDownload {
      * 注意只接收下载地址为url的事件和状态.
      *
      * @param url download url
-     *
      * @return Observable<DownloadStatus>
      */
     public Observable<DownloadEvent> receiveDownloadStatus(final String url) {
@@ -190,7 +187,6 @@ public class RxDownload {
      * 如果不存在该记录，则返回一个空的DownloadRecord(url = null, saveName = null.)
      *
      * @param url download url
-     *
      * @return Observable<DownloadStatus>
      */
     public Observable<DownloadRecord> getDownloadRecord(String url) {
@@ -274,12 +270,11 @@ public class RxDownload {
      * @param saveName download file SaveName
      * @param savePath download file SavePath. If NULL, using default save path {@code
      *                 /storage/emulated/0/Download/}
-     *
      * @return Observable<DownloadStatus>
      */
     public Observable<?> serviceDownload(@NonNull final String url,
-            @NonNull final String saveName,
-            @Nullable final String savePath) {
+                                         @NonNull final String saveName,
+                                         @Nullable final String savePath) {
         return createGeneralObservable(new GeneralObservableCallback() {
             @Override
             public void call() {
@@ -299,7 +294,6 @@ public class RxDownload {
      * @param saveName download file SaveName
      * @param savePath download file SavePath. If NULL, using default save path {@code
      *                 /storage/emulated/0/Download/}
-     *
      * @return Observable<DownloadStatus>
      */
     public Observable<DownloadStatus> download(
@@ -321,7 +315,6 @@ public class RxDownload {
      * @param savePath   download file SavePath. If NULL, using default save path {@code
      *                   /storage/emulated/0/Download/}
      * @param <Upstream> Upstream
-     *
      * @return Transformer
      */
     public <Upstream> ObservableTransformer<Upstream, DownloadStatus> transform(
@@ -353,7 +346,6 @@ public class RxDownload {
      * @param savePath   download file SavePath. If NULL, using default save path {@code
      *                   /storage/emulated/0/Download/}
      * @param <Upstream> Upstream
-     *
      * @return Transformer
      */
     public <Upstream> ObservableTransformer<Upstream, Object> transformService(
@@ -375,7 +367,7 @@ public class RxDownload {
     }
 
     private void addDownloadTask(@NonNull String url, @NonNull String saveName,
-            @Nullable String savePath) {
+                                 @Nullable String savePath) {
         mDownloadService.addDownloadMission(
                 new DownloadMission.Builder()
                         .setRxDownload(RxDownload.this)

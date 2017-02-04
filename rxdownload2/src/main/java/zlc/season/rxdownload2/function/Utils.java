@@ -167,6 +167,14 @@ public class Utils {
         return HttpHeaders.contentLength(response.headers());
     }
 
+    public static String contentDisposition(Response<?> response) {
+        String disposition = response.headers().get("Content-Disposition");
+        if(empty(disposition)){
+            return "";
+        }
+        return disposition.replaceFirst("(?i)^.*filename=\"([^\"]+)\".*$", "$1");
+    }
+
     public static boolean isChunked(Response<?> response) {
         return "chunked".equals(transferEncoding(response));
     }

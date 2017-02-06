@@ -259,6 +259,7 @@ public abstract class DownloadType {
     }
 
     static class MultiThreadDownload extends ContinueDownload {
+
         @Override
         public void prepareDownload() throws IOException, ParseException {
             super.prepareDownload();

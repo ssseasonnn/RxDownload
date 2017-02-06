@@ -77,8 +77,7 @@ public class FileHelper {
         RECORD_FILE_TOTAL_SIZE = EACH_RECORD_SIZE * MAX_THREADS;
     }
 
-    void createDownloadDirs(String savePath)
-            throws IOException {
+    void createDownloadDirs(String savePath) throws IOException {
         mkdirs(getRealDirectoryPaths(savePath));
     }
 

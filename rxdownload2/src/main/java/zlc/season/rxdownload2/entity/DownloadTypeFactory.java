@@ -15,45 +15,47 @@ public class DownloadTypeFactory {
         this.mDownloadHelper = downloadHelper;
     }
 
-    public DownloadType normal(String url, long fileLength, String lastModify) {
+    public DownloadType normal(TemporaryRecord record) {
         DownloadType type = new DownloadType.NormalDownload();
-        type.mUrl = url;
-        type.mFileLength = fileLength;
-        type.mLastModify = lastModify;
+        type.mUrl = record.getUrl();
+        type.mFileLength = record.getContentLength();
+        type.mLastModify = record.getLastModify();
         type.mDownloadHelper = this.mDownloadHelper;
         return type;
     }
 
-    public DownloadType continued(String url, long fileLength, String lastModify) {
+    public DownloadType continued(TemporaryRecord record) {
         DownloadType type = new DownloadType.ContinueDownload();
-        type.mUrl = url;
-        type.mFileLength = fileLength;
-        type.mLastModify = lastModify;
+        type.mUrl = record.getUrl();
+        type.mFileLength = record.getContentLength();
+        type.mLastModify = record.getLastModify();
         type.mDownloadHelper = this.mDownloadHelper;
         return type;
     }
 
-    public DownloadType multithread(String url, long fileLength, String lastModify) {
+    public DownloadType multithread(TemporaryRecord record) {
         DownloadType type = new DownloadType.MultiThreadDownload();
-        type.mUrl = url;
-        type.mFileLength = fileLength;
-        type.mLastModify = lastModify;
+        type.mUrl = record.getUrl();
+        type.mFileLength = record.getContentLength();
+        type.mLastModify = record.getLastModify();
         type.mDownloadHelper = this.mDownloadHelper;
         return type;
     }
 
-    public DownloadType already(long fileLength) {
+    public DownloadType already(TemporaryRecord record) {
         DownloadType type = new DownloadType.AlreadyDownloaded();
-        type.mFileLength = fileLength;
+        type.mUrl = record.getUrl();
+        type.mFileLength = record.getContentLength();
+        type.mLastModify = record.getLastModify();
         type.mDownloadHelper = this.mDownloadHelper;
         return type;
     }
 
-    public DownloadType useGET(String url, long fileLength, String lastModify) {
+    public DownloadType useGET(TemporaryRecord record) {
         DownloadType type = new DownloadType.NotSupportHEAD();
-        type.mUrl = url;
-        type.mFileLength = fileLength;
-        type.mLastModify = lastModify;
+        type.mUrl = record.getUrl();
+        type.mFileLength = record.getContentLength();
+        type.mLastModify = record.getLastModify();
         type.mDownloadHelper = this.mDownloadHelper;
         return type;
     }

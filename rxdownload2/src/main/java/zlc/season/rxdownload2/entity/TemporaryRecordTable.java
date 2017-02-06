@@ -5,6 +5,11 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
+import retrofit2.Response;
+import zlc.season.rxdownload2.function.Utils;
+
+import static zlc.season.rxdownload2.function.Utils.empty;
+
 /**
  * Author: Season(ssseasonnn@gmail.com)
  * Date: 2017/2/4
@@ -24,7 +29,7 @@ public class TemporaryRecordTable {
     }
 
     public void add(String url, TemporaryRecord record) {
-
+        map.put(url, record);
     }
 
     public void update(String url, TemporaryRecord record) {
@@ -35,11 +40,25 @@ public class TemporaryRecordTable {
         map.get(url).setSaveName(saveName);
     }
 
-    public void update(String url, boolean range) {
-        if (range) {
-            map.get(url).supportRange();
+    public void update(String url, Response<?> response, boolean flag) {
+        String fileName = Utils.contentDisposition(response);
+        if (empty(fileName)) {
+            fileName = url.substring(url.lastIndexOf("/"));
+        }
+        TemporaryRecord record = map.get(url);
+        record.setSaveName(fileName);
+
+        if (Utils.notSupportRange(response)) {
+            record.notSupportRange();
         } else {
-            map.get(url).notSupportRange();
+            record.supportRange();
+        }
+
+        record.setContentLength(Utils.contentLength(response));
+        record.setLastModify(Utils.lastModify(response));
+
+        if (flag) {
+            record.setServerFileChangeFlag(response.code());
         }
     }
 

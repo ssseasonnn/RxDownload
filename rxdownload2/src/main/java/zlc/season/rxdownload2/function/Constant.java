@@ -7,7 +7,17 @@ package zlc.season.rxdownload2.function;
  */
 public final class Constant {
     public static final String TAG = "RxDownload";
+
+    /**
+     * test
+     */
     public static final String TEST_RANGE_SUPPORT = "bytes=0-";
+
+    /**
+     * Just request 1 byte.
+     */
+    public static final String TEST_RANGE_SUPPORT_BY_GET = "bytes=0-0";
+
 
     public static final String CONTEXT_NULL_HINT
             = "Context is NULL! You should call [RxDownload.context(Context context)] first!";
@@ -43,7 +53,7 @@ public final class Constant {
 
     public static final String ALREADY_DOWNLOAD_HINT = "FILE ALREADY DOWNLOADED!";
     public static final String UNABLE_DOWNLOAD_HINT = "UNABLE DOWNLOADED!";
-    public static final String NOT_SUPPORT_HEAD_HINT = "NOT SUPPORT HEAD, NOW TRY GET!";
+    public static final String NOT_SUPPORT_HEAD_HINT = "NOT SUPPORT checkRangeByHead, NOW TRY GET!";
 
     //Range download hint
     public static final String RANGE_DOWNLOAD_STARTED =

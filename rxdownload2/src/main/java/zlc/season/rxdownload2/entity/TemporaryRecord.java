@@ -1,7 +1,5 @@
 package zlc.season.rxdownload2.entity;
 
-import android.support.annotation.IntDef;
-
 import java.io.IOException;
 
 import zlc.season.rxdownload2.function.DownloadHelper;
@@ -32,34 +30,58 @@ public class TemporaryRecord {
 
     private int rangeAbility = UNDETERMINED;
 
+    private boolean supportHeadMethod = true;
+
     private boolean serverFileChangeState = false;
     private boolean lastModifyReadState = false;
     private boolean localFileExists = false;
 
     private DownloadType downloadType;
 
-    private DownloadHelper downloadHelper;
-    private DownloadTypeFactory downloadTypeFactory;
-
-    public TemporaryRecord(String filePath, String tempPath, String lmfPath,
-                           DownloadHelper downloadHelper) {
+    public TemporaryRecord(String filePath, String tempPath, String lmfPath) {
         this.filePath = filePath;
         this.tempPath = tempPath;
         this.lmfPath = lmfPath;
-        this.downloadHelper = downloadHelper;
-        downloadTypeFactory = new DownloadTypeFactory(downloadHelper);
     }
 
-    public void setRangeAbility(int rangeAbility) {
-        this.rangeAbility = rangeAbility;
+    public boolean isSupportHeadMethod() {
+        return supportHeadMethod;
+    }
+
+    public void setSupportHeadMethod(boolean supportHeadMethod) {
+        this.supportHeadMethod = supportHeadMethod;
     }
 
     public int getRangeAbility() {
         return rangeAbility;
     }
 
+    public void setRangeAbility(int rangeAbility) {
+        this.rangeAbility = rangeAbility;
+    }
+
     public DownloadType getDownloadType() {
         return downloadType;
+    }
+
+    public void setDownloadType(DownloadType downloadType) {
+        this.downloadType = downloadType;
+    }
+
+    public boolean isServerFileChanged() {
+        return serverFileChangeState;
+    }
+
+    public boolean isLastModifyReadSuccess() {
+        return lastModifyReadState;
+    }
+
+    public boolean isLocalFileExists() {
+        return localFileExists;
+    }
+
+    public void setLocalFileExists(boolean localFileExists) {
+        this.localFileExists = localFileExists;
     }
 
     public void setServerFileChangeState(boolean serverFileChangeState) {
@@ -68,14 +90,6 @@ public class TemporaryRecord {
 
     public void setLastModifyReadState(boolean lastModifyReadState) {
         this.lastModifyReadState = lastModifyReadState;
-    }
-
-    public void setLocalFileExists(boolean localFileExists) {
-        this.localFileExists = localFileExists;
-    }
-
-    public void setDownloadType(DownloadType downloadType) {
-        this.downloadType = downloadType;
     }
 
     public DownloadType fileNotExistsType(DownloadHelper helper) {

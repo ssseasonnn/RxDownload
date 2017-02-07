@@ -5,17 +5,17 @@ import java.util.HashMap;
 import java.util.Map;
 
 import retrofit2.Response;
+import zlc.season.rxdownload2.function.DownloadHelper;
 
 import static zlc.season.rxdownload2.entity.TemporaryRecord.NOT_SUPPORT;
 import static zlc.season.rxdownload2.entity.TemporaryRecord.SUPPORT;
 import static zlc.season.rxdownload2.entity.TemporaryRecord.UNDETERMINED;
-import static zlc.season.rxdownload2.function.Utils.contentDisposition;
 import static zlc.season.rxdownload2.function.Utils.contentLength;
 import static zlc.season.rxdownload2.function.Utils.empty;
+import static zlc.season.rxdownload2.function.Utils.fileName;
 import static zlc.season.rxdownload2.function.Utils.lastModify;
 import static zlc.season.rxdownload2.function.Utils.notSupportRange;
 import static zlc.season.rxdownload2.function.Utils.requestRangeNotSatisfiable;
-import static zlc.season.rxdownload2.function.Utils.serverFileChanged;
 import static zlc.season.rxdownload2.function.Utils.serverFileNotChange;
 
 /**
@@ -26,8 +26,13 @@ import static zlc.season.rxdownload2.function.Utils.serverFileNotChange;
 public class TemporaryRecordTable {
     private Map<String, TemporaryRecord> map;
 
-    public TemporaryRecordTable() {
+    private DownloadHelper downloadHelper;
+    private DownloadTypeFactory downloadTypeFactory;
+
+    public TemporaryRecordTable(DownloadHelper downloadHelper) {
         this.map = new HashMap<>();
+        this.downloadHelper = downloadHelper;
+        this.downloadTypeFactory = new DownloadTypeFactory(downloadHelper);
     }
 
     public void add(String url, TemporaryRecord record) {
@@ -35,28 +40,28 @@ public class TemporaryRecordTable {
     }
 
 
-    public void updateFileExists(String url) {
+    public void setFileExists(String url) {
         map.get(url).setLocalFileExists(true);
     }
 
-    public void updateFileNotExists(String url) {
+    public void setFileNotExists(String url) {
         map.get(url).setLocalFileExists(false);
     }
 
-    public void updateLastModifyReadFailed(String url) {
+    public void setLastModifyReadFailed(String url) {
         map.get(url).setLastModifyReadState(false);
     }
 
-    public void updateLastModifyReadSuccess(String url) {
+    public void setLastModifyReadSuccess(String url) {
         map.get(url).setLastModifyReadState(true);
     }
 
-    public boolean rangeUndetermined(String url) {
+    public boolean neverQuery(String url) {
         return map.get(url).getRangeAbility() == UNDETERMINED;
     }
 
     public void updateExtraInfo(String url, Response<?> response) {
-        updateBaseInfo(url, response);
+        saveHttpInfo(url, response);
 
         TemporaryRecord record = map.get(url);
         if (serverFileChanged(response)) {
@@ -70,20 +75,26 @@ public class TemporaryRecordTable {
         }
     }
 
+    public boolean notSupportHeadMethod(String url) {
+        return !map.get(url).isSupportHeadMethod();
+    }
 
-    public void updateBaseInfo(String url, Response<?> response) {
-        String fileName = contentDisposition(response);
-        if (empty(fileName)) {
-            fileName = url.substring(url.lastIndexOf("/"));
-        }
-
+    public void saveHttpInfo(String url, Response<?> response) {
         TemporaryRecord record = map.get(url);
-        record.setSaveName(fileName);
+        if (response.isSuccessful()) {
+            record.setSupportHeadMethod(true);
+        } else {
+            record.setSupportHeadMethod(false);
+        }
 
         if (notSupportRange(response)) {
             record.setRangeAbility(NOT_SUPPORT);
         } else {
             record.setRangeAbility(SUPPORT);
+        }
+
+        if (empty(record.getSaveName())) {
+            record.setSaveName(fileName(url, response));
         }
         record.setContentLength(contentLength(response));
         record.setLastModify(lastModify(response));
@@ -115,5 +126,65 @@ public class TemporaryRecordTable {
 
     public DownloadType getType(String url) {
         return map.get(url).getDownloadType();
+    }
+
+    private boolean supportRange(String url) {
+        return map.get(url).getRangeAbility() == SUPPORT;
+    }
+
+    private void setType(String url, DownloadType type) {
+        map.get(url).setDownloadType(type);
+    }
+
+    public void generateFileNotExistsType(String url) {
+        DownloadType type = generateCommonType(url);
+        setType(url, type);
+    }
+
+    private DownloadType generateCommonType(String url) {
+        DownloadType type;
+        if (supportRange(url)) {
+            type = downloadTypeFactory.multithread(map.get(url));
+        } else {
+            type = downloadTypeFactory.normal(map.get(url));
+        }
+        return type;
+    }
+
+    private boolean readLastModifySuccess(String url) {
+        return map.get(url).isLastModifyReadSuccess();
+    }
+
+    private boolean serverFileChanged(String url) {
+        return map.get(url).isServerFileChanged();
+    }
+
+
+    public void generateFileExistsType(String url) {
+        DownloadType type;
+        if (readLastModifySuccess(url)) {
+            if (serverFileChanged(url)) {
+                type = generateCommonType(url);
+            } else if (fileNotChange()) {
+                type = getServerFileNotChangeType(helper);
+            } else if (requestRangeNotSatisfiable()) {
+                type = factory.useGET(this);
+            } else {
+                type = factory.unable();
+            }
+        } else {
+            type = getLastModifyReadSuccessType(helper);
+        }
+        return type;
+    }
+
+    public void saveFileState(String url, Response<Void> response) {
+        if (response.code() == 304) {
+            //TODO file not change
+        } else if (response.code() == 200) {
+            //TODO file has changed
+        } else {
+
+        }
     }
 }

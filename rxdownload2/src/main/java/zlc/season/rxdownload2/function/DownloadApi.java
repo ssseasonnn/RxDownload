@@ -24,7 +24,24 @@ public interface DownloadApi {
             @Url String url);
 
     @HEAD
-    Observable<Response<Void>> HEAD(
+    Observable<Response<Void>> checkRangeByHead(@Header("Range") String range,
+                                                @Url String url);
+
+    @HEAD
+    Observable<Response<Void>> checkFileByHead(@Header("If-Modified-Since") String lastModify,
+                                               @Url String url);
+
+
+    @GET
+    Observable<Response<Void>> checkRangeByGet(@Header("Range") String range,
+                                               @Url String url);
+
+    @GET
+    Observable<Response<Void>> checkFileByGet(@Header("If-Modified-Since") String lastModify,
+                                              @Url String url);
+
+    @HEAD
+    Observable<Response<Void>> GET(
             @Header("Range") String range,
             @Url String url);
 

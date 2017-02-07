@@ -25,6 +25,7 @@ import zlc.season.rxdownload2.entity.TemporaryRecordTable;
 
 import static zlc.season.rxdownload2.function.Constant.DOWNLOAD_URL_EXISTS;
 import static zlc.season.rxdownload2.function.Constant.TEST_RANGE_SUPPORT;
+import static zlc.season.rxdownload2.function.Constant.TEST_RANGE_SUPPORT_BY_GET;
 import static zlc.season.rxdownload2.function.Utils.empty;
 import static zlc.season.rxdownload2.function.Utils.log;
 import static zlc.season.rxdownload2.function.Utils.retry;
@@ -51,7 +52,7 @@ public class DownloadHelper {
         downloadApi = RetrofitProvider.getInstance().create(DownloadApi.class);
         type = new DownloadTypeFactory(this);
 
-        recordTable = new TemporaryRecordTable();
+        recordTable = new TemporaryRecordTable(downloadHelper);
     }
 
     public void setRetrofit(Retrofit retrofit) {
@@ -188,7 +189,7 @@ public class DownloadHelper {
     }
 
     /**
-     * some server such IIS does not support HEAD method, use GET.
+     * some server such IIS does not support checkRangeByHead method, use GET.
      *
      * @param url url
      * @return DownloadType
@@ -234,7 +235,7 @@ public class DownloadHelper {
      * @param savePath temp record savePath
      */
     private void addTempRecord(String url, String saveName, String savePath) {
-        recordTable.add(url, new TemporaryRecord(url, saveName, savePath, DownloadHelper.this));
+        recordTable.add(url, new TemporaryRecord(url, saveName, savePath));
     }
 
     private String readLastModify(String url) throws IOException {
@@ -286,20 +287,10 @@ public class DownloadHelper {
      */
     private Observable<DownloadType> getDownloadType(final String url) {
         return Observable.just(1)
-                .map(new Function<Integer, String>() {
+                .flatMap(new Function<Integer, ObservableSource<Object>>() {
                     @Override
-                    public String apply(Integer integer) throws Exception {
-                        return recordTable.getSaveName(url);
-                    }
-                })
-                .flatMap(new Function<String, ObservableSource<Object>>() {
-                    @Override
-                    public ObservableSource<Object> apply(String s) throws Exception {
-                        //If file name is empty, get it now!
-                        if (empty(s)) {
-                            return query(url);
-                        }
-                        return Observable.just(new Object());
+                    public ObservableSource<Object> apply(Integer integer) throws Exception {
+                        return checkRange(url);
                     }
                 })
                 .flatMap(new Function<Object, ObservableSource<DownloadType>>() {
@@ -322,14 +313,17 @@ public class DownloadHelper {
      */
     private Observable<DownloadType> getFileNotExistsType(final String url) {
         return Observable.just(1)
+                .doOnNext(new Consumer<Integer>() {
+                    @Override
+                    public void accept(Integer integer) throws Exception {
+                        recordTable.setFileNotExists(url);
+                    }
+                })
                 .flatMap(new Function<Integer, ObservableSource<Object>>() {
                     @Override
                     public ObservableSource<Object> apply(Integer integer) throws Exception {
-                        //First of all this file not contain.
-                        recordTable.updateFileNotExists(url);
-                        //If we have not checked whether it supports Range, check it now.
-                        if (recordTable.rangeUndetermined(url)) {
-                            return query(url);
+                        if (recordTable.notSupportHeadMethod(url)) {
+                            return queryByGet(url);
                         }
                         return Observable.just(new Object());
                     }
@@ -337,6 +331,7 @@ public class DownloadHelper {
                 .flatMap(new Function<Object, ObservableSource<DownloadType>>() {
                     @Override
                     public ObservableSource<DownloadType> apply(Object o) throws Exception {
+                        recordTable.generateFileNotExistsType(url);
                         return Observable.just(recordTable.getType(url));
                     }
                 });
@@ -366,21 +361,23 @@ public class DownloadHelper {
                     @Override
                     public ObservableSource<Object> apply(String s) throws Exception {
                         //First of all this file contain.
-                        recordTable.updateFileExists(url);
+                        recordTable.setFileExists(url);
                         if (empty(s)) {
                             //Read LastModify failure, the file may have been deleted,
                             // or what other reasons can not be read correctly.
-                            recordTable.updateLastModifyReadFailed(url);
-                            //If we have not checked whether it supports Range, check it now.
-                            if (recordTable.rangeUndetermined(url)) {
-                                return query(url);
-                            }
+                            recordTable.setLastModifyReadFailed(url);
                         } else {
                             //LastModify read success, so the next check whether the file changes.
-                            recordTable.updateLastModifyReadSuccess(url);
+                            recordTable.setLastModifyReadSuccess(url);
                             return query(url, s);
                         }
                         return Observable.just(new Object());
+                    }
+                })
+                .doOnNext(new Consumer<Object>() {
+                    @Override
+                    public void accept(Object o) throws Exception {
+                        recordTable.generateFileExistsType(url);
                     }
                 })
                 .flatMap(new Function<Object, ObservableSource<DownloadType>>() {
@@ -393,17 +390,51 @@ public class DownloadHelper {
 
 
     /**
-     * http HEAD request,query need info.
+     * http checkRangeByHead request,checkRange need info.
      *
      * @param url url
      * @return empty Observable
      */
-    private ObservableSource<Object> query(final String url) {
-        return downloadApi.HEAD(TEST_RANGE_SUPPORT, url)
+    private ObservableSource<Object> checkRange(final String url) {
+        return downloadApi.checkRangeByHead(TEST_RANGE_SUPPORT, url)
                 .doOnNext(new Consumer<Response<Void>>() {
                     @Override
                     public void accept(Response<Void> response) throws Exception {
-                        recordTable.updateBaseInfo(url, response);
+                        recordTable.saveHttpInfo(url, response);
+                    }
+                })
+                .map(new Function<Response<Void>, Object>() {
+                    @Override
+                    public Object apply(Response<Void> response) throws Exception {
+                        return new Object();
+                    }
+                })
+                .compose(retry(MAX_RETRY_COUNT));
+    }
+
+    private ObservableSource<Object> checkFile(final String url, String lastModify) {
+        return downloadApi.checkFileByHead(lastModify, url)
+                .doOnNext(new Consumer<Response<Void>>() {
+                    @Override
+                    public void accept(Response<Void> response) throws Exception {
+                        recordTable.saveFileState(url, response);
+                    }
+                })
+                .map(new Function<Response<Void>, Object>() {
+                    @Override
+                    public Object apply(Response<Void> response) throws Exception {
+                        return new Object();
+                    }
+                })
+                .compose(retry(MAX_RETRY_COUNT));
+    }
+
+    private ObservableSource<Object> queryByGet(final String url) {
+        return downloadApi.GET(TEST_RANGE_SUPPORT_BY_GET, url)
+                .doOnNext(new Consumer<Response<Void>>() {
+                    @Override
+                    public void accept(Response<Void> response) throws Exception {
+                        recordTable.saveHttpInfo(url, response);
                     }
                 })
                 .map(new Function<Response<Void>, Object>() {
@@ -416,13 +447,13 @@ public class DownloadHelper {
     }
 
     /**
-     * http HEAD request,query need info, check whether if server file has changed.
+     * http checkRangeByHead request,checkRange need info, check whether if server file has changed.
      *
      * @param url url
      * @return empty Observable
      */
     private ObservableSource<Object> query(final String url, String lastModify) {
-        return downloadApi.HEAD(TEST_RANGE_SUPPORT, lastModify)
+        return downloadApi.checkRangeByHead(TEST_RANGE_SUPPORT, lastModify)
                 .doOnNext(new Consumer<Response<Void>>() {
                     @Override
                     public void accept(Response<Void> response) throws Exception {

@@ -79,7 +79,6 @@ public class Utils {
      * convert long to GMT string
      *
      * @param lastModify long
-     *
      * @return String
      */
     public static String longToGMT(long lastModify) {
@@ -93,9 +92,7 @@ public class Utils {
      * convert GMT string to long
      *
      * @param GMT String
-     *
      * @return long
-     *
      * @throws ParseException
      */
     public static long GMTToLong(String GMT) throws ParseException {
@@ -167,9 +164,17 @@ public class Utils {
         return HttpHeaders.contentLength(response.headers());
     }
 
+    public static String fileName(String url, Response<?> response) {
+        String fileName = contentDisposition(response);
+        if (empty(fileName)) {
+            fileName = url.substring(url.lastIndexOf("/"));
+        }
+        return fileName;
+    }
+
     public static String contentDisposition(Response<?> response) {
         String disposition = response.headers().get("Content-Disposition");
-        if(empty(disposition)){
+        if (empty(disposition)) {
             return "";
         }
         return disposition.replaceFirst("(?i)^.*filename=\"([^\"]+)\".*$", "$1");
@@ -209,7 +214,6 @@ public class Utils {
      * Format file size to String
      *
      * @param size long
-     *
      * @return String
      */
     public static String formatSize(long size) {
@@ -280,7 +284,6 @@ public class Utils {
      * create dirs with params path
      *
      * @param paths paths
-     *
      * @throws IOException
      */
     public static void mkdirs(String... paths) throws IOException {

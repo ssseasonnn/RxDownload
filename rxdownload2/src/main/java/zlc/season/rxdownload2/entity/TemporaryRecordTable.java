@@ -1,14 +1,19 @@
 package zlc.season.rxdownload2.entity;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
 import retrofit2.Response;
-import zlc.season.rxdownload2.function.Utils;
 
+import static zlc.season.rxdownload2.function.Utils.contentDisposition;
+import static zlc.season.rxdownload2.function.Utils.contentLength;
 import static zlc.season.rxdownload2.function.Utils.empty;
+import static zlc.season.rxdownload2.function.Utils.lastModify;
+import static zlc.season.rxdownload2.function.Utils.notSupportRange;
+import static zlc.season.rxdownload2.function.Utils.requestRangeNotSatisfiable;
+import static zlc.season.rxdownload2.function.Utils.serverFileChanged;
+import static zlc.season.rxdownload2.function.Utils.serverFileNotChange;
 
 /**
  * Author: Season(ssseasonnn@gmail.com)
@@ -22,44 +27,42 @@ public class TemporaryRecordTable {
         this.map = new HashMap<>();
     }
 
-    public void addDownloadRecord(String url, String saveName, String savePath)
-            throws IOException {
-
-//        map.put(url, getRealFilePaths(saveName, savePath));
-    }
-
     public void add(String url, TemporaryRecord record) {
         map.put(url, record);
     }
 
-    public void update(String url, TemporaryRecord record) {
+    public void updateExtraInfo(String url, Response<?> response) {
+        updateBaseInfo(url, response);
 
+        TemporaryRecord record = map.get(url);
+        if (serverFileChanged(response)) {
+            record.serverFileChanged();
+        } else if (serverFileNotChange(response)) {
+            record.serverFileNotChange();
+        } else if (requestRangeNotSatisfiable(response)) {
+            record.requestRangeNotSatisfiable();
+        } else {
+            record.unableDownload();
+        }
     }
 
-    public void update(String url, String saveName) {
-        map.get(url).setSaveName(saveName);
-    }
 
-    public void update(String url, Response<?> response, boolean flag) {
-        String fileName = Utils.contentDisposition(response);
+    public void updateBaseInfo(String url, Response<?> response) {
+        String fileName = contentDisposition(response);
         if (empty(fileName)) {
             fileName = url.substring(url.lastIndexOf("/"));
         }
+
         TemporaryRecord record = map.get(url);
         record.setSaveName(fileName);
 
-        if (Utils.notSupportRange(response)) {
+        if (notSupportRange(response)) {
             record.notSupportRange();
         } else {
             record.supportRange();
         }
-
-        record.setContentLength(Utils.contentLength(response));
-        record.setLastModify(Utils.lastModify(response));
-
-        if (flag) {
-            record.setServerFileChangeFlag(response.code());
-        }
+        record.setContentLength(contentLength(response));
+        record.setLastModify(lastModify(response));
     }
 
     public TemporaryRecord get(String url) {

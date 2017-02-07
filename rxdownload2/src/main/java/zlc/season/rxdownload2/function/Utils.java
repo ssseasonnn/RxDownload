@@ -184,15 +184,15 @@ public class Utils {
                 isChunked(response);
     }
 
-    public static boolean serverFileChanged(Response<Void> resp) {
+    public static boolean serverFileChanged(Response<?> resp) {
         return resp.code() == 200;
     }
 
-    public static boolean serverFileNotChange(Response<Void> resp) {
+    public static boolean serverFileNotChange(Response<?> resp) {
         return resp.code() == 206;
     }
 
-    public static boolean requestRangeNotSatisfiable(Response<Void> resp) {
+    public static boolean requestRangeNotSatisfiable(Response<?> resp) {
         return resp.code() == 416;
     }
 

@@ -234,7 +234,7 @@ public class DownloadHelper {
      * @param savePath temp record savePath
      */
     private void addTempRecord(String url, String saveName, String savePath) {
-        recordTable.add(url, new TemporaryRecord(url, saveName, savePath));
+        recordTable.add(url, new TemporaryRecord(url, saveName, savePath, DownloadHelper.this));
     }
 
     private String readLastModify(String url) throws IOException {
@@ -285,16 +285,17 @@ public class DownloadHelper {
      * @return download type
      */
     private Observable<DownloadType> getDownloadType(final String url) {
-        return Observable.just(recordTable.get(url))
-                .map(new Function<TemporaryRecord, String>() {
+        return Observable.just(1)
+                .map(new Function<Integer, String>() {
                     @Override
-                    public String apply(TemporaryRecord record) throws Exception {
-                        return record.getSaveName();
+                    public String apply(Integer integer) throws Exception {
+                        return recordTable.get(url).getSaveName();
                     }
                 })
                 .flatMap(new Function<String, ObservableSource<Object>>() {
                     @Override
                     public ObservableSource<Object> apply(String s) throws Exception {
+                        //If file name is empty, get it now!
                         if (empty(s)) {
                             return query(url);
                         }
@@ -324,7 +325,7 @@ public class DownloadHelper {
                 .doOnNext(new Consumer<Response<Void>>() {
                     @Override
                     public void accept(Response<Void> response) throws Exception {
-                        recordTable.update(url, response, false);
+                        recordTable.updateBaseInfo(url, response);
                     }
                 })
                 .map(new Function<Response<Void>, Object>() {
@@ -347,7 +348,7 @@ public class DownloadHelper {
                 .doOnNext(new Consumer<Response<Void>>() {
                     @Override
                     public void accept(Response<Void> response) throws Exception {
-                        recordTable.update(url, response, true);
+                        recordTable.updateExtraInfo(url, response);
                     }
                 })
                 .map(new Function<Response<Void>, Object>() {
@@ -367,11 +368,15 @@ public class DownloadHelper {
      * @return Download Type
      */
     private Observable<DownloadType> getFileNotExistsType(final String url) {
-        return Observable.just(recordTable.get(url))
-                .flatMap(new Function<TemporaryRecord, ObservableSource<Object>>() {
+        return Observable.just(1)
+                .flatMap(new Function<Integer, ObservableSource<Object>>() {
                     @Override
-                    public ObservableSource<Object> apply(final TemporaryRecord record) throws Exception {
-                        if (record.isRangeUndefined()) {
+                    public ObservableSource<Object> apply(Integer integer) throws Exception {
+                        TemporaryRecord record = recordTable.get(url);
+                        //First of all this file not exists.
+                        record.setFileNotExists();
+                        //If we have not checked whether it supports Range, check it now.
+                        if (record.rangeFlagIsUndefined()) {
                             return query(url);
                         }
                         return Observable.just(new Object());
@@ -380,7 +385,8 @@ public class DownloadHelper {
                 .flatMap(new Function<Object, ObservableSource<DownloadType>>() {
                     @Override
                     public ObservableSource<DownloadType> apply(Object o) throws Exception {
-                        return Observable.just(recordTable.get(url).type(DownloadHelper.this, false));
+                        TemporaryRecord record = recordTable.get(url);
+                        return Observable.just(record.type(DownloadHelper.this, false));
                     }
                 });
     }
@@ -409,13 +415,19 @@ public class DownloadHelper {
                     @Override
                     public ObservableSource<Object> apply(String s) throws Exception {
                         TemporaryRecord record = recordTable.get(url);
+                        //First of all this file exists.
+                        record.setFileExists();
                         if (empty(s)) {
-                            record.readLastModifyFailed(true);
-                            if (record.isRangeUndefined()) {
+                            //Read LastModify failure, the file may have been deleted,
+                            // or what other reasons can not be read correctly.
+                            record.readLastModifyFailed();
+                            //If we have not checked whether it supports Range, check it now.
+                            if (record.rangeFlagIsUndefined()) {
                                 return query(url);
                             }
                         } else {
-                            record.readLastModifyFailed(false);
+                            //LastModify read success, so the next check whether the file changes.
+                            record.readLastModifySuccess();
                             return query(url, s);
                         }
                         return Observable.just(new Object());
@@ -424,7 +436,8 @@ public class DownloadHelper {
                 .flatMap(new Function<Object, ObservableSource<DownloadType>>() {
                     @Override
                     public ObservableSource<DownloadType> apply(Object o) throws Exception {
-                        return Observable.just(recordTable.get(url).type(DownloadHelper.this, true));
+                        TemporaryRecord record = recordTable.get(url);
+                        return Observable.just(record.type(DownloadHelper.this, true));
                     }
                 });
     }

@@ -1,5 +1,7 @@
 package zlc.season.rxdownload2.entity;
 
+import android.support.annotation.IntDef;
+
 import java.io.IOException;
 
 import zlc.season.rxdownload2.function.DownloadHelper;
@@ -13,13 +15,9 @@ import static zlc.season.rxdownload2.function.Utils.log;
  * FIXME
  */
 public class TemporaryRecord {
-    private static final int UNDEFINED = 0;
-    private static final int SUPPORT_RANGE = 1;
-    private static final int NOT_SUPPORT_RANGE = 2;
-
-    private static final int SERVER_FILE_CHANGED = 200;
-    private static final int SERVER_FILE_NOT_CHANGE = 206;
-    private static final int REQUEST_RANGE_NOT_SATISFIABLE = 416;
+    public static final int UNDETERMINED = 0;
+    public static final int SUPPORT = 1;
+    public static final int NOT_SUPPORT = 2;
 
     private String url;
     private String saveName;
@@ -32,11 +30,11 @@ public class TemporaryRecord {
     private long contentLength;
     private String lastModify;
 
-    private int rangeSupportFlag = UNDEFINED;
-    private int serverFileChangeFlag = UNDEFINED;
+    private int rangeAbility = UNDETERMINED;
 
-    private boolean lastModifyReadFlag = false;
-    private boolean localFileExistsFlag = false;
+    private boolean serverFileChangeState = false;
+    private boolean lastModifyReadState = false;
+    private boolean localFileExists = false;
 
     private DownloadType downloadType;
 
@@ -52,55 +50,33 @@ public class TemporaryRecord {
         downloadTypeFactory = new DownloadTypeFactory(downloadHelper);
     }
 
-    public void setFileExists() {
-        this.localFileExistsFlag = true;
+    public void setRangeAbility(int rangeAbility) {
+        this.rangeAbility = rangeAbility;
     }
 
-    public void setFileNotExists() {
-        this.localFileExistsFlag = false;
+    public int getRangeAbility() {
+        return rangeAbility;
     }
 
-    public void readLastModifyFailed() {
-        this.lastModifyReadFlag = false;
+    public DownloadType getDownloadType() {
+        return downloadType;
     }
 
-    public void readLastModifySuccess() {
-        this.lastModifyReadFlag = true;
+    public void setServerFileChangeState(boolean serverFileChangeState) {
+        this.serverFileChangeState = serverFileChangeState;
     }
 
-    public void setServerFileChangeFlag(int responseCode) {
-        this.serverFileChangeFlag = responseCode;
+    public void setLastModifyReadState(boolean lastModifyReadState) {
+        this.lastModifyReadState = lastModifyReadState;
     }
 
-    public void serverFileChanged() {
-        this.serverFileChangeFlag = SERVER_FILE_CHANGED;
+    public void setLocalFileExists(boolean localFileExists) {
+        this.localFileExists = localFileExists;
     }
 
-    public void serverFileNotChange() {
-        this.serverFileChangeFlag = SERVER_FILE_NOT_CHANGE;
+    public void setDownloadType(DownloadType downloadType) {
+        this.downloadType = downloadType;
     }
-
-    public void requestRangeNotSatisfiable() {
-        this.serverFileChangeFlag = REQUEST_RANGE_NOT_SATISFIABLE;
-    }
-
-    public void unableDownload() {
-
-    }
-
-
-    public boolean fileHasChanged() {
-        return this.serverFileChangeFlag == SERVER_FILE_CHANGED;
-    }
-
-    public boolean fileNotChange() {
-        return this.serverFileChangeFlag == SERVER_FILE_NOT_CHANGE;
-    }
-
-//    public boolean requestRangeNotSatisfiable() {
-//        return this.serverFileChangeFlag == REQUEST_RANGE_NOT_SATISFIABLE;
-//    }
-
 
     public DownloadType fileNotExistsType(DownloadHelper helper) {
         return getDownloadType(helper);
@@ -225,27 +201,6 @@ public class TemporaryRecord {
 
     public void setUrl(String url) {
         this.url = url;
-    }
-
-    public int getRangeSupportFlag() {
-        return rangeSupportFlag;
-    }
-
-    public boolean rangeFlagIsUndefined() {
-        return rangeSupportFlag == UNDEFINED;
-    }
-
-    public boolean isSupportRange() {
-        return rangeSupportFlag == SUPPORT_RANGE;
-    }
-
-    public void supportRange() {
-        this.rangeSupportFlag = SUPPORT_RANGE;
-    }
-
-    public void notSupportRange() {
-        this.rangeSupportFlag = NOT_SUPPORT_RANGE;
-        downloadType = downloadTypeFactory.normal(this);
     }
 
     public String getTempPath() {

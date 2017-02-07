@@ -6,6 +6,9 @@ import java.util.Map;
 
 import retrofit2.Response;
 
+import static zlc.season.rxdownload2.entity.TemporaryRecord.NOT_SUPPORT;
+import static zlc.season.rxdownload2.entity.TemporaryRecord.SUPPORT;
+import static zlc.season.rxdownload2.entity.TemporaryRecord.UNDETERMINED;
 import static zlc.season.rxdownload2.function.Utils.contentDisposition;
 import static zlc.season.rxdownload2.function.Utils.contentLength;
 import static zlc.season.rxdownload2.function.Utils.empty;
@@ -29,6 +32,27 @@ public class TemporaryRecordTable {
 
     public void add(String url, TemporaryRecord record) {
         map.put(url, record);
+    }
+
+
+    public void updateFileExists(String url) {
+        map.get(url).setLocalFileExists(true);
+    }
+
+    public void updateFileNotExists(String url) {
+        map.get(url).setLocalFileExists(false);
+    }
+
+    public void updateLastModifyReadFailed(String url) {
+        map.get(url).setLastModifyReadState(false);
+    }
+
+    public void updateLastModifyReadSuccess(String url) {
+        map.get(url).setLastModifyReadState(true);
+    }
+
+    public boolean rangeUndetermined(String url) {
+        return map.get(url).getRangeAbility() == UNDETERMINED;
     }
 
     public void updateExtraInfo(String url, Response<?> response) {
@@ -57,19 +81,19 @@ public class TemporaryRecordTable {
         record.setSaveName(fileName);
 
         if (notSupportRange(response)) {
-            record.notSupportRange();
+            record.setRangeAbility(NOT_SUPPORT);
         } else {
-            record.supportRange();
+            record.setRangeAbility(SUPPORT);
         }
         record.setContentLength(contentLength(response));
         record.setLastModify(lastModify(response));
     }
 
-    public TemporaryRecord get(String url) {
-        return map.get(url);
+    public String getSaveName(String url) {
+        return map.get(url).getSaveName();
     }
 
-    public boolean exists(String url) {
+    public boolean contain(String url) {
         return map.get(url) != null;
     }
 
@@ -87,5 +111,9 @@ public class TemporaryRecordTable {
 
     public File getLastModifyFile(String url) {
         return new File(map.get(url).getLmfPath());
+    }
+
+    public DownloadType getType(String url) {
+        return map.get(url).getDownloadType();
     }
 }

@@ -13,7 +13,7 @@ public final class Constant {
             = "Context is NULL! You should call [RxDownload.context(Context context)] first!";
 
     public static final String DOWNLOAD_URL_EXISTS
-            = "The url download task already exists.";
+            = "The url download task already contain.";
 
     public static final String DOWNLOAD_RECORD_FILE_DAMAGED
             = "Record file may be damaged, so we will re-download";
@@ -62,9 +62,9 @@ public final class Constant {
             "[%s] got an [%s] error! [%d] attempt reconnection!";
 
     //Dir hint
-    public static final String DIR_EXISTS_HINT = "Path [%s] exists.";
+    public static final String DIR_EXISTS_HINT = "Path [%s] contain.";
     public static final String DIR_NOT_EXISTS_HINT =
-            "Path [%s] not exists, so create.";
+            "Path [%s] not contain, so create.";
     public static final String DIR_CREATE_SUCCESS = "Path [%s] create success.";
     public static final String DIR_CREATE_FAILED = "Path [%s] create failed.";
     public static final String FILE_DELETE_SUCCESS = "File [%s] delete success.";

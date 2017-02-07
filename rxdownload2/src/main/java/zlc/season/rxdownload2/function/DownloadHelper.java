@@ -218,7 +218,7 @@ public class DownloadHelper {
     private void beforeDownload(String url, String saveName, String savePath)
             throws IOException {
 
-        if (recordTable.exists(url)) {
+        if (recordTable.contain(url)) {
             throw new IOException(DOWNLOAD_URL_EXISTS);
         }
         fileHelper.createDownloadDirs(savePath);
@@ -227,7 +227,7 @@ public class DownloadHelper {
     }
 
     /**
-     * Add a temporary record to the record table. Only for temporary record.
+     * Add a temporary record to the record recordTable. Only for temporary record.
      *
      * @param url      temp record url.
      * @param saveName temp record saveName, maybe empty.
@@ -289,7 +289,7 @@ public class DownloadHelper {
                 .map(new Function<Integer, String>() {
                     @Override
                     public String apply(Integer integer) throws Exception {
-                        return recordTable.get(url).getSaveName();
+                        return recordTable.getSaveName(url);
                     }
                 })
                 .flatMap(new Function<String, ObservableSource<Object>>() {
@@ -313,6 +313,84 @@ public class DownloadHelper {
                     }
                 });
     }
+
+    /**
+     * Gets the download type of file non-existence.
+     *
+     * @param url file url
+     * @return Download Type
+     */
+    private Observable<DownloadType> getFileNotExistsType(final String url) {
+        return Observable.just(1)
+                .flatMap(new Function<Integer, ObservableSource<Object>>() {
+                    @Override
+                    public ObservableSource<Object> apply(Integer integer) throws Exception {
+                        //First of all this file not contain.
+                        recordTable.updateFileNotExists(url);
+                        //If we have not checked whether it supports Range, check it now.
+                        if (recordTable.rangeUndetermined(url)) {
+                            return query(url);
+                        }
+                        return Observable.just(new Object());
+                    }
+                })
+                .flatMap(new Function<Object, ObservableSource<DownloadType>>() {
+                    @Override
+                    public ObservableSource<DownloadType> apply(Object o) throws Exception {
+                        return Observable.just(recordTable.getType(url));
+                    }
+                });
+    }
+
+    /**
+     * Gets the download type of file existence.
+     *
+     * @param url file url
+     * @return Download Type
+     */
+    private Observable<DownloadType> getFileExistsType(final String url) {
+        return Observable.just(1)
+                .map(new Function<Integer, String>() {
+                    @Override
+                    public String apply(Integer integer) throws Exception {
+                        String lmf;
+                        try {
+                            lmf = readLastModify(url);
+                        } catch (IOException e) {
+                            lmf = "";
+                        }
+                        return lmf;
+                    }
+                })
+                .flatMap(new Function<String, ObservableSource<Object>>() {
+                    @Override
+                    public ObservableSource<Object> apply(String s) throws Exception {
+                        //First of all this file contain.
+                        recordTable.updateFileExists(url);
+                        if (empty(s)) {
+                            //Read LastModify failure, the file may have been deleted,
+                            // or what other reasons can not be read correctly.
+                            recordTable.updateLastModifyReadFailed(url);
+                            //If we have not checked whether it supports Range, check it now.
+                            if (recordTable.rangeUndetermined(url)) {
+                                return query(url);
+                            }
+                        } else {
+                            //LastModify read success, so the next check whether the file changes.
+                            recordTable.updateLastModifyReadSuccess(url);
+                            return query(url, s);
+                        }
+                        return Observable.just(new Object());
+                    }
+                })
+                .flatMap(new Function<Object, ObservableSource<DownloadType>>() {
+                    @Override
+                    public ObservableSource<DownloadType> apply(Object o) throws Exception {
+                        return Observable.just(recordTable.getType(url));
+                    }
+                });
+    }
+
 
     /**
      * http HEAD request,query need info.
@@ -358,87 +436,5 @@ public class DownloadHelper {
                     }
                 })
                 .compose(retry(MAX_RETRY_COUNT));
-    }
-
-
-    /**
-     * Gets the download type of file non-existence.
-     *
-     * @param url file url
-     * @return Download Type
-     */
-    private Observable<DownloadType> getFileNotExistsType(final String url) {
-        return Observable.just(1)
-                .flatMap(new Function<Integer, ObservableSource<Object>>() {
-                    @Override
-                    public ObservableSource<Object> apply(Integer integer) throws Exception {
-                        TemporaryRecord record = recordTable.get(url);
-                        //First of all this file not exists.
-                        record.setFileNotExists();
-                        //If we have not checked whether it supports Range, check it now.
-                        if (record.rangeFlagIsUndefined()) {
-                            return query(url);
-                        }
-                        return Observable.just(new Object());
-                    }
-                })
-                .flatMap(new Function<Object, ObservableSource<DownloadType>>() {
-                    @Override
-                    public ObservableSource<DownloadType> apply(Object o) throws Exception {
-                        TemporaryRecord record = recordTable.get(url);
-                        return Observable.just(record.type(DownloadHelper.this, false));
-                    }
-                });
-    }
-
-    /**
-     * Gets the download type of file existence.
-     *
-     * @param url file url
-     * @return Download Type
-     */
-    private Observable<DownloadType> getFileExistsType(final String url) {
-        return Observable.just(1)
-                .map(new Function<Integer, String>() {
-                    @Override
-                    public String apply(Integer integer) throws Exception {
-                        String lmf;
-                        try {
-                            lmf = readLastModify(url);
-                        } catch (IOException e) {
-                            lmf = "";
-                        }
-                        return lmf;
-                    }
-                })
-                .flatMap(new Function<String, ObservableSource<Object>>() {
-                    @Override
-                    public ObservableSource<Object> apply(String s) throws Exception {
-                        TemporaryRecord record = recordTable.get(url);
-                        //First of all this file exists.
-                        record.setFileExists();
-                        if (empty(s)) {
-                            //Read LastModify failure, the file may have been deleted,
-                            // or what other reasons can not be read correctly.
-                            record.readLastModifyFailed();
-                            //If we have not checked whether it supports Range, check it now.
-                            if (record.rangeFlagIsUndefined()) {
-                                return query(url);
-                            }
-                        } else {
-                            //LastModify read success, so the next check whether the file changes.
-                            record.readLastModifySuccess();
-                            return query(url, s);
-                        }
-                        return Observable.just(new Object());
-                    }
-                })
-                .flatMap(new Function<Object, ObservableSource<DownloadType>>() {
-                    @Override
-                    public ObservableSource<DownloadType> apply(Object o) throws Exception {
-                        TemporaryRecord record = recordTable.get(url);
-                        return Observable.just(record.type(DownloadHelper.this, true));
-                    }
-                });
     }
 }

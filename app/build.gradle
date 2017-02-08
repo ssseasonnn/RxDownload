@@ -2,14 +2,15 @@ apply plugin: 'com.android.application'
 apply plugin: 'android-apt'
 
 android {
-    compileSdkVersion 25
-    buildToolsVersion "25"
+    compileSdkVersion setup.compileSdk
+    buildToolsVersion setup.buildTools
+
     defaultConfig {
         applicationId "zlc.season.rxdownloadproject"
-        minSdkVersion 11
-        targetSdkVersion 25
-        versionCode 1
-        versionName "1.0"
+        minSdkVersion setup.minSdk
+        targetSdkVersion setup.targetSdk
+        versionCode setup.vcode
+        versionName setup.vname
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
     }
     buildTypes {
@@ -25,10 +26,12 @@ dependencies {
     androidTestCompile('com.android.support.test.espresso:espresso-core:2.2.2', {
         exclude group: 'com.android.support', module: 'support-annotations'
     })
-    compile 'com.android.support:appcompat-v7:25.0.1'
-    compile 'com.android.support:design:25.0.1'
-    compile 'com.jakewharton:butterknife:8.4.0'
-    apt 'com.jakewharton:butterknife-compiler:8.4.0'
+    compile "com.android.support:appcompat-v7:${versions.libSupport}"
+    compile "com.android.support:design:${versions.libSupport}"
+    //
+    compile "com.jakewharton:butterknife:${versions.libButterKnife}"
+    apt "com.jakewharton:butterknife-compiler:${versions.libButterKnife}"
+    //
     compile 'com.squareup.picasso:picasso:2.5.2'
     compile 'zlc.season:practicalrecyclerview:1.0.8'
     compile 'com.tbruyelle.rxpermissions2:rxpermissions:0.8.2@aar'

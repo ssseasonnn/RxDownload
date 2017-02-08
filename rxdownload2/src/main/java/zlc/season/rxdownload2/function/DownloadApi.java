@@ -17,11 +17,14 @@ import retrofit2.http.Url;
  * Download Api
  */
 public interface DownloadApi {
+
     @GET
     @Streaming
-    Flowable<Response<ResponseBody>> download(
-            @Header("Range") String range,
-            @Url String url);
+    Flowable<Response<ResponseBody>> download(@Header("Range") String range,
+                                              @Url String url);
+
+    @HEAD
+    Observable<Response<Void>> check(@Url String url);
 
     @HEAD
     Observable<Response<Void>> checkRangeByHead(@Header("Range") String range,

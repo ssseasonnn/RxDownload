@@ -20,7 +20,7 @@ public class DownloadTypeFactory {
         type.mUrl = record.getUrl();
         type.mFileLength = record.getContentLength();
         type.mLastModify = record.getLastModify();
-        type.mDownloadHelper = this.mDownloadHelper;
+        type.downloadHelper = this.mDownloadHelper;
         return type;
     }
 
@@ -29,7 +29,7 @@ public class DownloadTypeFactory {
         type.mUrl = record.getUrl();
         type.mFileLength = record.getContentLength();
         type.mLastModify = record.getLastModify();
-        type.mDownloadHelper = this.mDownloadHelper;
+        type.downloadHelper = this.mDownloadHelper;
         return type;
     }
 
@@ -38,7 +38,7 @@ public class DownloadTypeFactory {
         type.mUrl = record.getUrl();
         type.mFileLength = record.getContentLength();
         type.mLastModify = record.getLastModify();
-        type.mDownloadHelper = this.mDownloadHelper;
+        type.downloadHelper = this.mDownloadHelper;
         return type;
     }
 
@@ -47,7 +47,7 @@ public class DownloadTypeFactory {
         type.mUrl = record.getUrl();
         type.mFileLength = record.getContentLength();
         type.mLastModify = record.getLastModify();
-        type.mDownloadHelper = this.mDownloadHelper;
+        type.downloadHelper = this.mDownloadHelper;
         return type;
     }
 
@@ -56,7 +56,7 @@ public class DownloadTypeFactory {
         type.mUrl = record.getUrl();
         type.mFileLength = record.getContentLength();
         type.mLastModify = record.getLastModify();
-        type.mDownloadHelper = this.mDownloadHelper;
+        type.downloadHelper = this.mDownloadHelper;
         return type;
     }
 

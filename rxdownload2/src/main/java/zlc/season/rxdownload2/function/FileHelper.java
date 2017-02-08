@@ -102,16 +102,16 @@ public class FileHelper {
         return new String[]{filePath, tempPath, lmfPath};
     }
 
-    void prepareDownload(File lastModifyFile, File saveFile,
-            long fileLength, String lastModify)
+    public void prepareDownload(File lastModifyFile, File saveFile,
+                                long fileLength, String lastModify)
             throws IOException, ParseException {
 
         writeLastModify(lastModifyFile, lastModify);
         prepareFile(saveFile, fileLength);
     }
 
-    void saveFile(FlowableEmitter<DownloadStatus> emitter,
-            File saveFile, Response<ResponseBody> resp) {
+    public void saveFile(FlowableEmitter<DownloadStatus> emitter,
+                         File saveFile, Response<ResponseBody> resp) {
 
         InputStream inputStream = null;
         OutputStream outputStream = null;
@@ -153,18 +153,18 @@ public class FileHelper {
         }
     }
 
-    void prepareDownload(File lastModifyFile, File tempFile, File saveFile,
-            long fileLength, String lastModify)
+    public void prepareDownload(File lastModifyFile, File tempFile, File saveFile,
+                                long fileLength, String lastModify)
             throws IOException, ParseException {
 
         writeLastModify(lastModifyFile, lastModify);
         prepareFile(tempFile, saveFile, fileLength);
     }
 
-    void saveFile(FlowableEmitter<DownloadStatus> emitter,
-            int i, long start, long end,
-            File tempFile, File saveFile,
-            ResponseBody response) {
+    public void saveFile(FlowableEmitter<DownloadStatus> emitter,
+                         int i, long start, long end,
+                         File tempFile, File saveFile,
+                         ResponseBody response) {
 
         RandomAccessFile record = null;
         FileChannel recordChannel = null;
@@ -211,8 +211,7 @@ public class FileHelper {
         }
     }
 
-    boolean downloadNotComplete(File tempFile)
-            throws IOException {
+    public boolean fileNotComplete(File tempFile) throws IOException {
 
         RandomAccessFile record = null;
         FileChannel channel = null;
@@ -237,8 +236,7 @@ public class FileHelper {
         }
     }
 
-    boolean tempFileDamaged(File tempFile, long fileLength)
-            throws IOException {
+    public boolean tempFileDamaged(File tempFile, long fileLength) throws IOException {
 
         RandomAccessFile record = null;
         FileChannel channel = null;
@@ -254,8 +252,7 @@ public class FileHelper {
         }
     }
 
-    DownloadRange readDownloadRange(File tempFile, int i)
-            throws IOException {
+    public DownloadRange readDownloadRange(File tempFile, int i) throws IOException {
 
         RandomAccessFile record = null;
         FileChannel channel = null;
@@ -273,8 +270,7 @@ public class FileHelper {
         }
     }
 
-    String getLastModify(File file)
-            throws IOException {
+    public String getLastModify(File file) throws IOException {
 
         RandomAccessFile record = null;
         try {
@@ -323,8 +319,7 @@ public class FileHelper {
         }
     }
 
-    private void prepareFile(File saveFile, long fileLength)
-            throws IOException {
+    private void prepareFile(File saveFile, long fileLength) throws IOException {
 
         RandomAccessFile file = null;
         try {
@@ -340,7 +335,7 @@ public class FileHelper {
         }
     }
 
-    private void writeLastModify(File file, String lastModify)
+    public void writeLastModify(File file, String lastModify)
             throws IOException, ParseException {
 
         RandomAccessFile record = null;
@@ -358,7 +353,6 @@ public class FileHelper {
      * 还剩多少字节没有下载
      *
      * @param recordBuffer buffer
-     *
      * @return 剩余的字节
      */
     private long getResidue(MappedByteBuffer recordBuffer) {

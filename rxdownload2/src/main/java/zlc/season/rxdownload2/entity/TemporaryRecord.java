@@ -1,11 +1,6 @@
 package zlc.season.rxdownload2.entity;
 
-import java.io.IOException;
-
-import zlc.season.rxdownload2.function.DownloadHelper;
-
-import static zlc.season.rxdownload2.function.Constant.DOWNLOAD_RECORD_FILE_DAMAGED;
-import static zlc.season.rxdownload2.function.Utils.log;
+import java.io.File;
 
 /**
  * Author: Season(ssseasonnn@gmail.com)
@@ -13,10 +8,6 @@ import static zlc.season.rxdownload2.function.Utils.log;
  * FIXME
  */
 public class TemporaryRecord {
-    public static final int UNDETERMINED = 0;
-    public static final int SUPPORT = 1;
-    public static final int NOT_SUPPORT = 2;
-
     private String url;
     private String saveName;
     private String savePath;
@@ -28,13 +19,11 @@ public class TemporaryRecord {
     private long contentLength;
     private String lastModify;
 
-    private int rangeAbility = UNDETERMINED;
-
-    private boolean supportHeadMethod = true;
-
-    private boolean serverFileChangeState = false;
-    private boolean lastModifyReadState = false;
-    private boolean localFileExists = false;
+    private boolean rangeSupport = false;
+    /**
+     * server file change flag
+     */
+    private boolean serverFileChanged = false;
 
     private DownloadType downloadType;
 
@@ -44,24 +33,20 @@ public class TemporaryRecord {
         this.lmfPath = lmfPath;
     }
 
-    public boolean isSupportHeadMethod() {
-        return supportHeadMethod;
+    public boolean isSupportRange() {
+        return rangeSupport;
     }
 
-    public void setSupportHeadMethod(boolean supportHeadMethod) {
-        this.supportHeadMethod = supportHeadMethod;
-    }
-
-    public int getRangeAbility() {
-        return rangeAbility;
-    }
-
-    public void setRangeAbility(int rangeAbility) {
-        this.rangeAbility = rangeAbility;
+    public void setRangeSupport(boolean rangeSupport) {
+        this.rangeSupport = rangeSupport;
     }
 
     public DownloadType getDownloadType() {
         return downloadType;
+    }
+
+    public void setServerFileChanged(boolean serverFileChanged) {
+        this.serverFileChanged = serverFileChanged;
     }
 
     public void setDownloadType(DownloadType downloadType) {
@@ -69,112 +54,7 @@ public class TemporaryRecord {
     }
 
     public boolean isServerFileChanged() {
-        return serverFileChangeState;
-    }
-
-    public boolean isLastModifyReadSuccess() {
-        return lastModifyReadState;
-    }
-
-    public boolean isLocalFileExists() {
-        return localFileExists;
-    }
-
-    public void setLocalFileExists(boolean localFileExists) {
-        this.localFileExists = localFileExists;
-    }
-
-    public void setServerFileChangeState(boolean serverFileChangeState) {
-        this.serverFileChangeState = serverFileChangeState;
-    }
-
-    public void setLastModifyReadState(boolean lastModifyReadState) {
-        this.lastModifyReadState = lastModifyReadState;
-    }
-
-    public DownloadType fileNotExistsType(DownloadHelper helper) {
-        return getDownloadType(helper);
-    }
-
-    public DownloadType fileExistsType(DownloadHelper helper) {
-        return getFileExistsType(helper);
-    }
-
-
-    private DownloadType getFileExistsType(DownloadHelper helper) {
-        DownloadType type;
-
-        if (readLastModifyFailed()) {
-            type = getDownloadType(helper);
-        } else {
-            type = getLastModifyReadSuccessType(helper);
-        }
-        return type;
-    }
-
-    private DownloadType getLastModifyReadSuccessType(DownloadHelper helper) {
-        DownloadType type;
-        DownloadTypeFactory factory = new DownloadTypeFactory(helper);
-
-        if (fileHasChanged()) {
-            type = getDownloadType(helper);
-        } else if (fileNotChange()) {
-            type = getServerFileNotChangeType(helper);
-        } else if (requestRangeNotSatisfiable()) {
-            type = factory.useGET(this);
-        } else {
-            type = factory.unable();
-        }
-        return type;
-    }
-
-    private DownloadType getServerFileNotChangeType(DownloadHelper helper) {
-        DownloadType type;
-        if (isSupportRange()) {
-            type = checkFileStatus(helper);
-        } else {
-            type = checkFileComplete(helper);
-        }
-        return type;
-    }
-
-    private DownloadType checkFileStatus(DownloadHelper helper) {
-        DownloadType type;
-        DownloadTypeFactory factory = new DownloadTypeFactory(helper);
-        try {
-            if (helper.needReDownload(url, contentLength)) {
-                type = factory.multithread(this);
-            } else if (helper.downloadNotComplete(url)) {
-                type = factory.multithread(this);
-            } else {
-                type = factory.already(this);
-            }
-        } catch (IOException e) {
-            log(DOWNLOAD_RECORD_FILE_DAMAGED);
-            type = factory.multithread(this);
-        }
-        return type;
-    }
-
-    private DownloadType checkFileComplete(DownloadHelper helper) {
-        DownloadTypeFactory factory = new DownloadTypeFactory(helper);
-        if (helper.downloadNotComplete(url, contentLength)) {
-            return factory.normal(this);
-        } else {
-            return factory.already(this);
-        }
-    }
-
-    private DownloadType getDownloadType(DownloadHelper helper) {
-        DownloadType type;
-        DownloadTypeFactory factory = new DownloadTypeFactory(helper);
-
-        if (isSupportRange()) {
-            type = factory.multithread(this);
-        } else {
-            type = factory.normal(this);
-        }
-        return type;
+        return serverFileChanged;
     }
 
     public long getContentLength() {
@@ -240,4 +120,30 @@ public class TemporaryRecord {
     public void setFilePath(String filePath) {
         this.filePath = filePath;
     }
+
+
+    public File getFile() {
+        return new File(filePath);
+    }
+
+    public File getTempFile() {
+        return new File(tempPath);
+    }
+
+    public File getLastModifyFile() {
+        return new File(lmfPath);
+    }
+
+    public boolean fileExists() {
+        return getFile().exists();
+    }
+
+    public boolean tempExists() {
+        return getTempFile().exists();
+    }
+
+    public boolean fileComplete() {
+        return getFile().length() == contentLength;
+    }
+
 }

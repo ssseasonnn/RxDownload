@@ -1,6 +1,18 @@
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
-
 buildscript {
+    ext {
+        setup = [compileSdk: 25,
+                 buildTools: "25.0.2",
+                 minSdk    : 11,
+                 targetSdk : 25,
+                 vcode     : 2,
+                 vname     : "1.0.1"]
+        versions = [libSupport    : "25.1.0",
+                    libButterKnife: "8.4.0",
+                    libRxJava     : "2.0.1",
+                    libRetrofit   : "2.1.0",
+                    libOkhttp3    : "3.4.1"]
+    }
     repositories {
         jcenter()
     }

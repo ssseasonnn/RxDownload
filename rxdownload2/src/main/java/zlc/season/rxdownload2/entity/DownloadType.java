@@ -13,7 +13,6 @@ import io.reactivex.Flowable;
 import io.reactivex.FlowableEmitter;
 import io.reactivex.FlowableOnSubscribe;
 import io.reactivex.Observable;
-import io.reactivex.ObservableSource;
 import io.reactivex.functions.Action;
 import io.reactivex.functions.Consumer;
 import io.reactivex.functions.Function;
@@ -38,7 +37,6 @@ import static zlc.season.rxdownload2.function.Constant.NORMAL_DOWNLOAD_COMPLETED
 import static zlc.season.rxdownload2.function.Constant.NORMAL_DOWNLOAD_FAILED;
 import static zlc.season.rxdownload2.function.Constant.NORMAL_DOWNLOAD_PREPARE;
 import static zlc.season.rxdownload2.function.Constant.NORMAL_DOWNLOAD_STARTED;
-import static zlc.season.rxdownload2.function.Constant.NOT_SUPPORT_HEAD_HINT;
 import static zlc.season.rxdownload2.function.Constant.RANGE_DOWNLOAD_COMPLETED;
 import static zlc.season.rxdownload2.function.Constant.RANGE_DOWNLOAD_FAILED;
 import static zlc.season.rxdownload2.function.Constant.RANGE_DOWNLOAD_STARTED;
@@ -248,10 +246,8 @@ public abstract class DownloadType {
 
             return Flowable.create(new FlowableOnSubscribe<DownloadStatus>() {
                 @Override
-                public void subscribe(FlowableEmitter<DownloadStatus> emitter)
-                        throws Exception {
-                    downloadHelper.saveRangeFile(emitter,
-                            index, start, end, mUrl, response);
+                public void subscribe(FlowableEmitter<DownloadStatus> emitter) throws Exception {
+                    downloadHelper.saveRangeFile(emitter, index, start, end, record.getUrl(), response);
                 }
             }, BackpressureStrategy.LATEST);
         }
@@ -262,7 +258,8 @@ public abstract class DownloadType {
         @Override
         public void prepareDownload() throws IOException, ParseException {
             super.prepareDownload();
-            downloadHelper.prepareMultiThreadDownload(mUrl, mFileLength, mLastModify);
+            fileHelper.prepareDownload(record.getLastModifyFile(), record.getTempFile(), record.getFile(),
+                    record.getContentLength(), record.getLastModify());
         }
 
         @Override
@@ -300,29 +297,7 @@ public abstract class DownloadType {
 
         @Override
         public Observable<DownloadStatus> startDownload() throws IOException {
-            return Observable.just(new DownloadStatus(mFileLength, mFileLength));
-        }
-    }
-
-    static class NotSupportHEAD extends DownloadType {
-
-        @Override
-        public void prepareDownload() throws IOException, ParseException {
-            log(NOT_SUPPORT_HEAD_HINT);
-        }
-
-        @Override
-        public Observable<DownloadStatus> startDownload() throws IOException {
-            return downloadHelper
-                    .notSupportHead(mUrl)
-                    .flatMap(new Function<DownloadType, ObservableSource<DownloadStatus>>() {
-                        @Override
-                        public ObservableSource<DownloadStatus> apply(DownloadType downloadType)
-                                throws Exception {
-                            downloadType.prepareDownload();
-                            return downloadType.startDownload();
-                        }
-                    });
+            return Observable.just(new DownloadStatus(record.getContentLength(), record.getContentLength()));
         }
     }
 

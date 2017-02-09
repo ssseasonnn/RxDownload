@@ -16,6 +16,9 @@ public class TemporaryRecord {
     private String tempPath;
     private String lmfPath;
 
+    private int retryCount;
+    private int maxThreads;
+
     private long contentLength;
     private String lastModify;
 
@@ -33,6 +36,22 @@ public class TemporaryRecord {
         this.lmfPath = lmfPath;
     }
 
+    public int getRetryCount() {
+        return retryCount;
+    }
+
+    public void setRetryCount(int retryCount) {
+        this.retryCount = retryCount;
+    }
+
+    public int getMaxThreads() {
+        return maxThreads;
+    }
+
+    public void setMaxThreads(int maxThreads) {
+        this.maxThreads = maxThreads;
+    }
+
     public boolean isSupportRange() {
         return rangeSupport;
     }
@@ -45,16 +64,16 @@ public class TemporaryRecord {
         return downloadType;
     }
 
-    public void setServerFileChanged(boolean serverFileChanged) {
-        this.serverFileChanged = serverFileChanged;
-    }
-
     public void setDownloadType(DownloadType downloadType) {
         this.downloadType = downloadType;
     }
 
     public boolean isServerFileChanged() {
         return serverFileChanged;
+    }
+
+    public void setServerFileChanged(boolean serverFileChanged) {
+        this.serverFileChanged = serverFileChanged;
     }
 
     public long getContentLength() {

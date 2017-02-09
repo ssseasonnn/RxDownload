@@ -23,7 +23,6 @@ import zlc.season.rxdownload2.function.DownloadHelper;
 import zlc.season.rxdownload2.function.FileHelper;
 import zlc.season.rxdownload2.function.Utils;
 
-import static java.lang.Thread.currentThread;
 import static zlc.season.rxdownload2.function.Constant.ALREADY_DOWNLOAD_HINT;
 import static zlc.season.rxdownload2.function.Constant.CONTINUE_DOWNLOAD_COMPLETED;
 import static zlc.season.rxdownload2.function.Constant.CONTINUE_DOWNLOAD_FAILED;
@@ -37,9 +36,6 @@ import static zlc.season.rxdownload2.function.Constant.NORMAL_DOWNLOAD_COMPLETED
 import static zlc.season.rxdownload2.function.Constant.NORMAL_DOWNLOAD_FAILED;
 import static zlc.season.rxdownload2.function.Constant.NORMAL_DOWNLOAD_PREPARE;
 import static zlc.season.rxdownload2.function.Constant.NORMAL_DOWNLOAD_STARTED;
-import static zlc.season.rxdownload2.function.Constant.RANGE_DOWNLOAD_COMPLETED;
-import static zlc.season.rxdownload2.function.Constant.RANGE_DOWNLOAD_FAILED;
-import static zlc.season.rxdownload2.function.Constant.RANGE_DOWNLOAD_STARTED;
 import static zlc.season.rxdownload2.function.Constant.UNABLE_DOWNLOAD_HINT;
 import static zlc.season.rxdownload2.function.Utils.log;
 
@@ -82,16 +78,10 @@ public abstract class DownloadType {
                             log(NORMAL_DOWNLOAD_STARTED);
                         }
                     })
-                    .flatMap(new Function<Integer, Publisher<Response<ResponseBody>>>() {
+                    .flatMap(new Function<Integer, Publisher<DownloadStatus>>() {
                         @Override
-                        public Publisher<Response<ResponseBody>> apply(Integer integer) throws Exception {
-                            return downloadHelper.download(record.getUrl());
-                        }
-                    })
-                    .flatMap(new Function<Response<ResponseBody>, Publisher<DownloadStatus>>() {
-                        @Override
-                        public Publisher<DownloadStatus> apply(Response<ResponseBody> response) throws Exception {
-                            return normalSave(response);
+                        public Publisher<DownloadStatus> apply(Integer integer) throws Exception {
+                            return request();
                         }
                     })
                     .doOnError(new Consumer<Throwable>() {
@@ -109,7 +99,18 @@ public abstract class DownloadType {
                     .toObservable();
         }
 
-        private Publisher<DownloadStatus> normalSave(final Response<ResponseBody> response) {
+        private Publisher<DownloadStatus> request() {
+            return downloadHelper.download(record.getUrl())
+                    .flatMap(new Function<Response<ResponseBody>, Publisher<DownloadStatus>>() {
+                        @Override
+                        public Publisher<DownloadStatus> apply(Response<ResponseBody> response) throws Exception {
+                            return save(response);
+                        }
+                    })
+                    .compose(Utils.<DownloadStatus>retry2(downloadHelper.getMaxRetryCount()));
+        }
+
+        private Publisher<DownloadStatus> save(final Response<ResponseBody> response) {
             return Flowable.create(new FlowableOnSubscribe<DownloadStatus>() {
                 @Override
                 public void subscribe(FlowableEmitter<DownloadStatus> e) throws Exception {
@@ -129,7 +130,7 @@ public abstract class DownloadType {
         @Override
         public Observable<DownloadStatus> startDownload() throws IOException {
             List<Publisher<DownloadStatus>> tasks = new ArrayList<>();
-            for (int i = 0; i < downloadHelper.getMaxThreads(); i++) {
+            for (int i = 0; i < record.getMaxThreads(); i++) {
                 tasks.add(rangeDownloadTask(i));
             }
             return Flowable.mergeDelayError(tasks)
@@ -176,56 +177,48 @@ public abstract class DownloadType {
          * @return Observable
          */
         private Publisher<DownloadStatus> rangeDownloadTask(final int index) {
-            return Flowable.just(1).subscribeOn(Schedulers.io())
-                    .map(new Function<Integer, DownloadRange>() {
+            return Flowable.just(1)
+                    .flatMap(new Function<Integer, Publisher<DownloadStatus>>() {
                         @Override
-                        public DownloadRange apply(Integer integer) throws Exception {
-                            DownloadRange range = fileHelper.readDownloadRange(record.getTempFile(), index);
-                            if (range.legal()) {
-                                return range;
-                            } else {
-                                throw new RuntimeException("download range is illegal");
-                            }
+                        public Publisher<DownloadStatus> apply(Integer integer) throws Exception {
+                            return download(index);
                         }
-                    })
-                    .flatMap(new Function<DownloadRange, Publisher<DownloadStatus>>() {
-                        @Override
-                        public Publisher<DownloadStatus> apply(DownloadRange range) throws Exception {
-                            return startRangeDownload(range, index);
-                        }
-                    })
-                    .compose(Utils.<DownloadStatus>retry2(downloadHelper.getMaxRetryCount()));
+                    });
         }
 
-        private Publisher<DownloadStatus> startRangeDownload(final DownloadRange range,
-                                                             final int index) {
+        private Publisher<DownloadStatus> download(final int index) {
+            return readRange(index)
+                    .flatMap(new Function<DownloadRange, Publisher<DownloadStatus>>() {
+                        @Override
+                        public Publisher<DownloadStatus> apply(final DownloadRange range) throws Exception {
+                            return request(range, index);
+                        }
+                    })
+                    .compose(Utils.<DownloadStatus>retry2(record.getRetryCount()));
+        }
 
+        private Flowable<DownloadRange> readRange(final int index) {
+            return Flowable.create(new FlowableOnSubscribe<DownloadRange>() {
+                @Override
+                public void subscribe(FlowableEmitter<DownloadRange> e) throws Exception {
+                    DownloadRange range = fileHelper.readDownloadRange(record.getTempFile(), index);
+                    if (range.legal()) {
+                        e.onNext(range);
+                        e.onComplete();
+                    } else {
+                        e.onError(new RuntimeException("request range is illeagal"));
+                    }
+                }
+            }, BackpressureStrategy.ERROR).subscribeOn(Schedulers.io());
+        }
+
+        private Publisher<DownloadStatus> request(final DownloadRange range, final int index) {
             String rangeStr = "bytes=" + range.start + "-" + range.end;
             return downloadHelper.downloadRange(record.getUrl(), rangeStr)
-                    .doOnSubscribe(new Consumer<Subscription>() {
-                        @Override
-                        public void accept(Subscription subscription) throws Exception {
-                            log(RANGE_DOWNLOAD_STARTED, currentThread().getName(),
-                                    range.start, range.end);
-                        }
-                    })
                     .flatMap(new Function<Response<ResponseBody>, Publisher<DownloadStatus>>() {
                         @Override
-                        public Publisher<DownloadStatus> apply(Response<ResponseBody> resp)
-                                throws Exception {
-                            return rangeSave(range.start, range.end, index, resp.body());
-                        }
-                    })
-                    .doOnComplete(new Action() {
-                        @Override
-                        public void run() throws Exception {
-                            log(RANGE_DOWNLOAD_COMPLETED, currentThread().getName());
-                        }
-                    })
-                    .doOnError(new Consumer<Throwable>() {
-                        @Override
-                        public void accept(Throwable throwable) throws Exception {
-                            log(RANGE_DOWNLOAD_FAILED, currentThread().getName());
+                        public Publisher<DownloadStatus> apply(Response<ResponseBody> response) throws Exception {
+                            return save(range.start, range.end, index, response.body());
                         }
                     });
         }
@@ -239,10 +232,8 @@ public abstract class DownloadType {
          * @param response 响应值
          * @return Flowable
          */
-        private Publisher<DownloadStatus> rangeSave(
-                final long start, final long end,
-                final int index,
-                final ResponseBody response) {
+        private Publisher<DownloadStatus> save(final long start, final long end,
+                                               final int index, final ResponseBody response) {
 
             return Flowable.create(new FlowableOnSubscribe<DownloadStatus>() {
                 @Override

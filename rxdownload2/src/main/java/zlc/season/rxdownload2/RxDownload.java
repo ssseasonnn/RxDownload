@@ -8,7 +8,6 @@ import android.os.IBinder;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 
-import java.io.File;
 import java.io.InterruptedIOException;
 import java.net.SocketException;
 import java.util.List;
@@ -66,7 +65,6 @@ public class RxDownload {
 
     private DownloadHelper mDownloadHelper;
     private Context mContext;
-    private boolean mAutoInstall;
     private int MAX_DOWNLOAD_NUMBER = 5;
 
     private RxDownload() {
@@ -85,10 +83,10 @@ public class RxDownload {
      * @param savePath savePath
      * @return Files
      */
-    public File[] getRealFiles(String saveName, String savePath) {
-        String[] filePaths = mDownloadHelper.getRealFilePaths(saveName, savePath);
-        return new File[]{new File(filePaths[0]), new File(filePaths[1]), new File(filePaths[2])};
-    }
+//    public File[] getRealFiles(String saveName, String savePath) {
+//        String[] filePaths = mDownloadHelper.getRealFilePaths(saveName, savePath);
+//        return new File[]{new File(filePaths[0]), new File(filePaths[1]), new File(filePaths[2])};
+//    }
 
     /**
      * 普通下载时不需要context, 使用Service下载时需要context;
@@ -126,10 +124,6 @@ public class RxDownload {
         return this;
     }
 
-    public RxDownload autoInstall(boolean flag) {
-        this.mAutoInstall = flag;
-        return this;
-    }
 
     /**
      * Receive the download address for the url download event and download status.
@@ -301,8 +295,7 @@ public class RxDownload {
             @NonNull final String saveName,
             @Nullable final String savePath) {
 
-        return mDownloadHelper.downloadDispatcher(url, saveName, savePath,
-                mContext, mAutoInstall);
+        return mDownloadHelper.downloadDispatcher(url, saveName, savePath);
     }
 
     /**

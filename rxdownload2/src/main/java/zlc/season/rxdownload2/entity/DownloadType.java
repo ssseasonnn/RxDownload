@@ -19,8 +19,6 @@ import io.reactivex.functions.Function;
 import io.reactivex.schedulers.Schedulers;
 import okhttp3.ResponseBody;
 import retrofit2.Response;
-import zlc.season.rxdownload2.function.DownloadHelper;
-import zlc.season.rxdownload2.function.FileHelper;
 import zlc.season.rxdownload2.function.Utils;
 
 import static zlc.season.rxdownload2.function.Constant.ALREADY_DOWNLOAD_HINT;
@@ -46,10 +44,11 @@ import static zlc.season.rxdownload2.function.Utils.log;
  * 下载类型
  */
 public abstract class DownloadType {
-    TemporaryRecord record;
+    protected TemporaryRecord record;
 
-    FileHelper fileHelper;
-    DownloadHelper downloadHelper;
+    public DownloadType(TemporaryRecord record) {
+        this.record = record;
+    }
 
     public abstract void prepareDownload()
             throws IOException, ParseException;
@@ -58,15 +57,14 @@ public abstract class DownloadType {
 
     static class NormalDownload extends DownloadType {
 
+        public NormalDownload(TemporaryRecord record) {
+            super(record);
+        }
+
         @Override
         public void prepareDownload() throws IOException, ParseException {
             log(NORMAL_DOWNLOAD_PREPARE);
-
-            fileHelper.prepareDownload(
-                    record.getLastModifyFile(),
-                    record.getFile(),
-                    record.getContentLength(),
-                    record.getLastModify());
+            record.prepareNormalDownload();
         }
 
         @Override
@@ -81,7 +79,7 @@ public abstract class DownloadType {
                     .flatMap(new Function<Integer, Publisher<DownloadStatus>>() {
                         @Override
                         public Publisher<DownloadStatus> apply(Integer integer) throws Exception {
-                            return request();
+                            return start();
                         }
                     })
                     .doOnError(new Consumer<Throwable>() {
@@ -99,28 +97,32 @@ public abstract class DownloadType {
                     .toObservable();
         }
 
-        private Publisher<DownloadStatus> request() {
-            return downloadHelper.download(record.getUrl())
+        private Publisher<DownloadStatus> start() {
+            return record.download()
                     .flatMap(new Function<Response<ResponseBody>, Publisher<DownloadStatus>>() {
                         @Override
                         public Publisher<DownloadStatus> apply(Response<ResponseBody> response) throws Exception {
                             return save(response);
                         }
                     })
-                    .compose(Utils.<DownloadStatus>retry2(downloadHelper.getMaxRetryCount()));
+                    .compose(Utils.<DownloadStatus>retry2(record.getMaxRetryCount()));
         }
 
         private Publisher<DownloadStatus> save(final Response<ResponseBody> response) {
             return Flowable.create(new FlowableOnSubscribe<DownloadStatus>() {
                 @Override
                 public void subscribe(FlowableEmitter<DownloadStatus> e) throws Exception {
-                    fileHelper.saveFile(e, record.getFile(), response);
+                    record.save(e, response);
                 }
             }, BackpressureStrategy.LATEST);
         }
     }
 
     static class ContinueDownload extends DownloadType {
+
+        public ContinueDownload(TemporaryRecord record) {
+            super(record);
+        }
 
         @Override
         public void prepareDownload() throws IOException, ParseException {
@@ -177,68 +179,31 @@ public abstract class DownloadType {
          * @return Observable
          */
         private Publisher<DownloadStatus> rangeDownloadTask(final int index) {
-            return Flowable.just(1)
-                    .flatMap(new Function<Integer, Publisher<DownloadStatus>>() {
-                        @Override
-                        public Publisher<DownloadStatus> apply(Integer integer) throws Exception {
-                            return download(index);
-                        }
-                    });
-        }
-
-        private Publisher<DownloadStatus> download(final int index) {
-            return readRange(index)
-                    .flatMap(new Function<DownloadRange, Publisher<DownloadStatus>>() {
-                        @Override
-                        public Publisher<DownloadStatus> apply(final DownloadRange range) throws Exception {
-                            return request(range, index);
-                        }
-                    })
-                    .compose(Utils.<DownloadStatus>retry2(record.getRetryCount()));
-        }
-
-        private Flowable<DownloadRange> readRange(final int index) {
-            return Flowable.create(new FlowableOnSubscribe<DownloadRange>() {
-                @Override
-                public void subscribe(FlowableEmitter<DownloadRange> e) throws Exception {
-                    DownloadRange range = fileHelper.readDownloadRange(record.getTempFile(), index);
-                    if (range.legal()) {
-                        e.onNext(range);
-                        e.onComplete();
-                    } else {
-                        e.onError(new RuntimeException("request range is illeagal"));
-                    }
-                }
-            }, BackpressureStrategy.ERROR).subscribeOn(Schedulers.io());
-        }
-
-        private Publisher<DownloadStatus> request(final DownloadRange range, final int index) {
-            String rangeStr = "bytes=" + range.start + "-" + range.end;
-            return downloadHelper.downloadRange(record.getUrl(), rangeStr)
+            return record.rangeDownload(index)
+                    .subscribeOn(Schedulers.io())
                     .flatMap(new Function<Response<ResponseBody>, Publisher<DownloadStatus>>() {
                         @Override
                         public Publisher<DownloadStatus> apply(Response<ResponseBody> response) throws Exception {
-                            return save(range.start, range.end, index, response.body());
+                            return save(index, response.body());
                         }
-                    });
+                    })
+                    .compose(Utils.<DownloadStatus>retry2(record.getMaxRetryCount()));
+
         }
 
         /**
          * 保存断点下载的文件,以及下载进度
          *
-         * @param start    从start开始
-         * @param end      到end结束
          * @param index    下载编号
          * @param response 响应值
          * @return Flowable
          */
-        private Publisher<DownloadStatus> save(final long start, final long end,
-                                               final int index, final ResponseBody response) {
+        private Publisher<DownloadStatus> save(final int index, final ResponseBody response) {
 
             return Flowable.create(new FlowableOnSubscribe<DownloadStatus>() {
                 @Override
                 public void subscribe(FlowableEmitter<DownloadStatus> emitter) throws Exception {
-                    downloadHelper.saveRangeFile(emitter, index, start, end, record.getUrl(), response);
+                    record.save(emitter, index, response);
                 }
             }, BackpressureStrategy.LATEST);
         }
@@ -246,11 +211,14 @@ public abstract class DownloadType {
 
     static class MultiThreadDownload extends ContinueDownload {
 
+        public MultiThreadDownload(TemporaryRecord record) {
+            super(record);
+        }
+
         @Override
         public void prepareDownload() throws IOException, ParseException {
             super.prepareDownload();
-            fileHelper.prepareDownload(record.getLastModifyFile(), record.getTempFile(), record.getFile(),
-                    record.getContentLength(), record.getLastModify());
+            record.prepareRangeDownload();
         }
 
         @Override
@@ -281,6 +249,10 @@ public abstract class DownloadType {
 
     static class AlreadyDownloaded extends DownloadType {
 
+        public AlreadyDownloaded(TemporaryRecord record) {
+            super(record);
+        }
+
         @Override
         public void prepareDownload() throws IOException, ParseException {
             log(ALREADY_DOWNLOAD_HINT);
@@ -293,6 +265,10 @@ public abstract class DownloadType {
     }
 
     static class UnableDownload extends DownloadType {
+
+        public UnableDownload(TemporaryRecord record) {
+            super(record);
+        }
 
         @Override
         public void prepareDownload() throws IOException, ParseException {

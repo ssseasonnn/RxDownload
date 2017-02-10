@@ -284,9 +284,8 @@ public class Utils {
      * create dirs with params path
      *
      * @param paths paths
-     * @throws IOException
      */
-    public static void mkdirs(String... paths) throws IOException {
+    public static void mkdirs(String... paths) {
         for (String each : paths) {
             File file = new File(each);
             if (file.exists() && file.isDirectory()) {
@@ -298,7 +297,6 @@ public class Utils {
                     log(DIR_CREATE_SUCCESS, each);
                 } else {
                     log(DIR_CREATE_FAILED, each);
-                    throw new IOException(format(getDefault(), DIR_CREATE_FAILED, each));
                 }
             }
         }

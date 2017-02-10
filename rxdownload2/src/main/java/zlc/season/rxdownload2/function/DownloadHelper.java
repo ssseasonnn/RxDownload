@@ -1,13 +1,9 @@
 package zlc.season.rxdownload2.function;
 
-import org.reactivestreams.Publisher;
-
 import java.io.IOException;
 import java.text.ParseException;
 import java.util.List;
 
-import io.reactivex.Flowable;
-import io.reactivex.FlowableEmitter;
 import io.reactivex.Observable;
 import io.reactivex.ObservableSource;
 import io.reactivex.disposables.Disposable;
@@ -15,19 +11,17 @@ import io.reactivex.exceptions.CompositeException;
 import io.reactivex.functions.Action;
 import io.reactivex.functions.Consumer;
 import io.reactivex.functions.Function;
-import okhttp3.ResponseBody;
 import retrofit2.Response;
 import retrofit2.Retrofit;
-import zlc.season.rxdownload2.entity.DownloadRange;
 import zlc.season.rxdownload2.entity.DownloadStatus;
 import zlc.season.rxdownload2.entity.DownloadType;
-import zlc.season.rxdownload2.entity.DownloadTypeFactory;
 import zlc.season.rxdownload2.entity.TemporaryRecord;
 import zlc.season.rxdownload2.entity.TemporaryRecordTable;
 
+import static android.os.Environment.DIRECTORY_DOWNLOADS;
+import static android.os.Environment.getExternalStoragePublicDirectory;
 import static zlc.season.rxdownload2.function.Constant.DOWNLOAD_URL_EXISTS;
 import static zlc.season.rxdownload2.function.Constant.TEST_RANGE_SUPPORT;
-import static zlc.season.rxdownload2.function.Constant.TEST_RANGE_SUPPORT_BY_GET;
 import static zlc.season.rxdownload2.function.Utils.log;
 import static zlc.season.rxdownload2.function.Utils.retry;
 
@@ -38,24 +32,20 @@ import static zlc.season.rxdownload2.function.Utils.retry;
  * Download helper
  */
 public class DownloadHelper {
-    private int MAX_RETRY_COUNT = 3;
+    private int maxRetryCount = 3;
+    private int maxThreads = 3;
 
+    private String defaultSavePath;
     private DownloadApi downloadApi;
-    private FileHelper fileHelper;
 
-    private DownloadTypeFactory type;
+
     private TemporaryRecordTable recordTable;
 
     public DownloadHelper() {
-        fileHelper = new FileHelper();
         downloadApi = RetrofitProvider.getInstance().create(DownloadApi.class);
-        type = new DownloadTypeFactory(this);
+        defaultSavePath = getExternalStoragePublicDirectory(DIRECTORY_DOWNLOADS).getPath();
 
-        recordTable = new TemporaryRecordTable(downloadHelper);
-    }
-
-    public FileHelper getFileHelper() {
-        return fileHelper;
+        recordTable = new TemporaryRecordTable();
     }
 
     public void setRetrofit(Retrofit retrofit) {
@@ -63,78 +53,15 @@ public class DownloadHelper {
     }
 
     public void setDefaultSavePath(String defaultSavePath) {
-        fileHelper.setDefaultSavePath(defaultSavePath);
+        this.defaultSavePath = defaultSavePath;
     }
 
-    public int getMaxRetryCount() {
-        return MAX_RETRY_COUNT;
+    public void setMaxRetryCount(int maxRetryCount) {
+        this.maxRetryCount = maxRetryCount;
     }
 
-    public void setMaxRetryCount(int MAX_RETRY_COUNT) {
-        this.MAX_RETRY_COUNT = MAX_RETRY_COUNT;
-    }
-
-    public String[] getFileSavePaths(String savePath) {
-        return fileHelper.getRealDirectoryPaths(savePath);
-    }
-
-    public String[] getRealFilePaths(String saveName, String savePath) {
-        return fileHelper.getRealFilePaths(saveName, savePath);
-    }
-
-    public DownloadApi getDownloadApi() {
-        return downloadApi;
-    }
-
-    public int getMaxThreads() {
-        return fileHelper.getMaxThreads();
-    }
-
-    public void setMaxThreads(int MAX_THREADS) {
-        fileHelper.setMaxThreads(MAX_THREADS);
-    }
-
-    public void prepareNormalDownload(String url, long fileLength, String lastModify)
-            throws IOException, ParseException {
-
-        fileHelper.prepareDownload(getLastModifyFile(url),
-                getFile(url), fileLength, lastModify);
-    }
-
-    public void saveNormalFile(FlowableEmitter<DownloadStatus> emitter,
-                               String url, Response<ResponseBody> resp) {
-
-        fileHelper.saveFile(emitter, getFile(url), resp);
-    }
-
-    public DownloadRange readDownloadRange(String url, int i)
-            throws IOException {
-        return fileHelper.readDownloadRange(getTempFile(url), i);
-    }
-
-    public void prepareMultiThreadDownload(String url, long fileLength, String lastModify)
-            throws IOException, ParseException {
-
-        fileHelper.prepareDownload(getLastModifyFile(url), getTempFile(url), getFile(url),
-                fileLength, lastModify);
-    }
-
-    /**
-     * This method saves the file from the {start} to {end} range.
-     *
-     * @param emitter  emitter
-     * @param i        index
-     * @param start    from
-     * @param end      end
-     * @param url      url
-     * @param response response
-     */
-    public void saveRangeFile(FlowableEmitter<DownloadStatus> emitter,
-                              int i, long start, long end, String url,
-                              ResponseBody response) {
-
-        fileHelper.saveFile(emitter, i, start, end,
-                getTempFile(url), getFile(url), response);
+    public void setMaxThreads(int maxThreads) {
+        this.maxThreads = maxThreads;
     }
 
     /**
@@ -152,7 +79,7 @@ public class DownloadHelper {
                 .doOnSubscribe(new Consumer<Disposable>() {
                     @Override
                     public void accept(Disposable disposable) throws Exception {
-                        beforeDownload(url, saveName, savePath);
+                        addTempRecord(url, saveName, savePath);
                     }
                 })
                 .flatMap(new Function<Integer, ObservableSource<DownloadType>>() {
@@ -163,24 +90,14 @@ public class DownloadHelper {
                 })
                 .flatMap(new Function<DownloadType, ObservableSource<DownloadStatus>>() {
                     @Override
-                    public ObservableSource<DownloadStatus> apply(DownloadType downloadType)
-                            throws Exception {
-                        downloadType.prepareDownload();
-                        return downloadType.startDownload();
+                    public ObservableSource<DownloadStatus> apply(DownloadType downloadType) throws Exception {
+                        return realDownload(downloadType);
                     }
                 })
                 .doOnError(new Consumer<Throwable>() {
                     @Override
                     public void accept(Throwable throwable) throws Exception {
-                        if (throwable instanceof CompositeException) {
-                            CompositeException realException = (CompositeException) throwable;
-                            List<Throwable> exceptions = realException.getExceptions();
-                            for (Throwable each : exceptions) {
-                                log(each);
-                            }
-                        } else {
-                            log(throwable);
-                        }
+                        logError(throwable);
                     }
                 })
                 .doFinally(new Action() {
@@ -191,16 +108,22 @@ public class DownloadHelper {
                 });
     }
 
+    private ObservableSource<DownloadStatus> realDownload(DownloadType downloadType)
+            throws IOException, ParseException {
+        downloadType.prepareDownload();
+        return downloadType.startDownload();
+    }
 
-    private void beforeDownload(String url, String saveName, String savePath)
-            throws IOException {
-
-        if (recordTable.contain(url)) {
-            throw new IOException(DOWNLOAD_URL_EXISTS);
+    private void logError(Throwable throwable) {
+        if (throwable instanceof CompositeException) {
+            CompositeException realException = (CompositeException) throwable;
+            List<Throwable> exceptions = realException.getExceptions();
+            for (Throwable each : exceptions) {
+                log(each);
+            }
+        } else {
+            log(throwable);
         }
-        fileHelper.createDownloadDirs(savePath);
-
-        addTempRecord(url, saveName, savePath);
     }
 
     /**
@@ -210,10 +133,12 @@ public class DownloadHelper {
      * @param saveName temp record saveName, maybe empty.
      * @param savePath temp record savePath
      */
-    private void addTempRecord(String url, String saveName, String savePath) {
+    private void addTempRecord(String url, String saveName, String savePath) throws IOException {
+        if (recordTable.contain(url)) {
+            throw new IOException(DOWNLOAD_URL_EXISTS);
+        }
         recordTable.add(url, new TemporaryRecord(url, saveName, savePath));
     }
-
 
     /**
      * get download type.
@@ -233,6 +158,13 @@ public class DownloadHelper {
                     @Override
                     public ObservableSource<Object> apply(Object o) throws Exception {
                         return checkRange(url);
+                    }
+                })
+                .doOnNext(new Consumer<Object>() {
+                    @Override
+                    public void accept(Object o) throws Exception {
+                        recordTable.initialize(url, maxThreads, maxRetryCount,
+                                defaultSavePath, downloadApi);
                     }
                 })
                 .flatMap(new Function<Object, ObservableSource<DownloadType>>() {
@@ -309,16 +241,6 @@ public class DownloadHelper {
                 });
     }
 
-    public Flowable<Response<ResponseBody>> download(final String url) {
-        return downloadApi.download(null, url)
-                .compose(Utils.<Response<ResponseBody>>retry2(MAX_RETRY_COUNT));
-    }
-
-    public Flowable<Response<ResponseBody>> downloadRange(final String url, String rangeStr) {
-        return downloadApi.download(rangeStr, url);
-    }
-
-
     private ObservableSource<Object> checkUrl(final String url) {
         return downloadApi.check(url)
                 .doOnNext(new Consumer<Response<Void>>() {
@@ -337,7 +259,7 @@ public class DownloadHelper {
                         return new Object();
                     }
                 })
-                .compose(retry(MAX_RETRY_COUNT));
+                .compose(retry(maxRetryCount));
     }
 
     /**
@@ -360,7 +282,7 @@ public class DownloadHelper {
                         return new Object();
                     }
                 })
-                .compose(retry(MAX_RETRY_COUNT));
+                .compose(retry(maxRetryCount));
     }
 
     /**
@@ -383,24 +305,6 @@ public class DownloadHelper {
                         return new Object();
                     }
                 })
-                .compose(retry(MAX_RETRY_COUNT));
+                .compose(retry(maxRetryCount));
     }
-
-    private ObservableSource<Object> queryByGet(final String url) {
-        return downloadApi.GET(TEST_RANGE_SUPPORT_BY_GET, url)
-                .doOnNext(new Consumer<Response<Void>>() {
-                    @Override
-                    public void accept(Response<Void> response) throws Exception {
-                        recordTable.saveRangeInfo(url, response);
-                    }
-                })
-                .map(new Function<Response<Void>, Object>() {
-                    @Override
-                    public Object apply(Response<Void> response) throws Exception {
-                        return new Object();
-                    }
-                })
-                .compose(retry(MAX_RETRY_COUNT));
-    }
-
 }

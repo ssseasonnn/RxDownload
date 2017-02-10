@@ -33,30 +33,4 @@ public interface DownloadApi {
     @HEAD
     Observable<Response<Void>> checkFileByHead(@Header("If-Modified-Since") String lastModify,
                                                @Url String url);
-
-
-    @GET
-    Observable<Response<Void>> checkRangeByGet(@Header("Range") String range,
-                                               @Url String url);
-
-    @GET
-    Observable<Response<Void>> checkFileByGet(@Header("If-Modified-Since") String lastModify,
-                                              @Url String url);
-
-    @HEAD
-    Observable<Response<Void>> GET(
-            @Header("Range") String range,
-            @Url String url);
-
-    @HEAD
-    Observable<Response<Void>> HEAD(
-            @Header("Range") final String range,
-            @Header("If-Range") final String lastModify,
-            @Url String url);
-
-    @GET
-    Observable<Response<Void>> GET(
-            @Header("Range") final String range,
-            @Header("If-Range") final String lastModify,
-            @Url String url);
 }

@@ -5,8 +5,11 @@ import java.util.HashMap;
 import java.util.Map;
 
 import retrofit2.Response;
-import zlc.season.rxdownload2.function.DownloadHelper;
-import zlc.season.rxdownload2.function.FileHelper;
+import zlc.season.rxdownload2.entity.DownloadType.AlreadyDownloaded;
+import zlc.season.rxdownload2.entity.DownloadType.ContinueDownload;
+import zlc.season.rxdownload2.entity.DownloadType.MultiThreadDownload;
+import zlc.season.rxdownload2.entity.DownloadType.NormalDownload;
+import zlc.season.rxdownload2.function.DownloadApi;
 
 import static zlc.season.rxdownload2.function.Constant.DOWNLOAD_RECORD_FILE_DAMAGED;
 import static zlc.season.rxdownload2.function.Utils.contentLength;
@@ -24,15 +27,8 @@ import static zlc.season.rxdownload2.function.Utils.notSupportRange;
 public class TemporaryRecordTable {
     private Map<String, TemporaryRecord> map;
 
-    private FileHelper fileHelper;
-    private DownloadHelper downloadHelper;
-    private DownloadTypeFactory downloadTypeFactory;
-
-    public TemporaryRecordTable(DownloadHelper downloadHelper) {
+    public TemporaryRecordTable() {
         this.map = new HashMap<>();
-        this.downloadHelper = downloadHelper;
-        this.fileHelper = downloadHelper.getFileHelper();
-        this.downloadTypeFactory = new DownloadTypeFactory(downloadHelper);
     }
 
     public void add(String url, TemporaryRecord record) {
@@ -54,6 +50,11 @@ public class TemporaryRecordTable {
         }
         record.setContentLength(contentLength(response));
         record.setLastModify(lastModify(response));
+    }
+
+    public void initialize(String url, int maxRetryCount, int maxThreads,
+                           String defaultSavePath, DownloadApi downloadApi) {
+        map.get(url).initializeEnvironment(maxRetryCount, maxThreads, defaultSavePath, downloadApi);
     }
 
     public void saveRangeInfo(String url, Response<?> response) {
@@ -102,9 +103,9 @@ public class TemporaryRecordTable {
     private DownloadType getNormalType(String url) {
         DownloadType type;
         if (supportRange(url)) {
-            type = downloadTypeFactory.multithread(map.get(url));
+            type = new MultiThreadDownload(map.get(url));
         } else {
-            type = downloadTypeFactory.normal(map.get(url));
+            type = new NormalDownload(map.get(url));
         }
         return type;
     }
@@ -119,30 +120,30 @@ public class TemporaryRecordTable {
 
     private DownloadType getSupportRangeType(String url) {
         if (needReDownload(url)) {
-            return downloadTypeFactory.multithread(map.get(url));
+            return new MultiThreadDownload(map.get(url));
         }
         try {
             if (multiDownloadNotComplete(url)) {
-                return downloadTypeFactory.continued(map.get(url));
+                return new ContinueDownload(map.get(url));
             }
         } catch (IOException e) {
-            return downloadTypeFactory.multithread(map.get(url));
+            return new MultiThreadDownload(map.get(url));
         }
-        return downloadTypeFactory.already(map.get(url));
+        return new AlreadyDownloaded(map.get(url));
     }
 
 
     private DownloadType getNotSupportRangeType(String url) {
         if (normalDownloadNotComplete(url)) {
-            return downloadTypeFactory.normal(map.get(url));
+            return new NormalDownload(map.get(url));
         } else {
-            return downloadTypeFactory.already(map.get(url));
+            return new AlreadyDownloaded(map.get(url));
         }
     }
 
     public String readLastModify(String url) {
         try {
-            return fileHelper.getLastModify(map.get(url).getFile());
+            return map.get(url).readLastModify();
         } catch (IOException e) {
             //TODO log
             return "";
@@ -150,7 +151,7 @@ public class TemporaryRecordTable {
     }
 
     private boolean multiDownloadNotComplete(String url) throws IOException {
-        return fileHelper.fileNotComplete(map.get(url).getTempFile());
+        return map.get(url).fileNotComplete();
     }
 
     private boolean normalDownloadNotComplete(String url) {
@@ -167,7 +168,7 @@ public class TemporaryRecordTable {
 
     private boolean tempFileDamaged(String url) {
         try {
-            return fileHelper.tempFileDamaged(map.get(url).getTempFile(), map.get(url).getContentLength());
+            return map.get(url).tempFileDamaged();
         } catch (IOException e) {
             log(DOWNLOAD_RECORD_FILE_DAMAGED);
             return true;

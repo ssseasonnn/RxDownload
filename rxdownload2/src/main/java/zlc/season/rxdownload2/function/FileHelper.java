@@ -16,10 +16,6 @@ import retrofit2.Response;
 import zlc.season.rxdownload2.entity.DownloadRange;
 import zlc.season.rxdownload2.entity.DownloadStatus;
 
-import static android.os.Environment.DIRECTORY_DOWNLOADS;
-import static android.os.Environment.getExternalStoragePublicDirectory;
-import static android.text.TextUtils.concat;
-import static java.io.File.separator;
 import static java.nio.channels.FileChannel.MapMode.READ_WRITE;
 import static zlc.season.rxdownload2.function.Constant.CHUNKED_DOWNLOAD_HINT;
 import static zlc.season.rxdownload2.function.Utils.GMTToLong;
@@ -27,8 +23,6 @@ import static zlc.season.rxdownload2.function.Utils.closeQuietly;
 import static zlc.season.rxdownload2.function.Utils.isChunked;
 import static zlc.season.rxdownload2.function.Utils.log;
 import static zlc.season.rxdownload2.function.Utils.longToGMT;
-import static zlc.season.rxdownload2.function.Utils.mkdirs;
-import static zlc.season.rxdownload2.function.Utils.notEmpty;
 
 /**
  * Author: Season(ssseasonnn@gmail.com)
@@ -38,80 +32,32 @@ import static zlc.season.rxdownload2.function.Utils.notEmpty;
  * File Helper
  */
 public class FileHelper {
-
-    private static final String TMP_SUFFIX = ".tmp";  //temp file
-    private static final String LMF_SUFFIX = ".lmf";  //last modify file
-    private static final String CACHE = ".cache";    //cache directory
-
     private static final int EACH_RECORD_SIZE = 16; //long + long = 8 + 8
-    private int RECORD_FILE_TOTAL_SIZE;
     //|*********************|
     //|*****Record  File****|
     //|*********************|
     //|  0L      |     7L   | 0
     //|  8L      |     15L  | 1
     //|  16L     |     31L  | 2
-    //|  ...     |     ...  | MAX_THREADS-1
+    //|  ...     |     ...  | maxThreads-1
     //|*********************|
-    private int MAX_THREADS = 3;
+    private int maxThreads = 3;
+    private int RECORD_FILE_TOTAL_SIZE;
 
-    private String mDefaultSavePath;
-    private String mDefaultCachePath;
-
-    FileHelper() {
-        RECORD_FILE_TOTAL_SIZE = EACH_RECORD_SIZE * MAX_THREADS;
-        setDefaultSavePath(getExternalStoragePublicDirectory(DIRECTORY_DOWNLOADS).getPath());
+    public FileHelper(int maxThreads) {
+        this.maxThreads = maxThreads;
+        RECORD_FILE_TOTAL_SIZE = EACH_RECORD_SIZE * maxThreads;
     }
 
-    void setDefaultSavePath(String defaultSavePath) {
-        mDefaultSavePath = defaultSavePath;
-        mDefaultCachePath = concat(defaultSavePath, separator, CACHE).toString();
-    }
-
-    int getMaxThreads() {
-        return MAX_THREADS;
-    }
-
-    void setMaxThreads(int MAX_THREADS) {
-        this.MAX_THREADS = MAX_THREADS;
-        RECORD_FILE_TOTAL_SIZE = EACH_RECORD_SIZE * MAX_THREADS;
-    }
-
-    void createDownloadDirs(String savePath) throws IOException {
-        mkdirs(getRealDirectoryPaths(savePath));
-    }
-
-    String[] getRealDirectoryPaths(String savePath) {
-        String fileDirectory;
-        String cacheDirectory;
-        if (notEmpty(savePath)) {
-            fileDirectory = savePath;
-            cacheDirectory = concat(savePath, separator, CACHE).toString();
-        } else {
-            fileDirectory = mDefaultSavePath;
-            cacheDirectory = mDefaultCachePath;
-        }
-        return new String[]{fileDirectory, cacheDirectory};
-    }
-
-    String[] getRealFilePaths(String saveName, String savePath) {
-        String[] directories = getRealDirectoryPaths(savePath);
-        String filePath = concat(directories[0], separator, saveName).toString();
-        String tempPath = concat(directories[1], separator, saveName, TMP_SUFFIX).toString();
-        String lmfPath = concat(directories[1], separator, saveName, LMF_SUFFIX).toString();
-        return new String[]{filePath, tempPath, lmfPath};
-    }
-
-    public void prepareDownload(File lastModifyFile, File saveFile,
-                                long fileLength, String lastModify)
+    public void prepareDownload(File lastModifyFile, File saveFile, long fileLength, String lastModify)
             throws IOException, ParseException {
 
         writeLastModify(lastModifyFile, lastModify);
         prepareFile(saveFile, fileLength);
     }
 
-    public void saveFile(FlowableEmitter<DownloadStatus> emitter,
-                         File saveFile, Response<ResponseBody> resp) {
+    public void saveFile(FlowableEmitter<DownloadStatus> emitter, File saveFile,
+                         Response<ResponseBody> resp) {
 
         InputStream inputStream = null;
         OutputStream outputStream = null;
@@ -161,10 +107,8 @@ public class FileHelper {
         prepareFile(tempFile, saveFile, fileLength);
     }
 
-    public void saveFile(FlowableEmitter<DownloadStatus> emitter,
-                         int i, long start, long end,
-                         File tempFile, File saveFile,
-                         ResponseBody response) {
+    public void saveFile(FlowableEmitter<DownloadStatus> emitter, int i, long start, long end,
+                         File tempFile, File saveFile, ResponseBody response) {
 
         RandomAccessFile record = null;
         FileChannel recordChannel = null;
@@ -222,7 +166,7 @@ public class FileHelper {
 
             long startByte;
             long endByte;
-            for (int i = 0; i < MAX_THREADS; i++) {
+            for (int i = 0; i < maxThreads; i++) {
                 startByte = buffer.getLong();
                 endByte = buffer.getLong();
                 if (startByte <= endByte) {
@@ -270,11 +214,11 @@ public class FileHelper {
         }
     }
 
-    public String getLastModify(File file) throws IOException {
+    public String getLastModify(File lastModifyFile) throws IOException {
 
         RandomAccessFile record = null;
         try {
-            record = new RandomAccessFile(file, "rws");
+            record = new RandomAccessFile(lastModifyFile, "rws");
             record.seek(0);
             return longToGMT(record.readLong());
         } finally {
@@ -299,10 +243,10 @@ public class FileHelper {
 
             long start;
             long end;
-            int eachSize = (int) (fileLength / MAX_THREADS);
+            int eachSize = (int) (fileLength / maxThreads);
 
-            for (int i = 0; i < MAX_THREADS; i++) {
-                if (i == MAX_THREADS - 1) {
+            for (int i = 0; i < maxThreads; i++) {
+                if (i == maxThreads - 1) {
                     start = i * eachSize;
                     end = fileLength - 1;
                 } else {
@@ -335,7 +279,7 @@ public class FileHelper {
         }
     }
 
-    public void writeLastModify(File file, String lastModify)
+    private void writeLastModify(File file, String lastModify)
             throws IOException, ParseException {
 
         RandomAccessFile record = null;
@@ -357,7 +301,7 @@ public class FileHelper {
      */
     private long getResidue(MappedByteBuffer recordBuffer) {
         long residue = 0;
-        for (int j = 0; j < MAX_THREADS; j++) {
+        for (int j = 0; j < maxThreads; j++) {
             long startTemp = recordBuffer.getLong(j * EACH_RECORD_SIZE);
             long endTemp = recordBuffer.getLong(j * EACH_RECORD_SIZE + 8);
             long temp = endTemp - startTemp + 1;

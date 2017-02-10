@@ -8,6 +8,11 @@ package zlc.season.rxdownload2.function;
 public final class Constant {
     public static final String TAG = "RxDownload";
 
+
+    public static final String TMP_SUFFIX = ".tmp";  //temp file
+    public static final String LMF_SUFFIX = ".lmf";  //last modify file
+    public static final String CACHE = ".cache";    //cache directory
+
     /**
      * test
      */

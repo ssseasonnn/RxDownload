@@ -125,7 +125,7 @@ public class ServiceDownloadActivity extends AppCompatActivity {
     }
 
     private void installApk() {
-        Uri uri = Uri.fromFile(mRxDownload.getRealFiles(saveName, defaultPath)[0]);
+        Uri uri = Uri.fromFile(mRxDownload.getRealFiles(url)[0]);
         Intent intent = new Intent(Intent.ACTION_VIEW);
         intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
         intent.setDataAndType(uri, "application/vnd.android.package-archive");

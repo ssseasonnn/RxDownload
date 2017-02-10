@@ -1,5 +1,6 @@
 package zlc.season.rxdownload2.function;
 
+import java.io.File;
 import java.io.IOException;
 import java.text.ParseException;
 import java.util.List;
@@ -62,6 +63,10 @@ public class DownloadHelper {
 
     public void setMaxThreads(int maxThreads) {
         this.maxThreads = maxThreads;
+    }
+
+    public File[] getRealFile(String url) {
+        return recordTable.getFiles(url);
     }
 
     /**

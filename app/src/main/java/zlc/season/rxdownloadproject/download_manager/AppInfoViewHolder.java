@@ -57,7 +57,6 @@ public class AppInfoViewHolder extends AbstractViewHolder<AppInfoBean> {
 
         mRxDownload = RxDownload.getInstance()
                 .context(mContext)
-                .autoInstall(true)  // 下载完成自动安装
                 .maxDownloadNumber(2);//最大下载数量
 
 
@@ -120,7 +119,7 @@ public class AppInfoViewHolder extends AbstractViewHolder<AppInfoBean> {
     }
 
     private void installApk() {
-        Uri uri = Uri.fromFile(mRxDownload.getRealFiles(mData.saveName, null)[0]);
+        Uri uri = Uri.fromFile(mRxDownload.getRealFiles(mData.downloadUrl)[0]);
         Intent intent = new Intent(Intent.ACTION_VIEW);
         intent.setDataAndType(uri, "application/vnd.android.package-archive");
         mContext.startActivity(intent);

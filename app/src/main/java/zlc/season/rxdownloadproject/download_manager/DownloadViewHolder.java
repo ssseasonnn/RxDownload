@@ -144,7 +144,7 @@ public class DownloadViewHolder extends AbstractViewHolder<DownloadBean> {
 
     private void installApk() {
         Uri uri = Uri.fromFile(mRxDownload
-                .getRealFiles(mData.mRecord.getSaveName(), mData.mRecord.getSavePath())[0]);
+                .getRealFiles(mData.mRecord.getUrl())[0]);
         Intent intent = new Intent(Intent.ACTION_VIEW);
         intent.setDataAndType(uri, "application/vnd.android.package-archive");
         mContext.startActivity(intent);

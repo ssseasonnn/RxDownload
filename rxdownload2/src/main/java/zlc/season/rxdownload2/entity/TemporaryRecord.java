@@ -218,4 +218,8 @@ public class TemporaryRecord {
     public boolean fileNotComplete() throws IOException {
         return fileHelper.fileNotComplete(getTempFile());
     }
+
+    public File[] getFiles() {
+        return new File[]{getFile(), getTempFile(), getLastModifyFile()};
+    }
 }

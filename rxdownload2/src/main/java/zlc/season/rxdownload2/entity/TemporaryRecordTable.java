@@ -1,5 +1,6 @@
 package zlc.season.rxdownload2.entity;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
@@ -177,5 +178,9 @@ public class TemporaryRecordTable {
 
     private boolean tempFileNotExists(String url) {
         return !map.get(url).tempExists();
+    }
+
+    public File[] getFiles(String url) {
+        return map.get(url).getFiles();
     }
 }

@@ -8,6 +8,7 @@ import android.os.IBinder;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 
+import java.io.File;
 import java.io.InterruptedIOException;
 import java.net.SocketException;
 import java.util.List;
@@ -79,14 +80,12 @@ public class RxDownload {
      * get Files.
      * File[] {DownloadFile, TempFile, LastModifyFile}
      *
-     * @param saveName saveName
-     * @param savePath savePath
+     * @param url url
      * @return Files
      */
-//    public File[] getRealFiles(String saveName, String savePath) {
-//        String[] filePaths = mDownloadHelper.getRealFilePaths(saveName, savePath);
-//        return new File[]{new File(filePaths[0]), new File(filePaths[1]), new File(filePaths[2])};
-//    }
+    public File[] getRealFiles(String url) {
+        return mDownloadHelper.getRealFile(url);
+    }
 
     /**
      * 普通下载时不需要context, 使用Service下载时需要context;

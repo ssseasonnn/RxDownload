@@ -97,7 +97,7 @@ public class DownloadService extends Service {
         FlowableProcessor<DownloadEvent> processor = processor(url);
         if (mDb.recordExists(url)) {
             DownloadRecord record = mDb.readSingleRecord(url);
-            File file = rxDownload.getRealFiles(record.getSaveName(), record.getSavePath())[0];
+            File file = rxDownload.getRealFiles(url)[0];
             if (file.exists()) {
                 processor.onNext(mEventFactory.create(url, record.getFlag(), record.getStatus()));
             } else {
@@ -149,7 +149,7 @@ public class DownloadService extends Service {
         suspendAndSend(url, DELETED);
         if (deleteFile) {
             DownloadRecord record = mDb.readSingleRecord(url);
-            File[] files = rxDownload.getRealFiles(record.getSaveName(), record.getSavePath());
+            File[] files = rxDownload.getRealFiles(url);
             Utils.deleteFile(files);
         }
         mDb.deleteRecord(url);

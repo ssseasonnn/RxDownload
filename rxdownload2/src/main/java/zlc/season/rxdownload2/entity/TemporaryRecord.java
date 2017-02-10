@@ -52,10 +52,10 @@ public class TemporaryRecord {
 
     private DownloadType downloadType;
 
-    public TemporaryRecord(String filePath, String tempPath, String lmfPath) {
-        this.filePath = filePath;
-        this.tempPath = tempPath;
-        this.lmfPath = lmfPath;
+    public TemporaryRecord(String url, String saveName, String savePath) {
+        this.url = url;
+        this.saveName = saveName;
+        this.savePath = savePath;
     }
 
     /**

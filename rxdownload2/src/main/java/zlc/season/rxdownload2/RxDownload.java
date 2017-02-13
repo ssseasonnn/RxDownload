@@ -273,7 +273,7 @@ public class RxDownload {
      * @return Observable<DownloadStatus>
      */
     public Observable<?> serviceDownload(@NonNull final String url,
-                                         @NonNull final String saveName,
+                                         @Nullable final String saveName,
                                          @Nullable final String savePath) {
         return createGeneralObservable(new GeneralObservableCallback() {
             @Override

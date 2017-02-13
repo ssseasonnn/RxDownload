@@ -40,12 +40,12 @@ import static zlc.season.rxdownload2.function.Utils.log;
  * Author: Season(ssseasonnn@gmail.com)
  * Date: 2016/11/3
  * Time: 09:44
- * 下载类型
+ * Download Type
  */
 public abstract class DownloadType {
     protected TemporaryRecord record;
 
-    public DownloadType(TemporaryRecord record) {
+    private DownloadType(TemporaryRecord record) {
         this.record = record;
     }
 
@@ -54,10 +54,9 @@ public abstract class DownloadType {
 
     public abstract Observable<DownloadStatus> startDownload();
 
-
     static class NormalDownload extends DownloadType {
 
-        public NormalDownload(TemporaryRecord record) {
+        NormalDownload(TemporaryRecord record) {
             super(record);
         }
 
@@ -120,7 +119,7 @@ public abstract class DownloadType {
 
     static class ContinueDownload extends DownloadType {
 
-        public ContinueDownload(TemporaryRecord record) {
+        ContinueDownload(TemporaryRecord record) {
             super(record);
         }
 
@@ -211,7 +210,7 @@ public abstract class DownloadType {
 
     static class MultiThreadDownload extends ContinueDownload {
 
-        public MultiThreadDownload(TemporaryRecord record) {
+        MultiThreadDownload(TemporaryRecord record) {
             super(record);
         }
 
@@ -222,7 +221,7 @@ public abstract class DownloadType {
         }
 
         @Override
-        public Observable<DownloadStatus> startDownload()  {
+        public Observable<DownloadStatus> startDownload() {
             return super.startDownload();
         }
 
@@ -249,7 +248,7 @@ public abstract class DownloadType {
 
     static class AlreadyDownloaded extends DownloadType {
 
-        public AlreadyDownloaded(TemporaryRecord record) {
+        AlreadyDownloaded(TemporaryRecord record) {
             super(record);
         }
 

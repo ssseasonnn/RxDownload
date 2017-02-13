@@ -53,7 +53,6 @@ public class BasicDownloadActivity extends AppCompatActivity {
     @BindView(R.id.finish)
     Button mFinish;
 
-    private String saveName = "weixin.apk";
     private String defaultPath = getExternalStoragePublicDirectory(DIRECTORY_DOWNLOADS).getPath();
     private String url = "http://dldir1.qq.com/weixin/android/weixin6330android920.apk";
     private Disposable mDisposable;
@@ -163,7 +162,7 @@ public class BasicDownloadActivity extends AppCompatActivity {
     }
 
     private void installApk() {
-        Uri uri = Uri.fromFile(new File(defaultPath + File.separator + saveName));
+        Uri uri = Uri.fromFile(new File(defaultPath + File.separator + ""));
         Intent intent = new Intent(Intent.ACTION_VIEW);
         intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
         intent.setDataAndType(uri, "application/vnd.android.package-archive");

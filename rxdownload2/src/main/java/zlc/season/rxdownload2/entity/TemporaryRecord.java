@@ -50,8 +50,6 @@ public class TemporaryRecord {
     private FileHelper fileHelper;
     private DownloadApi downloadApi;
 
-    private DownloadType downloadType;
-
     public TemporaryRecord(String url, String saveName, String savePath) {
         this.url = url;
         this.saveName = saveName;
@@ -66,7 +64,7 @@ public class TemporaryRecord {
      * @param defaultSavePath Default save path;
      * @param downloadApi     API
      */
-    public void initializeEnvironment(int maxRetryCount, int maxThreads, String defaultSavePath, DownloadApi downloadApi) {
+    public void init(int maxRetryCount, int maxThreads, String defaultSavePath, DownloadApi downloadApi) {
         this.maxThreads = maxThreads;
         this.maxRetryCount = maxRetryCount;
         this.downloadApi = downloadApi;
@@ -87,31 +85,75 @@ public class TemporaryRecord {
         mkdirs(realSavePath, cachePath);
     }
 
+    /**
+     * prepare normal download, create files and save last-modify.
+     *
+     * @throws IOException
+     * @throws ParseException
+     */
     public void prepareNormalDownload() throws IOException, ParseException {
-        fileHelper.prepareDownload(getLastModifyFile(), getFile(), contentLength, lastModify);
+        fileHelper.prepareDownload(lastModifyFile(), file(), contentLength, lastModify);
     }
 
+    /**
+     * prepare range download, create necessary files and save last-modify.
+     *
+     * @throws IOException
+     * @throws ParseException
+     */
     public void prepareRangeDownload() throws IOException, ParseException {
-        fileHelper.prepareDownload(getLastModifyFile(), getTempFile(), getFile(), contentLength, lastModify);
+        fileHelper.prepareDownload(lastModifyFile(), tempFile(), file(), contentLength, lastModify);
     }
 
+    /**
+     * Read download range from record file.
+     *
+     * @param index index
+     * @return
+     * @throws IOException
+     */
     public DownloadRange readDownloadRange(int index) throws IOException {
-        return fileHelper.readDownloadRange(getTempFile(), index);
+        return fileHelper.readDownloadRange(tempFile(), index);
     }
 
+    /**
+     * Normal download save.
+     *
+     * @param e        emitter
+     * @param response response
+     */
     public void save(FlowableEmitter<DownloadStatus> e, Response<ResponseBody> response) {
-        fileHelper.saveFile(e, getFile(), response);
+        fileHelper.saveFile(e, file(), response);
     }
 
+    /**
+     * Range download save
+     *
+     * @param emitter  emitter
+     * @param index    download index
+     * @param response response
+     * @throws IOException
+     */
     public void save(FlowableEmitter<DownloadStatus> emitter, int index, ResponseBody response) throws IOException {
         DownloadRange range = readDownloadRange(index);
-        fileHelper.saveFile(emitter, index, range.start, range.end, getTempFile(), getFile(), response);
+        fileHelper.saveFile(emitter, index, range.start, range.end, tempFile(), file(), response);
     }
 
+    /**
+     * Normal download request.
+     *
+     * @return response
+     */
     public Flowable<Response<ResponseBody>> download() {
         return downloadApi.download(null, url);
     }
 
+    /**
+     * Range download request
+     *
+     * @param index download index
+     * @return response
+     */
     public Flowable<Response<ResponseBody>> rangeDownload(final int index) {
         return Flowable.create(new FlowableOnSubscribe<DownloadRange>() {
             @Override
@@ -147,19 +189,11 @@ public class TemporaryRecord {
         this.rangeSupport = rangeSupport;
     }
 
-    public DownloadType getDownloadType() {
-        return downloadType;
-    }
-
-    public void setDownloadType(DownloadType downloadType) {
-        this.downloadType = downloadType;
-    }
-
-    public boolean isServerFileChanged() {
+    public boolean isFileChanged() {
         return serverFileChanged;
     }
 
-    public void setServerFileChanged(boolean serverFileChanged) {
+    public void setFileChanged(boolean serverFileChanged) {
         this.serverFileChanged = serverFileChanged;
     }
 
@@ -183,43 +217,43 @@ public class TemporaryRecord {
         this.saveName = saveName;
     }
 
-    public File getFile() {
+    public File file() {
         return new File(filePath);
     }
 
-    public File getTempFile() {
+    public File tempFile() {
         return new File(tempPath);
     }
 
-    public File getLastModifyFile() {
+    public File lastModifyFile() {
         return new File(lmfPath);
     }
 
     public boolean fileExists() {
-        return getFile().exists();
+        return file().exists();
     }
 
     public boolean tempExists() {
-        return getTempFile().exists();
+        return tempFile().exists();
     }
 
     public boolean fileComplete() {
-        return getFile().length() == contentLength;
+        return file().length() == contentLength;
     }
 
     public boolean tempFileDamaged() throws IOException {
-        return fileHelper.tempFileDamaged(getTempFile(), contentLength);
+        return fileHelper.tempFileDamaged(tempFile(), contentLength);
     }
 
     public String readLastModify() throws IOException {
-        return fileHelper.getLastModify(getLastModifyFile());
+        return fileHelper.getLastModify(lastModifyFile());
     }
 
     public boolean fileNotComplete() throws IOException {
-        return fileHelper.fileNotComplete(getTempFile());
+        return fileHelper.fileNotComplete(tempFile());
     }
 
     public File[] getFiles() {
-        return new File[]{getFile(), getTempFile(), getLastModifyFile()};
+        return new File[]{file(), tempFile(), lastModifyFile()};
     }
 }

@@ -93,7 +93,11 @@ public class DataBaseHelper {
             cursor = getReadableDatabase()
                     .rawQuery("select * from " + TABLE_NAME + " where url=?", new String[]{url});
             cursor.moveToFirst();
-            return Db.RecordTable.read(cursor);
+            if (cursor.getCount() == 0) {
+                return new DownloadRecord();
+            } else {
+                return Db.RecordTable.read(cursor);
+            }
         } finally {
             if (cursor != null) {
                 cursor.close();
@@ -108,10 +112,10 @@ public class DataBaseHelper {
                     TABLE_NAME,
                     new String[]{COLUMN_DOWNLOAD_SIZE, COLUMN_TOTAL_SIZE, COLUMN_IS_CHUNKED},
                     "url=?", new String[]{url}, null, null, null);
+            cursor.moveToFirst();
             if (cursor.getCount() == 0) {
                 return new DownloadStatus();
             } else {
-                cursor.moveToFirst();
                 return Db.RecordTable.readStatus(cursor);
             }
         } finally {
@@ -165,7 +169,6 @@ public class DataBaseHelper {
      * ps: 如果数据库中没有记录，则返回一个空的DownloadRecord.
      *
      * @param url url
-     *
      * @return record
      */
     public Observable<DownloadRecord> readRecord(final String url) {
@@ -176,10 +179,10 @@ public class DataBaseHelper {
                 try {
                     cursor = getReadableDatabase().rawQuery("select * from " + TABLE_NAME +
                             " where " + "url=?", new String[]{url});
+                    cursor.moveToFirst();
                     if (cursor.getCount() == 0) {
                         emitter.onNext(new DownloadRecord());
                     } else {
-                        cursor.moveToFirst();
                         emitter.onNext(Db.RecordTable.read(cursor));
                     }
                     emitter.onComplete();

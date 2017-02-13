@@ -180,7 +180,7 @@ public abstract class DownloadType {
          */
         private Publisher<DownloadStatus> rangeDownloadTask(final int index) {
             return record.rangeDownload(index)
-                    .subscribeOn(Schedulers.io())
+                    .subscribeOn(Schedulers.io())  //Important!
                     .flatMap(new Function<Response<ResponseBody>, Publisher<DownloadStatus>>() {
                         @Override
                         public Publisher<DownloadStatus> apply(Response<ResponseBody> response) throws Exception {

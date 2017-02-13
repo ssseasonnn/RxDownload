@@ -44,6 +44,12 @@ public class TemporaryRecordTable {
         map.remove(url);
     }
 
+    /**
+     * Save file info
+     *
+     * @param url      key
+     * @param response response
+     */
     public void saveFileInfo(String url, Response<?> response) {
         TemporaryRecord record = map.get(url);
         if (empty(record.getSaveName())) {
@@ -53,20 +59,41 @@ public class TemporaryRecordTable {
         record.setLastModify(lastModify(response));
     }
 
-    public void initialize(String url, int maxRetryCount, int maxThreads,
-                           String defaultSavePath, DownloadApi downloadApi) {
-        map.get(url).initializeEnvironment(maxRetryCount, maxThreads, defaultSavePath, downloadApi);
-    }
-
+    /**
+     * Save range info
+     *
+     * @param url      key
+     * @param response response
+     */
     public void saveRangeInfo(String url, Response<?> response) {
         map.get(url).setRangeSupport(!notSupportRange(response));
     }
 
-    public void saveServerFileState(String url, Response<Void> response) {
+    /**
+     * Init necessary info
+     *
+     * @param url             key
+     * @param maxRetryCount   retry count
+     * @param maxThreads      max threads
+     * @param defaultSavePath default save path
+     * @param downloadApi     api
+     */
+    public void init(String url, int maxRetryCount, int maxThreads,
+                     String defaultSavePath, DownloadApi downloadApi) {
+        map.get(url).init(maxRetryCount, maxThreads, defaultSavePath, downloadApi);
+    }
+
+    /**
+     * Save file state, change or not change.
+     *
+     * @param url      key
+     * @param response response
+     */
+    public void saveFileState(String url, Response<Void> response) {
         if (response.code() == 304) {
-            map.get(url).setServerFileChanged(false);
+            map.get(url).setFileChanged(false);
         } else if (response.code() == 200) {
-            map.get(url).setServerFileChanged(true);
+            map.get(url).setFileChanged(true);
         }
     }
 
@@ -74,31 +101,22 @@ public class TemporaryRecordTable {
         return map.get(url).isSupportRange();
     }
 
-    private boolean serverFileChanged(String url) {
-        return map.get(url).isServerFileChanged();
+    private boolean fileChanged(String url) {
+        return map.get(url).isFileChanged();
     }
 
-    public DownloadType getDownloadType(String url) {
-        return map.get(url).getDownloadType();
+    public DownloadType generateNonExistsType(String url) {
+        return getNormalType(url);
     }
 
-    private void setDownloadType(String url, DownloadType type) {
-        map.get(url).setDownloadType(type);
-    }
-
-    public void generateFileNotExistsType(String url) {
-        DownloadType type = getNormalType(url);
-        setDownloadType(url, type);
-    }
-
-    public void generateFileExistsType(String url) {
+    public DownloadType generateFileExistsType(String url) {
         DownloadType type;
-        if (serverFileChanged(url)) {
+        if (fileChanged(url)) {
             type = getNormalType(url);
         } else {
             type = getServerFileChangeType(url);
         }
-        setDownloadType(url, type);
+        return type;
     }
 
     private DownloadType getNormalType(String url) {
@@ -113,13 +131,13 @@ public class TemporaryRecordTable {
 
     private DownloadType getServerFileChangeType(String url) {
         if (supportRange(url)) {
-            return getSupportRangeType(url);
+            return supportRangeType(url);
         } else {
-            return getNotSupportRangeType(url);
+            return notSupportRangeType(url);
         }
     }
 
-    private DownloadType getSupportRangeType(String url) {
+    private DownloadType supportRangeType(String url) {
         if (needReDownload(url)) {
             return new MultiThreadDownload(map.get(url));
         }
@@ -134,7 +152,7 @@ public class TemporaryRecordTable {
     }
 
 
-    private DownloadType getNotSupportRangeType(String url) {
+    private DownloadType notSupportRangeType(String url) {
         if (normalDownloadNotComplete(url)) {
             return new NormalDownload(map.get(url));
         } else {

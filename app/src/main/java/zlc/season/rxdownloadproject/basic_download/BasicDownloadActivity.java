@@ -86,7 +86,8 @@ public class BasicDownloadActivity extends AppCompatActivity {
                 });
                 break;
             case R.id.finish:
-                BasicDownloadActivity.this.finish();
+//                BasicDownloadActivity.this.finish();
+                mRxDownload.test();
                 break;
         }
     }
@@ -102,7 +103,8 @@ public class BasicDownloadActivity extends AppCompatActivity {
         mAction.setText("开始");
 
         mRxDownload = RxDownload.getInstance()
-                                .maxThread(10);
+                .context(this)
+                .maxThread(10);
         mDownloadController = new DownloadController(mStatus, mAction);
         mDownloadController.setState(new DownloadController.Normal());
     }
@@ -115,44 +117,44 @@ public class BasicDownloadActivity extends AppCompatActivity {
 
     private void start() {
         RxPermissions.getInstance(this)
-                     .request(Manifest.permission.WRITE_EXTERNAL_STORAGE)
-                     .doOnNext(new Consumer<Boolean>() {
-                         @Override
-                         public void accept(Boolean aBoolean) throws Exception {
-                             if (!aBoolean) {
-                                 throw new RuntimeException("no permission");
-                             }
-                         }
-                     })
-                     .observeOn(Schedulers.io())
-                     .compose(mRxDownload.<Boolean>transform(url, saveName, null))
-                     .observeOn(AndroidSchedulers.mainThread())
-                     .subscribe(new Observer<DownloadStatus>() {
-                         @Override
-                         public void onSubscribe(Disposable d) {
-                             mDisposable = d;
-                             mDownloadController.setState(new DownloadController.Started());
-                         }
+                .request(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                .doOnNext(new Consumer<Boolean>() {
+                    @Override
+                    public void accept(Boolean aBoolean) throws Exception {
+                        if (!aBoolean) {
+                            throw new RuntimeException("no permission");
+                        }
+                    }
+                })
+                .observeOn(Schedulers.io())
+                .compose(mRxDownload.<Boolean>transform(url, saveName, null))
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(new Observer<DownloadStatus>() {
+                    @Override
+                    public void onSubscribe(Disposable d) {
+                        mDisposable = d;
+                        mDownloadController.setState(new DownloadController.Started());
+                    }
 
-                         @Override
-                         public void onNext(DownloadStatus status) {
-                             mProgress.setIndeterminate(status.isChunked);
-                             mProgress.setMax((int) status.getTotalSize());
-                             mProgress.setProgress((int) status.getDownloadSize());
-                             mPercent.setText(status.getPercent());
-                             mSize.setText(status.getFormatStatusString());
-                         }
+                    @Override
+                    public void onNext(DownloadStatus status) {
+                        mProgress.setIndeterminate(status.isChunked);
+                        mProgress.setMax((int) status.getTotalSize());
+                        mProgress.setProgress((int) status.getDownloadSize());
+                        mPercent.setText(status.getPercent());
+                        mSize.setText(status.getFormatStatusString());
+                    }
 
-                         @Override
-                         public void onError(Throwable e) {
-                             mDownloadController.setState(new DownloadController.Paused());
-                         }
+                    @Override
+                    public void onError(Throwable e) {
+                        mDownloadController.setState(new DownloadController.Paused());
+                    }
 
-                         @Override
-                         public void onComplete() {
-                             mDownloadController.setState(new DownloadController.Completed());
-                         }
-                     });
+                    @Override
+                    public void onComplete() {
+                        mDownloadController.setState(new DownloadController.Completed());
+                    }
+                });
     }
 
     private void pause() {

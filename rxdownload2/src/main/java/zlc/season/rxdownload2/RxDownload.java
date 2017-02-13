@@ -172,6 +172,13 @@ public class RxDownload {
         return dataBaseHelper.readAllRecords();
     }
 
+    public DownloadRecord test() {
+
+        DataBaseHelper dataBaseHelper = DataBaseHelper
+                .getSingleton(mContext.getApplicationContext());
+        return dataBaseHelper.readSingleRecord("http://downali.game.uc.cn/s/1/9/20170103112151d02a45_MY-1.110.0_uc_platform2.apk");
+    }
+
     /**
      * Read single download record with url.
      * If record contain, return correct record, else return empty record.

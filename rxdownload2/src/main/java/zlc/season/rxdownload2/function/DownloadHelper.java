@@ -39,13 +39,11 @@ public class DownloadHelper {
     private String defaultSavePath;
     private DownloadApi downloadApi;
 
-
     private TemporaryRecordTable recordTable;
 
     public DownloadHelper() {
         downloadApi = RetrofitProvider.getInstance().create(DownloadApi.class);
         defaultSavePath = getExternalStoragePublicDirectory(DIRECTORY_DOWNLOADS).getPath();
-
         recordTable = new TemporaryRecordTable();
     }
 
@@ -95,8 +93,8 @@ public class DownloadHelper {
                 })
                 .flatMap(new Function<DownloadType, ObservableSource<DownloadStatus>>() {
                     @Override
-                    public ObservableSource<DownloadStatus> apply(DownloadType downloadType) throws Exception {
-                        return realDownload(downloadType);
+                    public ObservableSource<DownloadStatus> apply(DownloadType type) throws Exception {
+                        return download(type);
                     }
                 })
                 .doOnError(new Consumer<Throwable>() {
@@ -113,7 +111,7 @@ public class DownloadHelper {
                 });
     }
 
-    private ObservableSource<DownloadStatus> realDownload(DownloadType downloadType)
+    private ObservableSource<DownloadStatus> download(DownloadType downloadType)
             throws IOException, ParseException {
         downloadType.prepareDownload();
         return downloadType.startDownload();
@@ -132,15 +130,15 @@ public class DownloadHelper {
     }
 
     /**
-     * Add a temporary record to the record recordTable. Only for temporary record.
+     * Add a temporary record to the record recordTable.
      *
      * @param url      temp record url.
      * @param saveName temp record saveName, maybe empty.
      * @param savePath temp record savePath
      */
-    private void addTempRecord(String url, String saveName, String savePath) throws IOException {
+    private void addTempRecord(String url, String saveName, String savePath) {
         if (recordTable.contain(url)) {
-            throw new IOException(DOWNLOAD_URL_EXISTS);
+            throw new RuntimeException(DOWNLOAD_URL_EXISTS);
         }
         recordTable.add(url, new TemporaryRecord(url, saveName, savePath));
     }
@@ -168,18 +166,14 @@ public class DownloadHelper {
                 .doOnNext(new Consumer<Object>() {
                     @Override
                     public void accept(Object o) throws Exception {
-                        recordTable.initialize(url, maxThreads, maxRetryCount,
+                        recordTable.init(url, maxThreads, maxRetryCount,
                                 defaultSavePath, downloadApi);
                     }
                 })
                 .flatMap(new Function<Object, ObservableSource<DownloadType>>() {
                     @Override
                     public ObservableSource<DownloadType> apply(Object o) throws Exception {
-                        if (recordTable.fileExists(url)) {
-                            return getFileExistsType(url);
-                        } else {
-                            return getFileNotExistsType(url);
-                        }
+                        return recordTable.fileExists(url) ? existsType(url) : nonExistsType(url);
                     }
                 });
     }
@@ -190,27 +184,16 @@ public class DownloadHelper {
      * @param url file url
      * @return Download Type
      */
-    private Observable<DownloadType> getFileNotExistsType(final String url) {
+    private Observable<DownloadType> nonExistsType(final String url) {
         return Observable.just(1)
-                .doOnNext(new Consumer<Integer>() {
+                .flatMap(new Function<Integer, ObservableSource<DownloadType>>() {
                     @Override
-                    public void accept(Integer integer) throws Exception {
-                        recordTable.generateFileNotExistsType(url);
-                    }
-                })
-                .map(new Function<Integer, DownloadType>() {
-                    @Override
-                    public DownloadType apply(Integer integer) throws Exception {
-                        return recordTable.getDownloadType(url);
-                    }
-                })
-                .flatMap(new Function<DownloadType, ObservableSource<DownloadType>>() {
-                    @Override
-                    public ObservableSource<DownloadType> apply(DownloadType type) throws Exception {
-                        return Observable.just(type);
+                    public ObservableSource<DownloadType> apply(Integer integer) throws Exception {
+                        return Observable.just(recordTable.generateNonExistsType(url));
                     }
                 });
     }
+
 
     /**
      * Gets the download type of file existence.
@@ -218,7 +201,7 @@ public class DownloadHelper {
      * @param url file url
      * @return Download Type
      */
-    private Observable<DownloadType> getFileExistsType(final String url) {
+    private Observable<DownloadType> existsType(final String url) {
         return Observable.just(1)
                 .map(new Function<Integer, String>() {
                     @Override
@@ -229,23 +212,23 @@ public class DownloadHelper {
                 .flatMap(new Function<String, ObservableSource<Object>>() {
                     @Override
                     public ObservableSource<Object> apply(String s) throws Exception {
-                        return checkServerFile(url, s);
-                    }
-                })
-                .doOnNext(new Consumer<Object>() {
-                    @Override
-                    public void accept(Object o) throws Exception {
-                        recordTable.generateFileExistsType(url);
+                        return checkFile(url, s);
                     }
                 })
                 .flatMap(new Function<Object, ObservableSource<DownloadType>>() {
                     @Override
                     public ObservableSource<DownloadType> apply(Object o) throws Exception {
-                        return Observable.just(recordTable.getDownloadType(url));
+                        return Observable.just(recordTable.generateFileExistsType(url));
                     }
                 });
     }
 
+    /**
+     * check url
+     *
+     * @param url url
+     * @return empty
+     */
     private ObservableSource<Object> checkUrl(final String url) {
         return downloadApi.check(url)
                 .doOnNext(new Consumer<Response<Void>>() {
@@ -296,12 +279,12 @@ public class DownloadHelper {
      * @param url url
      * @return empty Observable
      */
-    private ObservableSource<Object> checkServerFile(final String url, String lastModify) {
+    private ObservableSource<Object> checkFile(final String url, String lastModify) {
         return downloadApi.checkFileByHead(lastModify, url)
                 .doOnNext(new Consumer<Response<Void>>() {
                     @Override
                     public void accept(Response<Void> response) throws Exception {
-                        recordTable.saveServerFileState(url, response);
+                        recordTable.saveFileState(url, response);
                     }
                 })
                 .map(new Function<Response<Void>, Object>() {

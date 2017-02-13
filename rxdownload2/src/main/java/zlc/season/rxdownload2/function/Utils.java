@@ -1,8 +1,5 @@
 package zlc.season.rxdownload2.function;
 
-import android.content.Context;
-import android.content.Intent;
-import android.net.Uri;
 import android.text.TextUtils;
 import android.util.Log;
 
@@ -67,10 +64,6 @@ public class Utils {
         Log.w(TAG, throwable);
     }
 
-    public static boolean notEmpty(String string) {
-        return !TextUtils.isEmpty(string);
-    }
-
     public static boolean empty(String string) {
         return TextUtils.isEmpty(string);
     }
@@ -122,28 +115,28 @@ public class Utils {
         }
     }
 
-    public static <U> ObservableTransformer<U, U> retry(final int MAX_RETRY_COUNT) {
+    public static <U> ObservableTransformer<U, U> retry(final int retryCount) {
         return new ObservableTransformer<U, U>() {
             @Override
             public ObservableSource<U> apply(Observable<U> upstream) {
                 return upstream.retry(new BiPredicate<Integer, Throwable>() {
                     @Override
                     public boolean test(Integer integer, Throwable throwable) throws Exception {
-                        return retry(MAX_RETRY_COUNT, integer, throwable);
+                        return retry(retryCount, integer, throwable);
                     }
                 });
             }
         };
     }
 
-    public static <U> FlowableTransformer<U, U> retry2(final int MAX_RETRY_COUNT) {
+    public static <U> FlowableTransformer<U, U> retry2(final int retryCount) {
         return new FlowableTransformer<U, U>() {
             @Override
             public Publisher<U> apply(Flowable<U> upstream) {
                 return upstream.retry(new BiPredicate<Integer, Throwable>() {
                     @Override
                     public boolean test(Integer integer, Throwable throwable) throws Exception {
-                        return retry(MAX_RETRY_COUNT, integer, throwable);
+                        return retry(retryCount, integer, throwable);
                     }
                 });
             }
@@ -187,27 +180,6 @@ public class Utils {
     public static boolean notSupportRange(Response<?> response) {
         return TextUtils.isEmpty(contentRange(response)) || contentLength(response) == -1 ||
                 isChunked(response);
-    }
-
-    public static boolean serverFileChanged(Response<?> resp) {
-        return resp.code() == 200;
-    }
-
-    public static boolean serverFileNotChange(Response<?> resp) {
-        return resp.code() == 206;
-    }
-
-    public static boolean requestRangeNotSatisfiable(Response<?> resp) {
-        return resp.code() == 416;
-    }
-
-    public static void installApk(Context context, File file) {
-        Uri uri = Uri.fromFile(file);
-        Intent intent = new Intent(Intent.ACTION_VIEW);
-        intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        intent.setDataAndType(uri, "application/vnd.android.package-archive");
-        context.startActivity(intent);
     }
 
     /**

@@ -20,6 +20,8 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import io.reactivex.Flowable;
 import io.reactivex.FlowableTransformer;
@@ -170,7 +172,12 @@ public class Utils {
         if (empty(disposition)) {
             return "";
         }
-        return disposition.replaceFirst("(?i)^.*filename=\"([^\"]+)\".*$", "$1");
+        Matcher m = Pattern.compile(".*filename=(.*)").matcher(disposition.toLowerCase());
+        if (m.find()) {
+            return m.group(1);
+        } else {
+            return "";
+        }
     }
 
     public static boolean isChunked(Response<?> response) {

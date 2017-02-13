@@ -78,8 +78,8 @@ public class TemporaryRecordTable {
      * @param defaultSavePath default save path
      * @param downloadApi     api
      */
-    public void init(String url, int maxRetryCount, int maxThreads,
-                     String defaultSavePath, DownloadApi downloadApi) {
+    public void init(String url, int maxRetryCount, int maxThreads, String defaultSavePath,
+                     DownloadApi downloadApi) {
         map.get(url).init(maxRetryCount, maxThreads, defaultSavePath, downloadApi);
     }
 
@@ -97,18 +97,22 @@ public class TemporaryRecordTable {
         }
     }
 
-    private boolean supportRange(String url) {
-        return map.get(url).isSupportRange();
-    }
-
-    private boolean fileChanged(String url) {
-        return map.get(url).isFileChanged();
-    }
-
+    /**
+     * return file not exists download type.
+     *
+     * @param url key
+     * @return download type
+     */
     public DownloadType generateNonExistsType(String url) {
         return getNormalType(url);
     }
 
+    /**
+     * return file exists download type
+     *
+     * @param url key
+     * @return download type
+     */
     public DownloadType generateFileExistsType(String url) {
         DownloadType type;
         if (fileChanged(url)) {
@@ -117,6 +121,40 @@ public class TemporaryRecordTable {
             type = getServerFileChangeType(url);
         }
         return type;
+    }
+
+    /**
+     * read last modify string
+     *
+     * @param url key
+     * @return last modify
+     */
+    public String readLastModify(String url) {
+        try {
+            return map.get(url).readLastModify();
+        } catch (IOException e) {
+            //TODO log
+            //If read failed,return an empty string.
+            //If we send empty last-modify,server will response 200.
+            //That means file changed.
+            return "";
+        }
+    }
+
+    public boolean fileExists(String url) {
+        return map.get(url).file().exists();
+    }
+
+    public File[] getFiles(String url) {
+        return map.get(url).getFiles();
+    }
+
+    private boolean supportRange(String url) {
+        return map.get(url).isSupportRange();
+    }
+
+    private boolean fileChanged(String url) {
+        return map.get(url).isFileChanged();
     }
 
     private DownloadType getNormalType(String url) {
@@ -151,21 +189,11 @@ public class TemporaryRecordTable {
         return new AlreadyDownloaded(map.get(url));
     }
 
-
     private DownloadType notSupportRangeType(String url) {
         if (normalDownloadNotComplete(url)) {
             return new NormalDownload(map.get(url));
         } else {
             return new AlreadyDownloaded(map.get(url));
-        }
-    }
-
-    public String readLastModify(String url) {
-        try {
-            return map.get(url).readLastModify();
-        } catch (IOException e) {
-            //TODO log
-            return "";
         }
     }
 
@@ -181,10 +209,6 @@ public class TemporaryRecordTable {
         return tempFileNotExists(url) || tempFileDamaged(url);
     }
 
-    public boolean fileExists(String url) {
-        return map.get(url).fileExists();
-    }
-
     private boolean tempFileDamaged(String url) {
         try {
             return map.get(url).tempFileDamaged();
@@ -195,10 +219,6 @@ public class TemporaryRecordTable {
     }
 
     private boolean tempFileNotExists(String url) {
-        return !map.get(url).tempExists();
-    }
-
-    public File[] getFiles(String url) {
-        return map.get(url).getFiles();
+        return !map.get(url).tempFile().exists();
     }
 }

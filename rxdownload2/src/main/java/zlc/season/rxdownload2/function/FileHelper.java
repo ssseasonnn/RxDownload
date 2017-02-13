@@ -214,7 +214,7 @@ public class FileHelper {
         }
     }
 
-    public String getLastModify(File lastModifyFile) throws IOException {
+    public String readLastModify(File lastModifyFile) throws IOException {
 
         RandomAccessFile record = null;
         try {

@@ -18,6 +18,7 @@ import zlc.season.rxdownload2.entity.DownloadStatus;
 import zlc.season.rxdownload2.entity.DownloadType;
 import zlc.season.rxdownload2.entity.TemporaryRecord;
 import zlc.season.rxdownload2.entity.TemporaryRecordTable;
+import zlc.season.rxdownload2.entity.UnableDownloadException;
 
 import static android.os.Environment.DIRECTORY_DOWNLOADS;
 import static android.os.Environment.getExternalStoragePublicDirectory;
@@ -75,8 +76,7 @@ public class DownloadHelper {
      * @param savePath save path
      * @return DownloadStatus
      */
-    public Observable<DownloadStatus> downloadDispatcher(final String url,
-                                                         final String saveName,
+    public Observable<DownloadStatus> downloadDispatcher(final String url, final String saveName,
                                                          final String savePath) {
         return Observable.just(1)
                 .doOnSubscribe(new Consumer<Disposable>() {
@@ -87,13 +87,15 @@ public class DownloadHelper {
                 })
                 .flatMap(new Function<Integer, ObservableSource<DownloadType>>() {
                     @Override
-                    public ObservableSource<DownloadType> apply(Integer integer) throws Exception {
+                    public ObservableSource<DownloadType> apply(Integer integer)
+                            throws Exception {
                         return getDownloadType(url);
                     }
                 })
                 .flatMap(new Function<DownloadType, ObservableSource<DownloadStatus>>() {
                     @Override
-                    public ObservableSource<DownloadStatus> apply(DownloadType type) throws Exception {
+                    public ObservableSource<DownloadStatus> apply(DownloadType type)
+                            throws Exception {
                         return download(type);
                     }
                 })
@@ -153,7 +155,8 @@ public class DownloadHelper {
         return Observable.just(1)
                 .flatMap(new Function<Integer, ObservableSource<Object>>() {
                     @Override
-                    public ObservableSource<Object> apply(Integer integer) throws Exception {
+                    public ObservableSource<Object> apply(Integer integer)
+                            throws Exception {
                         return checkUrl(url);
                     }
                 })
@@ -172,8 +175,10 @@ public class DownloadHelper {
                 })
                 .flatMap(new Function<Object, ObservableSource<DownloadType>>() {
                     @Override
-                    public ObservableSource<DownloadType> apply(Object o) throws Exception {
-                        return recordTable.fileExists(url) ? existsType(url) : nonExistsType(url);
+                    public ObservableSource<DownloadType> apply(Object o)
+                            throws Exception {
+                        return recordTable.fileExists(url) ? existsType(
+                                url) : nonExistsType(url);
                     }
                 });
     }
@@ -188,12 +193,12 @@ public class DownloadHelper {
         return Observable.just(1)
                 .flatMap(new Function<Integer, ObservableSource<DownloadType>>() {
                     @Override
-                    public ObservableSource<DownloadType> apply(Integer integer) throws Exception {
+                    public ObservableSource<DownloadType> apply(Integer integer)
+                            throws Exception {
                         return Observable.just(recordTable.generateNonExistsType(url));
                     }
                 });
     }
-
 
     /**
      * Gets the download type of file existence.
@@ -217,7 +222,8 @@ public class DownloadHelper {
                 })
                 .flatMap(new Function<Object, ObservableSource<DownloadType>>() {
                     @Override
-                    public ObservableSource<DownloadType> apply(Object o) throws Exception {
+                    public ObservableSource<DownloadType> apply(Object o)
+                            throws Exception {
                         return Observable.just(recordTable.generateFileExistsType(url));
                     }
                 });
@@ -235,7 +241,7 @@ public class DownloadHelper {
                     @Override
                     public void accept(Response<Void> response) throws Exception {
                         if (!response.isSuccessful()) {
-                            throw new RuntimeException("url is illegal");
+                            throw new UnableDownloadException("url is illegal");
                         } else {
                             recordTable.saveFileInfo(url, response);
                         }

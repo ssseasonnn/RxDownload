@@ -86,8 +86,8 @@ public class BasicDownloadActivity extends AppCompatActivity {
                 });
                 break;
             case R.id.finish:
-//                BasicDownloadActivity.this.finish();
-                mRxDownload.test();
+                BasicDownloadActivity.this.finish();
+//                mRxDownload.test();
                 break;
         }
     }
@@ -127,7 +127,7 @@ public class BasicDownloadActivity extends AppCompatActivity {
                     }
                 })
                 .observeOn(Schedulers.io())
-                .compose(mRxDownload.<Boolean>transform(url, saveName, null))
+                .compose(mRxDownload.<Boolean>transform(url, null, null))
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(new Observer<DownloadStatus>() {
                     @Override

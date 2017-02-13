@@ -2,6 +2,9 @@ package zlc.season.rxdownload2;
 
 import org.junit.Test;
 
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import zlc.season.rxdownload2.function.Utils;
 
 /**
@@ -32,9 +35,15 @@ public class UtilsTest {
     }
 
     @Test
-    public void contentDisposition() throws Exception{
+    public void contentDisposition() throws Exception {
         String test = "attachment; filename=com.coolapk.market_7.3.2_1701250.apk";
-        String result =test.replaceFirst("(?i)^.*filename=\"([^\"]+)\".*$", "$1");
+        Matcher m = Pattern.compile(".*filename=(.*)").matcher(test.toLowerCase());
+        String result;
+        if (m.find()) {
+            result = m.group(1);
+        } else {
+            result = "";
+        }
         System.out.println(result);
     }
 }

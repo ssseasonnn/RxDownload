@@ -34,7 +34,6 @@ import static zlc.season.rxdownload2.function.Constant.NORMAL_DOWNLOAD_COMPLETED
 import static zlc.season.rxdownload2.function.Constant.NORMAL_DOWNLOAD_FAILED;
 import static zlc.season.rxdownload2.function.Constant.NORMAL_DOWNLOAD_PREPARE;
 import static zlc.season.rxdownload2.function.Constant.NORMAL_DOWNLOAD_STARTED;
-import static zlc.season.rxdownload2.function.Constant.UNABLE_DOWNLOAD_HINT;
 import static zlc.season.rxdownload2.function.Utils.log;
 
 /**
@@ -53,7 +52,8 @@ public abstract class DownloadType {
     public abstract void prepareDownload()
             throws IOException, ParseException;
 
-    public abstract Observable<DownloadStatus> startDownload() throws IOException;
+    public abstract Observable<DownloadStatus> startDownload();
+
 
     static class NormalDownload extends DownloadType {
 
@@ -130,7 +130,7 @@ public abstract class DownloadType {
         }
 
         @Override
-        public Observable<DownloadStatus> startDownload() throws IOException {
+        public Observable<DownloadStatus> startDownload() {
             List<Publisher<DownloadStatus>> tasks = new ArrayList<>();
             for (int i = 0; i < record.getMaxThreads(); i++) {
                 tasks.add(rangeDownloadTask(i));
@@ -222,7 +222,7 @@ public abstract class DownloadType {
         }
 
         @Override
-        public Observable<DownloadStatus> startDownload() throws IOException {
+        public Observable<DownloadStatus> startDownload()  {
             return super.startDownload();
         }
 
@@ -259,25 +259,8 @@ public abstract class DownloadType {
         }
 
         @Override
-        public Observable<DownloadStatus> startDownload() throws IOException {
+        public Observable<DownloadStatus> startDownload() {
             return Observable.just(new DownloadStatus(record.getContentLength(), record.getContentLength()));
-        }
-    }
-
-    static class UnableDownload extends DownloadType {
-
-        public UnableDownload(TemporaryRecord record) {
-            super(record);
-        }
-
-        @Override
-        public void prepareDownload() throws IOException, ParseException {
-            log(UNABLE_DOWNLOAD_HINT);
-        }
-
-        @Override
-        public Observable<DownloadStatus> startDownload() throws IOException {
-            return Observable.error(new UnableDownloadException(UNABLE_DOWNLOAD_HINT));
         }
     }
 }

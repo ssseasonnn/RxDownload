@@ -64,7 +64,8 @@ public class TemporaryRecord {
      * @param defaultSavePath Default save path;
      * @param downloadApi     API
      */
-    public void init(int maxRetryCount, int maxThreads, String defaultSavePath, DownloadApi downloadApi) {
+    public void init(int maxRetryCount, int maxThreads, String defaultSavePath,
+            DownloadApi downloadApi) {
         this.maxThreads = maxThreads;
         this.maxRetryCount = maxRetryCount;
         this.downloadApi = downloadApi;
@@ -109,7 +110,9 @@ public class TemporaryRecord {
      * Read download range from record file.
      *
      * @param index index
+     *
      * @return
+     *
      * @throws IOException
      */
     public DownloadRange readDownloadRange(int index) throws IOException {
@@ -132,9 +135,11 @@ public class TemporaryRecord {
      * @param emitter  emitter
      * @param index    download index
      * @param response response
+     *
      * @throws IOException
      */
-    public void save(FlowableEmitter<DownloadStatus> emitter, int index, ResponseBody response) throws IOException {
+    public void save(FlowableEmitter<DownloadStatus> emitter, int index, ResponseBody response)
+            throws IOException {
         DownloadRange range = readDownloadRange(index);
         fileHelper.saveFile(emitter, index, range.start, range.end, tempFile(), file(), response);
     }
@@ -152,6 +157,7 @@ public class TemporaryRecord {
      * Range download request
      *
      * @param index download index
+     *
      * @return response
      */
     public Flowable<Response<ResponseBody>> rangeDownload(final int index) {
@@ -164,13 +170,15 @@ public class TemporaryRecord {
                 }
                 e.onComplete();
             }
-        }, BackpressureStrategy.ERROR).flatMap(new Function<DownloadRange, Publisher<Response<ResponseBody>>>() {
-            @Override
-            public Publisher<Response<ResponseBody>> apply(DownloadRange range) throws Exception {
-                String rangeStr = "bytes=" + range.start + "-" + range.end;
-                return downloadApi.download(rangeStr, url);
-            }
-        });
+        }, BackpressureStrategy.ERROR)
+                       .flatMap(new Function<DownloadRange, Publisher<Response<ResponseBody>>>() {
+                           @Override
+                           public Publisher<Response<ResponseBody>> apply(DownloadRange range)
+                                   throws Exception {
+                               String rangeStr = "bytes=" + range.start + "-" + range.end;
+                               return downloadApi.download(rangeStr, url);
+                           }
+                       });
     }
 
     public int getMaxRetryCount() {
@@ -229,14 +237,6 @@ public class TemporaryRecord {
         return new File(lmfPath);
     }
 
-    public boolean fileExists() {
-        return file().exists();
-    }
-
-    public boolean tempExists() {
-        return tempFile().exists();
-    }
-
     public boolean fileComplete() {
         return file().length() == contentLength;
     }
@@ -246,7 +246,7 @@ public class TemporaryRecord {
     }
 
     public String readLastModify() throws IOException {
-        return fileHelper.getLastModify(lastModifyFile());
+        return fileHelper.readLastModify(lastModifyFile());
     }
 
     public boolean fileNotComplete() throws IOException {

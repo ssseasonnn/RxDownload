@@ -298,7 +298,7 @@ public class RxDownload {
      */
     public Observable<DownloadStatus> download(
             @NonNull final String url,
-            @NonNull final String saveName,
+            @Nullable final String saveName,
             @Nullable final String savePath) {
 
         return mDownloadHelper.downloadDispatcher(url, saveName, savePath);
@@ -318,7 +318,7 @@ public class RxDownload {
      */
     public <Upstream> ObservableTransformer<Upstream, DownloadStatus> transform(
             @NonNull final String url,
-            @NonNull final String saveName,
+            @Nullable final String saveName,
             @Nullable final String savePath) {
         return new ObservableTransformer<Upstream, DownloadStatus>() {
             @Override
@@ -349,7 +349,7 @@ public class RxDownload {
      */
     public <Upstream> ObservableTransformer<Upstream, Object> transformService(
             @NonNull final String url,
-            @NonNull final String saveName,
+            @Nullable final String saveName,
             @Nullable final String savePath) {
         return new ObservableTransformer<Upstream, Object>() {
 
@@ -365,7 +365,7 @@ public class RxDownload {
         };
     }
 
-    private void addDownloadTask(@NonNull String url, @NonNull String saveName,
+    private void addDownloadTask(@NonNull String url, @Nullable String saveName,
                                  @Nullable String savePath) {
         mDownloadService.addDownloadMission(
                 new DownloadMission.Builder()

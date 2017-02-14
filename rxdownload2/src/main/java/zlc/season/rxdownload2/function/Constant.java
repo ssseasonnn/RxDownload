@@ -39,12 +39,14 @@ public final class Constant {
     public static final String NORMAL_DOWNLOAD_STARTED = "NORMAL DOWNLOAD STARTED...";
     public static final String NORMAL_DOWNLOAD_COMPLETED = "NORMAL DOWNLOAD COMPLETED!";
     public static final String NORMAL_DOWNLOAD_FAILED = "NORMAL DOWNLOAD FAILED OR CANCEL!";
+    public static final String NORMAL_DOWNLOAD_CANCEL = "NORMAL DOWNLOAD FAILED CANCEL!";
 
     //Continue download hint
     public static final String CONTINUE_DOWNLOAD_PREPARE = "CONTINUE DOWNLOAD PREPARE...";
     public static final String CONTINUE_DOWNLOAD_STARTED = "CONTINUE DOWNLOAD STARTED...";
     public static final String CONTINUE_DOWNLOAD_COMPLETED = "CONTINUE DOWNLOAD COMPLETED!";
     public static final String CONTINUE_DOWNLOAD_FAILED = "CONTINUE DOWNLOAD FAILED OR CANCEL!";
+    public static final String CONTINUE_DOWNLOAD_CANCEL = "CONTINUE DOWNLOAD CANCEL!";
 
     //Multi-thread download hint
     public static final String MULTITHREADING_DOWNLOAD_PREPARE
@@ -55,6 +57,8 @@ public final class Constant {
             = "MULTITHREADING DOWNLOAD COMPLETED!";
     public static final String MULTITHREADING_DOWNLOAD_FAILED
             = "MULTITHREADING DOWNLOAD FAILED OR CANCEL!";
+    public static final String MULTITHREADING_DOWNLOAD_CANCEL
+            = "MULTITHREADING DOWNLOAD CANCEL!";
 
     public static final String ALREADY_DOWNLOAD_HINT = "FILE ALREADY DOWNLOADED!";
     public static final String UNABLE_DOWNLOAD_HINT = "UNABLE DOWNLOADED!";

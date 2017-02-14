@@ -1,5 +1,7 @@
 package zlc.season.rxdownload2.entity;
 
+import android.content.Context;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
@@ -78,9 +80,9 @@ public class TemporaryRecordTable {
      * @param defaultSavePath default save path
      * @param downloadApi     api
      */
-    public void init(String url, int maxRetryCount, int maxThreads, String defaultSavePath,
+    public void init(Context context, String url, int maxRetryCount, int maxThreads, String defaultSavePath,
                      DownloadApi downloadApi) {
-        map.get(url).init(maxRetryCount, maxThreads, defaultSavePath, downloadApi);
+        map.get(url).init(context, maxRetryCount, maxThreads, defaultSavePath, downloadApi);
     }
 
     /**

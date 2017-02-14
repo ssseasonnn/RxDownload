@@ -1,5 +1,7 @@
 package zlc.season.rxdownload2.entity;
 
+import android.content.Context;
+
 import org.reactivestreams.Publisher;
 
 import java.io.File;
@@ -13,6 +15,7 @@ import io.reactivex.FlowableOnSubscribe;
 import io.reactivex.functions.Function;
 import okhttp3.ResponseBody;
 import retrofit2.Response;
+import zlc.season.rxdownload2.db.DataBaseHelper;
 import zlc.season.rxdownload2.function.DownloadApi;
 import zlc.season.rxdownload2.function.FileHelper;
 
@@ -47,8 +50,10 @@ public class TemporaryRecord {
     private boolean rangeSupport = false;
     private boolean serverFileChanged = false;
 
+    private DataBaseHelper dataBaseHelper;
     private FileHelper fileHelper;
     private DownloadApi downloadApi;
+    private Context context;
 
     public TemporaryRecord(String url, String saveName, String savePath) {
         this.url = url;
@@ -64,8 +69,9 @@ public class TemporaryRecord {
      * @param defaultSavePath Default save path;
      * @param downloadApi     API
      */
-    public void init(int maxRetryCount, int maxThreads, String defaultSavePath,
-            DownloadApi downloadApi) {
+    public void init(Context context, int maxRetryCount, int maxThreads, String defaultSavePath,
+                     DownloadApi downloadApi) {
+        this.context = context;
         this.maxThreads = maxThreads;
         this.maxRetryCount = maxRetryCount;
         this.downloadApi = downloadApi;
@@ -74,6 +80,7 @@ public class TemporaryRecord {
         String realSavePath;
         if (empty(savePath)) {
             realSavePath = defaultSavePath;
+            savePath = defaultSavePath;
         } else {
             realSavePath = savePath;
         }
@@ -110,9 +117,7 @@ public class TemporaryRecord {
      * Read download range from record file.
      *
      * @param index index
-     *
      * @return
-     *
      * @throws IOException
      */
     public DownloadRange readDownloadRange(int index) throws IOException {
@@ -135,13 +140,11 @@ public class TemporaryRecord {
      * @param emitter  emitter
      * @param index    download index
      * @param response response
-     *
      * @throws IOException
      */
     public void save(FlowableEmitter<DownloadStatus> emitter, int index, ResponseBody response)
             throws IOException {
-        DownloadRange range = readDownloadRange(index);
-        fileHelper.saveFile(emitter, index, range.start, range.end, tempFile(), file(), response);
+        fileHelper.saveFile(emitter, index, tempFile(), file(), response);
     }
 
     /**
@@ -157,7 +160,6 @@ public class TemporaryRecord {
      * Range download request
      *
      * @param index download index
-     *
      * @return response
      */
     public Flowable<Response<ResponseBody>> rangeDownload(final int index) {
@@ -171,14 +173,14 @@ public class TemporaryRecord {
                 e.onComplete();
             }
         }, BackpressureStrategy.ERROR)
-                       .flatMap(new Function<DownloadRange, Publisher<Response<ResponseBody>>>() {
-                           @Override
-                           public Publisher<Response<ResponseBody>> apply(DownloadRange range)
-                                   throws Exception {
-                               String rangeStr = "bytes=" + range.start + "-" + range.end;
-                               return downloadApi.download(rangeStr, url);
-                           }
-                       });
+                .flatMap(new Function<DownloadRange, Publisher<Response<ResponseBody>>>() {
+                    @Override
+                    public Publisher<Response<ResponseBody>> apply(DownloadRange range)
+                            throws Exception {
+                        String rangeStr = "bytes=" + range.start + "-" + range.end;
+                        return downloadApi.download(rangeStr, url);
+                    }
+                });
     }
 
     public int getMaxRetryCount() {
@@ -255,5 +257,33 @@ public class TemporaryRecord {
 
     public File[] getFiles() {
         return new File[]{file(), tempFile(), lastModifyFile()};
+    }
+
+
+    public void start() {
+        dataBaseHelper = DataBaseHelper.getSingleton(context.getApplicationContext());
+        if (dataBaseHelper.recordNotExists(url)) {
+            dataBaseHelper.insertRecord(url, saveName, savePath);
+        }
+    }
+
+    public void update(DownloadStatus status) {
+        dataBaseHelper.updateRecord(url, status);
+    }
+
+    public void error() {
+        dataBaseHelper.updateRecord(url, DownloadFlag.FAILED);
+    }
+
+    public void complete() {
+        dataBaseHelper.updateRecord(url, DownloadFlag.COMPLETED);
+    }
+
+    public void cancel() {
+        dataBaseHelper.updateRecord(url, DownloadFlag.PAUSED);
+    }
+
+    public void finish() {
+        dataBaseHelper.closeDataBase();
     }
 }

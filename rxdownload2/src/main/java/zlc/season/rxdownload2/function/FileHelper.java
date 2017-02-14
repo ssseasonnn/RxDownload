@@ -107,8 +107,8 @@ public class FileHelper {
         prepareFile(tempFile, saveFile, fileLength);
     }
 
-    public void saveFile(FlowableEmitter<DownloadStatus> emitter, int i, long start, long end,
-                         File tempFile, File saveFile, ResponseBody response) {
+    public void saveFile(FlowableEmitter<DownloadStatus> emitter, int i, File tempFile,
+                         File saveFile, ResponseBody response) {
 
         RandomAccessFile record = null;
         FileChannel recordChannel = null;
@@ -126,18 +126,24 @@ public class FileHelper {
                 MappedByteBuffer recordBuffer = recordChannel
                         .map(READ_WRITE, 0, RECORD_FILE_TOTAL_SIZE);
 
+                int startIndex = i * EACH_RECORD_SIZE;
+
+                long startByte = recordBuffer.getLong(startIndex);
+                long endByte = recordBuffer.getLong(startIndex + 8);
+
+                long totalRange = endByte - startByte + 1;
+
                 long totalSize = recordBuffer.getLong(RECORD_FILE_TOTAL_SIZE - 8) + 1;
                 status.setTotalSize(totalSize);
 
                 save = new RandomAccessFile(saveFile, "rws");
                 saveChannel = save.getChannel();
-                MappedByteBuffer saveBuffer = saveChannel.map(READ_WRITE, start, end - start + 1);
+                MappedByteBuffer saveBuffer = saveChannel.map(READ_WRITE, startByte, totalRange);
                 inStream = response.byteStream();
 
                 while ((readLen = inStream.read(buffer)) != -1) {
                     saveBuffer.put(buffer, 0, readLen);
-                    recordBuffer.putLong(i * EACH_RECORD_SIZE,
-                            recordBuffer.getLong(i * EACH_RECORD_SIZE) + readLen);
+                    recordBuffer.putLong(startIndex, recordBuffer.getLong(startIndex) + readLen);
                     status.setDownloadSize(totalSize - getResidue(recordBuffer));
                     emitter.onNext(status);
                 }

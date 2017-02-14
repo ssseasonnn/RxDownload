@@ -22,14 +22,17 @@ import retrofit2.Response;
 import zlc.season.rxdownload2.function.Utils;
 
 import static zlc.season.rxdownload2.function.Constant.ALREADY_DOWNLOAD_HINT;
+import static zlc.season.rxdownload2.function.Constant.CONTINUE_DOWNLOAD_CANCEL;
 import static zlc.season.rxdownload2.function.Constant.CONTINUE_DOWNLOAD_COMPLETED;
 import static zlc.season.rxdownload2.function.Constant.CONTINUE_DOWNLOAD_FAILED;
 import static zlc.season.rxdownload2.function.Constant.CONTINUE_DOWNLOAD_PREPARE;
 import static zlc.season.rxdownload2.function.Constant.CONTINUE_DOWNLOAD_STARTED;
+import static zlc.season.rxdownload2.function.Constant.MULTITHREADING_DOWNLOAD_CANCEL;
 import static zlc.season.rxdownload2.function.Constant.MULTITHREADING_DOWNLOAD_COMPLETED;
 import static zlc.season.rxdownload2.function.Constant.MULTITHREADING_DOWNLOAD_FAILED;
 import static zlc.season.rxdownload2.function.Constant.MULTITHREADING_DOWNLOAD_PREPARE;
 import static zlc.season.rxdownload2.function.Constant.MULTITHREADING_DOWNLOAD_STARTED;
+import static zlc.season.rxdownload2.function.Constant.NORMAL_DOWNLOAD_CANCEL;
 import static zlc.season.rxdownload2.function.Constant.NORMAL_DOWNLOAD_COMPLETED;
 import static zlc.season.rxdownload2.function.Constant.NORMAL_DOWNLOAD_FAILED;
 import static zlc.season.rxdownload2.function.Constant.NORMAL_DOWNLOAD_PREPARE;
@@ -49,10 +52,83 @@ public abstract class DownloadType {
         this.record = record;
     }
 
-    public abstract void prepareDownload()
-            throws IOException, ParseException;
+    public void prepareDownload() throws IOException, ParseException {
+        log(prepareLog());
+    }
 
-    public abstract Observable<DownloadStatus> startDownload();
+    public Observable<DownloadStatus> startDownload() {
+        return Flowable.just(1)
+                .doOnSubscribe(new Consumer<Subscription>() {
+                    @Override
+                    public void accept(Subscription subscription) throws Exception {
+                        log(startLog());
+                        record.start();
+                    }
+                })
+                .flatMap(new Function<Integer, Publisher<DownloadStatus>>() {
+                    @Override
+                    public Publisher<DownloadStatus> apply(Integer integer) throws Exception {
+                        return download();
+                    }
+                })
+                .doOnNext(new Consumer<DownloadStatus>() {
+                    @Override
+                    public void accept(DownloadStatus status) throws Exception {
+                        record.update(status);
+                    }
+                })
+                .doOnError(new Consumer<Throwable>() {
+                    @Override
+                    public void accept(Throwable throwable) throws Exception {
+                        log(errorLog());
+                        record.error();
+                    }
+                })
+                .doOnComplete(new Action() {
+                    @Override
+                    public void run() throws Exception {
+                        log(completeLog());
+                        record.complete();
+                    }
+                })
+                .doOnCancel(new Action() {
+                    @Override
+                    public void run() throws Exception {
+                        log(cancelLog());
+                        record.cancel();
+                    }
+                })
+                .doFinally(new Action() {
+                    @Override
+                    public void run() throws Exception {
+                        log("finish");
+                        record.finish();
+                    }
+                })
+                .toObservable();
+    }
+
+    protected abstract Publisher<DownloadStatus> download();
+
+    protected String prepareLog() {
+        return "";
+    }
+
+    protected String startLog() {
+        return "";
+    }
+
+    protected String completeLog() {
+        return "";
+    }
+
+    protected String errorLog() {
+        return "";
+    }
+
+    protected String cancelLog() {
+        return "";
+    }
 
     static class NormalDownload extends DownloadType {
 
@@ -62,41 +138,12 @@ public abstract class DownloadType {
 
         @Override
         public void prepareDownload() throws IOException, ParseException {
-            log(NORMAL_DOWNLOAD_PREPARE);
+            super.prepareDownload();
             record.prepareNormalDownload();
         }
 
         @Override
-        public Observable<DownloadStatus> startDownload() {
-            return Flowable.just(1)
-                    .doOnSubscribe(new Consumer<Subscription>() {
-                        @Override
-                        public void accept(Subscription subscription) throws Exception {
-                            log(NORMAL_DOWNLOAD_STARTED);
-                        }
-                    })
-                    .flatMap(new Function<Integer, Publisher<DownloadStatus>>() {
-                        @Override
-                        public Publisher<DownloadStatus> apply(Integer integer) throws Exception {
-                            return start();
-                        }
-                    })
-                    .doOnError(new Consumer<Throwable>() {
-                        @Override
-                        public void accept(Throwable throwable) throws Exception {
-                            log(NORMAL_DOWNLOAD_FAILED);
-                        }
-                    })
-                    .doOnComplete(new Action() {
-                        @Override
-                        public void run() throws Exception {
-                            log(NORMAL_DOWNLOAD_COMPLETED);
-                        }
-                    })
-                    .toObservable();
-        }
-
-        private Publisher<DownloadStatus> start() {
+        protected Publisher<DownloadStatus> download() {
             return record.download()
                     .flatMap(new Function<Response<ResponseBody>, Publisher<DownloadStatus>>() {
                         @Override
@@ -105,6 +152,31 @@ public abstract class DownloadType {
                         }
                     })
                     .compose(Utils.<DownloadStatus>retry2(record.getMaxRetryCount()));
+        }
+
+        @Override
+        protected String prepareLog() {
+            return NORMAL_DOWNLOAD_PREPARE;
+        }
+
+        @Override
+        protected String startLog() {
+            return NORMAL_DOWNLOAD_STARTED;
+        }
+
+        @Override
+        protected String completeLog() {
+            return NORMAL_DOWNLOAD_COMPLETED;
+        }
+
+        @Override
+        protected String errorLog() {
+            return NORMAL_DOWNLOAD_FAILED;
+        }
+
+        @Override
+        protected String cancelLog() {
+            return NORMAL_DOWNLOAD_CANCEL;
         }
 
         private Publisher<DownloadStatus> save(final Response<ResponseBody> response) {
@@ -124,51 +196,37 @@ public abstract class DownloadType {
         }
 
         @Override
-        public void prepareDownload() throws IOException, ParseException {
-            log(prepareLog());
+        protected Publisher<DownloadStatus> download() {
+            List<Publisher<DownloadStatus>> tasks = new ArrayList<>();
+            for (int i = 0; i < record.getMaxThreads(); i++) {
+                tasks.add(rangeDownload(i));
+            }
+            return Flowable.mergeDelayError(tasks);
         }
 
         @Override
-        public Observable<DownloadStatus> startDownload() {
-            List<Publisher<DownloadStatus>> tasks = new ArrayList<>();
-            for (int i = 0; i < record.getMaxThreads(); i++) {
-                tasks.add(rangeDownloadTask(i));
-            }
-            return Flowable.mergeDelayError(tasks)
-                    .doOnSubscribe(new Consumer<Subscription>() {
-                        @Override
-                        public void accept(Subscription subscription) throws Exception {
-                            log(startLog());
-                        }
-                    })
-                    .doOnComplete(new Action() {
-                        @Override
-                        public void run() throws Exception {
-                            log(completeLog());
-                        }
-                    })
-                    .doOnError(new Consumer<Throwable>() {
-                        @Override
-                        public void accept(Throwable throwable) throws Exception {
-                            log(errorLog());
-                        }
-                    }).toObservable();
-        }
-
         protected String prepareLog() {
             return CONTINUE_DOWNLOAD_PREPARE;
         }
 
+        @Override
         protected String startLog() {
             return CONTINUE_DOWNLOAD_STARTED;
         }
 
+        @Override
         protected String completeLog() {
             return CONTINUE_DOWNLOAD_COMPLETED;
         }
 
+        @Override
         protected String errorLog() {
             return CONTINUE_DOWNLOAD_FAILED;
+        }
+
+        @Override
+        protected String cancelLog() {
+            return CONTINUE_DOWNLOAD_CANCEL;
         }
 
         /**
@@ -177,7 +235,7 @@ public abstract class DownloadType {
          * @param index 下载编号
          * @return Observable
          */
-        private Publisher<DownloadStatus> rangeDownloadTask(final int index) {
+        private Publisher<DownloadStatus> rangeDownload(final int index) {
             return record.rangeDownload(index)
                     .subscribeOn(Schedulers.io())  //Important!
                     .flatMap(new Function<Response<ResponseBody>, Publisher<DownloadStatus>>() {
@@ -221,11 +279,6 @@ public abstract class DownloadType {
         }
 
         @Override
-        public Observable<DownloadStatus> startDownload() {
-            return super.startDownload();
-        }
-
-        @Override
         protected String prepareLog() {
             return MULTITHREADING_DOWNLOAD_PREPARE;
         }
@@ -244,6 +297,11 @@ public abstract class DownloadType {
         protected String errorLog() {
             return MULTITHREADING_DOWNLOAD_FAILED;
         }
+
+        @Override
+        protected String cancelLog() {
+            return MULTITHREADING_DOWNLOAD_CANCEL;
+        }
     }
 
     static class AlreadyDownloaded extends DownloadType {
@@ -253,13 +311,13 @@ public abstract class DownloadType {
         }
 
         @Override
-        public void prepareDownload() throws IOException, ParseException {
-            log(ALREADY_DOWNLOAD_HINT);
+        protected Publisher<DownloadStatus> download() {
+            return Flowable.just(new DownloadStatus(record.getContentLength(), record.getContentLength()));
         }
 
         @Override
-        public Observable<DownloadStatus> startDownload() {
-            return Observable.just(new DownloadStatus(record.getContentLength(), record.getContentLength()));
+        protected String prepareLog() {
+            return ALREADY_DOWNLOAD_HINT;
         }
     }
 }

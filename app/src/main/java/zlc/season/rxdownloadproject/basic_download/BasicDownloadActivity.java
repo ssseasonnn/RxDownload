@@ -85,8 +85,8 @@ public class BasicDownloadActivity extends AppCompatActivity {
                 });
                 break;
             case R.id.finish:
-                BasicDownloadActivity.this.finish();
-//                mRxDownload.test();
+//                BasicDownloadActivity.this.finish();
+                System.out.println(mRxDownload.test1());
                 break;
         }
     }

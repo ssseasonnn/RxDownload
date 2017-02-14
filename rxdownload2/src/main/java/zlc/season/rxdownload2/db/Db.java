@@ -48,6 +48,16 @@ class Db {
                         COLUMN_DATE + " INTEGER NOT NULL " +
                         " )";
 
+        static ContentValues insert(String url, String saveName, String savePath) {
+            ContentValues values = new ContentValues();
+            values.put(COLUMN_URL,url);
+            values.put(COLUMN_SAVE_NAME, saveName);
+            values.put(COLUMN_SAVE_PATH, savePath);
+            values.put(COLUMN_DOWNLOAD_FLAG, DownloadFlag.STARTED);
+            values.put(COLUMN_DATE, new Date().getTime());
+            return values;
+        }
+
         static ContentValues insert(DownloadMission mission) {
             ContentValues values = new ContentValues();
             values.put(COLUMN_URL, mission.getUrl());

@@ -95,6 +95,7 @@ public class RxDownload {
      */
     public RxDownload context(Context context) {
         this.mContext = context;
+        mDownloadHelper.setContext(context);
         return this;
     }
 
@@ -177,6 +178,13 @@ public class RxDownload {
         DataBaseHelper dataBaseHelper = DataBaseHelper
                 .getSingleton(mContext.getApplicationContext());
         return dataBaseHelper.readSingleRecord("http://downali.game.uc.cn/s/1/9/20170103112151d02a45_MY-1.110.0_uc_platform2.apk");
+    }
+
+    public boolean test1() {
+
+        DataBaseHelper dataBaseHelper = DataBaseHelper
+                .getSingleton(mContext.getApplicationContext());
+        return dataBaseHelper.recordNotExists("http://dldir1.qq.com/weixin/android/weixin6330android920.apk");
     }
 
     /**

@@ -1,5 +1,7 @@
 package zlc.season.rxdownload2.function;
 
+import android.content.Context;
+
 import java.io.File;
 import java.io.IOException;
 import java.text.ParseException;
@@ -37,6 +39,7 @@ public class DownloadHelper {
     private int maxRetryCount = 3;
     private int maxThreads = 3;
 
+    private Context context;
     private String defaultSavePath;
     private DownloadApi downloadApi;
 
@@ -54,6 +57,10 @@ public class DownloadHelper {
 
     public void setDefaultSavePath(String defaultSavePath) {
         this.defaultSavePath = defaultSavePath;
+    }
+
+    public void setContext(Context context) {
+        this.context = context;
     }
 
     public void setMaxRetryCount(int maxRetryCount) {
@@ -169,16 +176,14 @@ public class DownloadHelper {
                 .doOnNext(new Consumer<Object>() {
                     @Override
                     public void accept(Object o) throws Exception {
-                        recordTable.init(url, maxThreads, maxRetryCount,
+                        recordTable.init(context, url, maxThreads, maxRetryCount,
                                 defaultSavePath, downloadApi);
                     }
                 })
                 .flatMap(new Function<Object, ObservableSource<DownloadType>>() {
                     @Override
-                    public ObservableSource<DownloadType> apply(Object o)
-                            throws Exception {
-                        return recordTable.fileExists(url) ? existsType(
-                                url) : nonExistsType(url);
+                    public ObservableSource<DownloadType> apply(Object o) throws Exception {
+                        return recordTable.fileExists(url) ? existsType(url) : nonExistsType(url);
                     }
                 });
     }

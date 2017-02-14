@@ -63,12 +63,17 @@ public class DataBaseHelper {
         try {
             cursor = getReadableDatabase().query(TABLE_NAME, new String[]{COLUMN_ID}, "url=?",
                     new String[]{url}, null, null, null);
+            cursor.moveToFirst();
             return cursor.getCount() == 0;
         } finally {
             if (cursor != null) {
                 cursor.close();
             }
         }
+    }
+
+    public long insertRecord(String url, String saveName, String savePath) {
+        return getWritableDatabase().insert(TABLE_NAME, null, insert(url, saveName, savePath));
     }
 
     public long insertRecord(DownloadMission mission) {

@@ -55,6 +55,7 @@ import static zlc.season.rxdownload2.function.Constant.TAG;
 public class Utils {
 
     public static void log(String message) {
+        if (empty(message)) return;
         Log.i(TAG, message);
     }
 
@@ -162,7 +163,7 @@ public class Utils {
     public static String fileName(String url, Response<?> response) {
         String fileName = contentDisposition(response);
         if (empty(fileName)) {
-            fileName = url.substring(url.lastIndexOf("/"));
+            fileName = url.substring(url.lastIndexOf('/') + 1);
         }
         return fileName;
     }

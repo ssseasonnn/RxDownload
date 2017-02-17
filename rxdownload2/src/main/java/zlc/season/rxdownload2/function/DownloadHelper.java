@@ -16,6 +16,7 @@ import io.reactivex.functions.Consumer;
 import io.reactivex.functions.Function;
 import retrofit2.Response;
 import retrofit2.Retrofit;
+import zlc.season.rxdownload2.entity.DownloadBean;
 import zlc.season.rxdownload2.entity.DownloadStatus;
 import zlc.season.rxdownload2.entity.DownloadType;
 import zlc.season.rxdownload2.entity.TemporaryRecord;
@@ -78,25 +79,22 @@ public class DownloadHelper {
     /**
      * dispatch download
      *
-     * @param url      url for download
-     * @param saveName save name
-     * @param savePath save path
+     * @param bean download bean
      * @return DownloadStatus
      */
-    public Observable<DownloadStatus> downloadDispatcher(final String url, final String saveName,
-                                                         final String savePath) {
+    public Observable<DownloadStatus> downloadDispatcher(final DownloadBean bean) {
         return Observable.just(1)
                 .doOnSubscribe(new Consumer<Disposable>() {
                     @Override
                     public void accept(Disposable disposable) throws Exception {
-                        addTempRecord(url, saveName, savePath);
+                        addTempRecord(bean);
                     }
                 })
                 .flatMap(new Function<Integer, ObservableSource<DownloadType>>() {
                     @Override
                     public ObservableSource<DownloadType> apply(Integer integer)
                             throws Exception {
-                        return getDownloadType(url);
+                        return getDownloadType(bean.getUrl());
                     }
                 })
                 .flatMap(new Function<DownloadType, ObservableSource<DownloadStatus>>() {
@@ -115,7 +113,7 @@ public class DownloadHelper {
                 .doFinally(new Action() {
                     @Override
                     public void run() throws Exception {
-                        recordTable.delete(url);
+                        recordTable.delete(bean.getUrl());
                     }
                 });
     }
@@ -141,15 +139,13 @@ public class DownloadHelper {
     /**
      * Add a temporary record to the record recordTable.
      *
-     * @param url      temp record url.
-     * @param saveName temp record saveName, maybe empty.
-     * @param savePath temp record savePath
+     * @param bean download bean
      */
-    private void addTempRecord(String url, String saveName, String savePath) {
-        if (recordTable.contain(url)) {
+    private void addTempRecord(DownloadBean bean) {
+        if (recordTable.contain(bean.getUrl())) {
             throw new RuntimeException(DOWNLOAD_URL_EXISTS);
         }
-        recordTable.add(url, new TemporaryRecord(url, saveName, savePath));
+        recordTable.add(bean.getUrl(), new TemporaryRecord(bean));
     }
 
     /**

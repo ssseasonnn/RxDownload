@@ -8,10 +8,10 @@ import android.support.annotation.Nullable;
 
 import java.io.File;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.Map;
-import java.util.Queue;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import io.reactivex.processors.BehaviorProcessor;
@@ -26,10 +26,7 @@ import zlc.season.rxdownload2.entity.DownloadRecord;
 import static zlc.season.rxdownload2.entity.DownloadFlag.CANCELED;
 import static zlc.season.rxdownload2.entity.DownloadFlag.DELETED;
 import static zlc.season.rxdownload2.entity.DownloadFlag.PAUSED;
-import static zlc.season.rxdownload2.entity.DownloadFlag.WAITING;
-import static zlc.season.rxdownload2.function.Constant.DOWNLOAD_URL_EXISTS;
 import static zlc.season.rxdownload2.function.Utils.dispose;
-import static zlc.season.rxdownload2.function.Utils.log;
 
 /**
  * Author: Season(ssseasonnn@gmail.com)
@@ -48,7 +45,7 @@ public class DownloadService extends Service {
     private volatile AtomicInteger mCount = new AtomicInteger(0);
 
     private Map<String, DownloadMission> mNowDownloading;
-    private Queue<DownloadMission> mWaitingForDownload;
+    private BlockingQueue<DownloadMission> mWaitingForDownload;
     private Map<String, DownloadMission> mWaitingForDownloadLookUpMap;
 
     private int MAX_DOWNLOAD_NUMBER = 5;
@@ -59,7 +56,7 @@ public class DownloadService extends Service {
         super.onCreate();
         mBinder = new DownloadBinder();
         mProcessorPool = new ConcurrentHashMap<>();
-        mWaitingForDownload = new LinkedList<>();
+        mWaitingForDownload = new LinkedBlockingQueue<>();
         mWaitingForDownloadLookUpMap = new HashMap<>();
         mNowDownloading = new HashMap<>();
         mDb = DataBaseHelper.getSingleton(getApplicationContext());
@@ -118,21 +115,10 @@ public class DownloadService extends Service {
         return mProcessorPool.get(url);
     }
 
-    public void addDownloadMission(DownloadMission mission) {
+    public void addDownloadMission(DownloadMission mission) throws InterruptedException {
         String url = mission.getUrl();
-        if (mWaitingForDownloadLookUpMap.get(url) != null || mNowDownloading.get(url) != null) {
-            log(DOWNLOAD_URL_EXISTS);
-        } else {
-            if (mDb.recordNotExists(url)) {
-                mDb.insertRecord(mission);
-                processor(url).onNext(mEventFactory.waiting(url));
-            } else {
-                mDb.updateRecord(url, WAITING);
-                processor(url).onNext(mEventFactory.waiting(url, mDb.readStatus(url)));
-            }
-            mWaitingForDownload.offer(mission);
-            mWaitingForDownloadLookUpMap.put(url, mission);
-        }
+        mWaitingForDownload.put(mission);
+        processor(url).onNext(mEventFactory.waiting(url, mDb.readStatus(url)));
     }
 
     public void pauseDownload(String url) {
@@ -183,8 +169,14 @@ public class DownloadService extends Service {
         @Override
         public void run() {
             while (!Thread.currentThread().isInterrupted()) {
-                DownloadMission mission = mWaitingForDownload.peek();
-                if (null != mission) {
+                DownloadMission mission;
+                try {
+                    mission = mWaitingForDownload.take();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                    continue;
+                }
+                if (mission != null) {
                     String url = mission.getUrl();
                     if (mission.canceled) {
                         mWaitingForDownload.remove();

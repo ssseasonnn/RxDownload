@@ -12,6 +12,7 @@ import io.reactivex.ObservableEmitter;
 import io.reactivex.ObservableOnSubscribe;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.schedulers.Schedulers;
+import zlc.season.rxdownload2.entity.DownloadBean;
 import zlc.season.rxdownload2.entity.DownloadFlag;
 import zlc.season.rxdownload2.entity.DownloadMission;
 import zlc.season.rxdownload2.entity.DownloadRecord;
@@ -74,6 +75,9 @@ public class DataBaseHelper {
 
     public long insertRecord(String url, String saveName, String savePath) {
         return getWritableDatabase().insert(TABLE_NAME, null, insert(url, saveName, savePath));
+    }
+    public long insertRecord(DownloadBean downloadBean,int type) {
+        return getWritableDatabase().insert(TABLE_NAME, null, insert(downloadBean,type));
     }
 
     public long insertRecord(DownloadMission mission) {

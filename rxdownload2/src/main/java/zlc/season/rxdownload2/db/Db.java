@@ -5,6 +5,7 @@ import android.database.Cursor;
 
 import java.util.Date;
 
+import zlc.season.rxdownload2.entity.DownloadBean;
 import zlc.season.rxdownload2.entity.DownloadFlag;
 import zlc.season.rxdownload2.entity.DownloadMission;
 import zlc.season.rxdownload2.entity.DownloadRecord;
@@ -32,6 +33,11 @@ class Db {
         static final String COLUMN_TOTAL_SIZE = "total_size";
         static final String COLUMN_IS_CHUNKED = "is_chunked";
         static final String COLUMN_DOWNLOAD_FLAG = "download_flag";
+        static final String COLUMN_EXTRA1 = "extra1";
+        static final String COLUMN_EXTRA2 = "extra2";
+        static final String COLUMN_EXTRA3 = "extra3";
+        static final String COLUMN_EXTRA4 = "extra4";
+        static final String COLUMN_EXTRA5 = "extra5";
         static final String COLUMN_DATE = "date";
 
         static final String CREATE =
@@ -42,18 +48,37 @@ class Db {
                         COLUMN_SAVE_PATH + " TEXT," +
                         COLUMN_TOTAL_SIZE + " INTEGER," +
                         COLUMN_DOWNLOAD_SIZE + " INTEGER," +
-
                         COLUMN_IS_CHUNKED + " INTEGER," +
                         COLUMN_DOWNLOAD_FLAG + " INTEGER," +
+                        COLUMN_EXTRA1 + " TEXT," +
+                        COLUMN_EXTRA2 + " TEXT," +
+                        COLUMN_EXTRA3 + " TEXT," +
+                        COLUMN_EXTRA4 + " TEXT," +
+                        COLUMN_EXTRA5 + " TEXT," +
                         COLUMN_DATE + " INTEGER NOT NULL " +
                         " )";
 
         static ContentValues insert(String url, String saveName, String savePath) {
             ContentValues values = new ContentValues();
-            values.put(COLUMN_URL,url);
+            values.put(COLUMN_URL, url);
             values.put(COLUMN_SAVE_NAME, saveName);
             values.put(COLUMN_SAVE_PATH, savePath);
             values.put(COLUMN_DOWNLOAD_FLAG, DownloadFlag.STARTED);
+            values.put(COLUMN_DATE, new Date().getTime());
+            return values;
+        }
+
+        static ContentValues insert(DownloadBean bean, int type) {
+            ContentValues values = new ContentValues();
+            values.put(COLUMN_URL, bean.getUrl());
+            values.put(COLUMN_SAVE_NAME, bean.getSaveName());
+            values.put(COLUMN_SAVE_PATH, bean.getSavePath());
+            values.put(COLUMN_DOWNLOAD_FLAG, type);
+            values.put(COLUMN_EXTRA1, bean.getExtra1());
+            values.put(COLUMN_EXTRA2, bean.getExtra2());
+            values.put(COLUMN_EXTRA3, bean.getExtra3());
+            values.put(COLUMN_EXTRA4, bean.getExtra4());
+            values.put(COLUMN_EXTRA5, bean.getExtra5());
             values.put(COLUMN_DATE, new Date().getTime());
             return values;
         }

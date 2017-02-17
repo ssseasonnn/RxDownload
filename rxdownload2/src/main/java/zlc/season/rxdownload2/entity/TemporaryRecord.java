@@ -33,9 +33,7 @@ import static zlc.season.rxdownload2.function.Utils.mkdirs;
  * FIXME
  */
 public class TemporaryRecord {
-    private String url;
-    private String saveName;
-    private String savePath;
+    private DownloadBean bean;
 
     private String filePath;
     private String tempPath;
@@ -55,10 +53,8 @@ public class TemporaryRecord {
     private DownloadApi downloadApi;
     private Context context;
 
-    public TemporaryRecord(String url, String saveName, String savePath) {
-        this.url = url;
-        this.saveName = saveName;
-        this.savePath = savePath;
+    public TemporaryRecord(DownloadBean bean) {
+        this.bean = bean;
     }
 
     /**
@@ -78,17 +74,17 @@ public class TemporaryRecord {
         this.fileHelper = new FileHelper(maxThreads);
 
         String realSavePath;
-        if (empty(savePath)) {
+        if (empty(bean.getSavePath())) {
             realSavePath = defaultSavePath;
-            savePath = defaultSavePath;
+            bean.setSavePath(defaultSavePath);
         } else {
-            realSavePath = savePath;
+            realSavePath = bean.getSavePath();
         }
         String cachePath = concat(realSavePath, separator, CACHE).toString();
 
-        filePath = concat(realSavePath, separator, saveName).toString();
-        tempPath = concat(cachePath, separator, saveName, TMP_SUFFIX).toString();
-        lmfPath = concat(cachePath, separator, saveName, LMF_SUFFIX).toString();
+        filePath = concat(realSavePath, separator, bean.getSaveName()).toString();
+        tempPath = concat(cachePath, separator, bean.getSaveName(), TMP_SUFFIX).toString();
+        lmfPath = concat(cachePath, separator, bean.getSaveName(), LMF_SUFFIX).toString();
 
         mkdirs(realSavePath, cachePath);
     }
@@ -153,7 +149,7 @@ public class TemporaryRecord {
      * @return response
      */
     public Flowable<Response<ResponseBody>> download() {
-        return downloadApi.download(null, url);
+        return downloadApi.download(null, bean.getUrl());
     }
 
     /**
@@ -178,7 +174,7 @@ public class TemporaryRecord {
                     public Publisher<Response<ResponseBody>> apply(DownloadRange range)
                             throws Exception {
                         String rangeStr = "bytes=" + range.start + "-" + range.end;
-                        return downloadApi.download(rangeStr, url);
+                        return downloadApi.download(rangeStr, bean.getUrl());
                     }
                 });
     }
@@ -220,11 +216,11 @@ public class TemporaryRecord {
     }
 
     public String getSaveName() {
-        return saveName;
+        return bean.getSaveName();
     }
 
     public void setSaveName(String saveName) {
-        this.saveName = saveName;
+        bean.setSaveName(saveName);
     }
 
     public File file() {
@@ -260,27 +256,27 @@ public class TemporaryRecord {
     }
 
 
-    public void start() {
+    public void start(int type) {
         dataBaseHelper = DataBaseHelper.getSingleton(context.getApplicationContext());
-        if (dataBaseHelper.recordNotExists(url)) {
-            dataBaseHelper.insertRecord(url, saveName, savePath);
+        if (dataBaseHelper.recordNotExists(bean.getUrl())) {
+            dataBaseHelper.insertRecord(bean, type);
         }
     }
 
     public void update(DownloadStatus status) {
-        dataBaseHelper.updateRecord(url, status);
+        dataBaseHelper.updateRecord(bean.getUrl(), status);
     }
 
     public void error() {
-        dataBaseHelper.updateRecord(url, DownloadFlag.FAILED);
+        dataBaseHelper.updateRecord(bean.getUrl(), DownloadFlag.FAILED);
     }
 
     public void complete() {
-        dataBaseHelper.updateRecord(url, DownloadFlag.COMPLETED);
+        dataBaseHelper.updateRecord(bean.getUrl(), DownloadFlag.COMPLETED);
     }
 
     public void cancel() {
-        dataBaseHelper.updateRecord(url, DownloadFlag.PAUSED);
+        dataBaseHelper.updateRecord(bean.getUrl(), DownloadFlag.PAUSED);
     }
 
     public void finish() {

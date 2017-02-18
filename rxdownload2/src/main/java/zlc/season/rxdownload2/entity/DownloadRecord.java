@@ -1,5 +1,7 @@
 package zlc.season.rxdownload2.entity;
 
+import static zlc.season.rxdownload2.entity.DownloadFlag.NORMAL;
+
 /**
  * Author: Season(ssseasonnn@gmail.com)
  * Date: 2016/11/14
@@ -7,11 +9,11 @@ package zlc.season.rxdownload2.entity;
  * FIXME
  */
 public class DownloadRecord {
-    private String url;
-    private String saveName;
-    private String savePath;  //param path, not file save path;
-    private DownloadStatus mStatus;
-    private int flag = DownloadFlag.NORMAL;
+    private String url = "";
+    private String saveName = "";
+    private String savePath = "";
+    private DownloadStatus mStatus = new DownloadStatus();
+    private int flag = NORMAL;
     private long date; //格林威治时间,毫秒
 
     public DownloadRecord() {

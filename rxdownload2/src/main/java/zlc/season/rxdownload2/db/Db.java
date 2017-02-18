@@ -7,7 +7,6 @@ import java.util.Date;
 
 import zlc.season.rxdownload2.entity.DownloadBean;
 import zlc.season.rxdownload2.entity.DownloadFlag;
-import zlc.season.rxdownload2.entity.DownloadMission;
 import zlc.season.rxdownload2.entity.DownloadRecord;
 import zlc.season.rxdownload2.entity.DownloadStatus;
 
@@ -83,15 +82,6 @@ class Db {
             return values;
         }
 
-        static ContentValues insert(DownloadMission mission) {
-            ContentValues values = new ContentValues();
-            values.put(COLUMN_URL, mission.getUrl());
-            values.put(COLUMN_SAVE_NAME, mission.getSaveName());
-            values.put(COLUMN_SAVE_PATH, mission.getSavePath());
-            values.put(COLUMN_DOWNLOAD_FLAG, DownloadFlag.WAITING);
-            values.put(COLUMN_DATE, new Date().getTime());
-            return values;
-        }
 
         static ContentValues update(DownloadStatus status) {
             ContentValues values = new ContentValues();

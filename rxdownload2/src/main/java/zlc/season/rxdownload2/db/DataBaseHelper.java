@@ -14,17 +14,21 @@ import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.schedulers.Schedulers;
 import zlc.season.rxdownload2.entity.DownloadBean;
 import zlc.season.rxdownload2.entity.DownloadFlag;
-import zlc.season.rxdownload2.entity.DownloadMission;
 import zlc.season.rxdownload2.entity.DownloadRecord;
 import zlc.season.rxdownload2.entity.DownloadStatus;
 
+import static zlc.season.rxdownload2.db.Db.RecordTable.COLUMN_DATE;
 import static zlc.season.rxdownload2.db.Db.RecordTable.COLUMN_DOWNLOAD_FLAG;
 import static zlc.season.rxdownload2.db.Db.RecordTable.COLUMN_DOWNLOAD_SIZE;
 import static zlc.season.rxdownload2.db.Db.RecordTable.COLUMN_ID;
 import static zlc.season.rxdownload2.db.Db.RecordTable.COLUMN_IS_CHUNKED;
+import static zlc.season.rxdownload2.db.Db.RecordTable.COLUMN_SAVE_NAME;
+import static zlc.season.rxdownload2.db.Db.RecordTable.COLUMN_SAVE_PATH;
 import static zlc.season.rxdownload2.db.Db.RecordTable.COLUMN_TOTAL_SIZE;
+import static zlc.season.rxdownload2.db.Db.RecordTable.COLUMN_URL;
 import static zlc.season.rxdownload2.db.Db.RecordTable.TABLE_NAME;
 import static zlc.season.rxdownload2.db.Db.RecordTable.insert;
+import static zlc.season.rxdownload2.db.Db.RecordTable.read;
 import static zlc.season.rxdownload2.db.Db.RecordTable.update;
 
 /**
@@ -73,16 +77,10 @@ public class DataBaseHelper {
         }
     }
 
-    public long insertRecord(String url, String saveName, String savePath) {
-        return getWritableDatabase().insert(TABLE_NAME, null, insert(url, saveName, savePath));
-    }
-    public long insertRecord(DownloadBean downloadBean,int type) {
-        return getWritableDatabase().insert(TABLE_NAME, null, insert(downloadBean,type));
+    public long insertRecord(DownloadBean downloadBean, int type) {
+        return getWritableDatabase().insert(TABLE_NAME, null, insert(downloadBean, type));
     }
 
-    public long insertRecord(DownloadMission mission) {
-        return getWritableDatabase().insert(TABLE_NAME, null, insert(mission));
-    }
 
     public long updateRecord(String url, DownloadStatus status) {
         return getWritableDatabase().update(TABLE_NAME, update(status), "url=?", new String[]{url});
@@ -99,13 +97,16 @@ public class DataBaseHelper {
     public DownloadRecord readSingleRecord(String url) {
         Cursor cursor = null;
         try {
-            cursor = getReadableDatabase()
-                    .rawQuery("select * from " + TABLE_NAME + " where url=?", new String[]{url});
+            cursor = getReadableDatabase().query(TABLE_NAME,
+                    new String[]{COLUMN_URL, COLUMN_SAVE_NAME, COLUMN_SAVE_PATH,
+                            COLUMN_DOWNLOAD_SIZE, COLUMN_TOTAL_SIZE, COLUMN_IS_CHUNKED,
+                            COLUMN_DOWNLOAD_FLAG, COLUMN_DATE},
+                    "url=?", new String[]{url}, null, null, null);
             cursor.moveToFirst();
             if (cursor.getCount() == 0) {
-                return new DownloadRecord();
+                return null;
             } else {
-                return Db.RecordTable.read(cursor);
+                return read(cursor);
             }
         } finally {
             if (cursor != null) {
@@ -153,7 +154,7 @@ public class DataBaseHelper {
                             .rawQuery("select * from " + TABLE_NAME, new String[]{});
                     List<DownloadRecord> result = new ArrayList<>();
                     while (cursor.moveToNext()) {
-                        result.add(Db.RecordTable.read(cursor));
+                        result.add(read(cursor));
                     }
                     emitter.onNext(result);
                     emitter.onComplete();
@@ -192,7 +193,7 @@ public class DataBaseHelper {
                     if (cursor.getCount() == 0) {
                         emitter.onNext(new DownloadRecord());
                     } else {
-                        emitter.onNext(Db.RecordTable.read(cursor));
+                        emitter.onNext(read(cursor));
                     }
                     emitter.onComplete();
                 } finally {

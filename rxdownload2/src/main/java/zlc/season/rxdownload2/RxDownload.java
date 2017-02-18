@@ -139,7 +139,7 @@ public class RxDownload {
                         ObservableSource<DownloadEvent>>() {
                     @Override
                     public ObservableSource<DownloadEvent> apply(Object o) throws Exception {
-                        return mDownloadService.processor(RxDownload.this, url).toObservable();
+                        return mDownloadService.receiveDownloadEvent(RxDownload.this, url).toObservable();
                     }
                 })
                 .observeOn(AndroidSchedulers.mainThread());
@@ -223,7 +223,7 @@ public class RxDownload {
         return createGeneralObservable(new GeneralObservableCallback() {
             @Override
             public void call() {
-                mDownloadService.cancelDownload(url);
+//                mDownloadService.cancelDownload(url);
             }
         });
     }
@@ -376,12 +376,12 @@ public class RxDownload {
     private void addDownloadTask(@NonNull String url, @Nullable String saveName,
                                  @Nullable String savePath) throws InterruptedException {
         mDownloadService.addDownloadMission(
-                new DownloadMission.Builder()
-                        .setRxDownload(RxDownload.this)
-                        .setUrl(url)
-                        .setSaveName(saveName)
-                        .setSavePath(savePath)
-                        .build());
+                new DownloadMission(
+                        new DownloadBean.Builder(url)
+                                .setSaveName(saveName)
+                                .setSavePath(savePath)
+                                .build(),
+                        RxDownload.this));
     }
 
     private Observable<?> createGeneralObservable(final GeneralObservableCallback callback) {

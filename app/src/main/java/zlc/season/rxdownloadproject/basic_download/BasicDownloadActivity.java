@@ -101,8 +101,7 @@ public class BasicDownloadActivity extends AppCompatActivity {
         Picasso.with(this).load("http://static.yingyonghui.com/icon/128/4200197.png").into(mImg);
         mAction.setText("开始");
 
-        mRxDownload = RxDownload.getInstance()
-                .context(this)
+        mRxDownload = RxDownload.getInstance(this)
                 .maxThread(10);
         mDownloadController = new DownloadController(mStatus, mAction);
         mDownloadController.setState(new DownloadController.Normal());

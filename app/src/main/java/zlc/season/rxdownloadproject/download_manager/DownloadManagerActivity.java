@@ -43,7 +43,7 @@ public class DownloadManagerActivity extends AppCompatActivity {
     }
 
     private void loadData() {
-        RxDownload.getInstance().context(this).getTotalDownloadRecords()
+        RxDownload.getInstance(this).getTotalDownloadRecords()
                 .map(new Function<List<DownloadRecord>, List<DownloadBean>>() {
                     @Override
                     public List<DownloadBean> apply(List<DownloadRecord> downloadRecords) throws Exception {

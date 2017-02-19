@@ -94,7 +94,7 @@ public class ServiceDownloadActivity extends AppCompatActivity {
         String icon = "http://image.coolapk.com/apk_logo/2015/0330/12202_1427696232_8648.png";
         Picasso.with(this).load(icon).into(mImg);
 
-        mRxDownload = RxDownload.getInstance().context(this);
+        mRxDownload = RxDownload.getInstance(this);
         mDownloadController = new DownloadController(mStatusText, mAction);
     }
 

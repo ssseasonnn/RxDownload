@@ -242,6 +242,12 @@ public abstract class DownloadType {
         private Publisher<DownloadStatus> rangeDownload(final int index) {
             return record.rangeDownload(index)
                     .subscribeOn(Schedulers.io())  //Important!
+                    .doOnSubscribe(new Consumer<Subscription>() {
+                        @Override
+                        public void accept(Subscription subscription) throws Exception {
+                            log(index + " start");
+                        }
+                    })
                     .flatMap(new Function<Response<ResponseBody>, Publisher<DownloadStatus>>() {
                         @Override
                         public Publisher<DownloadStatus> apply(Response<ResponseBody> response) throws Exception {

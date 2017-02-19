@@ -1,7 +1,5 @@
 package zlc.season.rxdownload2.entity;
 
-import android.content.Context;
-
 import org.reactivestreams.Publisher;
 
 import java.io.File;
@@ -24,6 +22,7 @@ import static java.io.File.separator;
 import static zlc.season.rxdownload2.function.Constant.CACHE;
 import static zlc.season.rxdownload2.function.Utils.empty;
 import static zlc.season.rxdownload2.function.Utils.getPaths;
+import static zlc.season.rxdownload2.function.Utils.log;
 import static zlc.season.rxdownload2.function.Utils.mkdirs;
 
 /**
@@ -57,7 +56,8 @@ public class TemporaryRecord {
 
     /**
      * init needs info
-     *  @param maxRetryCount   Max retry times
+     *
+     * @param maxRetryCount   Max retry times
      * @param maxThreads      Max download threads
      * @param defaultSavePath Default save path;
      * @param downloadApi     API
@@ -159,20 +159,22 @@ public class TemporaryRecord {
      * @return response
      */
     public Flowable<Response<ResponseBody>> rangeDownload(final int index) {
-        return Flowable.create(new FlowableOnSubscribe<DownloadRange>() {
-            @Override
-            public void subscribe(FlowableEmitter<DownloadRange> e) throws Exception {
-                DownloadRange range = readDownloadRange(index);
-                if (range.legal()) {
-                    e.onNext(range);
-                }
-                e.onComplete();
-            }
-        }, BackpressureStrategy.ERROR)
+        return Flowable
+                .create(new FlowableOnSubscribe<DownloadRange>() {
+                    @Override
+                    public void subscribe(FlowableEmitter<DownloadRange> e) throws Exception {
+                        DownloadRange range = readDownloadRange(index);
+                        if (range.legal()) {
+                            e.onNext(range);
+                        }
+                        e.onComplete();
+                    }
+                }, BackpressureStrategy.ERROR)
                 .flatMap(new Function<DownloadRange, Publisher<Response<ResponseBody>>>() {
                     @Override
                     public Publisher<Response<ResponseBody>> apply(DownloadRange range)
                             throws Exception {
+                        log(index + " download from " + range.start + " to " + range.end);
                         String rangeStr = "bytes=" + range.start + "-" + range.end;
                         return downloadApi.download(rangeStr, bean.getUrl());
                     }

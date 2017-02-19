@@ -68,6 +68,7 @@ public class RxDownload {
     private int MAX_DOWNLOAD_NUMBER = 5;
 
     private RxDownload(Context context) {
+        this.mContext = context;
         mDownloadHelper = new DownloadHelper(context);
     }
 
@@ -92,7 +93,7 @@ public class RxDownload {
      *
      * @param saveName saveName
      * @param savePath savePath
-     * @return Files
+     * @return
      */
     public File[] getRealFiles(String saveName, String savePath) {
         return Utils.getFiles(saveName, savePath);

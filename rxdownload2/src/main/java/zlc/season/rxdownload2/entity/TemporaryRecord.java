@@ -22,9 +22,8 @@ import zlc.season.rxdownload2.function.FileHelper;
 import static android.text.TextUtils.concat;
 import static java.io.File.separator;
 import static zlc.season.rxdownload2.function.Constant.CACHE;
-import static zlc.season.rxdownload2.function.Constant.LMF_SUFFIX;
-import static zlc.season.rxdownload2.function.Constant.TMP_SUFFIX;
 import static zlc.season.rxdownload2.function.Utils.empty;
+import static zlc.season.rxdownload2.function.Utils.getPaths;
 import static zlc.season.rxdownload2.function.Utils.mkdirs;
 
 /**
@@ -51,7 +50,6 @@ public class TemporaryRecord {
     private DataBaseHelper dataBaseHelper;
     private FileHelper fileHelper;
     private DownloadApi downloadApi;
-    private Context context;
 
     public TemporaryRecord(DownloadBean bean) {
         this.bean = bean;
@@ -59,19 +57,20 @@ public class TemporaryRecord {
 
     /**
      * init needs info
-     *
-     * @param maxRetryCount   Max retry times
+     *  @param maxRetryCount   Max retry times
      * @param maxThreads      Max download threads
      * @param defaultSavePath Default save path;
      * @param downloadApi     API
+     * @param dataBaseHelper  DataBaseHelper
+     * @param fileHelper      FileHelper
      */
-    public void init(Context context, int maxRetryCount, int maxThreads, String defaultSavePath,
-                     DownloadApi downloadApi) {
-        this.context = context;
+    public void init(int maxRetryCount, int maxThreads, String defaultSavePath,
+                     DownloadApi downloadApi, DataBaseHelper dataBaseHelper, FileHelper fileHelper) {
         this.maxThreads = maxThreads;
         this.maxRetryCount = maxRetryCount;
         this.downloadApi = downloadApi;
-        this.fileHelper = new FileHelper(maxThreads);
+        this.dataBaseHelper = dataBaseHelper;
+        this.fileHelper = fileHelper;
 
         String realSavePath;
         if (empty(bean.getSavePath())) {
@@ -81,13 +80,14 @@ public class TemporaryRecord {
             realSavePath = bean.getSavePath();
         }
         String cachePath = concat(realSavePath, separator, CACHE).toString();
-
-        filePath = concat(realSavePath, separator, bean.getSaveName()).toString();
-        tempPath = concat(cachePath, separator, bean.getSaveName(), TMP_SUFFIX).toString();
-        lmfPath = concat(cachePath, separator, bean.getSaveName(), LMF_SUFFIX).toString();
-
         mkdirs(realSavePath, cachePath);
+
+        String[] paths = getPaths(bean.getSaveName(), realSavePath);
+        filePath = paths[0];
+        tempPath = paths[1];
+        lmfPath = paths[2];
     }
+
 
     /**
      * prepare normal download, create files and save last-modify.
@@ -257,7 +257,6 @@ public class TemporaryRecord {
 
 
     public void start(int type) {
-        dataBaseHelper = DataBaseHelper.getSingleton(context.getApplicationContext());
         if (dataBaseHelper.recordNotExists(bean.getUrl())) {
             dataBaseHelper.insertRecord(bean, type);
         }

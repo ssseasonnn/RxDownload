@@ -31,6 +31,7 @@ import zlc.season.rxdownload2.entity.DownloadRecord;
 import zlc.season.rxdownload2.entity.DownloadStatus;
 import zlc.season.rxdownload2.function.DownloadHelper;
 import zlc.season.rxdownload2.function.DownloadService;
+import zlc.season.rxdownload2.function.Utils;
 
 import static zlc.season.rxdownload2.function.Constant.CONTEXT_NULL_HINT;
 import static zlc.season.rxdownload2.function.Utils.log;
@@ -66,35 +67,35 @@ public class RxDownload {
     private Context mContext;
     private int MAX_DOWNLOAD_NUMBER = 5;
 
-    private RxDownload() {
-        mDownloadHelper = new DownloadHelper();
+    private RxDownload(Context context) {
+        mDownloadHelper = new DownloadHelper(context);
     }
 
-    public static RxDownload getInstance() {
-        return new RxDownload();
+    public static RxDownload getInstance(Context context) {
+        return new RxDownload(context);
     }
 
     /**
-     * get Files.
+     * get Files by url. May be NULL if this url record not exists.
      * File[] {DownloadFile, TempFile, LastModifyFile}
      *
      * @param url url
      * @return Files
      */
+    @Nullable
     public File[] getRealFiles(String url) {
-        return mDownloadHelper.getRealFile(url);
+        return mDownloadHelper.getFiles(url);
     }
 
     /**
-     * 普通下载时不需要context, 使用Service下载时需要context;
+     * get Files by saveName and savePath.
      *
-     * @param context context
-     * @return RxDownload
+     * @param saveName saveName
+     * @param savePath savePath
+     * @return Files
      */
-    public RxDownload context(Context context) {
-        this.mContext = context;
-        mDownloadHelper.setContext(context);
-        return this;
+    public File[] getRealFiles(String saveName, String savePath) {
+        return Utils.getFiles(saveName, savePath);
     }
 
     public RxDownload defaultSavePath(String savePath) {
@@ -139,7 +140,7 @@ public class RxDownload {
                         ObservableSource<DownloadEvent>>() {
                     @Override
                     public ObservableSource<DownloadEvent> apply(Object o) throws Exception {
-                        return mDownloadService.receiveDownloadEvent(RxDownload.this, url).toObservable();
+                        return mDownloadService.receiveDownloadEvent(url).toObservable();
                     }
                 })
                 .observeOn(AndroidSchedulers.mainThread());
@@ -233,7 +234,7 @@ public class RxDownload {
      * <p>
      * 同时从数据库中删除该下载记录.
      * <p>
-     * when deleteFile is true, the downloaded file will be deleted.
+     * when deleteFiles is true, the downloaded file will be deleted.
      *
      * @param url        download url
      * @param deleteFile whether delete  file
@@ -242,7 +243,7 @@ public class RxDownload {
         return createGeneralObservable(new GeneralObservableCallback() {
             @Override
             public void call() {
-                mDownloadService.deleteDownload(url, deleteFile, RxDownload.this);
+                mDownloadService.deleteDownload(url, deleteFile);
             }
         });
     }

@@ -134,9 +134,9 @@ public abstract class DownloadType {
         return "";
     }
 
-    static class NormalDownload extends DownloadType {
+    public static class NormalDownload extends DownloadType {
 
-        NormalDownload(TemporaryRecord record) {
+        public NormalDownload(TemporaryRecord record) {
             super(record);
         }
 
@@ -193,9 +193,9 @@ public abstract class DownloadType {
         }
     }
 
-    static class ContinueDownload extends DownloadType {
+    public static class ContinueDownload extends DownloadType {
 
-        ContinueDownload(TemporaryRecord record) {
+        public ContinueDownload(TemporaryRecord record) {
             super(record);
         }
 
@@ -270,9 +270,9 @@ public abstract class DownloadType {
         }
     }
 
-    static class MultiThreadDownload extends ContinueDownload {
+    public static class MultiThreadDownload extends ContinueDownload {
 
-        MultiThreadDownload(TemporaryRecord record) {
+        public MultiThreadDownload(TemporaryRecord record) {
             super(record);
         }
 
@@ -308,9 +308,9 @@ public abstract class DownloadType {
         }
     }
 
-    static class AlreadyDownloaded extends DownloadType {
+    public static class AlreadyDownloaded extends DownloadType {
 
-        AlreadyDownloaded(TemporaryRecord record) {
+        public AlreadyDownloaded(TemporaryRecord record) {
             super(record);
         }
 

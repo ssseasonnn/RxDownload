@@ -8,6 +8,7 @@ import io.reactivex.functions.Consumer;
 import io.reactivex.processors.FlowableProcessor;
 import io.reactivex.schedulers.Schedulers;
 import zlc.season.rxdownload2.RxDownload;
+import zlc.season.rxdownload2.function.Utils;
 
 import static zlc.season.rxdownload2.function.DownloadEventFactory.completed;
 import static zlc.season.rxdownload2.function.DownloadEventFactory.failed;
@@ -53,18 +54,26 @@ public class DownloadMission {
         return bean.getUrl();
     }
 
-    public void start(final Semaphore semaphore, final FlowableProcessor<DownloadEvent> processor)
-            throws InterruptedException {
+    public void start(final Semaphore semaphore, final FlowableProcessor<DownloadEvent> processor) {
 
         if (canceled) return;
-        semaphore.acquire();
 
         disposable = rxdownload.download(bean)
                 .subscribeOn(Schedulers.io())
+                .doOnSubscribe(new Consumer<Disposable>() {
+                    @Override
+                    public void accept(Disposable disposable) throws Exception {
+                        Utils.log(bean.getUrl() + " " + "now acquire");
+                        semaphore.acquire();
+                        Utils.log(bean.getUrl() + " " + "acquired");
+                        Utils.log("After acquired, now residue: " + semaphore.availablePermits());
+                    }
+                })
                 .doFinally(new Action() {
                     @Override
                     public void run() throws Exception {
                         semaphore.release();
+                        Utils.log("After release, now residue: " + semaphore.availablePermits());
                     }
                 })
                 .subscribe(new Consumer<DownloadStatus>() {

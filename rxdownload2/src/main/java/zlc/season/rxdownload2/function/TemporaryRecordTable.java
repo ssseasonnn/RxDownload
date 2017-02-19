@@ -1,6 +1,4 @@
-package zlc.season.rxdownload2.entity;
-
-import android.content.Context;
+package zlc.season.rxdownload2.function;
 
 import java.io.File;
 import java.io.IOException;
@@ -8,11 +6,13 @@ import java.util.HashMap;
 import java.util.Map;
 
 import retrofit2.Response;
+import zlc.season.rxdownload2.db.DataBaseHelper;
+import zlc.season.rxdownload2.entity.DownloadType;
 import zlc.season.rxdownload2.entity.DownloadType.AlreadyDownloaded;
 import zlc.season.rxdownload2.entity.DownloadType.ContinueDownload;
 import zlc.season.rxdownload2.entity.DownloadType.MultiThreadDownload;
 import zlc.season.rxdownload2.entity.DownloadType.NormalDownload;
-import zlc.season.rxdownload2.function.DownloadApi;
+import zlc.season.rxdownload2.entity.TemporaryRecord;
 
 import static zlc.season.rxdownload2.function.Constant.DOWNLOAD_RECORD_FILE_DAMAGED;
 import static zlc.season.rxdownload2.function.Utils.contentLength;
@@ -74,15 +74,18 @@ public class TemporaryRecordTable {
     /**
      * Init necessary info
      *
-     * @param url             key
+     * @param url             url
      * @param maxRetryCount   retry count
      * @param maxThreads      max threads
      * @param defaultSavePath default save path
      * @param downloadApi     api
+     * @param dataBaseHelper  DataBaseHelper
+     * @param fileHelper      FileHelper
      */
-    public void init(Context context, String url, int maxRetryCount, int maxThreads, String defaultSavePath,
-                     DownloadApi downloadApi) {
-        map.get(url).init(context, maxRetryCount, maxThreads, defaultSavePath, downloadApi);
+    public void init(String url, int maxRetryCount, int maxThreads, String defaultSavePath,
+                     DownloadApi downloadApi, DataBaseHelper dataBaseHelper, FileHelper fileHelper) {
+        map.get(url).init(maxRetryCount, maxThreads, defaultSavePath, downloadApi,
+                dataBaseHelper, fileHelper);
     }
 
     /**

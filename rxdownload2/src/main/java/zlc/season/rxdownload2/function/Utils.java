@@ -36,7 +36,6 @@ import retrofit2.Response;
 import static android.text.TextUtils.concat;
 import static java.io.File.separator;
 import static java.lang.String.format;
-import static java.lang.Thread.currentThread;
 import static java.util.Locale.getDefault;
 import static java.util.TimeZone.getTimeZone;
 import static zlc.season.rxdownload2.function.Constant.CACHE;
@@ -70,6 +69,10 @@ public class Utils {
 
     public static void log(Throwable throwable) {
         Log.w(TAG, throwable);
+    }
+
+    public static String formatStr(String str, Object... args) {
+        return format(getDefault(), str, args);
     }
 
     public static boolean empty(String string) {
@@ -123,28 +126,28 @@ public class Utils {
         }
     }
 
-    public static <U> ObservableTransformer<U, U> retry(final int retryCount) {
+    public static <U> ObservableTransformer<U, U> retry(final String hint, final int retryCount) {
         return new ObservableTransformer<U, U>() {
             @Override
             public ObservableSource<U> apply(Observable<U> upstream) {
                 return upstream.retry(new BiPredicate<Integer, Throwable>() {
                     @Override
                     public boolean test(Integer integer, Throwable throwable) throws Exception {
-                        return retry(retryCount, integer, throwable);
+                        return retry(hint, retryCount, integer, throwable);
                     }
                 });
             }
         };
     }
 
-    public static <U> FlowableTransformer<U, U> retry2(final int retryCount) {
+    public static <U> FlowableTransformer<U, U> retry2(final String hint, final int retryCount) {
         return new FlowableTransformer<U, U>() {
             @Override
             public Publisher<U> apply(Flowable<U> upstream) {
                 return upstream.retry(new BiPredicate<Integer, Throwable>() {
                     @Override
                     public boolean test(Integer integer, Throwable throwable) throws Exception {
-                        return retry(retryCount, integer, throwable);
+                        return retry(hint, retryCount, integer, throwable);
                     }
                 });
             }
@@ -223,40 +226,40 @@ public class Utils {
         return hrSize;
     }
 
-    public static Boolean retry(int MAX_RETRY_COUNT, Integer integer, Throwable throwable) {
+    public static Boolean retry(String hint, int maxRetryCount, Integer integer, Throwable throwable) {
         if (throwable instanceof ProtocolException) {
-            if (integer < MAX_RETRY_COUNT + 1) {
-                log(RETRY_HINT, currentThread().getName(), "ProtocolException", integer);
+            if (integer < maxRetryCount + 1) {
+                log(RETRY_HINT, hint, "ProtocolException", integer);
                 return true;
             }
             return false;
         } else if (throwable instanceof UnknownHostException) {
-            if (integer < MAX_RETRY_COUNT + 1) {
-                log(RETRY_HINT, currentThread().getName(), "UnknownHostException", integer);
+            if (integer < maxRetryCount + 1) {
+                log(RETRY_HINT, hint, "UnknownHostException", integer);
                 return true;
             }
             return false;
         } else if (throwable instanceof HttpException) {
-            if (integer < MAX_RETRY_COUNT + 1) {
-                log(RETRY_HINT, currentThread().getName(), "HttpException", integer);
+            if (integer < maxRetryCount + 1) {
+                log(RETRY_HINT, hint, "HttpException", integer);
                 return true;
             }
             return false;
         } else if (throwable instanceof SocketTimeoutException) {
-            if (integer < MAX_RETRY_COUNT + 1) {
-                log(RETRY_HINT, currentThread().getName(), "SocketTimeoutException", integer);
+            if (integer < maxRetryCount + 1) {
+                log(RETRY_HINT, hint, "SocketTimeoutException", integer);
                 return true;
             }
             return false;
         } else if (throwable instanceof ConnectException) {
-            if (integer < MAX_RETRY_COUNT + 1) {
-                log(RETRY_HINT, currentThread().getName(), "ConnectException", integer);
+            if (integer < maxRetryCount + 1) {
+                log(RETRY_HINT, hint, "ConnectException", integer);
                 return true;
             }
             return false;
         } else if (throwable instanceof SocketException) {
-            if (integer < MAX_RETRY_COUNT + 1) {
-                log(RETRY_HINT, currentThread().getName(), "SocketException", integer);
+            if (integer < maxRetryCount + 1) {
+                log(RETRY_HINT, hint, "SocketException", integer);
                 return true;
             }
             return false;

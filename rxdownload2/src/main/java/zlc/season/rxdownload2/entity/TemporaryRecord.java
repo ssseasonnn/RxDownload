@@ -20,6 +20,7 @@ import zlc.season.rxdownload2.function.FileHelper;
 import static android.text.TextUtils.concat;
 import static java.io.File.separator;
 import static zlc.season.rxdownload2.function.Constant.CACHE;
+import static zlc.season.rxdownload2.function.Constant.RANGE_DOWNLOAD_STARTED;
 import static zlc.season.rxdownload2.function.Utils.empty;
 import static zlc.season.rxdownload2.function.Utils.getPaths;
 import static zlc.season.rxdownload2.function.Utils.log;
@@ -57,20 +58,19 @@ public class TemporaryRecord {
     /**
      * init needs info
      *
-     * @param maxRetryCount   Max retry times
      * @param maxThreads      Max download threads
+     * @param maxRetryCount   Max retry times
      * @param defaultSavePath Default save path;
      * @param downloadApi     API
      * @param dataBaseHelper  DataBaseHelper
-     * @param fileHelper      FileHelper
      */
-    public void init(int maxRetryCount, int maxThreads, String defaultSavePath,
-                     DownloadApi downloadApi, DataBaseHelper dataBaseHelper, FileHelper fileHelper) {
+    public void init(int maxThreads, int maxRetryCount, String defaultSavePath,
+                     DownloadApi downloadApi, DataBaseHelper dataBaseHelper) {
         this.maxThreads = maxThreads;
         this.maxRetryCount = maxRetryCount;
         this.downloadApi = downloadApi;
         this.dataBaseHelper = dataBaseHelper;
-        this.fileHelper = fileHelper;
+        this.fileHelper = new FileHelper(maxThreads);
 
         String realSavePath;
         if (empty(bean.getSavePath())) {
@@ -174,7 +174,7 @@ public class TemporaryRecord {
                     @Override
                     public Publisher<Response<ResponseBody>> apply(DownloadRange range)
                             throws Exception {
-                        log(index + " download from " + range.start + " to " + range.end);
+                        log(RANGE_DOWNLOAD_STARTED, index, range.start, range.end);
                         String rangeStr = "bytes=" + range.start + "-" + range.end;
                         return downloadApi.download(rangeStr, bean.getUrl());
                     }

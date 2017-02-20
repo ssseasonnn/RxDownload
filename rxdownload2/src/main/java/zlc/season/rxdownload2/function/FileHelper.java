@@ -33,7 +33,7 @@ import static zlc.season.rxdownload2.function.Utils.longToGMT;
  */
 public class FileHelper {
     private static final int EACH_RECORD_SIZE = 16; //long + long = 8 + 8
-    private final int RECORD_FILE_TOTAL_SIZE;
+    private int RECORD_FILE_TOTAL_SIZE;
     //|*********************|
     //|*****Record  File****|
     //|*********************|

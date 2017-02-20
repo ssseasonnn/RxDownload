@@ -27,6 +27,7 @@ import zlc.season.rxdownload2.entity.TemporaryRecord;
 import static android.os.Environment.DIRECTORY_DOWNLOADS;
 import static android.os.Environment.getExternalStoragePublicDirectory;
 import static zlc.season.rxdownload2.function.Constant.DOWNLOAD_URL_EXISTS;
+import static zlc.season.rxdownload2.function.Constant.REQUEST_RETRY_HINT;
 import static zlc.season.rxdownload2.function.Constant.TEST_RANGE_SUPPORT;
 import static zlc.season.rxdownload2.function.Utils.log;
 import static zlc.season.rxdownload2.function.Utils.retry;
@@ -44,7 +45,6 @@ public class DownloadHelper {
     private String defaultSavePath;
     private DownloadApi downloadApi;
 
-    private FileHelper fileHelper;
     private DataBaseHelper dataBaseHelper;
     private TemporaryRecordTable recordTable;
 
@@ -53,7 +53,6 @@ public class DownloadHelper {
         defaultSavePath = getExternalStoragePublicDirectory(DIRECTORY_DOWNLOADS).getPath();
         recordTable = new TemporaryRecordTable();
         dataBaseHelper = DataBaseHelper.getSingleton(context.getApplicationContext());
-        fileHelper = new FileHelper(maxThreads);
     }
 
     public void setRetrofit(Retrofit retrofit) {
@@ -70,7 +69,6 @@ public class DownloadHelper {
 
     public void setMaxThreads(int maxThreads) {
         this.maxThreads = maxThreads;
-        fileHelper = new FileHelper(maxThreads);
     }
 
     /**
@@ -186,7 +184,7 @@ public class DownloadHelper {
                     @Override
                     public void accept(Object o) throws Exception {
                         recordTable.init(url, maxThreads, maxRetryCount, defaultSavePath,
-                                downloadApi, dataBaseHelper, fileHelper);
+                                downloadApi, dataBaseHelper);
                     }
                 })
                 .flatMap(new Function<Object, ObservableSource<DownloadType>>() {
@@ -267,7 +265,7 @@ public class DownloadHelper {
                         return new Object();
                     }
                 })
-                .compose(retry(maxRetryCount));
+                .compose(retry(REQUEST_RETRY_HINT, maxRetryCount));
     }
 
     /**
@@ -290,7 +288,7 @@ public class DownloadHelper {
                         return new Object();
                     }
                 })
-                .compose(retry(maxRetryCount));
+                .compose(retry(REQUEST_RETRY_HINT, maxRetryCount));
     }
 
     /**
@@ -313,6 +311,6 @@ public class DownloadHelper {
                         return new Object();
                     }
                 })
-                .compose(retry(maxRetryCount));
+                .compose(retry(REQUEST_RETRY_HINT, maxRetryCount));
     }
 }

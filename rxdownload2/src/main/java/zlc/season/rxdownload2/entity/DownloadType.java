@@ -37,6 +37,9 @@ import static zlc.season.rxdownload2.function.Constant.NORMAL_DOWNLOAD_COMPLETED
 import static zlc.season.rxdownload2.function.Constant.NORMAL_DOWNLOAD_FAILED;
 import static zlc.season.rxdownload2.function.Constant.NORMAL_DOWNLOAD_PREPARE;
 import static zlc.season.rxdownload2.function.Constant.NORMAL_DOWNLOAD_STARTED;
+import static zlc.season.rxdownload2.function.Constant.NORMAL_RETRY_HINT;
+import static zlc.season.rxdownload2.function.Constant.RANGE_RETRY_HINT;
+import static zlc.season.rxdownload2.function.Utils.formatStr;
 import static zlc.season.rxdownload2.function.Utils.log;
 
 /**
@@ -155,7 +158,7 @@ public abstract class DownloadType {
                             return save(response);
                         }
                     })
-                    .compose(Utils.<DownloadStatus>retry2(record.getMaxRetryCount()));
+                    .compose(Utils.<DownloadStatus>retry2(NORMAL_RETRY_HINT, record.getMaxRetryCount()));
         }
 
         @Override
@@ -242,20 +245,13 @@ public abstract class DownloadType {
         private Publisher<DownloadStatus> rangeDownload(final int index) {
             return record.rangeDownload(index)
                     .subscribeOn(Schedulers.io())  //Important!
-                    .doOnSubscribe(new Consumer<Subscription>() {
-                        @Override
-                        public void accept(Subscription subscription) throws Exception {
-                            log(index + " start");
-                        }
-                    })
                     .flatMap(new Function<Response<ResponseBody>, Publisher<DownloadStatus>>() {
                         @Override
                         public Publisher<DownloadStatus> apply(Response<ResponseBody> response) throws Exception {
                             return save(index, response.body());
                         }
                     })
-                    .compose(Utils.<DownloadStatus>retry2(record.getMaxRetryCount()));
-
+                    .compose(Utils.<DownloadStatus>retry2(formatStr(RANGE_RETRY_HINT, index), record.getMaxRetryCount()));
         }
 
         /**

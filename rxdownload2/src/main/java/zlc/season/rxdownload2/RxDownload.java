@@ -46,7 +46,7 @@ public class RxDownload {
 
     private static DownloadService mDownloadService;
     private static boolean bound = false;
-    private static Object object = new Object();
+    private static final Object object = new Object();
 
     static {
         RxJavaPlugins.setErrorHandler(new Consumer<Throwable>() {

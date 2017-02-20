@@ -66,7 +66,7 @@ public final class Constant {
 
     //Range download hint
     public static final String RANGE_DOWNLOAD_STARTED =
-            "[%s] start download! From [%s] to [%s] !";
+            "Range %d start download from [%d] to [%d]";
 
     public static final String RANGE_DOWNLOAD_COMPLETED =
             "[%s] download completed!";
@@ -77,8 +77,11 @@ public final class Constant {
     public static final String RANGE_DOWNLOAD_FAILED =
             "[%s] download failed or cancel!";
 
+    public static final String REQUEST_RETRY_HINT = "Request";
+    public static final String NORMAL_RETRY_HINT = "Normal download";
+    public static final String RANGE_RETRY_HINT = "Range %d";
     public static final String RETRY_HINT =
-            "[%s] got an [%s] error! [%d] attempt reconnection!";
+            "%s get [%s] error, now retry [%d] times";
 
     //Dir hint
     public static final String DIR_EXISTS_HINT = "Path [%s] exists.";

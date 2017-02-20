@@ -75,17 +75,15 @@ public class TemporaryRecordTable {
      * Init necessary info
      *
      * @param url             url
-     * @param maxRetryCount   retry count
      * @param maxThreads      max threads
+     * @param maxRetryCount   retry count
      * @param defaultSavePath default save path
      * @param downloadApi     api
      * @param dataBaseHelper  DataBaseHelper
-     * @param fileHelper      FileHelper
      */
-    public void init(String url, int maxRetryCount, int maxThreads, String defaultSavePath,
-                     DownloadApi downloadApi, DataBaseHelper dataBaseHelper, FileHelper fileHelper) {
-        map.get(url).init(maxRetryCount, maxThreads, defaultSavePath, downloadApi,
-                dataBaseHelper, fileHelper);
+    public void init(String url, int maxThreads, int maxRetryCount, String defaultSavePath,
+                     DownloadApi downloadApi, DataBaseHelper dataBaseHelper) {
+        map.get(url).init(maxThreads, maxRetryCount, defaultSavePath, downloadApi, dataBaseHelper);
     }
 
     /**

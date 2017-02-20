@@ -102,7 +102,7 @@ public class BasicDownloadActivity extends AppCompatActivity {
         mAction.setText("开始");
 
         mRxDownload = RxDownload.getInstance(this)
-                .maxThread(10);
+                .maxThread(3);
         mDownloadController = new DownloadController(mStatus, mAction);
         mDownloadController.setState(new DownloadController.Normal());
     }

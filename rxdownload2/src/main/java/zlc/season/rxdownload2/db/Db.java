@@ -6,7 +6,6 @@ import android.database.Cursor;
 import java.util.Date;
 
 import zlc.season.rxdownload2.entity.DownloadBean;
-import zlc.season.rxdownload2.entity.DownloadFlag;
 import zlc.season.rxdownload2.entity.DownloadRecord;
 import zlc.season.rxdownload2.entity.DownloadStatus;
 
@@ -57,22 +56,12 @@ class Db {
                         COLUMN_DATE + " INTEGER NOT NULL " +
                         " )";
 
-        static ContentValues insert(String url, String saveName, String savePath) {
-            ContentValues values = new ContentValues();
-            values.put(COLUMN_URL, url);
-            values.put(COLUMN_SAVE_NAME, saveName);
-            values.put(COLUMN_SAVE_PATH, savePath);
-            values.put(COLUMN_DOWNLOAD_FLAG, DownloadFlag.STARTED);
-            values.put(COLUMN_DATE, new Date().getTime());
-            return values;
-        }
-
-        static ContentValues insert(DownloadBean bean, int type) {
+        static ContentValues insert(DownloadBean bean, int flag) {
             ContentValues values = new ContentValues();
             values.put(COLUMN_URL, bean.getUrl());
             values.put(COLUMN_SAVE_NAME, bean.getSaveName());
             values.put(COLUMN_SAVE_PATH, bean.getSavePath());
-            values.put(COLUMN_DOWNLOAD_FLAG, type);
+            values.put(COLUMN_DOWNLOAD_FLAG, flag);
             values.put(COLUMN_EXTRA1, bean.getExtra1());
             values.put(COLUMN_EXTRA2, bean.getExtra2());
             values.put(COLUMN_EXTRA3, bean.getExtra3());
@@ -106,6 +95,7 @@ class Db {
 
         static DownloadRecord read(Cursor cursor) {
             DownloadRecord record = new DownloadRecord();
+            record.setId(cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_ID)));
             record.setUrl(cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_URL)));
             record.setSaveName(cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_SAVE_NAME)));
             record.setSavePath(cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_SAVE_PATH)));
@@ -114,6 +104,12 @@ class Db {
             long downloadSize = cursor.getLong(cursor.getColumnIndexOrThrow(COLUMN_DOWNLOAD_SIZE));
             long totalSize = cursor.getLong(cursor.getColumnIndexOrThrow(COLUMN_TOTAL_SIZE));
             record.setStatus(new DownloadStatus(isChunked, downloadSize, totalSize));
+
+            record.setExtra1(cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_EXTRA1)));
+            record.setExtra2(cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_EXTRA2)));
+            record.setExtra3(cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_EXTRA3)));
+            record.setExtra4(cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_EXTRA4)));
+            record.setExtra5(cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_EXTRA5)));
 
             record.setFlag(cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_DOWNLOAD_FLAG)));
             record.setDate(cursor.getLong(cursor.getColumnIndexOrThrow(COLUMN_DATE)));

@@ -3,6 +3,7 @@ package zlc.season.rxdownload2.db;
 import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.support.annotation.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -20,6 +21,11 @@ import zlc.season.rxdownload2.entity.DownloadStatus;
 import static zlc.season.rxdownload2.db.Db.RecordTable.COLUMN_DATE;
 import static zlc.season.rxdownload2.db.Db.RecordTable.COLUMN_DOWNLOAD_FLAG;
 import static zlc.season.rxdownload2.db.Db.RecordTable.COLUMN_DOWNLOAD_SIZE;
+import static zlc.season.rxdownload2.db.Db.RecordTable.COLUMN_EXTRA1;
+import static zlc.season.rxdownload2.db.Db.RecordTable.COLUMN_EXTRA2;
+import static zlc.season.rxdownload2.db.Db.RecordTable.COLUMN_EXTRA3;
+import static zlc.season.rxdownload2.db.Db.RecordTable.COLUMN_EXTRA4;
+import static zlc.season.rxdownload2.db.Db.RecordTable.COLUMN_EXTRA5;
 import static zlc.season.rxdownload2.db.Db.RecordTable.COLUMN_ID;
 import static zlc.season.rxdownload2.db.Db.RecordTable.COLUMN_IS_CHUNKED;
 import static zlc.season.rxdownload2.db.Db.RecordTable.COLUMN_SAVE_NAME;
@@ -59,10 +65,12 @@ public class DataBaseHelper {
         return singleton;
     }
 
-    public boolean recordExists(String url) {
-        return !recordNotExists(url);
-    }
-
+    /**
+     * Judge the url's record exists.
+     *
+     * @param url url
+     * @return true if not exists
+     */
     public boolean recordNotExists(String url) {
         Cursor cursor = null;
         try {
@@ -77,16 +85,15 @@ public class DataBaseHelper {
         }
     }
 
-    public long insertRecord(DownloadBean downloadBean, int type) {
-        return getWritableDatabase().insert(TABLE_NAME, null, insert(downloadBean, type));
+    public long insertRecord(DownloadBean downloadBean, int flag) {
+        return getWritableDatabase().insert(TABLE_NAME, null, insert(downloadBean, flag));
     }
 
-
-    public long updateRecord(String url, DownloadStatus status) {
+    public long updateStatus(String url, DownloadStatus status) {
         return getWritableDatabase().update(TABLE_NAME, update(status), "url=?", new String[]{url});
     }
 
-    public long updateRecord(String url, int flag) {
+    public long updateFlag(String url, int flag) {
         return getWritableDatabase().update(TABLE_NAME, update(flag), "url=?", new String[]{url});
     }
 
@@ -94,13 +101,27 @@ public class DataBaseHelper {
         return getWritableDatabase().delete(TABLE_NAME, "url=?", new String[]{url});
     }
 
+    public long repairErrorFlag() {
+        return getWritableDatabase().update(TABLE_NAME, update(DownloadFlag.PAUSED),
+                COLUMN_DOWNLOAD_FLAG + "=? or " + COLUMN_DOWNLOAD_FLAG + "=?",
+                new String[]{DownloadFlag.WAITING + "", DownloadFlag.STARTED + ""});
+    }
+
+    /**
+     * Read single Record.
+     *
+     * @param url url
+     * @return Record
+     */
+    @Nullable
     public DownloadRecord readSingleRecord(String url) {
         Cursor cursor = null;
         try {
             cursor = getReadableDatabase().query(TABLE_NAME,
-                    new String[]{COLUMN_URL, COLUMN_SAVE_NAME, COLUMN_SAVE_PATH,
+                    new String[]{COLUMN_ID, COLUMN_URL, COLUMN_SAVE_NAME, COLUMN_SAVE_PATH,
                             COLUMN_DOWNLOAD_SIZE, COLUMN_TOTAL_SIZE, COLUMN_IS_CHUNKED,
-                            COLUMN_DOWNLOAD_FLAG, COLUMN_DATE},
+                            COLUMN_EXTRA1, COLUMN_EXTRA2, COLUMN_EXTRA3, COLUMN_EXTRA4,
+                            COLUMN_EXTRA5, COLUMN_DOWNLOAD_FLAG, COLUMN_DATE},
                     "url=?", new String[]{url}, null, null, null);
             cursor.moveToFirst();
             if (cursor.getCount() == 0) {
@@ -115,6 +136,13 @@ public class DataBaseHelper {
         }
     }
 
+    /**
+     * Read the url's download status.
+     *
+     * @param url url
+     * @return download status
+     */
+    @Nullable
     public DownloadStatus readStatus(String url) {
         Cursor cursor = null;
         try {
@@ -124,7 +152,7 @@ public class DataBaseHelper {
                     "url=?", new String[]{url}, null, null, null);
             cursor.moveToFirst();
             if (cursor.getCount() == 0) {
-                return new DownloadStatus();
+                return null;
             } else {
                 return Db.RecordTable.readStatus(cursor);
             }
@@ -135,74 +163,89 @@ public class DataBaseHelper {
         }
     }
 
+    /**
+     * Read all records from database.
+     *
+     * @return All records.
+     */
+    public Observable<List<DownloadRecord>> readAllRecords() {
+        return Observable
+                .create(new ObservableOnSubscribe<List<DownloadRecord>>() {
+                    @Override
+                    public void subscribe(ObservableEmitter<List<DownloadRecord>> emitter)
+                            throws Exception {
+                        Cursor cursor = null;
+                        try {
+                            cursor = getReadableDatabase().query(TABLE_NAME,
+                                    new String[]{COLUMN_ID, COLUMN_URL, COLUMN_SAVE_NAME, COLUMN_SAVE_PATH,
+                                            COLUMN_DOWNLOAD_SIZE, COLUMN_TOTAL_SIZE, COLUMN_IS_CHUNKED,
+                                            COLUMN_EXTRA1, COLUMN_EXTRA2, COLUMN_EXTRA3, COLUMN_EXTRA4,
+                                            COLUMN_EXTRA5, COLUMN_DOWNLOAD_FLAG, COLUMN_DATE},
+                                    null, null, null, null, null);
+                            List<DownloadRecord> result = new ArrayList<>();
+                            cursor.moveToFirst();
+                            do {
+                                result.add(read(cursor));
+                            } while (cursor.moveToNext());
+
+                            emitter.onNext(result);
+                            emitter.onComplete();
+                        } finally {
+                            if (cursor != null) {
+                                cursor.close();
+                            }
+                        }
+                    }
+                })
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread());
+    }
+
+    /**
+     * Read the url's record.
+     * <p>
+     * If record not exists, return an empty record.
+     *
+     * @param url url
+     * @return record
+     */
+    public Observable<DownloadRecord> readRecord(final String url) {
+        return Observable
+                .create(new ObservableOnSubscribe<DownloadRecord>() {
+                    @Override
+                    public void subscribe(ObservableEmitter<DownloadRecord> emitter) throws Exception {
+                        Cursor cursor = null;
+                        try {
+                            cursor = getReadableDatabase().query(TABLE_NAME,
+                                    new String[]{COLUMN_ID, COLUMN_URL, COLUMN_SAVE_NAME, COLUMN_SAVE_PATH,
+                                            COLUMN_DOWNLOAD_SIZE, COLUMN_TOTAL_SIZE, COLUMN_IS_CHUNKED,
+                                            COLUMN_EXTRA1, COLUMN_EXTRA2, COLUMN_EXTRA3, COLUMN_EXTRA4,
+                                            COLUMN_EXTRA5, COLUMN_DOWNLOAD_FLAG, COLUMN_DATE},
+                                    "url=?", new String[]{url}, null, null, null);
+                            cursor.moveToFirst();
+                            if (cursor.getCount() == 0) {
+                                emitter.onNext(new DownloadRecord());
+                            } else {
+                                emitter.onNext(read(cursor));
+                            }
+                            emitter.onComplete();
+                        } finally {
+                            if (cursor != null) {
+                                cursor.close();
+                            }
+                        }
+                    }
+                })
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread());
+    }
+
     public void closeDataBase() {
         synchronized (databaseLock) {
             readableDatabase = null;
             writableDatabase = null;
             mDbOpenHelper.close();
         }
-    }
-
-    public Observable<List<DownloadRecord>> readAllRecords() {
-        return Observable.create(new ObservableOnSubscribe<List<DownloadRecord>>() {
-            @Override
-            public void subscribe(ObservableEmitter<List<DownloadRecord>> emitter)
-                    throws Exception {
-                Cursor cursor = null;
-                try {
-                    cursor = getReadableDatabase()
-                            .rawQuery("select * from " + TABLE_NAME, new String[]{});
-                    List<DownloadRecord> result = new ArrayList<>();
-                    while (cursor.moveToNext()) {
-                        result.add(read(cursor));
-                    }
-                    emitter.onNext(result);
-                    emitter.onComplete();
-                } finally {
-                    if (cursor != null) {
-                        cursor.close();
-                    }
-                }
-            }
-        }).subscribeOn(Schedulers.io()).observeOn(AndroidSchedulers.mainThread());
-    }
-
-    public long repairErrorFlag() {
-        return getWritableDatabase().update(TABLE_NAME, update(DownloadFlag.PAUSED),
-                COLUMN_DOWNLOAD_FLAG + "=? or " + COLUMN_DOWNLOAD_FLAG + "=?",
-                new String[]{DownloadFlag.WAITING + "", DownloadFlag.STARTED + ""});
-    }
-
-    /**
-     * 获得url对应的下载记录
-     * <p>
-     * ps: 如果数据库中没有记录，则返回一个空的DownloadRecord.
-     *
-     * @param url url
-     * @return record
-     */
-    public Observable<DownloadRecord> readRecord(final String url) {
-        return Observable.create(new ObservableOnSubscribe<DownloadRecord>() {
-            @Override
-            public void subscribe(ObservableEmitter<DownloadRecord> emitter) throws Exception {
-                Cursor cursor = null;
-                try {
-                    cursor = getReadableDatabase().rawQuery("select * from " + TABLE_NAME +
-                            " where " + "url=?", new String[]{url});
-                    cursor.moveToFirst();
-                    if (cursor.getCount() == 0) {
-                        emitter.onNext(new DownloadRecord());
-                    } else {
-                        emitter.onNext(read(cursor));
-                    }
-                    emitter.onComplete();
-                } finally {
-                    if (cursor != null) {
-                        cursor.close();
-                    }
-                }
-            }
-        }).subscribeOn(Schedulers.io()).observeOn(AndroidSchedulers.mainThread());
     }
 
     private SQLiteDatabase getWritableDatabase() {

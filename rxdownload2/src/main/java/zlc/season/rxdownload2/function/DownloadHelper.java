@@ -253,7 +253,7 @@ public class DownloadHelper {
                     @Override
                     public void accept(Response<Void> response) throws Exception {
                         if (!response.isSuccessful()) {
-                            throw new UnableDownloadException("url is illegal");
+                            throw new IllegalArgumentException("url is illegal");
                         } else {
                             recordTable.saveFileInfo(url, response);
                         }

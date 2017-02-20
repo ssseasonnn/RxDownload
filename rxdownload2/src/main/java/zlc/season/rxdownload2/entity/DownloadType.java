@@ -65,7 +65,7 @@ public abstract class DownloadType {
                     @Override
                     public void accept(Subscription subscription) throws Exception {
                         log(startLog());
-                        record.start(startType());
+                        record.start();
                     }
                 })
                 .flatMap(new Function<Integer, Publisher<DownloadStatus>>() {
@@ -105,17 +105,13 @@ public abstract class DownloadType {
                     @Override
                     public void run() throws Exception {
                         log("finish");
-                        record.finish();
+//                        record.finish();
                     }
                 })
                 .toObservable();
     }
 
     protected abstract Publisher<DownloadStatus> download();
-
-    protected int startType() {
-        return DownloadFlag.STARTED;
-    }
 
     protected String prepareLog() {
         return "";

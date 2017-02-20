@@ -258,26 +258,26 @@ public class TemporaryRecord {
     }
 
 
-    public void start(int type) {
+    public void start() {
         if (dataBaseHelper.recordNotExists(bean.getUrl())) {
-            dataBaseHelper.insertRecord(bean, type);
+            dataBaseHelper.insertRecord(bean, DownloadFlag.STARTED);
         }
     }
 
     public void update(DownloadStatus status) {
-        dataBaseHelper.updateRecord(bean.getUrl(), status);
+        dataBaseHelper.updateStatus(bean.getUrl(), status);
     }
 
     public void error() {
-        dataBaseHelper.updateRecord(bean.getUrl(), DownloadFlag.FAILED);
+        dataBaseHelper.updateFlag(bean.getUrl(), DownloadFlag.FAILED);
     }
 
     public void complete() {
-        dataBaseHelper.updateRecord(bean.getUrl(), DownloadFlag.COMPLETED);
+        dataBaseHelper.updateFlag(bean.getUrl(), DownloadFlag.COMPLETED);
     }
 
     public void cancel() {
-        dataBaseHelper.updateRecord(bean.getUrl(), DownloadFlag.PAUSED);
+        dataBaseHelper.updateFlag(bean.getUrl(), DownloadFlag.PAUSED);
     }
 
     public void finish() {

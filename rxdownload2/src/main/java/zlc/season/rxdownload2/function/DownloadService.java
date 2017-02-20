@@ -69,6 +69,7 @@ public class DownloadService extends Service {
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         log("start Download Service");
+        dataBaseHelper.repairErrorFlag();
         if (intent != null) {
             int maxDownloadNumber = intent.getIntExtra(INTENT_KEY, 5);
             semaphore = new Semaphore(maxDownloadNumber);

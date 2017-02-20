@@ -1,5 +1,6 @@
 package zlc.season.rxdownload2;
 
+import android.annotation.SuppressLint;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -23,7 +24,6 @@ import io.reactivex.functions.Consumer;
 import io.reactivex.functions.Function;
 import io.reactivex.plugins.RxJavaPlugins;
 import retrofit2.Retrofit;
-import zlc.season.rxdownload2.db.DataBaseHelper;
 import zlc.season.rxdownload2.entity.DownloadBean;
 import zlc.season.rxdownload2.entity.DownloadEvent;
 import zlc.season.rxdownload2.entity.DownloadMission;
@@ -33,7 +33,6 @@ import zlc.season.rxdownload2.function.DownloadHelper;
 import zlc.season.rxdownload2.function.DownloadService;
 import zlc.season.rxdownload2.function.Utils;
 
-import static zlc.season.rxdownload2.function.Constant.CONTEXT_NULL_HINT;
 import static zlc.season.rxdownload2.function.Utils.log;
 
 /**
@@ -43,10 +42,11 @@ import static zlc.season.rxdownload2.function.Utils.log;
  * RxDownload
  */
 public class RxDownload {
-
-    private static DownloadService mDownloadService;
-    private static boolean bound = false;
     private static final Object object = new Object();
+    @SuppressLint("StaticFieldLeak")
+    private volatile static RxDownload instance;
+    private volatile static DownloadService downloadService;
+    private volatile static boolean bound = false;
 
     static {
         RxJavaPlugins.setErrorHandler(new Consumer<Throwable>() {
@@ -63,17 +63,24 @@ public class RxDownload {
         });
     }
 
+    private Context context;
     private DownloadHelper mDownloadHelper;
-    private Context mContext;
     private int MAX_DOWNLOAD_NUMBER = 5;
 
     private RxDownload(Context context) {
-        this.mContext = context;
+        this.context = context.getApplicationContext();
         mDownloadHelper = new DownloadHelper(context);
     }
 
     public static RxDownload getInstance(Context context) {
-        return new RxDownload(context);
+        if (instance == null) {
+            synchronized (RxDownload.class) {
+                if (instance == null) {
+                    instance = new RxDownload(context);
+                }
+            }
+        }
+        return instance;
     }
 
     /**
@@ -141,7 +148,7 @@ public class RxDownload {
                         ObservableSource<DownloadEvent>>() {
                     @Override
                     public ObservableSource<DownloadEvent> apply(Object o) throws Exception {
-                        return mDownloadService.receiveDownloadEvent(url).toObservable();
+                        return downloadService.receiveDownloadEvent(url).toObservable();
                     }
                 })
                 .observeOn(AndroidSchedulers.mainThread());
@@ -154,26 +161,7 @@ public class RxDownload {
      * @return Observable<List<DownloadRecord>>
      */
     public Observable<List<DownloadRecord>> getTotalDownloadRecords() {
-        if (mContext == null) {
-            return Observable.error(new Throwable(CONTEXT_NULL_HINT));
-        }
-        DataBaseHelper dataBaseHelper = DataBaseHelper
-                .getSingleton(mContext.getApplicationContext());
-        return dataBaseHelper.readAllRecords();
-    }
-
-    public DownloadRecord test() {
-
-        DataBaseHelper dataBaseHelper = DataBaseHelper
-                .getSingleton(mContext.getApplicationContext());
-        return dataBaseHelper.readSingleRecord("http://downali.game.uc.cn/s/1/9/20170103112151d02a45_MY-1.110.0_uc_platform2.apk");
-    }
-
-    public boolean test1() {
-
-        DataBaseHelper dataBaseHelper = DataBaseHelper
-                .getSingleton(mContext.getApplicationContext());
-        return dataBaseHelper.recordNotExists("http://dldir1.qq.com/weixin/android/weixin6330android920.apk");
+        return mDownloadHelper.readAllRecords();
     }
 
     /**
@@ -187,12 +175,7 @@ public class RxDownload {
      * @return Observable<DownloadStatus>
      */
     public Observable<DownloadRecord> getDownloadRecord(String url) {
-        if (mContext == null) {
-            return Observable.error(new Throwable(CONTEXT_NULL_HINT));
-        }
-        DataBaseHelper dataBaseHelper = DataBaseHelper
-                .getSingleton(mContext.getApplicationContext());
-        return dataBaseHelper.readRecord(url);
+        return mDownloadHelper.readRecord(url);
     }
 
     /**
@@ -208,7 +191,7 @@ public class RxDownload {
         return createGeneralObservable(new GeneralObservableCallback() {
             @Override
             public void call() {
-                mDownloadService.pauseDownload(url);
+                downloadService.pauseDownload(url);
             }
         });
     }
@@ -225,7 +208,7 @@ public class RxDownload {
         return createGeneralObservable(new GeneralObservableCallback() {
             @Override
             public void call() {
-//                mDownloadService.cancelDownload(url);
+//                downloadService.cancelDownload(url);
             }
         });
     }
@@ -244,7 +227,7 @@ public class RxDownload {
         return createGeneralObservable(new GeneralObservableCallback() {
             @Override
             public void call() {
-                mDownloadService.deleteDownload(url, deleteFile);
+                downloadService.deleteDownload(url, deleteFile);
             }
         });
     }
@@ -377,7 +360,7 @@ public class RxDownload {
 
     private void addDownloadTask(@NonNull String url, @Nullable String saveName,
                                  @Nullable String savePath) throws InterruptedException {
-        mDownloadService.addDownloadMission(
+        downloadService.addDownloadMission(
                 new DownloadMission(
                         new DownloadBean.Builder(url)
                                 .setSaveName(saveName)
@@ -394,42 +377,39 @@ public class RxDownload {
                     startBindServiceAndDo(new ServiceConnectedCallback() {
                         @Override
                         public void call() {
-                            if (callback != null) {
-                                try {
-                                    callback.call();
-                                } catch (Exception e) {
-                                    emitter.onError(e);
-                                }
-                            }
-                            emitter.onNext(object);
-                            emitter.onComplete();
+                            doCall(callback, emitter);
                         }
                     });
                 } else {
-                    if (callback != null) {
-                        callback.call();
-                    }
-                    emitter.onNext(object);
-                    emitter.onComplete();
+                    doCall(callback, emitter);
                 }
             }
         });
     }
 
-    private void startBindServiceAndDo(final ServiceConnectedCallback callback) {
-        if (mContext == null) {
-            throw new IllegalArgumentException(CONTEXT_NULL_HINT);
+    private void doCall(GeneralObservableCallback callback, ObservableEmitter<Object> emitter) {
+        if (callback != null) {
+            try {
+                callback.call();
+            } catch (Exception e) {
+                emitter.onError(e);
+            }
         }
-        Intent intent = new Intent(mContext, DownloadService.class);
+        emitter.onNext(object);
+        emitter.onComplete();
+    }
+
+    private void startBindServiceAndDo(final ServiceConnectedCallback callback) {
+        Intent intent = new Intent(context, DownloadService.class);
         intent.putExtra(DownloadService.INTENT_KEY, MAX_DOWNLOAD_NUMBER);
-        mContext.startService(intent);
-        mContext.bindService(intent, new ServiceConnection() {
+        context.startService(intent);
+        context.bindService(intent, new ServiceConnection() {
             @Override
             public void onServiceConnected(ComponentName name, IBinder binder) {
                 DownloadService.DownloadBinder downloadBinder
                         = (DownloadService.DownloadBinder) binder;
-                mDownloadService = downloadBinder.getService();
-                mContext.unbindService(this);
+                downloadService = downloadBinder.getService();
+                context.unbindService(this);
                 bound = true;
                 callback.call();
             }

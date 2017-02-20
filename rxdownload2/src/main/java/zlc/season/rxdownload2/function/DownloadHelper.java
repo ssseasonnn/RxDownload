@@ -313,4 +313,12 @@ public class DownloadHelper {
                 })
                 .compose(retry(REQUEST_RETRY_HINT, maxRetryCount));
     }
+
+    public Observable<List<DownloadRecord>> readAllRecords() {
+        return dataBaseHelper.readAllRecords();
+    }
+
+    public Observable<DownloadRecord> readRecord(String url) {
+        return dataBaseHelper.readRecord(url);
+    }
 }

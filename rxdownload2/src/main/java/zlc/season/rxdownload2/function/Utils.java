@@ -33,18 +33,23 @@ import io.reactivex.functions.BiPredicate;
 import okhttp3.internal.http.HttpHeaders;
 import retrofit2.Response;
 
+import static android.text.TextUtils.concat;
+import static java.io.File.separator;
 import static java.lang.String.format;
 import static java.lang.Thread.currentThread;
 import static java.util.Locale.getDefault;
 import static java.util.TimeZone.getTimeZone;
+import static zlc.season.rxdownload2.function.Constant.CACHE;
 import static zlc.season.rxdownload2.function.Constant.DIR_CREATE_FAILED;
 import static zlc.season.rxdownload2.function.Constant.DIR_CREATE_SUCCESS;
 import static zlc.season.rxdownload2.function.Constant.DIR_EXISTS_HINT;
 import static zlc.season.rxdownload2.function.Constant.DIR_NOT_EXISTS_HINT;
 import static zlc.season.rxdownload2.function.Constant.FILE_DELETE_FAILED;
 import static zlc.season.rxdownload2.function.Constant.FILE_DELETE_SUCCESS;
+import static zlc.season.rxdownload2.function.Constant.LMF_SUFFIX;
 import static zlc.season.rxdownload2.function.Constant.RETRY_HINT;
 import static zlc.season.rxdownload2.function.Constant.TAG;
+import static zlc.season.rxdownload2.function.Constant.TMP_SUFFIX;
 
 /**
  * Author: Season(ssseasonnn@gmail.com)
@@ -261,6 +266,33 @@ public class Utils {
     }
 
     /**
+     * return file paths
+     *
+     * @param saveName saveName
+     * @param savePath savePath
+     * @return filePath, tempPath, lmfPath
+     */
+    public static String[] getPaths(String saveName, String savePath) {
+        String cachePath = concat(savePath, separator, CACHE).toString();
+        String filePath = concat(savePath, separator, saveName).toString();
+        String tempPath = concat(cachePath, separator, saveName, TMP_SUFFIX).toString();
+        String lmfPath = concat(cachePath, separator, saveName, LMF_SUFFIX).toString();
+        return new String[]{filePath, tempPath, lmfPath};
+    }
+
+    /**
+     * return files
+     *
+     * @param saveName saveName
+     * @param savePath savePath
+     * @return file, tempFile, lmfFile
+     */
+    public static File[] getFiles(String saveName, String savePath) {
+        String[] paths = getPaths(saveName, savePath);
+        return new File[]{new File(paths[0]), new File(paths[1]), new File(paths[2])};
+    }
+
+    /**
      * create dirs with params path
      *
      * @param paths paths
@@ -287,7 +319,7 @@ public class Utils {
      *
      * @param files files
      */
-    public static void deleteFile(File... files) {
+    public static void deleteFiles(File... files) {
         for (File each : files) {
             if (each.exists()) {
                 boolean flag = each.delete();

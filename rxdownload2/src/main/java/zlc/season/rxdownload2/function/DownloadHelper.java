@@ -1,6 +1,7 @@
 package zlc.season.rxdownload2.function;
 
 import android.content.Context;
+import android.support.annotation.Nullable;
 
 import java.io.File;
 import java.io.IOException;
@@ -16,11 +17,12 @@ import io.reactivex.functions.Consumer;
 import io.reactivex.functions.Function;
 import retrofit2.Response;
 import retrofit2.Retrofit;
+import zlc.season.rxdownload2.db.DataBaseHelper;
+import zlc.season.rxdownload2.entity.DownloadBean;
+import zlc.season.rxdownload2.entity.DownloadRecord;
 import zlc.season.rxdownload2.entity.DownloadStatus;
 import zlc.season.rxdownload2.entity.DownloadType;
 import zlc.season.rxdownload2.entity.TemporaryRecord;
-import zlc.season.rxdownload2.entity.TemporaryRecordTable;
-import zlc.season.rxdownload2.entity.UnableDownloadException;
 
 import static android.os.Environment.DIRECTORY_DOWNLOADS;
 import static android.os.Environment.getExternalStoragePublicDirectory;
@@ -39,16 +41,19 @@ public class DownloadHelper {
     private int maxRetryCount = 3;
     private int maxThreads = 3;
 
-    private Context context;
     private String defaultSavePath;
     private DownloadApi downloadApi;
 
+    private FileHelper fileHelper;
+    private DataBaseHelper dataBaseHelper;
     private TemporaryRecordTable recordTable;
 
-    public DownloadHelper() {
+    public DownloadHelper(Context context) {
         downloadApi = RetrofitProvider.getInstance().create(DownloadApi.class);
         defaultSavePath = getExternalStoragePublicDirectory(DIRECTORY_DOWNLOADS).getPath();
         recordTable = new TemporaryRecordTable();
+        dataBaseHelper = DataBaseHelper.getSingleton(context.getApplicationContext());
+        fileHelper = new FileHelper(maxThreads);
     }
 
     public void setRetrofit(Retrofit retrofit) {
@@ -59,44 +64,50 @@ public class DownloadHelper {
         this.defaultSavePath = defaultSavePath;
     }
 
-    public void setContext(Context context) {
-        this.context = context;
-    }
-
     public void setMaxRetryCount(int maxRetryCount) {
         this.maxRetryCount = maxRetryCount;
     }
 
     public void setMaxThreads(int maxThreads) {
         this.maxThreads = maxThreads;
+        fileHelper = new FileHelper(maxThreads);
     }
 
-    public File[] getRealFile(String url) {
-        return recordTable.getFiles(url);
+    /**
+     * return Files
+     *
+     * @param url url
+     * @return Files = {file,tempFile,lmfFile}
+     */
+    @Nullable
+    public File[] getFiles(String url) {
+        DownloadRecord record = dataBaseHelper.readSingleRecord(url);
+        if (record == null) {
+            return null;
+        } else {
+            return Utils.getFiles(record.getSaveName(), record.getSavePath());
+        }
     }
 
     /**
      * dispatch download
      *
-     * @param url      url for download
-     * @param saveName save name
-     * @param savePath save path
+     * @param bean download bean
      * @return DownloadStatus
      */
-    public Observable<DownloadStatus> downloadDispatcher(final String url, final String saveName,
-                                                         final String savePath) {
+    public Observable<DownloadStatus> downloadDispatcher(final DownloadBean bean) {
         return Observable.just(1)
                 .doOnSubscribe(new Consumer<Disposable>() {
                     @Override
                     public void accept(Disposable disposable) throws Exception {
-                        addTempRecord(url, saveName, savePath);
+                        addTempRecord(bean);
                     }
                 })
                 .flatMap(new Function<Integer, ObservableSource<DownloadType>>() {
                     @Override
                     public ObservableSource<DownloadType> apply(Integer integer)
                             throws Exception {
-                        return getDownloadType(url);
+                        return getDownloadType(bean.getUrl());
                     }
                 })
                 .flatMap(new Function<DownloadType, ObservableSource<DownloadStatus>>() {
@@ -115,7 +126,7 @@ public class DownloadHelper {
                 .doFinally(new Action() {
                     @Override
                     public void run() throws Exception {
-                        recordTable.delete(url);
+                        recordTable.delete(bean.getUrl());
                     }
                 });
     }
@@ -141,15 +152,13 @@ public class DownloadHelper {
     /**
      * Add a temporary record to the record recordTable.
      *
-     * @param url      temp record url.
-     * @param saveName temp record saveName, maybe empty.
-     * @param savePath temp record savePath
+     * @param bean download bean
      */
-    private void addTempRecord(String url, String saveName, String savePath) {
-        if (recordTable.contain(url)) {
+    private void addTempRecord(DownloadBean bean) {
+        if (recordTable.contain(bean.getUrl())) {
             throw new RuntimeException(DOWNLOAD_URL_EXISTS);
         }
-        recordTable.add(url, new TemporaryRecord(url, saveName, savePath));
+        recordTable.add(bean.getUrl(), new TemporaryRecord(bean));
     }
 
     /**
@@ -176,8 +185,8 @@ public class DownloadHelper {
                 .doOnNext(new Consumer<Object>() {
                     @Override
                     public void accept(Object o) throws Exception {
-                        recordTable.init(context, url, maxThreads, maxRetryCount,
-                                defaultSavePath, downloadApi);
+                        recordTable.init(url, maxThreads, maxRetryCount, defaultSavePath,
+                                downloadApi, dataBaseHelper, fileHelper);
                     }
                 })
                 .flatMap(new Function<Object, ObservableSource<DownloadType>>() {

@@ -1,7 +1,5 @@
 package zlc.season.rxdownload2.entity;
 
-import android.content.Context;
-
 import org.reactivestreams.Publisher;
 
 import java.io.File;
@@ -22,9 +20,9 @@ import zlc.season.rxdownload2.function.FileHelper;
 import static android.text.TextUtils.concat;
 import static java.io.File.separator;
 import static zlc.season.rxdownload2.function.Constant.CACHE;
-import static zlc.season.rxdownload2.function.Constant.LMF_SUFFIX;
-import static zlc.season.rxdownload2.function.Constant.TMP_SUFFIX;
 import static zlc.season.rxdownload2.function.Utils.empty;
+import static zlc.season.rxdownload2.function.Utils.getPaths;
+import static zlc.season.rxdownload2.function.Utils.log;
 import static zlc.season.rxdownload2.function.Utils.mkdirs;
 
 /**
@@ -33,9 +31,7 @@ import static zlc.season.rxdownload2.function.Utils.mkdirs;
  * FIXME
  */
 public class TemporaryRecord {
-    private String url;
-    private String saveName;
-    private String savePath;
+    private DownloadBean bean;
 
     private String filePath;
     private String tempPath;
@@ -53,12 +49,9 @@ public class TemporaryRecord {
     private DataBaseHelper dataBaseHelper;
     private FileHelper fileHelper;
     private DownloadApi downloadApi;
-    private Context context;
 
-    public TemporaryRecord(String url, String saveName, String savePath) {
-        this.url = url;
-        this.saveName = saveName;
-        this.savePath = savePath;
+    public TemporaryRecord(DownloadBean bean) {
+        this.bean = bean;
     }
 
     /**
@@ -68,30 +61,33 @@ public class TemporaryRecord {
      * @param maxThreads      Max download threads
      * @param defaultSavePath Default save path;
      * @param downloadApi     API
+     * @param dataBaseHelper  DataBaseHelper
+     * @param fileHelper      FileHelper
      */
-    public void init(Context context, int maxRetryCount, int maxThreads, String defaultSavePath,
-                     DownloadApi downloadApi) {
-        this.context = context;
+    public void init(int maxRetryCount, int maxThreads, String defaultSavePath,
+                     DownloadApi downloadApi, DataBaseHelper dataBaseHelper, FileHelper fileHelper) {
         this.maxThreads = maxThreads;
         this.maxRetryCount = maxRetryCount;
         this.downloadApi = downloadApi;
-        this.fileHelper = new FileHelper(maxThreads);
+        this.dataBaseHelper = dataBaseHelper;
+        this.fileHelper = fileHelper;
 
         String realSavePath;
-        if (empty(savePath)) {
+        if (empty(bean.getSavePath())) {
             realSavePath = defaultSavePath;
-            savePath = defaultSavePath;
+            bean.setSavePath(defaultSavePath);
         } else {
-            realSavePath = savePath;
+            realSavePath = bean.getSavePath();
         }
         String cachePath = concat(realSavePath, separator, CACHE).toString();
-
-        filePath = concat(realSavePath, separator, saveName).toString();
-        tempPath = concat(cachePath, separator, saveName, TMP_SUFFIX).toString();
-        lmfPath = concat(cachePath, separator, saveName, LMF_SUFFIX).toString();
-
         mkdirs(realSavePath, cachePath);
+
+        String[] paths = getPaths(bean.getSaveName(), realSavePath);
+        filePath = paths[0];
+        tempPath = paths[1];
+        lmfPath = paths[2];
     }
+
 
     /**
      * prepare normal download, create files and save last-modify.
@@ -153,7 +149,7 @@ public class TemporaryRecord {
      * @return response
      */
     public Flowable<Response<ResponseBody>> download() {
-        return downloadApi.download(null, url);
+        return downloadApi.download(null, bean.getUrl());
     }
 
     /**
@@ -163,22 +159,24 @@ public class TemporaryRecord {
      * @return response
      */
     public Flowable<Response<ResponseBody>> rangeDownload(final int index) {
-        return Flowable.create(new FlowableOnSubscribe<DownloadRange>() {
-            @Override
-            public void subscribe(FlowableEmitter<DownloadRange> e) throws Exception {
-                DownloadRange range = readDownloadRange(index);
-                if (range.legal()) {
-                    e.onNext(range);
-                }
-                e.onComplete();
-            }
-        }, BackpressureStrategy.ERROR)
+        return Flowable
+                .create(new FlowableOnSubscribe<DownloadRange>() {
+                    @Override
+                    public void subscribe(FlowableEmitter<DownloadRange> e) throws Exception {
+                        DownloadRange range = readDownloadRange(index);
+                        if (range.legal()) {
+                            e.onNext(range);
+                        }
+                        e.onComplete();
+                    }
+                }, BackpressureStrategy.ERROR)
                 .flatMap(new Function<DownloadRange, Publisher<Response<ResponseBody>>>() {
                     @Override
                     public Publisher<Response<ResponseBody>> apply(DownloadRange range)
                             throws Exception {
+                        log(index + " download from " + range.start + " to " + range.end);
                         String rangeStr = "bytes=" + range.start + "-" + range.end;
-                        return downloadApi.download(rangeStr, url);
+                        return downloadApi.download(rangeStr, bean.getUrl());
                     }
                 });
     }
@@ -220,11 +218,11 @@ public class TemporaryRecord {
     }
 
     public String getSaveName() {
-        return saveName;
+        return bean.getSaveName();
     }
 
     public void setSaveName(String saveName) {
-        this.saveName = saveName;
+        bean.setSaveName(saveName);
     }
 
     public File file() {
@@ -260,27 +258,26 @@ public class TemporaryRecord {
     }
 
 
-    public void start() {
-        dataBaseHelper = DataBaseHelper.getSingleton(context.getApplicationContext());
-        if (dataBaseHelper.recordNotExists(url)) {
-            dataBaseHelper.insertRecord(url, saveName, savePath);
+    public void start(int type) {
+        if (dataBaseHelper.recordNotExists(bean.getUrl())) {
+            dataBaseHelper.insertRecord(bean, type);
         }
     }
 
     public void update(DownloadStatus status) {
-        dataBaseHelper.updateRecord(url, status);
+        dataBaseHelper.updateRecord(bean.getUrl(), status);
     }
 
     public void error() {
-        dataBaseHelper.updateRecord(url, DownloadFlag.FAILED);
+        dataBaseHelper.updateRecord(bean.getUrl(), DownloadFlag.FAILED);
     }
 
     public void complete() {
-        dataBaseHelper.updateRecord(url, DownloadFlag.COMPLETED);
+        dataBaseHelper.updateRecord(bean.getUrl(), DownloadFlag.COMPLETED);
     }
 
     public void cancel() {
-        dataBaseHelper.updateRecord(url, DownloadFlag.PAUSED);
+        dataBaseHelper.updateRecord(bean.getUrl(), DownloadFlag.PAUSED);
     }
 
     public void finish() {

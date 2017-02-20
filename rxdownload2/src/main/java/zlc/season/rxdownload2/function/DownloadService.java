@@ -7,28 +7,33 @@ import android.os.IBinder;
 import android.support.annotation.Nullable;
 
 import java.io.File;
-import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.Map;
-import java.util.Queue;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.Semaphore;
 
+import io.reactivex.Observable;
+import io.reactivex.ObservableEmitter;
+import io.reactivex.ObservableOnSubscribe;
+import io.reactivex.disposables.Disposable;
+import io.reactivex.functions.Consumer;
 import io.reactivex.processors.BehaviorProcessor;
 import io.reactivex.processors.FlowableProcessor;
-import zlc.season.rxdownload2.RxDownload;
+import io.reactivex.schedulers.Schedulers;
 import zlc.season.rxdownload2.db.DataBaseHelper;
 import zlc.season.rxdownload2.entity.DownloadEvent;
-import zlc.season.rxdownload2.entity.DownloadEventFactory;
 import zlc.season.rxdownload2.entity.DownloadMission;
 import zlc.season.rxdownload2.entity.DownloadRecord;
+import zlc.season.rxdownload2.entity.DownloadStatus;
 
-import static zlc.season.rxdownload2.entity.DownloadFlag.CANCELED;
-import static zlc.season.rxdownload2.entity.DownloadFlag.DELETED;
-import static zlc.season.rxdownload2.entity.DownloadFlag.PAUSED;
-import static zlc.season.rxdownload2.entity.DownloadFlag.WAITING;
-import static zlc.season.rxdownload2.function.Constant.DOWNLOAD_URL_EXISTS;
+import static zlc.season.rxdownload2.function.DownloadEventFactory.createEvent;
+import static zlc.season.rxdownload2.function.DownloadEventFactory.normal;
+import static zlc.season.rxdownload2.function.DownloadEventFactory.paused;
+import static zlc.season.rxdownload2.function.DownloadEventFactory.waiting;
+import static zlc.season.rxdownload2.function.Utils.deleteFiles;
 import static zlc.season.rxdownload2.function.Utils.dispose;
+import static zlc.season.rxdownload2.function.Utils.getFiles;
 import static zlc.season.rxdownload2.function.Utils.log;
 
 /**
@@ -41,36 +46,32 @@ public class DownloadService extends Service {
     public static final String INTENT_KEY = "zlc_season_rxdownload_max_download_number";
 
     private DownloadBinder mBinder;
-    private DataBaseHelper mDb;
-    private DownloadEventFactory mEventFactory;
 
-    private volatile Map<String, FlowableProcessor<DownloadEvent>> mProcessorPool;
-    private volatile AtomicInteger mCount = new AtomicInteger(0);
+    private Semaphore semaphore;
+    private BlockingQueue<DownloadMission> downloadQueue;
+    private Map<String, DownloadMission> missionMap;
+    private Map<String, FlowableProcessor<DownloadEvent>> processorMap;
 
-    private Map<String, DownloadMission> mNowDownloading;
-    private Queue<DownloadMission> mWaitingForDownload;
-    private Map<String, DownloadMission> mWaitingForDownloadLookUpMap;
-
-    private int maxDownload;
-    private Thread mDownloadQueueThread;
+    private Disposable disposable;
+    private DataBaseHelper dataBaseHelper;
 
     @Override
     public void onCreate() {
         super.onCreate();
         mBinder = new DownloadBinder();
-        mProcessorPool = new ConcurrentHashMap<>();
-        mWaitingForDownload = new LinkedList<>();
-        mWaitingForDownloadLookUpMap = new HashMap<>();
-        mNowDownloading = new HashMap<>();
-        mDb = DataBaseHelper.getSingleton(getApplicationContext());
-        mEventFactory = DownloadEventFactory.getSingleton();
+        downloadQueue = new LinkedBlockingQueue<>();
+        processorMap = new ConcurrentHashMap<>();
+        missionMap = new ConcurrentHashMap<>();
+
+        dataBaseHelper = DataBaseHelper.getSingleton(getApplicationContext());
     }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        mDb.repairErrorFlag();
+        log("start Download Service");
         if (intent != null) {
-            maxDownload = intent.getIntExtra(INTENT_KEY, 5);
+            int maxDownloadNumber = intent.getIntExtra(INTENT_KEY, 5);
+            semaphore = new Semaphore(maxDownloadNumber);
         }
         return super.onStartCommand(intent, flags, startId);
     }
@@ -78,132 +79,133 @@ public class DownloadService extends Service {
     @Override
     public void onDestroy() {
         super.onDestroy();
-        mDownloadQueueThread.interrupt();
-        for (String each : mNowDownloading.keySet()) {
+        log("destroy Download Service");
+        dispose(disposable);
+        for (String each : missionMap.keySet()) {
             pauseDownload(each);
         }
-        mDb.closeDataBase();
     }
 
     @Nullable
     @Override
     public IBinder onBind(Intent intent) {
-        mDownloadQueueThread = new Thread(new DownloadMissionDispatchRunnable());
-        mDownloadQueueThread.start();
+        log("bind Download Service");
+        startDispatch();
         return mBinder;
     }
 
-    public FlowableProcessor<DownloadEvent> processor(RxDownload rxDownload, String url) {
-        FlowableProcessor<DownloadEvent> processor = processor(url);
-        if (mDb.recordExists(url)) {
-            DownloadRecord record = mDb.readSingleRecord(url);
-            File file = rxDownload.getRealFiles(url)[0];
-            if (file.exists()) {
-                processor.onNext(mEventFactory.create(url, record.getFlag(), record.getStatus()));
+    /**
+     * receive download event.
+     *
+     * @param url url
+     * @return DownloadEvent
+     */
+    public FlowableProcessor<DownloadEvent> receiveDownloadEvent(String url) {
+        FlowableProcessor<DownloadEvent> processor = getProcessor(url);
+        DownloadMission mission = missionMap.get(url);
+        if (mission == null) {  //Not yet add this url mission.
+            DownloadRecord record = dataBaseHelper.readSingleRecord(url);
+            if (record == null) {
+                processor.onNext(normal(null));
             } else {
-                processor.onNext(mEventFactory.normal(url));
+                File file = getFiles(record.getSaveName(), record.getSavePath())[0];
+                if (file.exists()) {
+                    processor.onNext(createEvent(record.getFlag(), record.getStatus()));
+                } else {
+                    processor.onNext(normal(null));
+                }
             }
-        } else {
-            processor.onNext(mEventFactory.normal(url));
         }
         return processor;
     }
 
-    public FlowableProcessor<DownloadEvent> processor(String url) {
-        if (mProcessorPool.get(url) == null) {
-            FlowableProcessor<DownloadEvent> processor = BehaviorProcessor.<DownloadEvent>create()
-                    .toSerialized();
-            mProcessorPool.put(url, processor);
+    public FlowableProcessor<DownloadEvent> getProcessor(String url) {
+        if (processorMap.get(url) == null) {
+            FlowableProcessor<DownloadEvent> processor =
+                    BehaviorProcessor.<DownloadEvent>create().toSerialized();
+            processorMap.put(url, processor);
         }
-        return mProcessorPool.get(url);
+        return processorMap.get(url);
     }
 
-    public void addDownloadMission(DownloadMission mission) {
-        String url = mission.getUrl();
-        if (mWaitingForDownloadLookUpMap.get(url) != null || mNowDownloading.get(url) != null) {
-            log(DOWNLOAD_URL_EXISTS);
-        } else {
-            if (mDb.recordNotExists(url)) {
-                mDb.insertRecord(mission);
-                processor(url).onNext(mEventFactory.waiting(url));
-            } else {
-                mDb.updateRecord(url, WAITING);
-                processor(url).onNext(mEventFactory.waiting(url, mDb.readStatus(url)));
-            }
-            mWaitingForDownload.offer(mission);
-            mWaitingForDownloadLookUpMap.put(url, mission);
-        }
+    /**
+     * Add this mission into download queue.
+     *
+     * @param mission mission
+     * @throws InterruptedException
+     */
+    public void addDownloadMission(DownloadMission mission) throws InterruptedException {
+        missionMap.put(mission.getUrl(), mission);
+        getProcessor(mission.getUrl()).onNext(waiting(dataBaseHelper.readStatus(mission.getUrl())));
+        downloadQueue.put(mission);
     }
 
+    /**
+     * pause download
+     *
+     * @param url url
+     */
     public void pauseDownload(String url) {
-        suspendAndSend(url, PAUSED);
-        mDb.updateRecord(url, PAUSED);
-    }
-
-    public void cancelDownload(String url) {
-        suspendAndSend(url, CANCELED);
-        mDb.updateRecord(url, CANCELED);
-    }
-
-    public void deleteDownload(String url, boolean deleteFile, RxDownload rxDownload) {
-        suspendAndSend(url, DELETED);
-        if (deleteFile) {
-            DownloadRecord record = mDb.readSingleRecord(url);
-            File[] files = rxDownload.getRealFiles(url);
-            Utils.deleteFile(files);
-        }
-        mDb.deleteRecord(url);
-    }
-
-    private void suspendAndSend(String url, int flag) {
-        if (mWaitingForDownloadLookUpMap.get(url) != null) {
-            mWaitingForDownloadLookUpMap.get(url).canceled = true;
-        }
-        if (mNowDownloading.get(url) != null) {
-            dispose(mNowDownloading.get(url).getDisposable());
-
-            processor(url).onNext(mEventFactory.create(url, flag,
-                    mNowDownloading.get(url).getStatus()));
-
-            mCount.decrementAndGet();
-            mNowDownloading.remove(url);
+        DownloadMission mission = missionMap.get(url);
+        DownloadStatus status;
+        if (mission == null) {
+            status = new DownloadStatus();
         } else {
-            processor(url).onNext(mEventFactory.create(url, flag, mDb.readStatus(url)));
+            mission.markCanceled();
+            dispose(mission.getDisposable());
+            status = mission.getStatus();
         }
-        /**
-         * send normal event when deleted!
-         */
-        if (flag == DELETED) {
-            processor(url).onNext(mEventFactory.normal(url));
-        }
+        getProcessor(url).onNext(paused(status));
     }
 
-    private class DownloadMissionDispatchRunnable implements Runnable {
+    /**
+     * delete download
+     *
+     * @param url        url
+     * @param deleteFile whether delete file
+     */
+    public void deleteDownload(String url, boolean deleteFile) {
+        DownloadMission mission = missionMap.get(url);
+        if (mission != null) {
+            mission.markCanceled();
+            dispose(mission.getDisposable());
+        }
+        getProcessor(url).onNext(normal(null));
 
-        @Override
-        public void run() {
-            while (!Thread.currentThread().isInterrupted()) {
-                DownloadMission mission = mWaitingForDownload.peek();
-                if (null != mission) {
-                    String url = mission.getUrl();
-                    if (mission.canceled) {
-                        mWaitingForDownload.remove();
-                        mWaitingForDownloadLookUpMap.remove(url);
-                        continue;
-                    }
-                    if (mNowDownloading.get(url) != null) {
-                        mWaitingForDownload.remove();
-                        mWaitingForDownloadLookUpMap.remove(url);
-                        continue;
-                    }
-                    if (mCount.get() < maxDownload) {
-                        mission.start(mNowDownloading, mCount, mDb, mProcessorPool);
-                        mWaitingForDownload.remove();
-                        mWaitingForDownloadLookUpMap.remove(url);
-                    }
-                }
+        if (deleteFile) {
+            DownloadRecord record = dataBaseHelper.readSingleRecord(url);
+            if (record != null) {
+                deleteFiles(getFiles(record.getSaveName(), record.getSavePath()));
             }
         }
+        dataBaseHelper.deleteRecord(url);
+    }
+
+    /**
+     * start dispatch download queue.
+     */
+    private void startDispatch() {
+        disposable = Observable
+                .create(new ObservableOnSubscribe<DownloadMission>() {
+                    @Override
+                    public void subscribe(ObservableEmitter<DownloadMission> emitter) throws Exception {
+                        while (!emitter.isDisposed()) {
+                            DownloadMission mission;
+                            try {
+                                mission = downloadQueue.take();
+                            } catch (InterruptedException e) {
+                                continue;
+                            }
+                            emitter.onNext(mission);
+                        }
+                    }
+                }).subscribeOn(Schedulers.newThread())
+                .subscribe(new Consumer<DownloadMission>() {
+                    @Override
+                    public void accept(DownloadMission mission) throws Exception {
+                        mission.start(semaphore, processorMap.get(mission.getUrl()));
+                    }
+                });
     }
 
     public class DownloadBinder extends Binder {

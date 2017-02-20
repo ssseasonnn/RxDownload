@@ -18,21 +18,20 @@ import io.reactivex.ObservableEmitter;
 import io.reactivex.ObservableOnSubscribe;
 import io.reactivex.ObservableSource;
 import io.reactivex.ObservableTransformer;
-import io.reactivex.Single;
-import io.reactivex.SingleEmitter;
-import io.reactivex.SingleOnSubscribe;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.functions.Consumer;
 import io.reactivex.functions.Function;
 import io.reactivex.plugins.RxJavaPlugins;
 import retrofit2.Retrofit;
 import zlc.season.rxdownload2.db.DataBaseHelper;
+import zlc.season.rxdownload2.entity.DownloadBean;
 import zlc.season.rxdownload2.entity.DownloadEvent;
 import zlc.season.rxdownload2.entity.DownloadMission;
 import zlc.season.rxdownload2.entity.DownloadRecord;
 import zlc.season.rxdownload2.entity.DownloadStatus;
 import zlc.season.rxdownload2.function.DownloadHelper;
 import zlc.season.rxdownload2.function.DownloadService;
+import zlc.season.rxdownload2.function.Utils;
 
 import static zlc.season.rxdownload2.function.Constant.CONTEXT_NULL_HINT;
 import static zlc.season.rxdownload2.function.Utils.log;
@@ -68,35 +67,36 @@ public class RxDownload {
     private Context mContext;
     private int MAX_DOWNLOAD_NUMBER = 5;
 
-    private RxDownload() {
-        mDownloadHelper = new DownloadHelper();
+    private RxDownload(Context context) {
+        this.mContext = context;
+        mDownloadHelper = new DownloadHelper(context);
     }
 
-    public static RxDownload getInstance() {
-        return new RxDownload();
+    public static RxDownload getInstance(Context context) {
+        return new RxDownload(context);
     }
 
     /**
-     * get Files.
+     * get Files by url. May be NULL if this url record not exists.
      * File[] {DownloadFile, TempFile, LastModifyFile}
      *
      * @param url url
      * @return Files
      */
+    @Nullable
     public File[] getRealFiles(String url) {
-        return mDownloadHelper.getRealFile(url);
+        return mDownloadHelper.getFiles(url);
     }
 
     /**
-     * 普通下载时不需要context, 使用Service下载时需要context;
+     * get Files by saveName and savePath.
      *
-     * @param context context
-     * @return RxDownload
+     * @param saveName saveName
+     * @param savePath savePath
+     * @return
      */
-    public RxDownload context(Context context) {
-        this.mContext = context;
-        mDownloadHelper.setContext(context);
-        return this;
+    public File[] getRealFiles(String saveName, String savePath) {
+        return Utils.getFiles(saveName, savePath);
     }
 
     public RxDownload defaultSavePath(String savePath) {
@@ -136,26 +136,15 @@ public class RxDownload {
      * @return Observable<DownloadStatus>
      */
     public Observable<DownloadEvent> receiveDownloadStatus(final String url) {
-        return Single.create(new SingleOnSubscribe<Object>() {
-            @Override
-            public void subscribe(final SingleEmitter<Object> e) throws Exception {
-                if (!bound) {
-                    startBindServiceAndDo(new ServiceConnectedCallback() {
-                        @Override
-                        public void call() {
-                            e.onSuccess(object);
-                        }
-                    });
-                } else {
-                    e.onSuccess(object);
-                }
-            }
-        }).flatMapObservable(new Function<Object, ObservableSource<? extends DownloadEvent>>() {
-            @Override
-            public ObservableSource<? extends DownloadEvent> apply(Object o) throws Exception {
-                return mDownloadService.processor(RxDownload.this, url).toObservable();
-            }
-        }).observeOn(AndroidSchedulers.mainThread());
+        return createGeneralObservable(null)
+                .flatMap(new Function<Object,
+                        ObservableSource<DownloadEvent>>() {
+                    @Override
+                    public ObservableSource<DownloadEvent> apply(Object o) throws Exception {
+                        return mDownloadService.receiveDownloadEvent(url).toObservable();
+                    }
+                })
+                .observeOn(AndroidSchedulers.mainThread());
     }
 
     /**
@@ -236,7 +225,7 @@ public class RxDownload {
         return createGeneralObservable(new GeneralObservableCallback() {
             @Override
             public void call() {
-                mDownloadService.cancelDownload(url);
+//                mDownloadService.cancelDownload(url);
             }
         });
     }
@@ -246,7 +235,7 @@ public class RxDownload {
      * <p>
      * 同时从数据库中删除该下载记录.
      * <p>
-     * when deleteFile is true, the downloaded file will be deleted.
+     * when deleteFiles is true, the downloaded file will be deleted.
      *
      * @param url        download url
      * @param deleteFile whether delete  file
@@ -255,7 +244,7 @@ public class RxDownload {
         return createGeneralObservable(new GeneralObservableCallback() {
             @Override
             public void call() {
-                mDownloadService.deleteDownload(url, deleteFile, RxDownload.this);
+                mDownloadService.deleteDownload(url, deleteFile);
             }
         });
     }
@@ -285,7 +274,7 @@ public class RxDownload {
                                          @Nullable final String savePath) {
         return createGeneralObservable(new GeneralObservableCallback() {
             @Override
-            public void call() {
+            public void call() throws InterruptedException {
                 addDownloadTask(url, saveName, savePath);
             }
         });
@@ -304,12 +293,25 @@ public class RxDownload {
      *                 /storage/emulated/0/Download/}
      * @return Observable<DownloadStatus>
      */
-    public Observable<DownloadStatus> download(
-            @NonNull final String url,
-            @Nullable final String saveName,
-            @Nullable final String savePath) {
+    public Observable<DownloadStatus> download(@NonNull final String url, @Nullable final String saveName,
+                                               @Nullable final String savePath) {
 
-        return mDownloadHelper.downloadDispatcher(url, saveName, savePath);
+        return download(new DownloadBean.Builder(url)
+                .setSaveName(saveName)
+                .setSavePath(savePath)
+                .build());
+    }
+
+    public Observable<DownloadStatus> download(String url) {
+        return download(url, null);
+    }
+
+    public Observable<DownloadStatus> download(String url, String saveName) {
+        return download(url, saveName, null);
+    }
+
+    public Observable<DownloadStatus> download(DownloadBean downloadBean) {
+        return mDownloadHelper.downloadDispatcher(downloadBean);
     }
 
     /**
@@ -374,14 +376,14 @@ public class RxDownload {
     }
 
     private void addDownloadTask(@NonNull String url, @Nullable String saveName,
-                                 @Nullable String savePath) {
+                                 @Nullable String savePath) throws InterruptedException {
         mDownloadService.addDownloadMission(
-                new DownloadMission.Builder()
-                        .setRxDownload(RxDownload.this)
-                        .setUrl(url)
-                        .setSaveName(saveName)
-                        .setSavePath(savePath)
-                        .build());
+                new DownloadMission(
+                        new DownloadBean.Builder(url)
+                                .setSaveName(saveName)
+                                .setSavePath(savePath)
+                                .build(),
+                        RxDownload.this));
     }
 
     private Observable<?> createGeneralObservable(final GeneralObservableCallback callback) {
@@ -392,13 +394,21 @@ public class RxDownload {
                     startBindServiceAndDo(new ServiceConnectedCallback() {
                         @Override
                         public void call() {
-                            callback.call();
+                            if (callback != null) {
+                                try {
+                                    callback.call();
+                                } catch (Exception e) {
+                                    emitter.onError(e);
+                                }
+                            }
                             emitter.onNext(object);
                             emitter.onComplete();
                         }
                     });
                 } else {
-                    callback.call();
+                    if (callback != null) {
+                        callback.call();
+                    }
                     emitter.onNext(object);
                     emitter.onComplete();
                 }
@@ -433,7 +443,7 @@ public class RxDownload {
     }
 
     private interface GeneralObservableCallback {
-        void call();
+        void call() throws Exception;
     }
 
     private interface ServiceConnectedCallback {

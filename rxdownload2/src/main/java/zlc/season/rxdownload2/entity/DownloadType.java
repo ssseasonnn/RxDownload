@@ -62,7 +62,7 @@ public abstract class DownloadType {
                     @Override
                     public void accept(Subscription subscription) throws Exception {
                         log(startLog());
-                        record.start();
+                        record.start(startType());
                     }
                 })
                 .flatMap(new Function<Integer, Publisher<DownloadStatus>>() {
@@ -110,6 +110,10 @@ public abstract class DownloadType {
 
     protected abstract Publisher<DownloadStatus> download();
 
+    protected int startType() {
+        return DownloadFlag.STARTED;
+    }
+
     protected String prepareLog() {
         return "";
     }
@@ -130,9 +134,9 @@ public abstract class DownloadType {
         return "";
     }
 
-    static class NormalDownload extends DownloadType {
+    public static class NormalDownload extends DownloadType {
 
-        NormalDownload(TemporaryRecord record) {
+        public NormalDownload(TemporaryRecord record) {
             super(record);
         }
 
@@ -189,9 +193,9 @@ public abstract class DownloadType {
         }
     }
 
-    static class ContinueDownload extends DownloadType {
+    public static class ContinueDownload extends DownloadType {
 
-        ContinueDownload(TemporaryRecord record) {
+        public ContinueDownload(TemporaryRecord record) {
             super(record);
         }
 
@@ -238,6 +242,12 @@ public abstract class DownloadType {
         private Publisher<DownloadStatus> rangeDownload(final int index) {
             return record.rangeDownload(index)
                     .subscribeOn(Schedulers.io())  //Important!
+                    .doOnSubscribe(new Consumer<Subscription>() {
+                        @Override
+                        public void accept(Subscription subscription) throws Exception {
+                            log(index + " start");
+                        }
+                    })
                     .flatMap(new Function<Response<ResponseBody>, Publisher<DownloadStatus>>() {
                         @Override
                         public Publisher<DownloadStatus> apply(Response<ResponseBody> response) throws Exception {
@@ -266,9 +276,9 @@ public abstract class DownloadType {
         }
     }
 
-    static class MultiThreadDownload extends ContinueDownload {
+    public static class MultiThreadDownload extends ContinueDownload {
 
-        MultiThreadDownload(TemporaryRecord record) {
+        public MultiThreadDownload(TemporaryRecord record) {
             super(record);
         }
 
@@ -304,9 +314,9 @@ public abstract class DownloadType {
         }
     }
 
-    static class AlreadyDownloaded extends DownloadType {
+    public static class AlreadyDownloaded extends DownloadType {
 
-        AlreadyDownloaded(TemporaryRecord record) {
+        public AlreadyDownloaded(TemporaryRecord record) {
             super(record);
         }
 

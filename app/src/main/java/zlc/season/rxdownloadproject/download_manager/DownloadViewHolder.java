@@ -72,7 +72,7 @@ public class DownloadViewHolder extends AbstractViewHolder<DownloadBean> {
         ButterKnife.bind(this, itemView);
         this.mAdapter = adapter;
         mContext = parent.getContext();
-        mRxDownload = RxDownload.getInstance().context(mContext);
+        mRxDownload = RxDownload.getInstance(mContext);
 
         mDownloadController = new DownloadController(mStatusText, mActionButton);
     }

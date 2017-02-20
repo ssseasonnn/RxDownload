@@ -51,7 +51,7 @@ public class DownloadService extends Service {
     private Queue<DownloadMission> mWaitingForDownload;
     private Map<String, DownloadMission> mWaitingForDownloadLookUpMap;
 
-    private int MAX_DOWNLOAD_NUMBER = 5;
+    private int maxDownload;
     private Thread mDownloadQueueThread;
 
     @Override
@@ -70,7 +70,7 @@ public class DownloadService extends Service {
     public int onStartCommand(Intent intent, int flags, int startId) {
         mDb.repairErrorFlag();
         if (intent != null) {
-            MAX_DOWNLOAD_NUMBER = intent.getIntExtra(INTENT_KEY, 5);
+            maxDownload = intent.getIntExtra(INTENT_KEY, 5);
         }
         return super.onStartCommand(intent, flags, startId);
     }
@@ -196,7 +196,7 @@ public class DownloadService extends Service {
                         mWaitingForDownloadLookUpMap.remove(url);
                         continue;
                     }
-                    if (mCount.get() < MAX_DOWNLOAD_NUMBER) {
+                    if (mCount.get() < maxDownload) {
                         mission.start(mNowDownloading, mCount, mDb, mProcessorPool);
                         mWaitingForDownload.remove();
                         mWaitingForDownloadLookUpMap.remove(url);

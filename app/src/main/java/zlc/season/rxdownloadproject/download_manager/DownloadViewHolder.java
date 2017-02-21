@@ -179,7 +179,6 @@ public class DownloadViewHolder extends AbstractViewHolder<DownloadBean> {
     }
 
     private void cancel() {
-        mRxDownload.cancelServiceDownload(mData.mRecord.getUrl()).subscribe();
     }
 
     private void delete() {

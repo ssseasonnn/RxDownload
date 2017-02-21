@@ -209,6 +209,10 @@ public class DownloadService extends Service {
                 });
     }
 
+    public void pauseAll() {
+
+    }
+
     public class DownloadBinder extends Binder {
         public DownloadService getService() {
             return DownloadService.this;

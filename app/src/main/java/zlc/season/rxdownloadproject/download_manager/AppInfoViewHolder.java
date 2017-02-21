@@ -149,6 +149,5 @@ public class AppInfoViewHolder extends AbstractViewHolder<AppInfoBean> {
     }
 
     private void cancel() {
-        mRxDownload.cancelServiceDownload(mData.downloadUrl).subscribe();
     }
 }

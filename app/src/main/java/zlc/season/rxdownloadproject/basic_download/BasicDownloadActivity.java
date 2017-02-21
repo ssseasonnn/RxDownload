@@ -26,6 +26,7 @@ import io.reactivex.disposables.Disposable;
 import io.reactivex.functions.Consumer;
 import io.reactivex.schedulers.Schedulers;
 import zlc.season.rxdownload2.RxDownload;
+import zlc.season.rxdownload2.entity.DownloadBean;
 import zlc.season.rxdownload2.entity.DownloadStatus;
 import zlc.season.rxdownload2.function.Utils;
 import zlc.season.rxdownloadproject.DownloadController;
@@ -55,6 +56,7 @@ public class BasicDownloadActivity extends AppCompatActivity {
 
     private String defaultPath = getExternalStoragePublicDirectory(DIRECTORY_DOWNLOADS).getPath();
     private String url = "http://dldir1.qq.com/weixin/android/weixin6330android920.apk";
+    private String image = "http://static.yingyonghui.com/icon/128/4200197.png";
     private Disposable mDisposable;
     private RxDownload mRxDownload;
     private DownloadController mDownloadController;
@@ -85,8 +87,7 @@ public class BasicDownloadActivity extends AppCompatActivity {
                 });
                 break;
             case R.id.finish:
-//                BasicDownloadActivity.this.finish();
-                System.out.println(mRxDownload.test1());
+                BasicDownloadActivity.this.finish();
                 break;
         }
     }
@@ -98,7 +99,7 @@ public class BasicDownloadActivity extends AppCompatActivity {
         ButterKnife.bind(this);
         setSupportActionBar(mToolbar);
 
-        Picasso.with(this).load("http://static.yingyonghui.com/icon/128/4200197.png").into(mImg);
+        Picasso.with(this).load(image).into(mImg);
         mAction.setText("开始");
 
         mRxDownload = RxDownload.getInstance(this)
@@ -125,7 +126,7 @@ public class BasicDownloadActivity extends AppCompatActivity {
                     }
                 })
                 .observeOn(Schedulers.io())
-                .compose(mRxDownload.<Boolean>transform(url, null, null))
+                .compose(mRxDownload.<Boolean>transform(new DownloadBean.Builder(url).setExtra1(image).setExtra2("微信").build()))
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(new Observer<DownloadStatus>() {
                     @Override

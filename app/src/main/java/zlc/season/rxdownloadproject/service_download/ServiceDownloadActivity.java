@@ -158,6 +158,5 @@ public class ServiceDownloadActivity extends AppCompatActivity {
     }
 
     private void cancel() {
-        mRxDownload.cancelServiceDownload(url).subscribe();
     }
 }

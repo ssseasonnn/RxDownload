@@ -33,6 +33,7 @@ import static zlc.season.rxdownload2.function.Utils.longToGMT;
  */
 public class FileHelper {
     private static final int EACH_RECORD_SIZE = 16; //long + long = 8 + 8
+    private static final long PER_MAPPED_SIZE = 10 * 1024; //1M = 1024*1024 bytes
     private int RECORD_FILE_TOTAL_SIZE;
     //|*********************|
     //|*****Record  File****|
@@ -80,7 +81,7 @@ public class FileHelper {
 
                 status.setTotalSize(contentLength);
 
-                while ((readLen = inputStream.read(buffer)) != -1) {
+                while ((readLen = inputStream.read(buffer)) != -1 && !emitter.isCancelled()) {
                     outputStream.write(buffer, 0, readLen);
                     downloadSize += readLen;
                     status.setDownloadSize(downloadSize);
@@ -118,7 +119,9 @@ public class FileHelper {
         try {
             try {
                 int readLen;
-                byte[] buffer = new byte[8192];
+                int downloadSize = 0;
+
+                byte[] buffer = new byte[2048];
 
                 DownloadStatus status = new DownloadStatus();
                 record = new RandomAccessFile(tempFile, "rws");
@@ -128,22 +131,30 @@ public class FileHelper {
 
                 int startIndex = i * EACH_RECORD_SIZE;
 
-                long startByte = recordBuffer.getLong(startIndex);
-                long endByte = recordBuffer.getLong(startIndex + 8);
+                long start = recordBuffer.getLong(startIndex);
+                long end = recordBuffer.getLong(startIndex + 8);
 
-                long totalRange = endByte - startByte + 1;
+                long total = end - start + 1;
+
+                long realMappedSize = Math.min(PER_MAPPED_SIZE, total);
 
                 long totalSize = recordBuffer.getLong(RECORD_FILE_TOTAL_SIZE - 8) + 1;
                 status.setTotalSize(totalSize);
 
                 save = new RandomAccessFile(saveFile, "rws");
                 saveChannel = save.getChannel();
-                MappedByteBuffer saveBuffer = saveChannel.map(READ_WRITE, startByte, totalRange);
+                MappedByteBuffer saveBuffer = saveChannel.map(READ_WRITE, start, realMappedSize);
                 inStream = response.byteStream();
 
-                while ((readLen = inStream.read(buffer)) != -1) {
+                while ((readLen = inStream.read(buffer)) != -1 && !emitter.isCancelled()) {
+                    downloadSize += readLen;
+                    if (downloadSize > realMappedSize) {
+                        saveBuffer = saveChannel.map(READ_WRITE, start, realMappedSize);
+                    }
+                    start += readLen;
                     saveBuffer.put(buffer, 0, readLen);
-                    recordBuffer.putLong(startIndex, recordBuffer.getLong(startIndex) + readLen);
+                    recordBuffer.putLong(startIndex, start);
+
                     status.setDownloadSize(totalSize - getResidue(recordBuffer));
                     emitter.onNext(status);
                 }

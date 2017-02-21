@@ -13,6 +13,8 @@ import java.io.File;
 import java.io.InterruptedIOException;
 import java.net.SocketException;
 import java.util.List;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import io.reactivex.Observable;
 import io.reactivex.ObservableEmitter;
@@ -23,6 +25,7 @@ import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.functions.Consumer;
 import io.reactivex.functions.Function;
 import io.reactivex.plugins.RxJavaPlugins;
+import io.reactivex.schedulers.Schedulers;
 import retrofit2.Retrofit;
 import zlc.season.rxdownload2.entity.DownloadBean;
 import zlc.season.rxdownload2.entity.DownloadEvent;
@@ -66,6 +69,8 @@ public class RxDownload {
     private Context context;
     private DownloadHelper mDownloadHelper;
     private int MAX_DOWNLOAD_NUMBER = 5;
+    private Semaphore semaphore = new Semaphore(1);
+    private AtomicInteger count = new AtomicInteger(0);
 
     private RxDownload(Context context) {
         this.context = context.getApplicationContext();
@@ -130,7 +135,6 @@ public class RxDownload {
         this.MAX_DOWNLOAD_NUMBER = max;
         return this;
     }
-
 
     /**
      * Receive the download address for the url download event and download status.
@@ -374,17 +378,24 @@ public class RxDownload {
             @Override
             public void subscribe(final ObservableEmitter<Object> emitter) throws Exception {
                 if (!bound) {
-                    startBindServiceAndDo(new ServiceConnectedCallback() {
-                        @Override
-                        public void call() {
-                            doCall(callback, emitter);
-                        }
-                    });
+                    semaphore.acquire();
+                    if (!bound) {
+                        startBindServiceAndDo(new ServiceConnectedCallback() {
+                            @Override
+                            public void call() {
+                                semaphore.release();
+                                doCall(callback, emitter);
+                            }
+                        });
+                    } else {
+                        semaphore.release();
+                        doCall(callback, emitter);
+                    }
                 } else {
                     doCall(callback, emitter);
                 }
             }
-        });
+        }).subscribeOn(Schedulers.io());
     }
 
     private void doCall(GeneralObservableCallback callback, ObservableEmitter<Object> emitter) {

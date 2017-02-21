@@ -80,8 +80,8 @@ public class DownloadViewHolder extends AbstractViewHolder<DownloadBean> {
     @Override
     public void setData(DownloadBean param) {
         this.mData = param;
-        Picasso.with(mContext).load(R.mipmap.ic_file_download).into(mImg);
-        mName.setText(param.mRecord.getSaveName());
+        Picasso.with(mContext).load(param.mRecord.getExtra1()).into(mImg);
+        mName.setText(param.mRecord.getExtra2());
 
         /**
          * important!! 如果有订阅没有取消,则取消订阅!防止ViewHolder复用导致界面显示的BUG!

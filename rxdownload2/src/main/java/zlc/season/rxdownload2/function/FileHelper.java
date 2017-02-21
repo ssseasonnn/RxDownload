@@ -33,7 +33,7 @@ import static zlc.season.rxdownload2.function.Utils.longToGMT;
  */
 public class FileHelper {
     private static final int EACH_RECORD_SIZE = 16; //long + long = 8 + 8
-    private static final long PER_MAPPED_SIZE = 10 * 1024; //1M = 1024*1024 bytes
+    private static final long PER_MAPPED_SIZE = 2 * 1024 * 1024; //1M = 1024*1024 bytes
     private int RECORD_FILE_TOTAL_SIZE;
     //|*********************|
     //|*****Record  File****|
@@ -121,7 +121,7 @@ public class FileHelper {
                 int readLen;
                 int downloadSize = 0;
 
-                byte[] buffer = new byte[2048];
+                byte[] buffer = new byte[8192];
 
                 DownloadStatus status = new DownloadStatus();
                 record = new RandomAccessFile(tempFile, "rws");
@@ -144,12 +144,16 @@ public class FileHelper {
                 save = new RandomAccessFile(saveFile, "rws");
                 saveChannel = save.getChannel();
                 MappedByteBuffer saveBuffer = saveChannel.map(READ_WRITE, start, realMappedSize);
+                saveBuffer.position(0);
                 inStream = response.byteStream();
 
                 while ((readLen = inStream.read(buffer)) != -1 && !emitter.isCancelled()) {
                     downloadSize += readLen;
                     if (downloadSize > realMappedSize) {
+                        saveBuffer.force();
                         saveBuffer = saveChannel.map(READ_WRITE, start, realMappedSize);
+                        saveBuffer.position(0);
+                        downloadSize = 0;
                     }
                     start += readLen;
                     saveBuffer.put(buffer, 0, readLen);

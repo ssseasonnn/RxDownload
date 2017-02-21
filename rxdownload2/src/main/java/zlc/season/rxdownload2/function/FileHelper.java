@@ -121,10 +121,10 @@ public class FileHelper {
                 int readLen;
                 int downloadSize = 0;
 
-                byte[] buffer = new byte[8192];
+                byte[] buffer = new byte[2048];
 
                 DownloadStatus status = new DownloadStatus();
-                record = new RandomAccessFile(tempFile, "rws");
+                record = new RandomAccessFile(tempFile, "rw");
                 recordChannel = record.getChannel();
                 MappedByteBuffer recordBuffer = recordChannel
                         .map(READ_WRITE, 0, RECORD_FILE_TOTAL_SIZE);
@@ -136,25 +136,35 @@ public class FileHelper {
 
                 long total = end - start + 1;
 
+                long mappedSize = 0;
+
                 long realMappedSize = Math.min(PER_MAPPED_SIZE, total);
 
                 long totalSize = recordBuffer.getLong(RECORD_FILE_TOTAL_SIZE - 8) + 1;
                 status.setTotalSize(totalSize);
 
-                save = new RandomAccessFile(saveFile, "rws");
+                save = new RandomAccessFile(saveFile, "rw");
                 saveChannel = save.getChannel();
-                MappedByteBuffer saveBuffer = saveChannel.map(READ_WRITE, start, realMappedSize);
-                saveBuffer.position(0);
+//                MappedByteBuffer saveBuffer = saveChannel.map(READ_WRITE, start, total);
+                mappedSize += realMappedSize;
+
                 inStream = response.byteStream();
 
                 while ((readLen = inStream.read(buffer)) != -1 && !emitter.isCancelled()) {
-                    downloadSize += readLen;
-                    if (downloadSize > realMappedSize) {
-                        saveBuffer.force();
-                        saveBuffer = saveChannel.map(READ_WRITE, start, realMappedSize);
-                        saveBuffer.position(0);
-                        downloadSize = 0;
-                    }
+                    MappedByteBuffer saveBuffer = saveChannel.map(READ_WRITE, start, readLen);
+//                    downloadSize += readLen;
+//                    if (downloadSize > realMappedSize) {
+//                        long temp = mappedSize + realMappedSize;
+//                        if (temp > total) {
+//                            long residue = total - mappedSize;
+//                            saveBuffer = saveChannel.map(READ_WRITE, start, residue);
+//                            mappedSize += residue;
+//                        } else {
+//                            saveBuffer = saveChannel.map(READ_WRITE, start, realMappedSize);
+//                            mappedSize += realMappedSize;
+//                        }
+//                        downloadSize = readLen;
+//                    }
                     start += readLen;
                     saveBuffer.put(buffer, 0, readLen);
                     recordBuffer.putLong(startIndex, start);
@@ -181,7 +191,7 @@ public class FileHelper {
         RandomAccessFile record = null;
         FileChannel channel = null;
         try {
-            record = new RandomAccessFile(tempFile, "rws");
+            record = new RandomAccessFile(tempFile, "rw");
             channel = record.getChannel();
             MappedByteBuffer buffer = channel.map(READ_WRITE, 0, RECORD_FILE_TOTAL_SIZE);
 
@@ -206,7 +216,7 @@ public class FileHelper {
         RandomAccessFile record = null;
         FileChannel channel = null;
         try {
-            record = new RandomAccessFile(tempFile, "rws");
+            record = new RandomAccessFile(tempFile, "rw");
             channel = record.getChannel();
             MappedByteBuffer buffer = channel.map(READ_WRITE, 0, RECORD_FILE_TOTAL_SIZE);
             long recordTotalSize = buffer.getLong(RECORD_FILE_TOTAL_SIZE - 8) + 1;
@@ -222,7 +232,7 @@ public class FileHelper {
         RandomAccessFile record = null;
         FileChannel channel = null;
         try {
-            record = new RandomAccessFile(tempFile, "rws");
+            record = new RandomAccessFile(tempFile, "rw");
             channel = record.getChannel();
             MappedByteBuffer buffer = channel
                     .map(READ_WRITE, i * EACH_RECORD_SIZE, (i + 1) * EACH_RECORD_SIZE);
@@ -239,7 +249,7 @@ public class FileHelper {
 
         RandomAccessFile record = null;
         try {
-            record = new RandomAccessFile(lastModifyFile, "rws");
+            record = new RandomAccessFile(lastModifyFile, "rw");
             record.seek(0);
             return longToGMT(record.readLong());
         } finally {
@@ -253,10 +263,10 @@ public class FileHelper {
         RandomAccessFile rRecord = null;
         FileChannel channel = null;
         try {
-            rFile = new RandomAccessFile(saveFile, "rws");
+            rFile = new RandomAccessFile(saveFile, "rw");
             rFile.setLength(fileLength);//设置下载文件的长度
 
-            rRecord = new RandomAccessFile(tempFile, "rws");
+            rRecord = new RandomAccessFile(tempFile, "rw");
             rRecord.setLength(RECORD_FILE_TOTAL_SIZE); //设置指针记录文件的大小
 
             channel = rRecord.getChannel();
@@ -288,7 +298,7 @@ public class FileHelper {
 
         RandomAccessFile file = null;
         try {
-            file = new RandomAccessFile(saveFile, "rws");
+            file = new RandomAccessFile(saveFile, "rw");
             if (fileLength != -1) {
                 file.setLength(fileLength);//设置下载文件的长度
             } else {
@@ -305,7 +315,7 @@ public class FileHelper {
 
         RandomAccessFile record = null;
         try {
-            record = new RandomAccessFile(file, "rws");
+            record = new RandomAccessFile(file, "rw");
             record.setLength(8);
             record.seek(0);
             record.writeLong(GMTToLong(lastModify));

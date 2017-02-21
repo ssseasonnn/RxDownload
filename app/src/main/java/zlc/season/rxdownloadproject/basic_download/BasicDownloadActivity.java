@@ -55,7 +55,8 @@ public class BasicDownloadActivity extends AppCompatActivity {
     Button mFinish;
 
     private String defaultPath = getExternalStoragePublicDirectory(DIRECTORY_DOWNLOADS).getPath();
-    private String url = "http://dldir1.qq.com/weixin/android/weixin6330android920.apk";
+//    private String url = "http://dldir1.qq.com/weixin/android/weixin6330android920.apk";
+    private String url = "http://downali.game.uc.cn/s/1/9/20170103112151d02a45_MY-1.110.0_uc_platform2.apk";
     private String image = "http://static.yingyonghui.com/icon/128/4200197.png";
     private Disposable mDisposable;
     private RxDownload mRxDownload;

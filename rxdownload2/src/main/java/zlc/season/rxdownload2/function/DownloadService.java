@@ -193,12 +193,15 @@ public class DownloadService extends Service {
                         while (!emitter.isDisposed()) {
                             DownloadMission mission;
                             try {
+                                log("before take");
                                 mission = downloadQueue.take();
+                                log("take success");
                             } catch (InterruptedException e) {
                                 continue;
                             }
                             emitter.onNext(mission);
                         }
+                        emitter.onComplete();
                     }
                 }).subscribeOn(Schedulers.newThread())
                 .subscribe(new Consumer<DownloadMission>() {

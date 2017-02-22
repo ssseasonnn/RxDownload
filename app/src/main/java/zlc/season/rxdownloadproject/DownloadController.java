@@ -44,9 +44,6 @@ public class DownloadController {
             case DownloadFlag.PAUSED:
                 setState(new DownloadController.Paused());
                 break;
-            case DownloadFlag.CANCELED:
-                setState(new DownloadController.Canceled());
-                break;
             case DownloadFlag.COMPLETED:
                 setState(new DownloadController.Completed());
                 break;
@@ -67,8 +64,6 @@ public class DownloadController {
         void startDownload();
 
         void pauseDownload();
-
-        void cancelDownload();
 
         void install();
     }
@@ -103,7 +98,7 @@ public class DownloadController {
 
         @Override
         void handleClick(Callback callback) {
-            callback.cancelDownload();
+            callback.pauseDownload();
         }
     }
 
@@ -146,18 +141,6 @@ public class DownloadController {
         }
     }
 
-    public static class Canceled extends DownloadState {
-        @Override
-        void setText(TextView status, Button button) {
-            button.setText("下载");
-            status.setText("下载已取消");
-        }
-
-        @Override
-        void handleClick(Callback callback) {
-            callback.startDownload();
-        }
-    }
 
     public static class Completed extends DownloadState {
         @Override

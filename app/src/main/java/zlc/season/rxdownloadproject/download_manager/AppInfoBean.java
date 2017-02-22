@@ -1,5 +1,6 @@
 package zlc.season.rxdownloadproject.download_manager;
 
+import io.reactivex.disposables.Disposable;
 import zlc.season.practicalrecyclerview.ItemType;
 
 /**
@@ -14,6 +15,8 @@ public class AppInfoBean implements ItemType {
     String info;
     String downloadUrl;
     String saveName;
+
+    Disposable disposable;
 
     public AppInfoBean(String name, String img, String info, String downloadUrl) {
         this.name = name;

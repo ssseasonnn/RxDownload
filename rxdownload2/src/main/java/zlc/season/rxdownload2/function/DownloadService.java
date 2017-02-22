@@ -18,8 +18,8 @@ import io.reactivex.ObservableEmitter;
 import io.reactivex.ObservableOnSubscribe;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.functions.Consumer;
-import io.reactivex.processors.BehaviorProcessor;
 import io.reactivex.processors.FlowableProcessor;
+import io.reactivex.processors.PublishProcessor;
 import io.reactivex.schedulers.Schedulers;
 import zlc.season.rxdownload2.db.DataBaseHelper;
 import zlc.season.rxdownload2.entity.DownloadEvent;
@@ -103,7 +103,7 @@ public class DownloadService extends Service {
     private FlowableProcessor<DownloadEvent> getProcessor(String url) {
         if (processorMap.get(url) == null) {
             FlowableProcessor<DownloadEvent> processor =
-                    BehaviorProcessor.<DownloadEvent>create().toSerialized();
+                    PublishProcessor.<DownloadEvent>create().toSerialized();
             processorMap.put(url, processor);
         }
         return processorMap.get(url);
@@ -130,6 +130,8 @@ public class DownloadService extends Service {
                     processor.onNext(normal(null));
                 }
             }
+        } else {
+            processor.onNext(normal(null));
         }
         return processor;
     }

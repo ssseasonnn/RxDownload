@@ -1,6 +1,5 @@
 package zlc.season.rxdownloadproject.basic_download;
 
-import android.Manifest;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
@@ -27,11 +26,12 @@ import io.reactivex.disposables.Disposable;
 import io.reactivex.functions.Consumer;
 import io.reactivex.schedulers.Schedulers;
 import zlc.season.rxdownload2.RxDownload;
-import zlc.season.rxdownload2.entity.DownloadBean;
 import zlc.season.rxdownload2.entity.DownloadStatus;
-import zlc.season.rxdownload2.function.Utils;
 import zlc.season.rxdownloadproject.DownloadController;
 import zlc.season.rxdownloadproject.R;
+
+import static android.Manifest.permission.WRITE_EXTERNAL_STORAGE;
+import static zlc.season.rxdownload2.function.Utils.dispose;
 
 public class BasicDownloadActivity extends AppCompatActivity {
 
@@ -75,10 +75,6 @@ public class BasicDownloadActivity extends AppCompatActivity {
                     }
 
                     @Override
-                    public void cancelDownload() {
-                    }
-
-                    @Override
                     public void install() {
                         installApk();
                     }
@@ -101,6 +97,7 @@ public class BasicDownloadActivity extends AppCompatActivity {
         mAction.setText("开始");
 
         rxDownload = RxDownload.getInstance(this);
+
         downloadController = new DownloadController(mStatus, mAction);
         downloadController.setState(new DownloadController.Normal());
     }
@@ -108,12 +105,12 @@ public class BasicDownloadActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        Utils.dispose(disposable);
+        dispose(disposable);
     }
 
     private void start() {
         RxPermissions.getInstance(this)
-                .request(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                .request(WRITE_EXTERNAL_STORAGE)
                 .doOnNext(new Consumer<Boolean>() {
                     @Override
                     public void accept(Boolean aBoolean) throws Exception {
@@ -123,7 +120,7 @@ public class BasicDownloadActivity extends AppCompatActivity {
                     }
                 })
                 .observeOn(Schedulers.io())
-                .compose(rxDownload.<Boolean>transform(new DownloadBean.Builder(url).setExtra1(image).setExtra2("微信").build()))
+                .compose(rxDownload.<Boolean>transform(url))
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(new Observer<DownloadStatus>() {
                     @Override
@@ -155,7 +152,7 @@ public class BasicDownloadActivity extends AppCompatActivity {
 
     private void pause() {
         downloadController.setState(new DownloadController.Paused());
-        Utils.dispose(disposable);
+        dispose(disposable);
     }
 
     private void installApk() {

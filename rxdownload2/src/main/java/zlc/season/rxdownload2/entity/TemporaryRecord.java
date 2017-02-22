@@ -261,6 +261,8 @@ public class TemporaryRecord {
     public void start() {
         if (dataBaseHelper.recordNotExists(bean.getUrl())) {
             dataBaseHelper.insertRecord(bean, DownloadFlag.STARTED);
+        } else {
+            dataBaseHelper.updateFlag(bean.getUrl(), DownloadFlag.STARTED);
         }
     }
 

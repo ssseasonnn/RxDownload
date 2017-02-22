@@ -23,16 +23,20 @@ import io.reactivex.processors.FlowableProcessor;
 import io.reactivex.schedulers.Schedulers;
 import zlc.season.rxdownload2.db.DataBaseHelper;
 import zlc.season.rxdownload2.entity.DownloadEvent;
+import zlc.season.rxdownload2.entity.DownloadFlag;
 import zlc.season.rxdownload2.entity.DownloadMission;
 import zlc.season.rxdownload2.entity.DownloadRecord;
 import zlc.season.rxdownload2.entity.DownloadStatus;
 
+import static zlc.season.rxdownload2.function.Constant.DOWNLOAD_URL_EXISTS;
+import static zlc.season.rxdownload2.function.Constant.WAITING_FOR_MISSION_COME;
 import static zlc.season.rxdownload2.function.DownloadEventFactory.createEvent;
 import static zlc.season.rxdownload2.function.DownloadEventFactory.normal;
 import static zlc.season.rxdownload2.function.DownloadEventFactory.paused;
 import static zlc.season.rxdownload2.function.DownloadEventFactory.waiting;
 import static zlc.season.rxdownload2.function.Utils.deleteFiles;
 import static zlc.season.rxdownload2.function.Utils.dispose;
+import static zlc.season.rxdownload2.function.Utils.formatStr;
 import static zlc.season.rxdownload2.function.Utils.getFiles;
 import static zlc.season.rxdownload2.function.Utils.log;
 
@@ -85,6 +89,7 @@ public class DownloadService extends Service {
         for (String each : missionMap.keySet()) {
             pauseDownload(each);
         }
+        dataBaseHelper.closeDataBase();
     }
 
     @Nullable
@@ -120,7 +125,7 @@ public class DownloadService extends Service {
         return processor;
     }
 
-    public FlowableProcessor<DownloadEvent> getProcessor(String url) {
+    private FlowableProcessor<DownloadEvent> getProcessor(String url) {
         if (processorMap.get(url) == null) {
             FlowableProcessor<DownloadEvent> processor =
                     BehaviorProcessor.<DownloadEvent>create().toSerialized();
@@ -136,10 +141,21 @@ public class DownloadService extends Service {
      * @throws InterruptedException
      */
     public void addDownloadMission(DownloadMission mission) throws InterruptedException {
+        if (missionMap.containsKey(mission.getUrl())) {
+            throw new IllegalArgumentException(formatStr(DOWNLOAD_URL_EXISTS, mission.getUrl()));
+        }
         missionMap.put(mission.getUrl(), mission);
+
+        if (dataBaseHelper.recordNotExists(mission.getUrl())) {
+            dataBaseHelper.insertRecord(mission.getBean(), DownloadFlag.WAITING);
+        } else {
+            dataBaseHelper.updateFlag(mission.getUrl(), DownloadFlag.WAITING);
+        }
+
         getProcessor(mission.getUrl()).onNext(waiting(dataBaseHelper.readStatus(mission.getUrl())));
         downloadQueue.put(mission);
     }
+
 
     /**
      * pause download
@@ -190,13 +206,14 @@ public class DownloadService extends Service {
                 .create(new ObservableOnSubscribe<DownloadMission>() {
                     @Override
                     public void subscribe(ObservableEmitter<DownloadMission> emitter) throws Exception {
+                        DownloadMission mission;
                         while (!emitter.isDisposed()) {
-                            DownloadMission mission;
                             try {
-                                log("before take");
+                                log(WAITING_FOR_MISSION_COME);
                                 mission = downloadQueue.take();
-                                log("take success");
+                                log(Constant.MISSION_COMING);
                             } catch (InterruptedException e) {
+                                log("Interrupt blocking queue.");
                                 continue;
                             }
                             emitter.onNext(mission);

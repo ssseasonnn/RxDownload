@@ -25,16 +25,19 @@ import static zlc.season.rxdownload2.function.Constant.ALREADY_DOWNLOAD_HINT;
 import static zlc.season.rxdownload2.function.Constant.CONTINUE_DOWNLOAD_CANCEL;
 import static zlc.season.rxdownload2.function.Constant.CONTINUE_DOWNLOAD_COMPLETED;
 import static zlc.season.rxdownload2.function.Constant.CONTINUE_DOWNLOAD_FAILED;
+import static zlc.season.rxdownload2.function.Constant.CONTINUE_DOWNLOAD_FINISH;
 import static zlc.season.rxdownload2.function.Constant.CONTINUE_DOWNLOAD_PREPARE;
 import static zlc.season.rxdownload2.function.Constant.CONTINUE_DOWNLOAD_STARTED;
 import static zlc.season.rxdownload2.function.Constant.MULTITHREADING_DOWNLOAD_CANCEL;
 import static zlc.season.rxdownload2.function.Constant.MULTITHREADING_DOWNLOAD_COMPLETED;
 import static zlc.season.rxdownload2.function.Constant.MULTITHREADING_DOWNLOAD_FAILED;
+import static zlc.season.rxdownload2.function.Constant.MULTITHREADING_DOWNLOAD_FINISH;
 import static zlc.season.rxdownload2.function.Constant.MULTITHREADING_DOWNLOAD_PREPARE;
 import static zlc.season.rxdownload2.function.Constant.MULTITHREADING_DOWNLOAD_STARTED;
 import static zlc.season.rxdownload2.function.Constant.NORMAL_DOWNLOAD_CANCEL;
 import static zlc.season.rxdownload2.function.Constant.NORMAL_DOWNLOAD_COMPLETED;
 import static zlc.season.rxdownload2.function.Constant.NORMAL_DOWNLOAD_FAILED;
+import static zlc.season.rxdownload2.function.Constant.NORMAL_DOWNLOAD_FINISH;
 import static zlc.season.rxdownload2.function.Constant.NORMAL_DOWNLOAD_PREPARE;
 import static zlc.season.rxdownload2.function.Constant.NORMAL_DOWNLOAD_STARTED;
 import static zlc.season.rxdownload2.function.Constant.NORMAL_RETRY_HINT;
@@ -104,8 +107,8 @@ public abstract class DownloadType {
                 .doFinally(new Action() {
                     @Override
                     public void run() throws Exception {
-                        log("finish");
-//                        record.finish();
+                        log(finishLog());
+                        record.finish();
                     }
                 })
                 .toObservable();
@@ -130,6 +133,10 @@ public abstract class DownloadType {
     }
 
     protected String cancelLog() {
+        return "";
+    }
+
+    protected String finishLog() {
         return "";
     }
 
@@ -182,6 +189,11 @@ public abstract class DownloadType {
             return NORMAL_DOWNLOAD_CANCEL;
         }
 
+        @Override
+        protected String finishLog() {
+            return NORMAL_DOWNLOAD_FINISH;
+        }
+
         private Publisher<DownloadStatus> save(final Response<ResponseBody> response) {
             return Flowable.create(new FlowableOnSubscribe<DownloadStatus>() {
                 @Override
@@ -230,6 +242,11 @@ public abstract class DownloadType {
         @Override
         protected String cancelLog() {
             return CONTINUE_DOWNLOAD_CANCEL;
+        }
+
+        @Override
+        protected String finishLog() {
+            return CONTINUE_DOWNLOAD_FINISH;
         }
 
         /**
@@ -303,6 +320,11 @@ public abstract class DownloadType {
         @Override
         protected String cancelLog() {
             return MULTITHREADING_DOWNLOAD_CANCEL;
+        }
+
+        @Override
+        protected String finishLog() {
+            return MULTITHREADING_DOWNLOAD_FINISH;
         }
     }
 

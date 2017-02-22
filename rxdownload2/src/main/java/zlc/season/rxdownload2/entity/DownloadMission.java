@@ -8,11 +8,16 @@ import io.reactivex.functions.Consumer;
 import io.reactivex.processors.FlowableProcessor;
 import io.reactivex.schedulers.Schedulers;
 import zlc.season.rxdownload2.RxDownload;
-import zlc.season.rxdownload2.function.Utils;
 
+import static zlc.season.rxdownload2.function.Constant.ACQUIRE_SUCCESS;
+import static zlc.season.rxdownload2.function.Constant.ACQUIRE_SURPLUS_SEMAPHORE;
+import static zlc.season.rxdownload2.function.Constant.RELEASE_SURPLUS_SEMAPHORE;
+import static zlc.season.rxdownload2.function.Constant.TRY_TO_ACQUIRE_SEMAPHORE;
 import static zlc.season.rxdownload2.function.DownloadEventFactory.completed;
 import static zlc.season.rxdownload2.function.DownloadEventFactory.failed;
 import static zlc.season.rxdownload2.function.DownloadEventFactory.started;
+import static zlc.season.rxdownload2.function.Utils.formatStr;
+import static zlc.season.rxdownload2.function.Utils.log;
 
 /**
  * Author: Season(ssseasonnn@gmail.com)
@@ -63,17 +68,17 @@ public class DownloadMission {
                 .doOnSubscribe(new Consumer<Disposable>() {
                     @Override
                     public void accept(Disposable disposable) throws Exception {
-                        Utils.log(bean.getUrl() + " " + "now acquire");
+                        log(TRY_TO_ACQUIRE_SEMAPHORE);
                         semaphore.acquire();
-                        Utils.log(bean.getUrl() + " " + "acquired");
-                        Utils.log("After acquired, now residue: " + semaphore.availablePermits());
+                        log(ACQUIRE_SUCCESS);
+                        log(formatStr(ACQUIRE_SURPLUS_SEMAPHORE, semaphore.availablePermits()));
                     }
                 })
                 .doFinally(new Action() {
                     @Override
                     public void run() throws Exception {
                         semaphore.release();
-                        Utils.log("After release, now residue: " + semaphore.availablePermits());
+                        log(formatStr(RELEASE_SURPLUS_SEMAPHORE, semaphore.availablePermits()));
                     }
                 })
                 .subscribe(new Consumer<DownloadStatus>() {

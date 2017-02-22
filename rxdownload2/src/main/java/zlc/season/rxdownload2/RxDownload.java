@@ -46,7 +46,6 @@ public class RxDownload {
     private static final Object object = new Object();
     @SuppressLint("StaticFieldLeak")
     private volatile static RxDownload instance;
-    private volatile static DownloadService downloadService;
     private volatile static boolean bound = false;
 
     static {
@@ -64,14 +63,18 @@ public class RxDownload {
         });
     }
 
+    private int maxDownloadNumber = 5;
+
     private Context context;
+    private Semaphore semaphore;
+
+    private DownloadService downloadService;
     private DownloadHelper downloadHelper;
-    private int MAX_DOWNLOAD_NUMBER = 5;
-    private Semaphore semaphore = new Semaphore(1);
 
     private RxDownload(Context context) {
         this.context = context.getApplicationContext();
         downloadHelper = new DownloadHelper(context);
+        semaphore = new Semaphore(1);
     }
 
     /**
@@ -165,7 +168,7 @@ public class RxDownload {
      * @return instance
      */
     public RxDownload maxDownloadNumber(int max) {
-        this.MAX_DOWNLOAD_NUMBER = max;
+        this.maxDownloadNumber = max;
         return this;
     }
 
@@ -527,7 +530,7 @@ public class RxDownload {
      */
     private void startBindServiceAndDo(final ServiceConnectedCallback callback) {
         Intent intent = new Intent(context, DownloadService.class);
-        intent.putExtra(DownloadService.INTENT_KEY, MAX_DOWNLOAD_NUMBER);
+        intent.putExtra(DownloadService.INTENT_KEY, maxDownloadNumber);
         context.startService(intent);
         context.bindService(intent, new ServiceConnection() {
             @Override

@@ -97,6 +97,10 @@ public class DataBaseHelper {
         return getWritableDatabase().update(TABLE_NAME, update(flag), "url=?", new String[]{url});
     }
 
+    public long updateRecord(String url, String saveName, String savePath, int flag) {
+        return getWritableDatabase().update(TABLE_NAME, update(saveName, savePath, flag), "url=?", new String[]{url});
+    }
+
     public int deleteRecord(String url) {
         return getWritableDatabase().delete(TABLE_NAME, "url=?", new String[]{url});
     }
@@ -184,10 +188,11 @@ public class DataBaseHelper {
                                     null, null, null, null, null);
                             List<DownloadRecord> result = new ArrayList<>();
                             cursor.moveToFirst();
-                            do {
-                                result.add(read(cursor));
-                            } while (cursor.moveToNext());
-
+                            if (cursor.getCount() > 0) {
+                                do {
+                                    result.add(read(cursor));
+                                } while (cursor.moveToNext());
+                            }
                             emitter.onNext(result);
                             emitter.onComplete();
                         } finally {

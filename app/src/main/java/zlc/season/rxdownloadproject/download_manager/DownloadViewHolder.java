@@ -72,6 +72,7 @@ public class DownloadViewHolder extends AbstractViewHolder<DownloadItem> {
     private DownloadItem data;
 
     private RxDownload mRxDownload;
+    private int flag;
 
     public DownloadViewHolder(ViewGroup parent, AbstractAdapter adapter) {
         super(parent, R.layout.download_manager_item);
@@ -95,14 +96,18 @@ public class DownloadViewHolder extends AbstractViewHolder<DownloadItem> {
 
         String name = empty(param.record.getExtra2()) ? param.record.getSaveName() : param.record.getExtra2();
         mName.setText(name);
-        Utils.log(data.record.getUrl());
 
+
+        Utils.log(data.record.getUrl());
         data.disposable = mRxDownload.receiveDownloadStatus(data.record.getUrl())
                 .subscribe(new Consumer<DownloadEvent>() {
                     @Override
-                    public void accept(DownloadEvent downloadEvent)
-                            throws Exception {
-                        log(downloadEvent.getFlag() + "");
+                    public void accept(DownloadEvent downloadEvent) throws Exception {
+                        if (flag != downloadEvent.getFlag()) {
+                            flag = downloadEvent.getFlag();
+                            log(flag + "");
+                        }
+
                         if (downloadEvent.getFlag() == DownloadFlag.FAILED) {
                             Throwable throwable = downloadEvent.getError();
                             Log.w("TAG", throwable);

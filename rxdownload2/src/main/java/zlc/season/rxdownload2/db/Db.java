@@ -86,6 +86,14 @@ class Db {
             return values;
         }
 
+        static ContentValues update(String saveName, String savePath, int flag) {
+            ContentValues values = new ContentValues();
+            values.put(COLUMN_SAVE_NAME, saveName);
+            values.put(COLUMN_SAVE_PATH, savePath);
+            values.put(COLUMN_DOWNLOAD_FLAG, flag);
+            return values;
+        }
+
         static DownloadStatus readStatus(Cursor cursor) {
             boolean isChunked = cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_IS_CHUNKED)) > 0;
             long downloadSize = cursor.getLong(cursor.getColumnIndexOrThrow(COLUMN_DOWNLOAD_SIZE));

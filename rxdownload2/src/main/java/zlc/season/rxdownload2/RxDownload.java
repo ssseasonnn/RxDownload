@@ -505,13 +505,13 @@ public class RxDownload {
                         startBindServiceAndDo(new ServiceConnectedCallback() {
                             @Override
                             public void call() {
-                                semaphore.release();
                                 doCall(callback, emitter);
+                                semaphore.release();
                             }
                         });
                     } else {
-                        semaphore.release();
                         doCall(callback, emitter);
+                        semaphore.release();
                     }
                 } else {
                     doCall(callback, emitter);

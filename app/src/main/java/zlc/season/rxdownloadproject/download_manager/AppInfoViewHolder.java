@@ -29,6 +29,7 @@ import zlc.season.rxdownloadproject.DownloadController;
 import zlc.season.rxdownloadproject.R;
 
 import static android.Manifest.permission.WRITE_EXTERNAL_STORAGE;
+import static zlc.season.rxdownload2.function.Utils.log;
 
 /**
  * Author: Season(ssseasonnn@gmail.com)
@@ -53,6 +54,7 @@ public class AppInfoViewHolder extends AbstractViewHolder<AppInfoBean> {
     private Context mContext;
     private RxDownload mRxDownload;
     private DownloadBean downloadBean;
+    private int flag;
 
     public AppInfoViewHolder(ViewGroup parent) {
         super(parent, R.layout.app_info_item);
@@ -84,7 +86,11 @@ public class AppInfoViewHolder extends AbstractViewHolder<AppInfoBean> {
                 .subscribe(new Consumer<DownloadEvent>() {
                     @Override
                     public void accept(DownloadEvent downloadEvent) throws Exception {
-                        Utils.log(downloadEvent.getFlag() + "");
+                        if (flag != downloadEvent.getFlag()) {
+                            flag = downloadEvent.getFlag();
+                            log(flag + "");
+                        }
+
                         if (downloadEvent.getFlag() == DownloadFlag.FAILED) {
                             Throwable throwable = downloadEvent.getError();
                             Log.w("TAG", throwable);

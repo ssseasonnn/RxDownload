@@ -212,6 +212,15 @@ public class RxDownload {
         return downloadHelper.readRecord(url);
     }
 
+    public Observable<?> startAll() {
+        return createGeneralObservable(new GeneralObservableCallback() {
+            @Override
+            public void call() throws Exception {
+                downloadService.startAll();
+            }
+        });
+    }
+
     /**
      * pause all download task in Service.
      */

@@ -100,6 +100,15 @@ public class DownloadService extends Service {
         return mBinder;
     }
 
+    private FlowableProcessor<DownloadEvent> getProcessor(String url) {
+        if (processorMap.get(url) == null) {
+            FlowableProcessor<DownloadEvent> processor =
+                    BehaviorProcessor.<DownloadEvent>create().toSerialized();
+            processorMap.put(url, processor);
+        }
+        return processorMap.get(url);
+    }
+
     /**
      * receive download event.
      *
@@ -123,15 +132,6 @@ public class DownloadService extends Service {
             }
         }
         return processor;
-    }
-
-    private FlowableProcessor<DownloadEvent> getProcessor(String url) {
-        if (processorMap.get(url) == null) {
-            FlowableProcessor<DownloadEvent> processor =
-                    BehaviorProcessor.<DownloadEvent>create().toSerialized();
-            processorMap.put(url, processor);
-        }
-        return processorMap.get(url);
     }
 
     /**
@@ -163,16 +163,18 @@ public class DownloadService extends Service {
      * @param url url
      */
     public void pauseDownload(String url) {
-        DownloadMission mission = missionMap.get(url);
         DownloadStatus status;
-        if (mission == null) {
-            status = new DownloadStatus();
-        } else {
+        cancelMission(url);
+        status = dataBaseHelper.readStatus(url);
+        getProcessor(url).onNext(paused(status));
+    }
+
+    private void cancelMission(String url) {
+        DownloadMission mission = missionMap.get(url);
+        if (mission != null) {
             mission.markCanceled();
             dispose(mission.getDisposable());
-            status = mission.getStatus();
         }
-        getProcessor(url).onNext(paused(status));
     }
 
     /**
@@ -182,11 +184,7 @@ public class DownloadService extends Service {
      * @param deleteFile whether delete file
      */
     public void deleteDownload(String url, boolean deleteFile) {
-        DownloadMission mission = missionMap.get(url);
-        if (mission != null) {
-            mission.markCanceled();
-            dispose(mission.getDisposable());
-        }
+        cancelMission(url);
         getProcessor(url).onNext(normal(null));
 
         if (deleteFile) {
@@ -230,6 +228,11 @@ public class DownloadService extends Service {
     }
 
     public void pauseAll() {
+        dispose(disposable);
+
+    }
+
+    public void startAll() {
 
     }
 

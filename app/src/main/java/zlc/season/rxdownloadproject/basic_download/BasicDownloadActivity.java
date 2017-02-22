@@ -100,8 +100,7 @@ public class BasicDownloadActivity extends AppCompatActivity {
         Picasso.with(this).load(image).into(mImg);
         mAction.setText("开始");
 
-        rxDownload = RxDownload.getInstance(this)
-                .maxThread(3);
+        rxDownload = RxDownload.getInstance(this);
         downloadController = new DownloadController(mStatus, mAction);
         downloadController.setState(new DownloadController.Normal());
     }

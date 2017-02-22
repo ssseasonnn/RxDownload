@@ -55,8 +55,7 @@ public class AppInfoViewHolder extends AbstractViewHolder<AppInfoBean> {
         ButterKnife.bind(this, itemView);
         mContext = parent.getContext();
 
-        mRxDownload = RxDownload.getInstance(mContext)
-                .maxDownloadNumber(2);//最大下载数量
+        mRxDownload = RxDownload.getInstance(mContext);
 
 
         mDownloadController = new DownloadController(new TextView(mContext), mAction);

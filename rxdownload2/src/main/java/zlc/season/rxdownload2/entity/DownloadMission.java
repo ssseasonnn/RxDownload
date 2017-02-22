@@ -16,6 +16,7 @@ import static zlc.season.rxdownload2.function.Constant.TRY_TO_ACQUIRE_SEMAPHORE;
 import static zlc.season.rxdownload2.function.DownloadEventFactory.completed;
 import static zlc.season.rxdownload2.function.DownloadEventFactory.failed;
 import static zlc.season.rxdownload2.function.DownloadEventFactory.started;
+import static zlc.season.rxdownload2.function.Utils.dispose;
 import static zlc.season.rxdownload2.function.Utils.formatStr;
 import static zlc.season.rxdownload2.function.Utils.log;
 
@@ -60,12 +61,9 @@ public class DownloadMission {
     }
 
     public void start(final Semaphore semaphore, final FlowableProcessor<DownloadEvent> processor) {
-
-        if (canceled) return;
-
         disposable = rxdownload.download(bean)
                 .subscribeOn(Schedulers.io())
-                .doOnSubscribe(new Consumer<Disposable>() {
+                .doOnLifecycle(new Consumer<Disposable>() {
                     @Override
                     public void accept(Disposable disposable) throws Exception {
                         log(TRY_TO_ACQUIRE_SEMAPHORE);
@@ -73,12 +71,19 @@ public class DownloadMission {
                         log(ACQUIRE_SUCCESS);
                         log(formatStr(ACQUIRE_SURPLUS_SEMAPHORE, semaphore.availablePermits()));
                     }
-                })
-                .doFinally(new Action() {
+                }, new Action() {
                     @Override
                     public void run() throws Exception {
+                        log(formatStr(RELEASE_SURPLUS_SEMAPHORE, semaphore.availablePermits() + 1));
                         semaphore.release();
-                        log(formatStr(RELEASE_SURPLUS_SEMAPHORE, semaphore.availablePermits()));
+                    }
+                })
+                .doOnSubscribe(new Consumer<Disposable>() {
+                    @Override
+                    public void accept(Disposable disposable) throws Exception {
+                        if (canceled) {
+                            dispose(disposable);
+                        }
                     }
                 })
                 .subscribe(new Consumer<DownloadStatus>() {

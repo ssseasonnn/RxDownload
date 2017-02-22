@@ -9,6 +9,8 @@ import zlc.season.rxdownload2.entity.DownloadBean;
 import zlc.season.rxdownload2.entity.DownloadRecord;
 import zlc.season.rxdownload2.entity.DownloadStatus;
 
+import static zlc.season.rxdownload2.function.Utils.empty;
+
 
 /**
  * Author: Season(ssseasonnn@gmail.com)
@@ -37,6 +39,7 @@ class Db {
         static final String COLUMN_EXTRA4 = "extra4";
         static final String COLUMN_EXTRA5 = "extra5";
         static final String COLUMN_DATE = "date";
+        static final String COLUMN_GROUP = "group";
 
         static final String CREATE =
                 "CREATE TABLE " + TABLE_NAME + " (" +
@@ -53,10 +56,11 @@ class Db {
                         COLUMN_EXTRA3 + " TEXT," +
                         COLUMN_EXTRA4 + " TEXT," +
                         COLUMN_EXTRA5 + " TEXT," +
-                        COLUMN_DATE + " INTEGER NOT NULL " +
+                        COLUMN_DATE + " INTEGER NOT NULL, " +
+                        COLUMN_GROUP + " TEXT " +
                         " )";
 
-        static ContentValues insert(DownloadBean bean, int flag) {
+        static ContentValues insert(DownloadBean bean, int flag, String group) {
             ContentValues values = new ContentValues();
             values.put(COLUMN_URL, bean.getUrl());
             values.put(COLUMN_SAVE_NAME, bean.getSaveName());
@@ -68,6 +72,9 @@ class Db {
             values.put(COLUMN_EXTRA4, bean.getExtra4());
             values.put(COLUMN_EXTRA5, bean.getExtra5());
             values.put(COLUMN_DATE, new Date().getTime());
+            if (!empty(group)) {
+                values.put(COLUMN_GROUP, group);
+            }
             return values;
         }
 

@@ -85,8 +85,22 @@ public class DataBaseHelper {
         }
     }
 
-    public long insertRecord(DownloadBean downloadBean, int flag) {
-        return getWritableDatabase().insert(TABLE_NAME, null, insert(downloadBean, flag));
+    public boolean recordNotExists(String url, String group) {
+        Cursor cursor = null;
+        try {
+            cursor = getReadableDatabase().query(TABLE_NAME, new String[]{COLUMN_ID}, "url=? and group=?",
+                    new String[]{url, group}, null, null, null);
+            cursor.moveToFirst();
+            return cursor.getCount() == 0;
+        } finally {
+            if (cursor != null) {
+                cursor.close();
+            }
+        }
+    }
+
+    public long insertRecord(DownloadBean downloadBean, int flag, String group) {
+        return getWritableDatabase().insert(TABLE_NAME, null, insert(downloadBean, flag, group));
     }
 
     public long updateStatus(String url, DownloadStatus status) {

@@ -23,7 +23,6 @@ import io.reactivex.processors.FlowableProcessor;
 import io.reactivex.schedulers.Schedulers;
 import zlc.season.rxdownload2.db.DataBaseHelper;
 import zlc.season.rxdownload2.entity.DownloadEvent;
-import zlc.season.rxdownload2.entity.DownloadFlag;
 import zlc.season.rxdownload2.entity.DownloadMission;
 import zlc.season.rxdownload2.entity.DownloadRecord;
 import zlc.season.rxdownload2.entity.DownloadStatus;
@@ -85,10 +84,7 @@ public class DownloadService extends Service {
     public void onDestroy() {
         super.onDestroy();
         log("destroy Download Service");
-        dispose(disposable);
-        for (String each : missionMap.keySet()) {
-            pauseDownload(each);
-        }
+        pauseAll();
         dataBaseHelper.closeDataBase();
     }
 
@@ -141,18 +137,14 @@ public class DownloadService extends Service {
      * @throws InterruptedException
      */
     public void addDownloadMission(DownloadMission mission) throws InterruptedException {
-        if (missionMap.containsKey(mission.getUrl())) {
-            throw new IllegalArgumentException(formatStr(DOWNLOAD_URL_EXISTS, mission.getUrl()));
+        if (missionMap.containsKey(mission.getKey())) {
+            throw new IllegalArgumentException(formatStr(DOWNLOAD_URL_EXISTS, mission.getKey()));
         }
-        missionMap.put(mission.getUrl(), mission);
+        missionMap.put(mission.getKey(), mission);
 
-        if (dataBaseHelper.recordNotExists(mission.getUrl())) {
-            dataBaseHelper.insertRecord(mission.getBean(), DownloadFlag.WAITING);
-        } else {
-            dataBaseHelper.updateFlag(mission.getUrl(), DownloadFlag.WAITING);
-        }
+        mission.insertOrUpdate(dataBaseHelper);
 
-        getProcessor(mission.getUrl()).onNext(waiting(dataBaseHelper.readStatus(mission.getUrl())));
+        getProcessor(mission.getKey()).onNext(waiting(dataBaseHelper.readStatus(mission.getKey())));
         downloadQueue.put(mission);
     }
 
@@ -222,18 +214,16 @@ public class DownloadService extends Service {
                 .subscribe(new Consumer<DownloadMission>() {
                     @Override
                     public void accept(DownloadMission mission) throws Exception {
-                        mission.start(semaphore, processorMap.get(mission.getUrl()));
+                        mission.start(semaphore, processorMap.get(mission.getKey()));
                     }
                 });
     }
 
     public void pauseAll() {
         dispose(disposable);
-
-    }
-
-    public void startAll() {
-
+        for (String each : missionMap.keySet()) {
+            pauseDownload(each);
+        }
     }
 
     public class DownloadBinder extends Binder {

@@ -260,7 +260,7 @@ public class TemporaryRecord {
 
     public void start() {
         if (dataBaseHelper.recordNotExists(bean.getUrl())) {
-            dataBaseHelper.insertRecord(bean, DownloadFlag.STARTED);
+            dataBaseHelper.insertRecord(bean, DownloadFlag.STARTED, null);
         } else {
             dataBaseHelper.updateRecord(bean.getUrl(), bean.getSaveName(), bean.getSavePath(), DownloadFlag.STARTED);
         }

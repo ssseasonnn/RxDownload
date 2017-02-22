@@ -27,7 +27,7 @@ import io.reactivex.schedulers.Schedulers;
 import retrofit2.Retrofit;
 import zlc.season.rxdownload2.entity.DownloadBean;
 import zlc.season.rxdownload2.entity.DownloadEvent;
-import zlc.season.rxdownload2.entity.DownloadMission;
+import zlc.season.rxdownload2.entity.DownloadMission.SingleMission;
 import zlc.season.rxdownload2.entity.DownloadRecord;
 import zlc.season.rxdownload2.entity.DownloadStatus;
 import zlc.season.rxdownload2.function.DownloadHelper;
@@ -212,7 +212,7 @@ public class RxDownload {
         return downloadHelper.readRecord(url);
     }
 
-    public Observable<?> startAll() {
+    public Observable<?> startAll(List<String> urls) {
         return createGeneralObservable(new GeneralObservableCallback() {
             @Override
             public void call() throws Exception {
@@ -424,7 +424,7 @@ public class RxDownload {
         return createGeneralObservable(new GeneralObservableCallback() {
             @Override
             public void call() throws InterruptedException {
-                downloadService.addDownloadMission(new DownloadMission(bean, RxDownload.this));
+                downloadService.addDownloadMission(new SingleMission(bean, RxDownload.this));
             }
         });
     }

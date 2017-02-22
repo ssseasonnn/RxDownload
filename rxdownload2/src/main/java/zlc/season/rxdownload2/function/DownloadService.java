@@ -27,12 +27,15 @@ import zlc.season.rxdownload2.entity.DownloadMission;
 import zlc.season.rxdownload2.entity.DownloadRecord;
 import zlc.season.rxdownload2.entity.DownloadStatus;
 
+import static zlc.season.rxdownload2.function.Constant.DOWNLOAD_URL_EXISTS;
+import static zlc.season.rxdownload2.function.Constant.WAITING_FOR_MISSION_COME;
 import static zlc.season.rxdownload2.function.DownloadEventFactory.createEvent;
 import static zlc.season.rxdownload2.function.DownloadEventFactory.normal;
 import static zlc.season.rxdownload2.function.DownloadEventFactory.paused;
 import static zlc.season.rxdownload2.function.DownloadEventFactory.waiting;
 import static zlc.season.rxdownload2.function.Utils.deleteFiles;
 import static zlc.season.rxdownload2.function.Utils.dispose;
+import static zlc.season.rxdownload2.function.Utils.formatStr;
 import static zlc.season.rxdownload2.function.Utils.getFiles;
 import static zlc.season.rxdownload2.function.Utils.log;
 
@@ -81,10 +84,8 @@ public class DownloadService extends Service {
     public void onDestroy() {
         super.onDestroy();
         log("destroy Download Service");
-        dispose(disposable);
-        for (String each : missionMap.keySet()) {
-            pauseDownload(each);
-        }
+        pauseAll();
+        dataBaseHelper.closeDataBase();
     }
 
     @Nullable
@@ -93,6 +94,15 @@ public class DownloadService extends Service {
         log("bind Download Service");
         startDispatch();
         return mBinder;
+    }
+
+    private FlowableProcessor<DownloadEvent> getProcessor(String url) {
+        if (processorMap.get(url) == null) {
+            FlowableProcessor<DownloadEvent> processor =
+                    BehaviorProcessor.<DownloadEvent>create().toSerialized();
+            processorMap.put(url, processor);
+        }
+        return processorMap.get(url);
     }
 
     /**
@@ -120,15 +130,6 @@ public class DownloadService extends Service {
         return processor;
     }
 
-    public FlowableProcessor<DownloadEvent> getProcessor(String url) {
-        if (processorMap.get(url) == null) {
-            FlowableProcessor<DownloadEvent> processor =
-                    BehaviorProcessor.<DownloadEvent>create().toSerialized();
-            processorMap.put(url, processor);
-        }
-        return processorMap.get(url);
-    }
-
     /**
      * Add this mission into download queue.
      *
@@ -136,10 +137,17 @@ public class DownloadService extends Service {
      * @throws InterruptedException
      */
     public void addDownloadMission(DownloadMission mission) throws InterruptedException {
-        missionMap.put(mission.getUrl(), mission);
-        getProcessor(mission.getUrl()).onNext(waiting(dataBaseHelper.readStatus(mission.getUrl())));
+        if (missionMap.containsKey(mission.getKey())) {
+            throw new IllegalArgumentException(formatStr(DOWNLOAD_URL_EXISTS, mission.getKey()));
+        }
+        missionMap.put(mission.getKey(), mission);
+
+        mission.insertOrUpdate(dataBaseHelper);
+
+        getProcessor(mission.getKey()).onNext(waiting(dataBaseHelper.readStatus(mission.getKey())));
         downloadQueue.put(mission);
     }
+
 
     /**
      * pause download
@@ -147,16 +155,18 @@ public class DownloadService extends Service {
      * @param url url
      */
     public void pauseDownload(String url) {
-        DownloadMission mission = missionMap.get(url);
         DownloadStatus status;
-        if (mission == null) {
-            status = new DownloadStatus();
-        } else {
+        cancelMission(url);
+        status = dataBaseHelper.readStatus(url);
+        getProcessor(url).onNext(paused(status));
+    }
+
+    private void cancelMission(String url) {
+        DownloadMission mission = missionMap.get(url);
+        if (mission != null) {
             mission.markCanceled();
             dispose(mission.getDisposable());
-            status = mission.getStatus();
         }
-        getProcessor(url).onNext(paused(status));
     }
 
     /**
@@ -166,11 +176,7 @@ public class DownloadService extends Service {
      * @param deleteFile whether delete file
      */
     public void deleteDownload(String url, boolean deleteFile) {
-        DownloadMission mission = missionMap.get(url);
-        if (mission != null) {
-            mission.markCanceled();
-            dispose(mission.getDisposable());
-        }
+        cancelMission(url);
         getProcessor(url).onNext(normal(null));
 
         if (deleteFile) {
@@ -190,13 +196,14 @@ public class DownloadService extends Service {
                 .create(new ObservableOnSubscribe<DownloadMission>() {
                     @Override
                     public void subscribe(ObservableEmitter<DownloadMission> emitter) throws Exception {
+                        DownloadMission mission;
                         while (!emitter.isDisposed()) {
-                            DownloadMission mission;
                             try {
-                                log("before take");
+                                log(WAITING_FOR_MISSION_COME);
                                 mission = downloadQueue.take();
-                                log("take success");
+                                log(Constant.MISSION_COMING);
                             } catch (InterruptedException e) {
+                                log("Interrupt blocking queue.");
                                 continue;
                             }
                             emitter.onNext(mission);
@@ -207,13 +214,16 @@ public class DownloadService extends Service {
                 .subscribe(new Consumer<DownloadMission>() {
                     @Override
                     public void accept(DownloadMission mission) throws Exception {
-                        mission.start(semaphore, processorMap.get(mission.getUrl()));
+                        mission.start(semaphore, processorMap.get(mission.getKey()));
                     }
                 });
     }
 
     public void pauseAll() {
-
+        dispose(disposable);
+        for (String each : missionMap.keySet()) {
+            pauseDownload(each);
+        }
     }
 
     public class DownloadBinder extends Binder {

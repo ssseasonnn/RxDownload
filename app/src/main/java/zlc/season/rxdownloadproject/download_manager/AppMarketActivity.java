@@ -17,6 +17,8 @@ import butterknife.ButterKnife;
 import zlc.season.practicalrecyclerview.PracticalRecyclerView;
 import zlc.season.rxdownloadproject.R;
 
+import static zlc.season.rxdownload2.function.Utils.dispose;
+
 public class AppMarketActivity extends AppCompatActivity {
 
     @BindView(R.id.toolbar)
@@ -55,9 +57,15 @@ public class AppMarketActivity extends AppCompatActivity {
     }
 
     @Override
-    protected void onResume() {
-        super.onResume();
-//        loadData();
+    protected void onDestroy() {
+        super.onDestroy();
+        /**
+         * 一定要在销毁时取消进度接收，否则会内存泄露
+         */
+        List<AppInfoBean> list = mAdapter.getData();
+        for (AppInfoBean each : list) {
+            dispose(each.disposable);
+        }
     }
 
     private void loadData() {

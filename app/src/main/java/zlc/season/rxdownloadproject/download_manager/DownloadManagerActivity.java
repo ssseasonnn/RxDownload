@@ -16,6 +16,7 @@ import io.reactivex.functions.Function;
 import zlc.season.practicalrecyclerview.PracticalRecyclerView;
 import zlc.season.rxdownload2.RxDownload;
 import zlc.season.rxdownload2.entity.DownloadRecord;
+import zlc.season.rxdownload2.function.Utils;
 import zlc.season.rxdownloadproject.R;
 
 public class DownloadManagerActivity extends AppCompatActivity {
@@ -42,23 +43,32 @@ public class DownloadManagerActivity extends AppCompatActivity {
         loadData();
     }
 
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        List<DownloadItem> list = mAdapter.getData();
+        for (DownloadItem each : list) {
+            Utils.dispose(each.disposable);
+        }
+    }
+
     private void loadData() {
         RxDownload.getInstance(this).getTotalDownloadRecords()
-                .map(new Function<List<DownloadRecord>, List<DownloadBean>>() {
+                .map(new Function<List<DownloadRecord>, List<DownloadItem>>() {
                     @Override
-                    public List<DownloadBean> apply(List<DownloadRecord> downloadRecords) throws Exception {
-                        List<DownloadBean> result = new ArrayList<>();
+                    public List<DownloadItem> apply(List<DownloadRecord> downloadRecords) throws Exception {
+                        List<DownloadItem> result = new ArrayList<>();
                         for (DownloadRecord each : downloadRecords) {
-                            DownloadBean bean = new DownloadBean();
-                            bean.mRecord = each;
+                            DownloadItem bean = new DownloadItem();
+                            bean.record = each;
                             result.add(bean);
                         }
                         return result;
                     }
                 })
-                .subscribe(new Consumer<List<DownloadBean>>() {
+                .subscribe(new Consumer<List<DownloadItem>>() {
                     @Override
-                    public void accept(List<DownloadBean> downloadBeen) throws Exception {
+                    public void accept(List<DownloadItem> downloadBeen) throws Exception {
                         mAdapter.addAll(downloadBeen);
                     }
                 });

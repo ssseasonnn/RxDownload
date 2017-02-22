@@ -27,7 +27,7 @@ import io.reactivex.schedulers.Schedulers;
 import retrofit2.Retrofit;
 import zlc.season.rxdownload2.entity.DownloadBean;
 import zlc.season.rxdownload2.entity.DownloadEvent;
-import zlc.season.rxdownload2.entity.DownloadMission;
+import zlc.season.rxdownload2.entity.DownloadMission.SingleMission;
 import zlc.season.rxdownload2.entity.DownloadRecord;
 import zlc.season.rxdownload2.entity.DownloadStatus;
 import zlc.season.rxdownload2.function.DownloadHelper;
@@ -46,7 +46,6 @@ public class RxDownload {
     private static final Object object = new Object();
     @SuppressLint("StaticFieldLeak")
     private volatile static RxDownload instance;
-    private volatile static DownloadService downloadService;
     private volatile static boolean bound = false;
 
     static {
@@ -64,14 +63,18 @@ public class RxDownload {
         });
     }
 
+    private int maxDownloadNumber = 5;
+
     private Context context;
+    private Semaphore semaphore;
+
+    private DownloadService downloadService;
     private DownloadHelper downloadHelper;
-    private int MAX_DOWNLOAD_NUMBER = 5;
-    private Semaphore semaphore = new Semaphore(1);
 
     private RxDownload(Context context) {
         this.context = context.getApplicationContext();
         downloadHelper = new DownloadHelper(context);
+        semaphore = new Semaphore(1);
     }
 
     /**
@@ -165,7 +168,7 @@ public class RxDownload {
      * @return instance
      */
     public RxDownload maxDownloadNumber(int max) {
-        this.MAX_DOWNLOAD_NUMBER = max;
+        this.maxDownloadNumber = max;
         return this;
     }
 
@@ -207,6 +210,15 @@ public class RxDownload {
      */
     public Observable<DownloadRecord> getDownloadRecord(String url) {
         return downloadHelper.readRecord(url);
+    }
+
+    public Observable<?> startAll(List<String> urls) {
+        return createGeneralObservable(new GeneralObservableCallback() {
+            @Override
+            public void call() throws Exception {
+                downloadService.startAll();
+            }
+        });
     }
 
     /**
@@ -412,7 +424,7 @@ public class RxDownload {
         return createGeneralObservable(new GeneralObservableCallback() {
             @Override
             public void call() throws InterruptedException {
-                downloadService.addDownloadMission(new DownloadMission(bean, RxDownload.this));
+                downloadService.addDownloadMission(new SingleMission(bean, RxDownload.this));
             }
         });
     }
@@ -493,13 +505,13 @@ public class RxDownload {
                         startBindServiceAndDo(new ServiceConnectedCallback() {
                             @Override
                             public void call() {
-                                semaphore.release();
                                 doCall(callback, emitter);
+                                semaphore.release();
                             }
                         });
                     } else {
-                        semaphore.release();
                         doCall(callback, emitter);
+                        semaphore.release();
                     }
                 } else {
                     doCall(callback, emitter);
@@ -527,7 +539,7 @@ public class RxDownload {
      */
     private void startBindServiceAndDo(final ServiceConnectedCallback callback) {
         Intent intent = new Intent(context, DownloadService.class);
-        intent.putExtra(DownloadService.INTENT_KEY, MAX_DOWNLOAD_NUMBER);
+        intent.putExtra(DownloadService.INTENT_KEY, maxDownloadNumber);
         context.startService(intent);
         context.bindService(intent, new ServiceConnection() {
             @Override

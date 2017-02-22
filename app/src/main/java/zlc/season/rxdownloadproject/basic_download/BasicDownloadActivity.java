@@ -1,6 +1,5 @@
 package zlc.season.rxdownloadproject.basic_download;
 
-import android.Manifest;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
@@ -11,6 +10,7 @@ import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.squareup.picasso.Picasso;
 import com.tbruyelle.rxpermissions2.RxPermissions;
@@ -26,14 +26,12 @@ import io.reactivex.disposables.Disposable;
 import io.reactivex.functions.Consumer;
 import io.reactivex.schedulers.Schedulers;
 import zlc.season.rxdownload2.RxDownload;
-import zlc.season.rxdownload2.entity.DownloadBean;
 import zlc.season.rxdownload2.entity.DownloadStatus;
-import zlc.season.rxdownload2.function.Utils;
 import zlc.season.rxdownloadproject.DownloadController;
 import zlc.season.rxdownloadproject.R;
 
-import static android.os.Environment.DIRECTORY_DOWNLOADS;
-import static android.os.Environment.getExternalStoragePublicDirectory;
+import static android.Manifest.permission.WRITE_EXTERNAL_STORAGE;
+import static zlc.season.rxdownload2.function.Utils.dispose;
 
 public class BasicDownloadActivity extends AppCompatActivity {
 
@@ -54,19 +52,18 @@ public class BasicDownloadActivity extends AppCompatActivity {
     @BindView(R.id.finish)
     Button mFinish;
 
-    private String defaultPath = getExternalStoragePublicDirectory(DIRECTORY_DOWNLOADS).getPath();
-//    private String url = "http://dldir1.qq.com/weixin/android/weixin6330android920.apk";
-    private String url = "http://downali.game.uc.cn/s/1/9/20170103112151d02a45_MY-1.110.0_uc_platform2.apk";
+    private String url = "http://dldir1.qq.com/weixin/android/weixin6330android920.apk";
     private String image = "http://static.yingyonghui.com/icon/128/4200197.png";
-    private Disposable mDisposable;
-    private RxDownload mRxDownload;
-    private DownloadController mDownloadController;
+
+    private Disposable disposable;
+    private RxDownload rxDownload;
+    private DownloadController downloadController;
 
     @OnClick({R.id.action, R.id.finish})
     public void onClick(View view) {
         switch (view.getId()) {
             case R.id.action:
-                mDownloadController.handleClick(new DownloadController.Callback() {
+                downloadController.handleClick(new DownloadController.Callback() {
                     @Override
                     public void startDownload() {
                         start();
@@ -75,10 +72,6 @@ public class BasicDownloadActivity extends AppCompatActivity {
                     @Override
                     public void pauseDownload() {
                         pause();
-                    }
-
-                    @Override
-                    public void cancelDownload() {
                     }
 
                     @Override
@@ -103,21 +96,21 @@ public class BasicDownloadActivity extends AppCompatActivity {
         Picasso.with(this).load(image).into(mImg);
         mAction.setText("开始");
 
-        mRxDownload = RxDownload.getInstance(this)
-                .maxThread(3);
-        mDownloadController = new DownloadController(mStatus, mAction);
-        mDownloadController.setState(new DownloadController.Normal());
+        rxDownload = RxDownload.getInstance(this);
+
+        downloadController = new DownloadController(mStatus, mAction);
+        downloadController.setState(new DownloadController.Normal());
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        Utils.dispose(mDisposable);
+        dispose(disposable);
     }
 
     private void start() {
         RxPermissions.getInstance(this)
-                .request(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                .request(WRITE_EXTERNAL_STORAGE)
                 .doOnNext(new Consumer<Boolean>() {
                     @Override
                     public void accept(Boolean aBoolean) throws Exception {
@@ -127,13 +120,13 @@ public class BasicDownloadActivity extends AppCompatActivity {
                     }
                 })
                 .observeOn(Schedulers.io())
-                .compose(mRxDownload.<Boolean>transform(new DownloadBean.Builder(url).setExtra1(image).setExtra2("微信").build()))
+                .compose(rxDownload.<Boolean>transform(url))
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(new Observer<DownloadStatus>() {
                     @Override
                     public void onSubscribe(Disposable d) {
-                        mDisposable = d;
-                        mDownloadController.setState(new DownloadController.Started());
+                        disposable = d;
+                        downloadController.setState(new DownloadController.Started());
                     }
 
                     @Override
@@ -147,26 +140,31 @@ public class BasicDownloadActivity extends AppCompatActivity {
 
                     @Override
                     public void onError(Throwable e) {
-                        mDownloadController.setState(new DownloadController.Paused());
+                        downloadController.setState(new DownloadController.Paused());
                     }
 
                     @Override
                     public void onComplete() {
-                        mDownloadController.setState(new DownloadController.Completed());
+                        downloadController.setState(new DownloadController.Completed());
                     }
                 });
     }
 
     private void pause() {
-        mDownloadController.setState(new DownloadController.Paused());
-        Utils.dispose(mDisposable);
+        downloadController.setState(new DownloadController.Paused());
+        dispose(disposable);
     }
 
     private void installApk() {
-        Uri uri = Uri.fromFile(new File(defaultPath + File.separator + ""));
-        Intent intent = new Intent(Intent.ACTION_VIEW);
-        intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-        intent.setDataAndType(uri, "application/vnd.android.package-archive");
-        startActivity(intent);
+        File[] files = rxDownload.getRealFiles(url);
+        if (files != null) {
+            Uri uri = Uri.fromFile(files[0]);
+            Intent intent = new Intent(Intent.ACTION_VIEW);
+            intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            intent.setDataAndType(uri, "application/vnd.android.package-archive");
+            startActivity(intent);
+        } else {
+            Toast.makeText(this, "File not exists", Toast.LENGTH_SHORT).show();
+        }
     }
 }

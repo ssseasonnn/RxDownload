@@ -85,8 +85,22 @@ public class DataBaseHelper {
         }
     }
 
-    public long insertRecord(DownloadBean downloadBean, int flag) {
-        return getWritableDatabase().insert(TABLE_NAME, null, insert(downloadBean, flag));
+    public boolean recordNotExists(String url, String group) {
+        Cursor cursor = null;
+        try {
+            cursor = getReadableDatabase().query(TABLE_NAME, new String[]{COLUMN_ID}, "url=? and group=?",
+                    new String[]{url, group}, null, null, null);
+            cursor.moveToFirst();
+            return cursor.getCount() == 0;
+        } finally {
+            if (cursor != null) {
+                cursor.close();
+            }
+        }
+    }
+
+    public long insertRecord(DownloadBean downloadBean, int flag, String group) {
+        return getWritableDatabase().insert(TABLE_NAME, null, insert(downloadBean, flag, group));
     }
 
     public long updateStatus(String url, DownloadStatus status) {
@@ -95,6 +109,10 @@ public class DataBaseHelper {
 
     public long updateFlag(String url, int flag) {
         return getWritableDatabase().update(TABLE_NAME, update(flag), "url=?", new String[]{url});
+    }
+
+    public long updateRecord(String url, String saveName, String savePath, int flag) {
+        return getWritableDatabase().update(TABLE_NAME, update(saveName, savePath, flag), "url=?", new String[]{url});
     }
 
     public int deleteRecord(String url) {
@@ -184,10 +202,11 @@ public class DataBaseHelper {
                                     null, null, null, null, null);
                             List<DownloadRecord> result = new ArrayList<>();
                             cursor.moveToFirst();
-                            do {
-                                result.add(read(cursor));
-                            } while (cursor.moveToNext());
-
+                            if (cursor.getCount() > 0) {
+                                do {
+                                    result.add(read(cursor));
+                                } while (cursor.moveToNext());
+                            }
                             emitter.onNext(result);
                             emitter.onComplete();
                         } finally {

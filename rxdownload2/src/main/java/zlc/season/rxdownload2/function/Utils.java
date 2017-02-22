@@ -57,10 +57,17 @@ import static zlc.season.rxdownload2.function.Constant.TMP_SUFFIX;
  * 工具类
  */
 public class Utils {
+    private static boolean DEBUG = false;
+
+    public static void setDebug(boolean flag) {
+        DEBUG = flag;
+    }
 
     public static void log(String message) {
         if (empty(message)) return;
-        Log.i(TAG, message);
+        if (DEBUG) {
+            Log.i(TAG, message);
+        }
     }
 
     public static void log(String message, Object... args) {

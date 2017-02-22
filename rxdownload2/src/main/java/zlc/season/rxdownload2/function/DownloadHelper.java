@@ -29,6 +29,8 @@ import static android.os.Environment.getExternalStoragePublicDirectory;
 import static zlc.season.rxdownload2.function.Constant.DOWNLOAD_URL_EXISTS;
 import static zlc.season.rxdownload2.function.Constant.REQUEST_RETRY_HINT;
 import static zlc.season.rxdownload2.function.Constant.TEST_RANGE_SUPPORT;
+import static zlc.season.rxdownload2.function.Constant.URL_ILLEGAL;
+import static zlc.season.rxdownload2.function.Utils.formatStr;
 import static zlc.season.rxdownload2.function.Utils.log;
 import static zlc.season.rxdownload2.function.Utils.retry;
 
@@ -154,7 +156,7 @@ public class DownloadHelper {
      */
     private void addTempRecord(DownloadBean bean) {
         if (recordTable.contain(bean.getUrl())) {
-            throw new RuntimeException(DOWNLOAD_URL_EXISTS);
+            throw new IllegalArgumentException(formatStr(DOWNLOAD_URL_EXISTS, bean.getUrl()));
         }
         recordTable.add(bean.getUrl(), new TemporaryRecord(bean));
     }
@@ -253,7 +255,7 @@ public class DownloadHelper {
                     @Override
                     public void accept(Response<Void> response) throws Exception {
                         if (!response.isSuccessful()) {
-                            throw new IllegalArgumentException("url is illegal");
+                            throw new IllegalArgumentException(formatStr(URL_ILLEGAL, url));
                         } else {
                             recordTable.saveFileInfo(url, response);
                         }

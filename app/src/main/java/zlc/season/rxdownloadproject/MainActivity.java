@@ -12,6 +12,8 @@ import android.widget.LinearLayout;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
+import zlc.season.rxdownload2.RxDownload;
+import zlc.season.rxdownload2.function.Utils;
 import zlc.season.rxdownloadproject.basic_download.BasicDownloadActivity;
 import zlc.season.rxdownloadproject.download_manager.AppMarketActivity;
 import zlc.season.rxdownloadproject.service_download.ServiceDownloadActivity;
@@ -50,6 +52,10 @@ public class MainActivity extends AppCompatActivity {
         ButterKnife.bind(this);
         setSupportActionBar(mToolbar);
 
+        Utils.setDebug(true);
+        RxDownload.getInstance(this)
+                .maxDownloadNumber(2)
+                .maxThread(3);
     }
 
 }

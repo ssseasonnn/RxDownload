@@ -7,6 +7,7 @@ import android.os.IBinder;
 import android.support.annotation.Nullable;
 
 import java.io.File;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
@@ -23,12 +24,15 @@ import io.reactivex.processors.FlowableProcessor;
 import io.reactivex.schedulers.Schedulers;
 import zlc.season.rxdownload2.db.DataBaseHelper;
 import zlc.season.rxdownload2.entity.DownloadEvent;
+import zlc.season.rxdownload2.entity.DownloadFlag;
 import zlc.season.rxdownload2.entity.DownloadMission;
 import zlc.season.rxdownload2.entity.DownloadRecord;
 
 import static zlc.season.rxdownload2.function.Constant.DOWNLOAD_URL_EXISTS;
 import static zlc.season.rxdownload2.function.Constant.WAITING_FOR_MISSION_COME;
+import static zlc.season.rxdownload2.function.DownloadEventFactory.completed;
 import static zlc.season.rxdownload2.function.DownloadEventFactory.createEvent;
+import static zlc.season.rxdownload2.function.DownloadEventFactory.failed;
 import static zlc.season.rxdownload2.function.DownloadEventFactory.normal;
 import static zlc.season.rxdownload2.function.DownloadEventFactory.paused;
 import static zlc.season.rxdownload2.function.Utils.deleteFiles;
@@ -94,17 +98,17 @@ public class DownloadService extends Service {
         return mBinder;
     }
 
-    private FlowableProcessor<DownloadEvent> createProcessor(String url) {
-        if (processorMap.get(url) == null) {
+    private FlowableProcessor<DownloadEvent> createProcessor(String missionId) {
+        if (processorMap.get(missionId) == null) {
             FlowableProcessor<DownloadEvent> processor =
                     BehaviorProcessor.<DownloadEvent>create().toSerialized();
-            processorMap.put(url, processor);
+            processorMap.put(missionId, processor);
         }
-        return processorMap.get(url);
+        return processorMap.get(missionId);
     }
 
     /**
-     * receive download event.
+     * receive download event for single url.
      *
      * @param url url
      * @return DownloadEvent
@@ -129,35 +133,66 @@ public class DownloadService extends Service {
     }
 
     /**
+     * receive download event for multi mission.
+     *
+     * @param missionId missionId
+     * @return DownloadEvent
+     */
+    public FlowableProcessor<DownloadEvent> receiveMissionsEvent(String missionId) {
+        FlowableProcessor<DownloadEvent> processor = createProcessor(missionId);
+        DownloadMission mission = missionMap.get(missionId);
+        if (mission == null) {  //Not yet add this url mission.
+            List<DownloadRecord> records = dataBaseHelper.readMissionsRecord(missionId);
+            if (records.size() == 0) {
+                processor.onNext(normal(null));
+            } else {
+                int failed = 0;
+                for (DownloadRecord each : records) {
+                    if (each.getFlag() == DownloadFlag.FAILED ||
+                            !getFiles(each.getSaveName(), each.getSavePath())[0].exists()) {
+                        failed++;
+                        break;
+                    }
+                }
+                if (failed > 0) {
+                    processor.onNext(failed(null, new Throwable("download failed")));
+                } else {
+                    processor.onNext(completed(null));
+                }
+            }
+        }
+        return processor;
+    }
+
+    /**
      * Add this mission into download queue.
      *
      * @param mission mission
      * @throws InterruptedException
      */
     public void addDownloadMission(DownloadMission mission) throws InterruptedException {
-        if (missionMap.containsKey(mission.getKey())) {
-            throw new IllegalArgumentException(formatStr(DOWNLOAD_URL_EXISTS, mission.getKey()));
+        if (missionMap.containsKey(mission.getMissionId())) {
+            throw new IllegalArgumentException(formatStr(DOWNLOAD_URL_EXISTS, mission.getMissionId()));
         }
-        missionMap.put(mission.getKey(), mission);
+        missionMap.put(mission.getMissionId(), mission);
         mission.insertOrUpdate(dataBaseHelper);
 
-        createProcessor(mission.getKey()).onNext(mission.createWaitingEvent(dataBaseHelper));
+        createProcessor(mission.getMissionId()).onNext(mission.createWaitingEvent(dataBaseHelper));
         downloadQueue.put(mission);
     }
-
 
     /**
      * pause download
      *
-     * @param url url
+     * @param missionId missionId
      */
-    public void pauseDownload(String url) {
-        cancelMission(url);
-        createProcessor(url).onNext(paused(dataBaseHelper.readStatus(url)));
+    public void pauseDownload(String missionId) {
+        cancelMission(missionId);
+        createProcessor(missionId).onNext(paused(dataBaseHelper.readStatus(missionId)));
     }
 
-    private void cancelMission(String url) {
-        DownloadMission mission = missionMap.get(url);
+    private void cancelMission(String missionId) {
+        DownloadMission mission = missionMap.get(missionId);
         if (mission != null) {
             mission.cancel();
         }
@@ -166,20 +201,28 @@ public class DownloadService extends Service {
     /**
      * delete download
      *
-     * @param url        url
+     * @param missionId  missionId
      * @param deleteFile whether delete file
      */
-    public void deleteDownload(String url, boolean deleteFile) {
-        cancelMission(url);
-        createProcessor(url).onNext(normal(null));
+    public void deleteDownload(String missionId, boolean deleteFile) {
+        cancelMission(missionId);
+        createProcessor(missionId).onNext(normal(null));
 
         if (deleteFile) {
-            DownloadRecord record = dataBaseHelper.readSingleRecord(url);
+            DownloadRecord record = dataBaseHelper.readSingleRecord(missionId);
             if (record != null) {
                 deleteFiles(getFiles(record.getSaveName(), record.getSavePath()));
             }
         }
-        dataBaseHelper.deleteRecord(url);
+
+        deleteMission(missionId);
+    }
+
+    private void deleteMission(String missionId) {
+        DownloadMission mission = missionMap.get(missionId);
+        if (mission != null) {
+            mission.delete(dataBaseHelper);
+        }
     }
 
     /**

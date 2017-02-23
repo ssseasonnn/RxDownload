@@ -162,6 +162,36 @@ public class DataBaseHelper {
     }
 
     /**
+     * Read missionId all records.
+     *
+     * @param missionId missionId
+     * @return Records
+     */
+    public List<DownloadRecord> readMissionsRecord(String missionId) {
+        Cursor cursor = null;
+        try {
+            cursor = getReadableDatabase().query(TABLE_NAME,
+                    new String[]{COLUMN_ID, COLUMN_URL, COLUMN_SAVE_NAME, COLUMN_SAVE_PATH,
+                            COLUMN_DOWNLOAD_SIZE, COLUMN_TOTAL_SIZE, COLUMN_IS_CHUNKED,
+                            COLUMN_EXTRA1, COLUMN_EXTRA2, COLUMN_EXTRA3, COLUMN_EXTRA4,
+                            COLUMN_EXTRA5, COLUMN_DOWNLOAD_FLAG, COLUMN_DATE},
+                    COLUMN_MISSION_ID + "=?", new String[]{missionId}, null, null, null);
+            List<DownloadRecord> result = new ArrayList<>();
+            cursor.moveToFirst();
+            if (cursor.getCount() > 0) {
+                do {
+                    result.add(read(cursor));
+                } while (cursor.moveToNext());
+            }
+            return result;
+        } finally {
+            if (cursor != null) {
+                cursor.close();
+            }
+        }
+    }
+
+    /**
      * Read the url's download status.
      *
      * @param url url

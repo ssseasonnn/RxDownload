@@ -11,6 +11,8 @@ import android.support.annotation.Nullable;
 import java.io.File;
 import java.io.InterruptedIOException;
 import java.net.SocketException;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Semaphore;
 
@@ -183,11 +185,29 @@ public class RxDownload {
      */
     public Observable<DownloadEvent> receiveDownloadStatus(final String url) {
         return createGeneralObservable(null)
-                .flatMap(new Function<Object,
-                        ObservableSource<DownloadEvent>>() {
+                .flatMap(new Function<Object, ObservableSource<DownloadEvent>>() {
                     @Override
                     public ObservableSource<DownloadEvent> apply(Object o) throws Exception {
                         return downloadService.receiveDownloadEvent(url).toObservable();
+                    }
+                })
+                .observeOn(AndroidSchedulers.mainThread());
+    }
+
+    /**
+     * Receive the download address for the url download event and download status.
+     * <p>
+     * You can receive anywhere, whether this url start download or not.
+     *
+     * @param missionId download url
+     * @return Observable<DownloadStatus>
+     */
+    public Observable<DownloadEvent> receiveMissionsEvent(final String missionId) {
+        return createGeneralObservable(null)
+                .flatMap(new Function<Object, ObservableSource<DownloadEvent>>() {
+                    @Override
+                    public ObservableSource<DownloadEvent> apply(Object o) throws Exception {
+                        return downloadService.receiveMissionsEvent(missionId).toObservable();
                     }
                 })
                 .observeOn(AndroidSchedulers.mainThread());
@@ -367,7 +387,7 @@ public class RxDownload {
      * @return Observable<DownloadStatus>
      */
     public Observable<?> serviceDownload(String url) {
-        return serviceDownload(url, null);
+        return serviceDownload(url, "");
     }
 
     /**
@@ -409,17 +429,63 @@ public class RxDownload {
         });
     }
 
+
     /**
      * Using Service to download.
+     * <p>
+     * Un subscribe will not pause download.
+     * <p>
+     * If you want receive download status, see {@link #receiveDownloadStatus(String)}
+     * <p>
+     * If you want pause download, see {@link #pauseServiceDownload(String)}
+     * <p>
+     * Also save the download records in the database, if you want get record from database,
+     * see  {@link #getDownloadRecord(String)}
+     *
+     * @param urls urls
+     * @return Observable<DownloadStatus>
+     */
+    public Observable<?> serviceDownload(String missionId, String... urls) {
+        return serviceDownload(missionId, Arrays.asList(urls));
+    }
+
+    /**
+     * Using Service to download.
+     * <p>
+     * Un subscribe will not pause download.
+     * <p>
+     * If you want receive download status, see {@link #receiveDownloadStatus(String)}
+     * <p>
+     * If you want pause download, see {@link #pauseServiceDownload(String)}
+     * <p>
+     * Also save the download records in the database, if you want get record from database,
+     * see  {@link #getDownloadRecord(String)}
+     *
+     * @param urls List urls
+     * @return Observable<DownloadStatus>
+     */
+    public Observable<?> serviceDownload(String missionId, List<String> urls) {
+        List<DownloadBean> list = new ArrayList<>();
+        for (String each : urls) {
+            list.add(new DownloadBean.Builder(each).build());
+        }
+        return serviceDownload(list, missionId);
+    }
+
+
+    /**
+     * Using Service to download.
+     * <p>
+     * MultiMission.
      *
      * @param beans download beans
      * @return Observable<DownloadStatus>
      */
-    public Observable<?> serviceDownload(final List<DownloadBean> beans, final String key) {
+    public Observable<?> serviceDownload(final List<DownloadBean> beans, final String missionId) {
         return createGeneralObservable(new GeneralObservableCallback() {
             @Override
             public void call() throws InterruptedException {
-                downloadService.addDownloadMission(new MultiMission(RxDownload.this, beans, key));
+                downloadService.addDownloadMission(new MultiMission(RxDownload.this, beans, missionId));
             }
         });
     }

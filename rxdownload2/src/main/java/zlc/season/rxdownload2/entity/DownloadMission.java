@@ -17,15 +17,12 @@ import zlc.season.rxdownload2.db.DataBaseHelper;
 
 import static zlc.season.rxdownload2.entity.DownloadFlag.WAITING;
 import static zlc.season.rxdownload2.function.Constant.ACQUIRE_SUCCESS;
-import static zlc.season.rxdownload2.function.Constant.ACQUIRE_SURPLUS_SEMAPHORE;
-import static zlc.season.rxdownload2.function.Constant.RELEASE_SURPLUS_SEMAPHORE;
 import static zlc.season.rxdownload2.function.Constant.TRY_TO_ACQUIRE_SEMAPHORE;
 import static zlc.season.rxdownload2.function.DownloadEventFactory.completed;
 import static zlc.season.rxdownload2.function.DownloadEventFactory.failed;
 import static zlc.season.rxdownload2.function.DownloadEventFactory.started;
 import static zlc.season.rxdownload2.function.DownloadEventFactory.waiting;
 import static zlc.season.rxdownload2.function.Utils.dispose;
-import static zlc.season.rxdownload2.function.Utils.formatStr;
 import static zlc.season.rxdownload2.function.Utils.log;
 
 /**
@@ -46,25 +43,27 @@ public abstract class DownloadMission {
         canceled = true;
     }
 
-    public abstract String getKey();
+    public abstract String getMissionId();
 
-    protected FlowableProcessor<DownloadEvent> getProcessor(Map<String, FlowableProcessor<DownloadEvent>> processorMap, String key) {
-        if (processorMap.get(key) == null) {
+    protected FlowableProcessor<DownloadEvent> getProcessor(Map<String,
+            FlowableProcessor<DownloadEvent>> processorMap, String missionId) {
+        if (processorMap.get(missionId) == null) {
             FlowableProcessor<DownloadEvent> processor =
                     BehaviorProcessor.<DownloadEvent>create().toSerialized();
-            processorMap.put(key, processor);
+            processorMap.put(missionId, processor);
         }
-        return processorMap.get(key);
+        return processorMap.get(missionId);
     }
 
     public abstract void insertOrUpdate(DataBaseHelper dataBaseHelper);
 
-    public abstract void start(final Semaphore semaphore,
-                               final Map<String, FlowableProcessor<DownloadEvent>> processorMap);
+    public abstract void start(final Semaphore semaphore, final Map<String,
+            FlowableProcessor<DownloadEvent>> processorMap);
 
     public abstract DownloadEvent createWaitingEvent(DataBaseHelper dataBaseHelper);
 
-    public Disposable start(DownloadBean bean, final Semaphore semaphore, final DownloadCallback callback) {
+    public Disposable start(DownloadBean bean, final Semaphore semaphore,
+                            final DownloadCallback callback) {
 
         return rxdownload.download(bean)
                 .subscribeOn(Schedulers.io())
@@ -74,23 +73,16 @@ public abstract class DownloadMission {
                         log(TRY_TO_ACQUIRE_SEMAPHORE);
                         semaphore.acquire();
                         log(ACQUIRE_SUCCESS);
-                        log(formatStr(ACQUIRE_SURPLUS_SEMAPHORE, semaphore.availablePermits()));
-                    }
-                }, new Action() {
-                    @Override
-                    public void run() throws Exception {
-                        log(formatStr(RELEASE_SURPLUS_SEMAPHORE, semaphore.availablePermits() + 1));
-                        semaphore.release();
-                    }
-                })
-                .doOnSubscribe(new Consumer<Disposable>() {
-                    @Override
-                    public void accept(Disposable disposable) throws Exception {
                         if (canceled) {
                             dispose(disposable);
                         } else {
                             callback.start();
                         }
+                    }
+                }, new Action() {
+                    @Override
+                    public void run() throws Exception {
+                        semaphore.release();
                     }
                 })
                 .subscribe(new Consumer<DownloadStatus>() {
@@ -111,6 +103,11 @@ public abstract class DownloadMission {
                 });
     }
 
+    public abstract void delete(DataBaseHelper dataBaseHelper);
+
+    /**
+     * Mission download callback.
+     */
     interface DownloadCallback {
         void start();
 
@@ -121,6 +118,9 @@ public abstract class DownloadMission {
         void complete();
     }
 
+    /**
+     * SingleMission, only one url.
+     */
     public static class SingleMission extends DownloadMission {
         protected DownloadStatus status;
         protected Disposable disposable;
@@ -133,28 +133,38 @@ public abstract class DownloadMission {
         }
 
         @Override
+        public String getMissionId() {
+            return bean.getUrl();
+        }
+
+        @Override
+        public void insertOrUpdate(DataBaseHelper dataBaseHelper) {
+            if (dataBaseHelper.recordNotExists(getMissionId())) {
+                dataBaseHelper.insertRecord(bean, WAITING, null);
+            } else {
+                dataBaseHelper.updateFlag(getMissionId(), WAITING);
+            }
+        }
+
+        @Override
         public void cancel() {
             super.cancel();
             dispose(disposable);
         }
 
         @Override
-        public String getKey() {
-            return bean.getUrl();
+        public void delete(DataBaseHelper dataBaseHelper) {
+            dataBaseHelper.deleteRecord(getMissionId());
         }
 
         @Override
-        public void insertOrUpdate(DataBaseHelper dataBaseHelper) {
-            if (dataBaseHelper.recordNotExists(getKey())) {
-                dataBaseHelper.insertRecord(bean, WAITING, null);
-            } else {
-                dataBaseHelper.updateFlag(getKey(), WAITING);
-            }
+        public DownloadEvent createWaitingEvent(DataBaseHelper dataBaseHelper) {
+            return waiting(dataBaseHelper.readStatus(getMissionId()));
         }
 
         @Override
         public void start(final Semaphore semaphore, final Map<String, FlowableProcessor<DownloadEvent>> processorMap) {
-            processor = getProcessor(processorMap, getKey());
+            processor = getProcessor(processorMap, getMissionId());
             disposable = start(bean, semaphore, new DownloadCallback() {
                 @Override
                 public void start() {
@@ -178,14 +188,11 @@ public abstract class DownloadMission {
                 }
             });
         }
-
-        @Override
-        public DownloadEvent createWaitingEvent(DataBaseHelper dataBaseHelper) {
-            return waiting(dataBaseHelper.readStatus(getKey()));
-        }
     }
 
-
+    /**
+     * MultiMission, maybe many urls.
+     */
     public static class MultiMission extends DownloadMission {
         private AtomicInteger completed;
         private AtomicInteger failed;
@@ -194,12 +201,12 @@ public abstract class DownloadMission {
         private Map<DownloadBean, Disposable> disposableMap;
         private Map<DownloadBean, DownloadStatus> statusMap;
 
-        private String key;
+        private String missionId;
 
-        public MultiMission(RxDownload rxDownload, List<DownloadBean> missions, String key) {
+        public MultiMission(RxDownload rxDownload, List<DownloadBean> missions, String missionId) {
             super(rxDownload);
             this.missions = missions;
-            this.key = key;
+            this.missionId = missionId;
 
             completed = new AtomicInteger(0);
             failed = new AtomicInteger(0);
@@ -208,8 +215,24 @@ public abstract class DownloadMission {
             statusMap = new HashMap<>(missions.size());
         }
 
-        public String getKey() {
-            return key;
+        @Override
+        public DownloadEvent createWaitingEvent(DataBaseHelper dataBaseHelper) {
+            return waiting(null);
+        }
+
+        public String getMissionId() {
+            return missionId;
+        }
+
+        @Override
+        public void insertOrUpdate(DataBaseHelper dataBaseHelper) {
+            for (DownloadBean each : missions) {
+                if (dataBaseHelper.recordNotExists(each.getUrl())) {
+                    dataBaseHelper.insertRecord(each, WAITING, missionId);
+                } else {
+                    dataBaseHelper.updateFlag(each.getUrl(), WAITING);
+                }
+            }
         }
 
         @Override
@@ -221,20 +244,16 @@ public abstract class DownloadMission {
         }
 
         @Override
-        public void insertOrUpdate(DataBaseHelper dataBaseHelper) {
+        public void delete(DataBaseHelper dataBaseHelper) {
             for (DownloadBean each : missions) {
-                if (dataBaseHelper.recordNotExists(each.getUrl())) {
-                    dataBaseHelper.insertRecord(each, WAITING, key);
-                } else {
-                    dataBaseHelper.updateFlag(each.getUrl(), WAITING);
-                }
+                dataBaseHelper.deleteRecord(each.getUrl());
             }
         }
 
         @Override
         public void start(Semaphore semaphore, final Map<String, FlowableProcessor<DownloadEvent>> processorMap) {
 
-            final FlowableProcessor<DownloadEvent> groupProcessor = getProcessor(processorMap, getKey());
+            final FlowableProcessor<DownloadEvent> groupProcessor = getProcessor(processorMap, getMissionId());
 
             for (final DownloadBean each : missions) {
                 final FlowableProcessor<DownloadEvent> eachProcessor = getProcessor(processorMap, each.getUrl());
@@ -271,11 +290,6 @@ public abstract class DownloadMission {
                 });
                 disposableMap.put(each, disposable);
             }
-        }
-
-        @Override
-        public DownloadEvent createWaitingEvent(DataBaseHelper dataBaseHelper) {
-            return waiting(null);
         }
     }
 }

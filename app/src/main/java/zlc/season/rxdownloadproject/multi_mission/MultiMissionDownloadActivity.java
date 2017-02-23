@@ -40,9 +40,13 @@ public class MultiMissionDownloadActivity extends AppCompatActivity {
     Toolbar toolbar;
     RxDownload rxDownload;
     String key;
-    private String url1 = "http://static.yingyonghui.com/icon/128/4189733.png";
-    private String url2 = "http://static.yingyonghui.com/icon/128/4143651.png";
-    private String url3 = "http://static.yingyonghui.com/icon/128/4256143.png";
+//    private String url1 = "http://static.yingyonghui.com/icon/128/4189733.png";
+//    private String url2 = "http://static.yingyonghui.com/icon/128/4143651.png";
+//    private String url3 = "http://static.yingyonghui.com/icon/128/4256143.png";
+
+    private String url1 = "https://qd.myapp.com/myapp/qqteam/AndroidQQ/mobileqq_android.apk";
+    private String url2 = "http://s1.music.126.net/download/android/CloudMusic_official_3.7.3_153912.apk";
+    private String url3 = "http://dldir1.qq.com/weixin/android/weixin6330android920.apk";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -52,6 +56,18 @@ public class MultiMissionDownloadActivity extends AppCompatActivity {
         setSupportActionBar(toolbar);
         rxDownload = RxDownload.getInstance(this);
         key = UUID.randomUUID().toString();
+
+        rxDownload.receiveMissionsEvent(key)
+                .subscribe(new Consumer<DownloadEvent>() {
+                    @Override
+                    public void accept(DownloadEvent downloadEvent) throws Exception {
+                        log(downloadEvent.getFlag() + "");
+                        if (downloadEvent.getFlag() == DownloadFlag.FAILED) {
+                            Throwable throwable = downloadEvent.getError();
+                            log(throwable);
+                        }
+                    }
+                });
     }
 
     @OnClick({R.id.start, R.id.pause})
@@ -72,19 +88,11 @@ public class MultiMissionDownloadActivity extends AppCompatActivity {
                                 Toast.makeText(MultiMissionDownloadActivity.this, "开始", Toast.LENGTH_SHORT).show();
                             }
                         });
-                rxDownload.receiveDownloadStatus(key)
-                        .subscribe(new Consumer<DownloadEvent>() {
-                            @Override
-                            public void accept(DownloadEvent downloadEvent) throws Exception {
-                                log(downloadEvent.getFlag() + "");
-                                if (downloadEvent.getFlag() == DownloadFlag.FAILED) {
-                                    Throwable throwable = downloadEvent.getError();
-                                    log(throwable);
-                                }
-                            }
-                        });
+
                 break;
             case R.id.pause:
+                rxDownload.pauseServiceDownload(key)
+                        .subscribe();
                 break;
         }
     }

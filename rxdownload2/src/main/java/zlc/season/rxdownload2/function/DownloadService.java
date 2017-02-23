@@ -141,8 +141,7 @@ public class DownloadService extends Service {
         missionMap.put(mission.getKey(), mission);
         mission.insertOrUpdate(dataBaseHelper);
 
-        FlowableProcessor<DownloadEvent> processor = createProcessor(mission.getKey());
-        processor.onNext(mission.createWaitingEvent(dataBaseHelper));
+        createProcessor(mission.getKey()).onNext(mission.createWaitingEvent(dataBaseHelper));
         downloadQueue.put(mission);
     }
 

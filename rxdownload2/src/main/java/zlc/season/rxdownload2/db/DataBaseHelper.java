@@ -28,6 +28,7 @@ import static zlc.season.rxdownload2.db.Db.RecordTable.COLUMN_EXTRA4;
 import static zlc.season.rxdownload2.db.Db.RecordTable.COLUMN_EXTRA5;
 import static zlc.season.rxdownload2.db.Db.RecordTable.COLUMN_ID;
 import static zlc.season.rxdownload2.db.Db.RecordTable.COLUMN_IS_CHUNKED;
+import static zlc.season.rxdownload2.db.Db.RecordTable.COLUMN_MISSION_ID;
 import static zlc.season.rxdownload2.db.Db.RecordTable.COLUMN_SAVE_NAME;
 import static zlc.season.rxdownload2.db.Db.RecordTable.COLUMN_SAVE_PATH;
 import static zlc.season.rxdownload2.db.Db.RecordTable.COLUMN_TOTAL_SIZE;
@@ -74,8 +75,8 @@ public class DataBaseHelper {
     public boolean recordNotExists(String url) {
         Cursor cursor = null;
         try {
-            cursor = getReadableDatabase().query(TABLE_NAME, new String[]{COLUMN_ID}, "url=?",
-                    new String[]{url}, null, null, null);
+            cursor = getReadableDatabase().query(TABLE_NAME, new String[]{COLUMN_ID},
+                    COLUMN_URL + "=?", new String[]{url}, null, null, null);
             cursor.moveToFirst();
             return cursor.getCount() == 0;
         } finally {
@@ -85,11 +86,12 @@ public class DataBaseHelper {
         }
     }
 
-    public boolean recordNotExists(String url, String group) {
+    public boolean recordNotExists(String url, String missionId) {
         Cursor cursor = null;
         try {
-            cursor = getReadableDatabase().query(TABLE_NAME, new String[]{COLUMN_ID}, "url=? and key=?",
-                    new String[]{url, group}, null, null, null);
+            cursor = getReadableDatabase().query(TABLE_NAME, new String[]{COLUMN_ID},
+                    COLUMN_URL + "=? and " + COLUMN_MISSION_ID + "=?",
+                    new String[]{url, missionId}, null, null, null);
             cursor.moveToFirst();
             return cursor.getCount() == 0;
         } finally {
@@ -99,24 +101,29 @@ public class DataBaseHelper {
         }
     }
 
-    public long insertRecord(DownloadBean downloadBean, int flag, String group) {
-        return getWritableDatabase().insert(TABLE_NAME, null, insert(downloadBean, flag, group));
+    public long insertRecord(DownloadBean downloadBean, int flag, String missionId) {
+        return getWritableDatabase().insert(TABLE_NAME, null,
+                insert(downloadBean, flag, missionId));
     }
 
     public long updateStatus(String url, DownloadStatus status) {
-        return getWritableDatabase().update(TABLE_NAME, update(status), "url=?", new String[]{url});
+        return getWritableDatabase().update(TABLE_NAME, update(status),
+                COLUMN_URL + "=?", new String[]{url});
     }
 
     public long updateFlag(String url, int flag) {
-        return getWritableDatabase().update(TABLE_NAME, update(flag), "url=?", new String[]{url});
+        return getWritableDatabase().update(TABLE_NAME, update(flag),
+                COLUMN_URL + "=?", new String[]{url});
     }
 
     public long updateRecord(String url, String saveName, String savePath, int flag) {
-        return getWritableDatabase().update(TABLE_NAME, update(saveName, savePath, flag), "url=?", new String[]{url});
+        return getWritableDatabase().update(TABLE_NAME, update(saveName, savePath, flag),
+                COLUMN_URL + "=?", new String[]{url});
     }
 
     public int deleteRecord(String url) {
-        return getWritableDatabase().delete(TABLE_NAME, "url=?", new String[]{url});
+        return getWritableDatabase().delete(TABLE_NAME,
+                COLUMN_URL + "=?", new String[]{url});
     }
 
     public long repairErrorFlag() {
@@ -140,7 +147,7 @@ public class DataBaseHelper {
                             COLUMN_DOWNLOAD_SIZE, COLUMN_TOTAL_SIZE, COLUMN_IS_CHUNKED,
                             COLUMN_EXTRA1, COLUMN_EXTRA2, COLUMN_EXTRA3, COLUMN_EXTRA4,
                             COLUMN_EXTRA5, COLUMN_DOWNLOAD_FLAG, COLUMN_DATE},
-                    "url=?", new String[]{url}, null, null, null);
+                    COLUMN_URL + "=?", new String[]{url}, null, null, null);
             cursor.moveToFirst();
             if (cursor.getCount() == 0) {
                 return null;
@@ -166,7 +173,7 @@ public class DataBaseHelper {
             cursor = getReadableDatabase().query(
                     TABLE_NAME,
                     new String[]{COLUMN_DOWNLOAD_SIZE, COLUMN_TOTAL_SIZE, COLUMN_IS_CHUNKED},
-                    "url=?", new String[]{url}, null, null, null);
+                    COLUMN_URL + "=?", new String[]{url}, null, null, null);
             cursor.moveToFirst();
             if (cursor.getCount() == 0) {
                 return new DownloadStatus();
@@ -239,7 +246,7 @@ public class DataBaseHelper {
                                             COLUMN_DOWNLOAD_SIZE, COLUMN_TOTAL_SIZE, COLUMN_IS_CHUNKED,
                                             COLUMN_EXTRA1, COLUMN_EXTRA2, COLUMN_EXTRA3, COLUMN_EXTRA4,
                                             COLUMN_EXTRA5, COLUMN_DOWNLOAD_FLAG, COLUMN_DATE},
-                                    "url=?", new String[]{url}, null, null, null);
+                                    COLUMN_URL + "=?", new String[]{url}, null, null, null);
                             cursor.moveToFirst();
                             if (cursor.getCount() == 0) {
                                 emitter.onNext(new DownloadRecord());

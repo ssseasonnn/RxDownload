@@ -39,7 +39,7 @@ class Db {
         static final String COLUMN_EXTRA4 = "extra4";
         static final String COLUMN_EXTRA5 = "extra5";
         static final String COLUMN_DATE = "date";
-        static final String COLUMN_KEY = "key";
+        static final String COLUMN_MISSION_ID = "mission_id";
 
         static final String CREATE =
                 "CREATE TABLE " + TABLE_NAME + " (" +
@@ -57,7 +57,7 @@ class Db {
                         COLUMN_EXTRA4 + " TEXT," +
                         COLUMN_EXTRA5 + " TEXT," +
                         COLUMN_DATE + " INTEGER NOT NULL, " +
-                        COLUMN_KEY + " TEXT " +
+                        COLUMN_MISSION_ID + " TEXT " +
                         " )";
 
         static final String ALTER_TABLE_ADD_EXTRA1 = "ALTER TABLE " + TABLE_NAME + " ADD " + COLUMN_EXTRA1 + " TEXT";
@@ -65,7 +65,7 @@ class Db {
         static final String ALTER_TABLE_ADD_EXTRA3 = "ALTER TABLE " + TABLE_NAME + " ADD " + COLUMN_EXTRA3 + " TEXT";
         static final String ALTER_TABLE_ADD_EXTRA4 = "ALTER TABLE " + TABLE_NAME + " ADD " + COLUMN_EXTRA4 + " TEXT";
         static final String ALTER_TABLE_ADD_EXTRA5 = "ALTER TABLE " + TABLE_NAME + " ADD " + COLUMN_EXTRA5 + " TEXT";
-        static final String ALTER_TABLE_ADD_KEY = "ALTER TABLE " + TABLE_NAME + " ADD " + COLUMN_KEY + " TEXT";
+        static final String ALTER_TABLE_ADD_MISSION_ID = "ALTER TABLE " + TABLE_NAME + " ADD " + COLUMN_MISSION_ID + " TEXT";
 
         static ContentValues insert(DownloadBean bean, int flag, String key) {
             ContentValues values = new ContentValues();
@@ -80,7 +80,7 @@ class Db {
             values.put(COLUMN_EXTRA5, bean.getExtra5());
             values.put(COLUMN_DATE, new Date().getTime());
             if (!empty(key)) {
-                values.put(COLUMN_KEY, key);
+                values.put(COLUMN_MISSION_ID, key);
             }
             return values;
         }

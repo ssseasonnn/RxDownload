@@ -33,9 +33,7 @@ class DbOpenHelper extends SQLiteOpenHelper {
 
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-        Utils.log("onUpgrade");
         if (oldVersion == 1 && newVersion == 2) {
-            Utils.log("yes");
             db.beginTransaction();
             try {
                 db.execSQL(Db.RecordTable.ALTER_TABLE_ADD_EXTRA1);
@@ -43,7 +41,7 @@ class DbOpenHelper extends SQLiteOpenHelper {
                 db.execSQL(Db.RecordTable.ALTER_TABLE_ADD_EXTRA3);
                 db.execSQL(Db.RecordTable.ALTER_TABLE_ADD_EXTRA4);
                 db.execSQL(Db.RecordTable.ALTER_TABLE_ADD_EXTRA5);
-                db.execSQL(Db.RecordTable.ALTER_TABLE_ADD_KEY);
+                db.execSQL(Db.RecordTable.ALTER_TABLE_ADD_MISSION_ID);
                 db.setTransactionSuccessful();
             } finally {
                 db.endTransaction();

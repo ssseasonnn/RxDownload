@@ -15,6 +15,7 @@ import io.reactivex.schedulers.Schedulers;
 import zlc.season.rxdownload2.RxDownload;
 import zlc.season.rxdownload2.db.DataBaseHelper;
 
+import static zlc.season.rxdownload2.entity.DownloadFlag.WAITING;
 import static zlc.season.rxdownload2.function.Constant.ACQUIRE_SUCCESS;
 import static zlc.season.rxdownload2.function.Constant.ACQUIRE_SURPLUS_SEMAPHORE;
 import static zlc.season.rxdownload2.function.Constant.RELEASE_SURPLUS_SEMAPHORE;
@@ -60,6 +61,8 @@ public abstract class DownloadMission {
 
     public abstract void start(final Semaphore semaphore,
                                final Map<String, FlowableProcessor<DownloadEvent>> processorMap);
+
+    public abstract DownloadEvent createWaitingEvent(DataBaseHelper dataBaseHelper);
 
     public Disposable start(DownloadBean bean, final Semaphore semaphore, final DownloadCallback callback) {
 
@@ -108,8 +111,6 @@ public abstract class DownloadMission {
                 });
     }
 
-    public abstract DownloadEvent createWaitingEvent(DataBaseHelper dataBaseHelper);
-
     interface DownloadCallback {
         void start();
 
@@ -145,9 +146,9 @@ public abstract class DownloadMission {
         @Override
         public void insertOrUpdate(DataBaseHelper dataBaseHelper) {
             if (dataBaseHelper.recordNotExists(getKey())) {
-                dataBaseHelper.insertRecord(bean, DownloadFlag.WAITING, null);
+                dataBaseHelper.insertRecord(bean, WAITING, null);
             } else {
-                dataBaseHelper.updateFlag(getKey(), DownloadFlag.WAITING);
+                dataBaseHelper.updateFlag(getKey(), WAITING);
             }
         }
 
@@ -193,12 +194,12 @@ public abstract class DownloadMission {
         private Map<DownloadBean, Disposable> disposableMap;
         private Map<DownloadBean, DownloadStatus> statusMap;
 
-        private String group;
+        private String key;
 
-        public MultiMission(RxDownload rxDownload, List<DownloadBean> missions, String group) {
+        public MultiMission(RxDownload rxDownload, List<DownloadBean> missions, String key) {
             super(rxDownload);
             this.missions = missions;
-            this.group = group;
+            this.key = key;
 
             completed = new AtomicInteger(0);
             failed = new AtomicInteger(0);
@@ -208,7 +209,7 @@ public abstract class DownloadMission {
         }
 
         public String getKey() {
-            return group;
+            return key;
         }
 
         @Override
@@ -222,10 +223,10 @@ public abstract class DownloadMission {
         @Override
         public void insertOrUpdate(DataBaseHelper dataBaseHelper) {
             for (DownloadBean each : missions) {
-                if (dataBaseHelper.recordNotExists(each.getUrl(), group)) {
-                    dataBaseHelper.insertRecord(each, DownloadFlag.WAITING, group);
+                if (dataBaseHelper.recordNotExists(each.getUrl())) {
+                    dataBaseHelper.insertRecord(each, WAITING, key);
                 } else {
-                    dataBaseHelper.updateFlag(each.getUrl(), DownloadFlag.WAITING);
+                    dataBaseHelper.updateFlag(each.getUrl(), WAITING);
                 }
             }
         }
@@ -252,7 +253,7 @@ public abstract class DownloadMission {
                     @Override
                     public void error(Throwable throwable) {
                         eachProcessor.onNext(failed(statusMap.get(each), throwable));
-                        if (failed.incrementAndGet() == missions.size()) {
+                        if ((failed.incrementAndGet() + completed.intValue()) == missions.size()) {
                             groupProcessor.onNext(failed(null, new Throwable("download failed")));
                         }
                     }
@@ -260,8 +261,11 @@ public abstract class DownloadMission {
                     @Override
                     public void complete() {
                         eachProcessor.onNext(completed(statusMap.get(each)));
-                        if (completed.incrementAndGet() == missions.size()) {
+                        int temp = completed.incrementAndGet();
+                        if (temp == missions.size()) {
                             groupProcessor.onNext(completed(null));
+                        } else if ((temp + failed.intValue()) == missions.size()) {
+                            groupProcessor.onNext(failed(null, new Throwable("download failed")));
                         }
                     }
                 });

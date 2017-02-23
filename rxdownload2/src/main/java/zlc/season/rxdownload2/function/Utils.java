@@ -180,6 +180,12 @@ public class Utils {
         if (empty(fileName)) {
             fileName = url.substring(url.lastIndexOf('/') + 1);
         }
+        if (fileName.startsWith("\"")) {
+            fileName = fileName.substring(1);
+        }
+        if (fileName.endsWith("\"")) {
+            fileName = fileName.substring(0, fileName.length() - 1);
+        }
         return fileName;
     }
 
@@ -314,7 +320,7 @@ public class Utils {
                 log(DIR_EXISTS_HINT, each);
             } else {
                 log(DIR_NOT_EXISTS_HINT, each);
-                boolean flag = file.mkdir();
+                boolean flag = file.mkdirs();
                 if (flag) {
                     log(DIR_CREATE_SUCCESS, each);
                 } else {

@@ -36,13 +36,21 @@ public class UtilsTest {
 
     @Test
     public void contentDisposition() throws Exception {
-        String test = "attachment; filename=com.coolapk.market_7.3.2_1701250.apk";
+        String test = "attachment; filename=\"com.coolapk.market_7.3.2_1701250.apk\"";
         Matcher m = Pattern.compile(".*filename=(.*)").matcher(test.toLowerCase());
         String result;
         if (m.find()) {
             result = m.group(1);
         } else {
             result = "";
+        }
+        System.out.println(result);
+
+        if (result.startsWith("\"")) {
+            result = result.substring(1);
+        }
+        if (result.endsWith("\"")) {
+            result = result.substring(0, result.length()-1);
         }
         System.out.println(result);
     }

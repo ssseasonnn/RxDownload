@@ -88,7 +88,7 @@ public class DataBaseHelper {
     public boolean recordNotExists(String url, String group) {
         Cursor cursor = null;
         try {
-            cursor = getReadableDatabase().query(TABLE_NAME, new String[]{COLUMN_ID}, "url=? and group=?",
+            cursor = getReadableDatabase().query(TABLE_NAME, new String[]{COLUMN_ID}, "url=? and key=?",
                     new String[]{url, group}, null, null, null);
             cursor.moveToFirst();
             return cursor.getCount() == 0;
@@ -160,7 +160,6 @@ public class DataBaseHelper {
      * @param url url
      * @return download status
      */
-    @Nullable
     public DownloadStatus readStatus(String url) {
         Cursor cursor = null;
         try {
@@ -170,7 +169,7 @@ public class DataBaseHelper {
                     "url=?", new String[]{url}, null, null, null);
             cursor.moveToFirst();
             if (cursor.getCount() == 0) {
-                return null;
+                return new DownloadStatus();
             } else {
                 return Db.RecordTable.readStatus(cursor);
             }

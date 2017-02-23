@@ -25,14 +25,12 @@ import zlc.season.rxdownload2.db.DataBaseHelper;
 import zlc.season.rxdownload2.entity.DownloadEvent;
 import zlc.season.rxdownload2.entity.DownloadMission;
 import zlc.season.rxdownload2.entity.DownloadRecord;
-import zlc.season.rxdownload2.entity.DownloadStatus;
 
 import static zlc.season.rxdownload2.function.Constant.DOWNLOAD_URL_EXISTS;
 import static zlc.season.rxdownload2.function.Constant.WAITING_FOR_MISSION_COME;
 import static zlc.season.rxdownload2.function.DownloadEventFactory.createEvent;
 import static zlc.season.rxdownload2.function.DownloadEventFactory.normal;
 import static zlc.season.rxdownload2.function.DownloadEventFactory.paused;
-import static zlc.season.rxdownload2.function.DownloadEventFactory.waiting;
 import static zlc.season.rxdownload2.function.Utils.deleteFiles;
 import static zlc.season.rxdownload2.function.Utils.dispose;
 import static zlc.season.rxdownload2.function.Utils.formatStr;
@@ -96,7 +94,7 @@ public class DownloadService extends Service {
         return mBinder;
     }
 
-    private FlowableProcessor<DownloadEvent> getProcessor(String url) {
+    private FlowableProcessor<DownloadEvent> createProcessor(String url) {
         if (processorMap.get(url) == null) {
             FlowableProcessor<DownloadEvent> processor =
                     BehaviorProcessor.<DownloadEvent>create().toSerialized();
@@ -112,7 +110,7 @@ public class DownloadService extends Service {
      * @return DownloadEvent
      */
     public FlowableProcessor<DownloadEvent> receiveDownloadEvent(String url) {
-        FlowableProcessor<DownloadEvent> processor = getProcessor(url);
+        FlowableProcessor<DownloadEvent> processor = createProcessor(url);
         DownloadMission mission = missionMap.get(url);
         if (mission == null) {  //Not yet add this url mission.
             DownloadRecord record = dataBaseHelper.readSingleRecord(url);
@@ -141,10 +139,10 @@ public class DownloadService extends Service {
             throw new IllegalArgumentException(formatStr(DOWNLOAD_URL_EXISTS, mission.getKey()));
         }
         missionMap.put(mission.getKey(), mission);
-
         mission.insertOrUpdate(dataBaseHelper);
 
-        getProcessor(mission.getKey()).onNext(waiting(dataBaseHelper.readStatus(mission.getKey())));
+        FlowableProcessor<DownloadEvent> processor = createProcessor(mission.getKey());
+        processor.onNext(mission.createWaitingEvent(dataBaseHelper));
         downloadQueue.put(mission);
     }
 
@@ -155,17 +153,14 @@ public class DownloadService extends Service {
      * @param url url
      */
     public void pauseDownload(String url) {
-        DownloadStatus status;
         cancelMission(url);
-        status = dataBaseHelper.readStatus(url);
-        getProcessor(url).onNext(paused(status));
+        createProcessor(url).onNext(paused(dataBaseHelper.readStatus(url)));
     }
 
     private void cancelMission(String url) {
         DownloadMission mission = missionMap.get(url);
         if (mission != null) {
-            mission.markCanceled();
-            dispose(mission.getDisposable());
+            mission.cancel();
         }
     }
 
@@ -177,7 +172,7 @@ public class DownloadService extends Service {
      */
     public void deleteDownload(String url, boolean deleteFile) {
         cancelMission(url);
-        getProcessor(url).onNext(normal(null));
+        createProcessor(url).onNext(normal(null));
 
         if (deleteFile) {
             DownloadRecord record = dataBaseHelper.readSingleRecord(url);
@@ -210,11 +205,12 @@ public class DownloadService extends Service {
                         }
                         emitter.onComplete();
                     }
-                }).subscribeOn(Schedulers.newThread())
+                })
+                .subscribeOn(Schedulers.newThread())
                 .subscribe(new Consumer<DownloadMission>() {
                     @Override
                     public void accept(DownloadMission mission) throws Exception {
-                        mission.start(semaphore, processorMap.get(mission.getKey()));
+                        mission.start(semaphore, processorMap);
                     }
                 });
     }

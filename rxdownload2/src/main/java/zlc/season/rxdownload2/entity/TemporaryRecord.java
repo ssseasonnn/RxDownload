@@ -283,6 +283,6 @@ public class TemporaryRecord {
     }
 
     public void finish() {
-        dataBaseHelper.closeDataBase();
+//        dataBaseHelper.closeDataBase();
     }
 }

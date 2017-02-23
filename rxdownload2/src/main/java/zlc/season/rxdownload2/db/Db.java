@@ -39,7 +39,7 @@ class Db {
         static final String COLUMN_EXTRA4 = "extra4";
         static final String COLUMN_EXTRA5 = "extra5";
         static final String COLUMN_DATE = "date";
-        static final String COLUMN_GROUP = "group";
+        static final String COLUMN_KEY = "key";
 
         static final String CREATE =
                 "CREATE TABLE " + TABLE_NAME + " (" +
@@ -57,10 +57,17 @@ class Db {
                         COLUMN_EXTRA4 + " TEXT," +
                         COLUMN_EXTRA5 + " TEXT," +
                         COLUMN_DATE + " INTEGER NOT NULL, " +
-                        COLUMN_GROUP + " TEXT " +
+                        COLUMN_KEY + " TEXT " +
                         " )";
 
-        static ContentValues insert(DownloadBean bean, int flag, String group) {
+        static final String ALTER_TABLE_ADD_EXTRA1 = "ALTER TABLE " + TABLE_NAME + " ADD " + COLUMN_EXTRA1 + " TEXT";
+        static final String ALTER_TABLE_ADD_EXTRA2 = "ALTER TABLE " + TABLE_NAME + " ADD " + COLUMN_EXTRA2 + " TEXT";
+        static final String ALTER_TABLE_ADD_EXTRA3 = "ALTER TABLE " + TABLE_NAME + " ADD " + COLUMN_EXTRA3 + " TEXT";
+        static final String ALTER_TABLE_ADD_EXTRA4 = "ALTER TABLE " + TABLE_NAME + " ADD " + COLUMN_EXTRA4 + " TEXT";
+        static final String ALTER_TABLE_ADD_EXTRA5 = "ALTER TABLE " + TABLE_NAME + " ADD " + COLUMN_EXTRA5 + " TEXT";
+        static final String ALTER_TABLE_ADD_KEY = "ALTER TABLE " + TABLE_NAME + " ADD " + COLUMN_KEY + " TEXT";
+
+        static ContentValues insert(DownloadBean bean, int flag, String key) {
             ContentValues values = new ContentValues();
             values.put(COLUMN_URL, bean.getUrl());
             values.put(COLUMN_SAVE_NAME, bean.getSaveName());
@@ -72,8 +79,8 @@ class Db {
             values.put(COLUMN_EXTRA4, bean.getExtra4());
             values.put(COLUMN_EXTRA5, bean.getExtra5());
             values.put(COLUMN_DATE, new Date().getTime());
-            if (!empty(group)) {
-                values.put(COLUMN_GROUP, group);
+            if (!empty(key)) {
+                values.put(COLUMN_KEY, key);
             }
             return values;
         }

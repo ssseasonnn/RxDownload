@@ -27,6 +27,7 @@ import io.reactivex.schedulers.Schedulers;
 import retrofit2.Retrofit;
 import zlc.season.rxdownload2.entity.DownloadBean;
 import zlc.season.rxdownload2.entity.DownloadEvent;
+import zlc.season.rxdownload2.entity.DownloadMission.MultiMission;
 import zlc.season.rxdownload2.entity.DownloadMission.SingleMission;
 import zlc.season.rxdownload2.entity.DownloadRecord;
 import zlc.season.rxdownload2.entity.DownloadStatus;
@@ -210,27 +211,6 @@ public class RxDownload {
      */
     public Observable<DownloadRecord> getDownloadRecord(String url) {
         return downloadHelper.readRecord(url);
-    }
-
-    public Observable<?> startAll(List<String> urls) {
-        return createGeneralObservable(new GeneralObservableCallback() {
-            @Override
-            public void call() throws Exception {
-                downloadService.startAll();
-            }
-        });
-    }
-
-    /**
-     * pause all download task in Service.
-     */
-    public Observable<?> pauseAll() {
-        return createGeneralObservable(new GeneralObservableCallback() {
-            @Override
-            public void call() throws Exception {
-                downloadService.pauseAll();
-            }
-        });
     }
 
     /**
@@ -424,7 +404,22 @@ public class RxDownload {
         return createGeneralObservable(new GeneralObservableCallback() {
             @Override
             public void call() throws InterruptedException {
-                downloadService.addDownloadMission(new SingleMission(bean, RxDownload.this));
+                downloadService.addDownloadMission(new SingleMission(RxDownload.this, bean));
+            }
+        });
+    }
+
+    /**
+     * Using Service to download.
+     *
+     * @param beans download beans
+     * @return Observable<DownloadStatus>
+     */
+    public Observable<?> serviceDownload(final List<DownloadBean> beans, final String key) {
+        return createGeneralObservable(new GeneralObservableCallback() {
+            @Override
+            public void call() throws InterruptedException {
+                downloadService.addDownloadMission(new MultiMission(RxDownload.this, beans, key));
             }
         });
     }

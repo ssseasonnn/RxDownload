@@ -1,132 +1,131 @@
 package zlc.season.rxdownload2.entity;
 
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.atomic.AtomicBoolean;
 
-import io.reactivex.Observer;
 import io.reactivex.disposables.Disposable;
+import io.reactivex.functions.Action;
+import io.reactivex.functions.Consumer;
+import io.reactivex.processors.BehaviorProcessor;
 import io.reactivex.processors.FlowableProcessor;
 import io.reactivex.schedulers.Schedulers;
 import zlc.season.rxdownload2.RxDownload;
 import zlc.season.rxdownload2.db.DataBaseHelper;
 
-import static zlc.season.rxdownload2.entity.DownloadFlag.COMPLETED;
-import static zlc.season.rxdownload2.entity.DownloadFlag.FAILED;
-import static zlc.season.rxdownload2.entity.DownloadFlag.STARTED;
+import static zlc.season.rxdownload2.function.Constant.ACQUIRE_SUCCESS;
+import static zlc.season.rxdownload2.function.Constant.TRY_TO_ACQUIRE_SEMAPHORE;
+import static zlc.season.rxdownload2.function.Utils.dispose;
+import static zlc.season.rxdownload2.function.Utils.log;
 
 /**
  * Author: Season(ssseasonnn@gmail.com)
  * Date: 2016/11/18
  * Time: 11:38
- * FIXME
+ * <p>
+ * Represents a download task
  */
-public class DownloadMission {
-    public boolean canceled = false;
+public abstract class DownloadMission {
+    protected RxDownload rxdownload;
+    protected FlowableProcessor<DownloadEvent> processor;
+    private AtomicBoolean canceled = new AtomicBoolean(false);
 
-    private RxDownload rxDownload;
-    private String url;
-    private String saveName;
-    private String savePath;
-
-    private DownloadStatus mStatus;
-    private Disposable mDisposable;
-
-    public Disposable getDisposable() {
-        return mDisposable;
+    public DownloadMission(RxDownload rxdownload) {
+        this.rxdownload = rxdownload;
     }
 
-    public DownloadStatus getStatus() {
-        return mStatus;
+    public void cancel() {
+        canceled.compareAndSet(false, true);
     }
 
-    public String getUrl() {
-        return url;
+    public boolean isCancel() {
+        return canceled.get();
     }
 
-    public String getSaveName() {
-        return saveName;
-    }
-
-    public String getSavePath() {
-        return savePath;
-    }
-
-    public void start(final Map<String, DownloadMission> nowDownloadMap,
-            final AtomicInteger count, final DataBaseHelper helper,
-            final Map<String, FlowableProcessor<DownloadEvent>> processorPool) {
-
-        nowDownloadMap.put(url, this);
-        count.incrementAndGet();
-
-        final DownloadEventFactory eventFactory = DownloadEventFactory.getSingleton();
-
-        rxDownload.download(url, saveName, savePath)
-                  .subscribeOn(Schedulers.io())
-                  .subscribe(new Observer<DownloadStatus>() {
-                      @Override
-                      public void onSubscribe(Disposable d) {
-                          helper.updateRecord(url, STARTED);
-                          mDisposable = d;
-                      }
-
-                      @Override
-                      public void onNext(DownloadStatus value) {
-                          processorPool.get(url).onNext(eventFactory.started(url, value));
-                          helper.updateRecord(url, value);
-                          mStatus = value;
-                      }
-
-                      @Override
-                      public void onError(Throwable e) {
-                          processorPool.get(url).onNext(eventFactory.failed(url, mStatus, e));
-                          helper.updateRecord(url, FAILED);
-                          count.decrementAndGet();
-                          nowDownloadMap.remove(url);
-                      }
-
-                      @Override
-                      public void onComplete() {
-                          processorPool.get(url).onNext(eventFactory.completed(url, mStatus));
-                          helper.updateRecord(url, COMPLETED);
-                          count.decrementAndGet();
-                          nowDownloadMap.remove(url);
-                      }
-                  });
-    }
-
-    public static class Builder {
-        RxDownload rxDownload;
-        String url;
-        String saveName;
-        String savePath;
-
-        public Builder setRxDownload(RxDownload rxDownload) {
-            this.rxDownload = rxDownload;
-            return this;
+    protected FlowableProcessor<DownloadEvent> getProcessor(Map<String,
+            FlowableProcessor<DownloadEvent>> processorMap, String missionId) {
+        if (processorMap.get(missionId) == null) {
+            FlowableProcessor<DownloadEvent> processor =
+                    BehaviorProcessor.<DownloadEvent>create().toSerialized();
+            processorMap.put(missionId, processor);
         }
+        return processorMap.get(missionId);
+    }
 
-        public Builder setUrl(String url) {
-            this.url = url;
-            return this;
-        }
+    public abstract String getMissionId();
 
-        public Builder setSaveName(String saveName) {
-            this.saveName = saveName;
-            return this;
-        }
+    public abstract void init(Map<String, DownloadMission> missionMap,
+                              Map<String, FlowableProcessor<DownloadEvent>> processorMap);
 
-        public Builder setSavePath(String savePath) {
-            this.savePath = savePath;
-            return this;
-        }
+    public abstract void insertOrUpdate(DataBaseHelper dataBaseHelper);
 
-        public DownloadMission build() {
-            DownloadMission task = new DownloadMission();
-            task.rxDownload = rxDownload;
-            task.url = url;
-            task.saveName = saveName;
-            task.savePath = savePath;
-            return task;
-        }
+    public abstract void start(final Semaphore semaphore);
+
+    public abstract void pause(DataBaseHelper dataBaseHelper);
+
+    public abstract void delete(DataBaseHelper dataBaseHelper, boolean deleteFile);
+
+    public abstract void sendWaitingEvent(DataBaseHelper dataBaseHelper);
+
+    protected Disposable start(DownloadBean bean, final Semaphore semaphore,
+                               final MissionCallback callback) {
+        return rxdownload.download(bean)
+                .subscribeOn(Schedulers.io())
+                .doOnLifecycle(new Consumer<Disposable>() {
+                    @Override
+                    public void accept(Disposable disposable) throws Exception {
+                        if (canceled.get()) {
+                            dispose(disposable);
+                        }
+
+                        log(TRY_TO_ACQUIRE_SEMAPHORE);
+                        semaphore.acquire();
+                        log(ACQUIRE_SUCCESS);
+
+                        if (canceled.get()) {
+                            dispose(disposable);
+                        } else {
+                            callback.start();
+                        }
+                    }
+                }, new Action() {
+                    @Override
+                    public void run() throws Exception {
+                        semaphore.release();
+                    }
+                })
+                .subscribe(new Consumer<DownloadStatus>() {
+                    @Override
+                    public void accept(DownloadStatus value) throws Exception {
+                        callback.next(value);
+                    }
+                }, new Consumer<Throwable>() {
+                    @Override
+                    public void accept(Throwable throwable) throws Exception {
+                        callback.error(throwable);
+                    }
+                }, new Action() {
+                    @Override
+                    public void run() throws Exception {
+                        callback.complete();
+                    }
+                });
+    }
+
+    /**
+     * Mission download callback.
+     */
+    interface MissionCallback {
+        void start();
+
+        void next(DownloadStatus status);
+
+        void error(Throwable throwable);
+
+        void complete();
+    }
+
+    interface MultiMissionCallback extends MissionCallback {
+
     }
 }

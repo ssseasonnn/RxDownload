@@ -41,8 +41,8 @@ public class SingleMission extends DownloadMission {
         this.bean = bean;
     }
 
-
-    public SingleMission(RxDownload rxdownload, DownloadBean bean, String multiMissionId, MultiMissionCallback callback) {
+    public SingleMission(RxDownload rxdownload, DownloadBean bean,
+                         String multiMissionId, MultiMissionCallback callback) {
         super(rxdownload);
         this.bean = bean;
         this.multiMissionId = multiMissionId;

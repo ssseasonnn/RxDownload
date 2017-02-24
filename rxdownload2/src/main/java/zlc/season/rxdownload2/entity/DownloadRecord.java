@@ -21,6 +21,7 @@ public class DownloadRecord {
     private String extra4;
     private String extra5;
     private long date; //格林威治时间,毫秒
+    private String missionId;
 
     public DownloadRecord() {
     }
@@ -119,5 +120,13 @@ public class DownloadRecord {
 
     public void setExtra5(String extra5) {
         this.extra5 = extra5;
+    }
+
+    public String getMissionId() {
+        return missionId;
+    }
+
+    public void setMissionId(String missionId) {
+        this.missionId = missionId;
     }
 }

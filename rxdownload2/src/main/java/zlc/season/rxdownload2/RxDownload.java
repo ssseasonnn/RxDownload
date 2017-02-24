@@ -29,6 +29,7 @@ import io.reactivex.schedulers.Schedulers;
 import retrofit2.Retrofit;
 import zlc.season.rxdownload2.entity.DownloadBean;
 import zlc.season.rxdownload2.entity.DownloadEvent;
+import zlc.season.rxdownload2.entity.DownloadFlag;
 import zlc.season.rxdownload2.entity.DownloadRecord;
 import zlc.season.rxdownload2.entity.DownloadStatus;
 import zlc.season.rxdownload2.entity.MultiMission;
@@ -114,7 +115,7 @@ public class RxDownload {
      *
      * @param saveName saveName
      * @param savePath savePath
-     * @return
+     * @return Files
      */
     public File[] getRealFiles(String saveName, String savePath) {
         return Utils.getFiles(saveName, savePath);
@@ -176,12 +177,17 @@ public class RxDownload {
     }
 
     /**
-     * Receive the download address for the url download event and download status.
+     * Receive the url download event.
      * <p>
-     * You can receive anywhere, whether this url start download or not.
+     * Will receive the following event:
+     * {@link DownloadFlag#NORMAL}、{@link DownloadFlag#WAITING}、
+     * {@link DownloadFlag#STARTED}、{@link DownloadFlag#PAUSED}、
+     * {@link DownloadFlag#COMPLETED}、{@link DownloadFlag#FAILED};
+     * <p>
+     * Every event has {@link DownloadStatus}, you can get it and display it on the interface.
      *
-     * @param url download url
-     * @return Observable<DownloadStatus>
+     * @param url url
+     * @return DownloadEvent
      */
     public Observable<DownloadEvent> receiveDownloadStatus(final String url) {
         return createGeneralObservable(null)
@@ -195,12 +201,17 @@ public class RxDownload {
     }
 
     /**
-     * Receive the download address for the url download event and download status.
+     * Receive the download event for missionId.
      * <p>
-     * You can receive anywhere, whether this url start download or not.
+     * Will receive the following event:
+     * {@link DownloadFlag#NORMAL}、{@link DownloadFlag#WAITING}、
+     * {@link DownloadFlag#STARTED}、{@link DownloadFlag#PAUSED}、
+     * {@link DownloadFlag#COMPLETED}、{@link DownloadFlag#FAILED};
+     * <p>
+     * But every event has not {@link DownloadStatus}, it's NULL.
      *
-     * @param missionId download url
-     * @return Observable<DownloadStatus>
+     * @param missionId missionId
+     * @return DownloadEvent
      */
     public Observable<DownloadEvent> receiveMissionsEvent(final String missionId) {
         return createGeneralObservable(null)
@@ -234,39 +245,43 @@ public class RxDownload {
     }
 
     /**
-     * Suspended the url download task in Service.
-     *
-     * @param url download url
-     */
-    public Observable<?> pauseServiceDownload(final String url) {
-        return createGeneralObservable(new GeneralObservableCallback() {
-            @Override
-            public void call() {
-                downloadService.pauseDownload(url);
-            }
-        }).observeOn(AndroidSchedulers.mainThread());
-
-    }
-
-    /**
-     * Delete the url download task in Service.
+     * Pause download.
      * <p>
-     * when deleteFiles is true, the downloaded file will be deleted.
+     * Pause a url or all tasks belonging to missionId.
      *
-     * @param url        download url
-     * @param deleteFile whether delete  file
+     * @param missionId url or missionId
      */
-    public Observable<?> deleteServiceDownload(final String url, final boolean deleteFile) {
+    public Observable<?> pauseServiceDownload(final String missionId) {
         return createGeneralObservable(new GeneralObservableCallback() {
             @Override
             public void call() {
-                downloadService.deleteDownload(url, deleteFile);
+                downloadService.pauseDownload(missionId);
+            }
+        }).observeOn(AndroidSchedulers.mainThread());
+
+    }
+
+    /**
+     * Delete download.
+     * <p>
+     * Delete a url or all tasks belonging to missionId.
+     *
+     * @param missionId  url or missionId
+     * @param deleteFile whether delete file
+     */
+    public Observable<?> deleteServiceDownload(final String missionId, final boolean deleteFile) {
+        return createGeneralObservable(new GeneralObservableCallback() {
+            @Override
+            public void call() {
+                downloadService.deleteDownload(missionId, deleteFile);
             }
         }).observeOn(AndroidSchedulers.mainThread());
     }
 
     /**
-     * Normal download. And save the download records in the database.
+     * Normal download.
+     * <p>
+     * Will save the download records in the database.
      * <p>
      * Un subscribe will pause download.
      *
@@ -297,14 +312,14 @@ public class RxDownload {
      * @return Observable<DownloadStatus>
      */
     public Observable<DownloadStatus> download(String url, String saveName, String savePath) {
-        return download(new DownloadBean.Builder(url)
-                .setSaveName(saveName)
-                .setSavePath(savePath)
-                .build());
+        return download(new DownloadBean.Builder(url).setSaveName(saveName)
+                .setSavePath(savePath).build());
     }
 
     /**
-     * Normal download. If you want save extra info into database, use this.
+     * Normal download.
+     * <p>
+     * You can construct a DownloadBean to save extra data to the database.
      *
      * @param downloadBean download bean.
      * @return Observable<DownloadStatus>
@@ -332,7 +347,8 @@ public class RxDownload {
      * @param <Upstream> Upstream
      * @return Transformer
      */
-    public <Upstream> ObservableTransformer<Upstream, DownloadStatus> transform(String url, String saveName) {
+    public <Upstream> ObservableTransformer<Upstream, DownloadStatus> transform(
+            String url, String saveName) {
         return transform(url, saveName, null);
     }
 
@@ -358,7 +374,8 @@ public class RxDownload {
      * @param <Upstream>   Upstream
      * @return Transformer
      */
-    public <Upstream> ObservableTransformer<Upstream, DownloadStatus> transform(final DownloadBean downloadBean) {
+    public <Upstream> ObservableTransformer<Upstream, DownloadStatus> transform(
+            final DownloadBean downloadBean) {
         return new ObservableTransformer<Upstream, DownloadStatus>() {
             @Override
             public ObservableSource<DownloadStatus> apply(Observable<Upstream> upstream) {
@@ -373,7 +390,9 @@ public class RxDownload {
     }
 
     /**
-     * Using Service to download.
+     * Using Service to download single url.
+     * <p>
+     * Will save the download records in the database.
      * <p>
      * Un subscribe will not pause download.
      * <p>
@@ -381,8 +400,7 @@ public class RxDownload {
      * <p>
      * If you want pause download, see {@link #pauseServiceDownload(String)}
      * <p>
-     * Also save the download records in the database, if you want get record from database,
-     * see  {@link #getDownloadRecord(String)}
+     * If you want get record from database, see {@link #getDownloadRecord(String)}
      *
      * @param url url
      * @return Observable<DownloadStatus>
@@ -430,67 +448,6 @@ public class RxDownload {
         }).observeOn(AndroidSchedulers.mainThread());
     }
 
-
-    /**
-     * Using Service to download.
-     * <p>
-     * Un subscribe will not pause download.
-     * <p>
-     * If you want receive download status, see {@link #receiveDownloadStatus(String)}
-     * <p>
-     * If you want pause download, see {@link #pauseServiceDownload(String)}
-     * <p>
-     * Also save the download records in the database, if you want get record from database,
-     * see  {@link #getDownloadRecord(String)}
-     *
-     * @param urls urls
-     * @return Observable<DownloadStatus>
-     */
-    public Observable<?> serviceDownload(String missionId, String... urls) {
-        return serviceDownload(missionId, Arrays.asList(urls));
-    }
-
-    /**
-     * Using Service to download.
-     * <p>
-     * Un subscribe will not pause download.
-     * <p>
-     * If you want receive download status, see {@link #receiveDownloadStatus(String)}
-     * <p>
-     * If you want pause download, see {@link #pauseServiceDownload(String)}
-     * <p>
-     * Also save the download records in the database, if you want get record from database,
-     * see  {@link #getDownloadRecord(String)}
-     *
-     * @param urls List urls
-     * @return Observable<DownloadStatus>
-     */
-    public Observable<?> serviceDownload(String missionId, List<String> urls) {
-        List<DownloadBean> list = new ArrayList<>();
-        for (String each : urls) {
-            list.add(new DownloadBean.Builder(each).build());
-        }
-        return serviceDownload(list, missionId);
-    }
-
-
-    /**
-     * Using Service to download.
-     * <p>
-     * MultiMission.
-     *
-     * @param beans download beans
-     * @return Observable<DownloadStatus>
-     */
-    public Observable<?> serviceDownload(final List<DownloadBean> beans, final String missionId) {
-        return createGeneralObservable(new GeneralObservableCallback() {
-            @Override
-            public void call() throws InterruptedException {
-                downloadService.addDownloadMission(new MultiMission(RxDownload.this, beans, missionId));
-            }
-        }).observeOn(AndroidSchedulers.mainThread());
-    }
-
     /**
      * Service download version of the Transformer.
      *
@@ -510,7 +467,8 @@ public class RxDownload {
      * @param <Upstream> Upstream
      * @return Transformer
      */
-    public <Upstream> ObservableTransformer<Upstream, Object> transformService(String url, String saveName) {
+    public <Upstream> ObservableTransformer<Upstream, Object> transformService(String url,
+                                                                               String saveName) {
         return transformService(url, saveName, null);
     }
 
@@ -545,6 +503,101 @@ public class RxDownload {
                     @Override
                     public ObservableSource<?> apply(Upstream upstream) throws Exception {
                         return serviceDownload(bean);
+                    }
+                });
+            }
+        };
+    }
+
+    /**
+     * Using Service to download multi urls.
+     *
+     * @param missionId missionId
+     * @param urls      urls
+     * @return Observable<DownloadStatus>
+     */
+    public Observable<?> serviceMultiDownload(String missionId, String... urls) {
+        return serviceMultiDownload(missionId, Arrays.asList(urls));
+    }
+
+    /**
+     * Using Service to download multi urls.
+     *
+     * @param missionId missionId
+     * @param urls      List urls
+     * @return Observable<DownloadStatus>
+     */
+    public Observable<?> serviceMultiDownload(String missionId, List<String> urls) {
+        List<DownloadBean> list = new ArrayList<>();
+        for (String each : urls) {
+            list.add(new DownloadBean.Builder(each).build());
+        }
+        return serviceMultiDownload(list, missionId);
+    }
+
+    /**
+     * Using Service to download multi urls.
+     *
+     * @param beans     download beans
+     * @param missionId missionId
+     * @return Observable<DownloadStatus>
+     */
+    public Observable<?> serviceMultiDownload(final List<DownloadBean> beans, final String missionId) {
+        return createGeneralObservable(new GeneralObservableCallback() {
+            @Override
+            public void call() throws InterruptedException {
+                downloadService.addDownloadMission(new MultiMission(RxDownload.this, beans, missionId));
+            }
+        }).observeOn(AndroidSchedulers.mainThread());
+    }
+
+    /**
+     * Service multi download version of the Transformer.
+     *
+     * @param missionId  missionId
+     * @param urls       multi download urls
+     * @param <Upstream> Upstream
+     * @return Transformer
+     */
+    public <Upstream> ObservableTransformer<Upstream, Object> transformMulti(
+            String missionId, String... urls) {
+        return transformMulti(missionId, Arrays.asList(urls));
+    }
+
+    /**
+     * Service multi download version of the Transformer.
+     *
+     * @param missionId  missionId
+     * @param urls       multi download urls
+     * @param <Upstream> Upstream
+     * @return Transformer
+     */
+    public <Upstream> ObservableTransformer<Upstream, Object> transformMulti(
+            String missionId, List<String> urls) {
+        List<DownloadBean> list = new ArrayList<>();
+        for (String each : urls) {
+            list.add(new DownloadBean.Builder(each).build());
+        }
+        return transformMulti(list, missionId);
+    }
+
+    /**
+     * Service multi download version of the Transformer.
+     *
+     * @param beans      multi download bean
+     * @param missionId  missionId
+     * @param <Upstream> Upstream
+     * @return Transformer
+     */
+    public <Upstream> ObservableTransformer<Upstream, Object> transformMulti(
+            final List<DownloadBean> beans, final String missionId) {
+        return new ObservableTransformer<Upstream, Object>() {
+            @Override
+            public ObservableSource<Object> apply(Observable<Upstream> upstream) {
+                return upstream.flatMap(new Function<Upstream, ObservableSource<?>>() {
+                    @Override
+                    public ObservableSource<?> apply(Upstream upstream) throws Exception {
+                        return serviceMultiDownload(beans, missionId);
                     }
                 });
             }

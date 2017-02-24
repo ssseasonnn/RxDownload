@@ -31,7 +31,7 @@ public class MultiMissionDownloadActivity extends AppCompatActivity {
     @BindView(R.id.toolbar)
     Toolbar toolbar;
     RxDownload rxDownload;
-    String key;
+    String missionId;
     @BindView(R.id.image1)
     ImageView image1;
     @BindView(R.id.progress1)
@@ -75,13 +75,13 @@ public class MultiMissionDownloadActivity extends AppCompatActivity {
         ButterKnife.bind(this);
         setSupportActionBar(toolbar);
         rxDownload = RxDownload.getInstance(this);
-        key = UUID.randomUUID().toString();
+        missionId = UUID.randomUUID().toString();
 
         Picasso.with(this).load(img1).into(image1);
         Picasso.with(this).load(img2).into(image2);
         Picasso.with(this).load(img3).into(image3);
 
-        rxDownload.receiveMissionsEvent(key)
+        rxDownload.receiveMissionsEvent(missionId)
                 .subscribe(new Consumer<DownloadEvent>() {
                     @Override
                     public void accept(DownloadEvent downloadEvent) throws Exception {
@@ -188,7 +188,7 @@ public class MultiMissionDownloadActivity extends AppCompatActivity {
         switch (view.getId()) {
             case R.id.start:
                 //批量下载
-                rxDownload.serviceDownload(key, url1, url2, url3)
+                rxDownload.serviceMultiDownload(missionId, url1, url2, url3)
                         .subscribe(new Consumer<Object>() {
                             @Override
                             public void accept(Object o) throws Exception {
@@ -206,7 +206,7 @@ public class MultiMissionDownloadActivity extends AppCompatActivity {
 
                 break;
             case R.id.pause:
-                rxDownload.pauseServiceDownload(key)
+                rxDownload.pauseServiceDownload(missionId)
                         .subscribe();
                 break;
         }

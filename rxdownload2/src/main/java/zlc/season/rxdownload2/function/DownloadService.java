@@ -27,6 +27,7 @@ import zlc.season.rxdownload2.entity.DownloadEvent;
 import zlc.season.rxdownload2.entity.DownloadFlag;
 import zlc.season.rxdownload2.entity.DownloadMission;
 import zlc.season.rxdownload2.entity.DownloadRecord;
+import zlc.season.rxdownload2.entity.DownloadStatus;
 
 import static zlc.season.rxdownload2.function.Constant.WAITING_FOR_MISSION_COME;
 import static zlc.season.rxdownload2.function.DownloadEventFactory.completed;
@@ -104,7 +105,14 @@ public class DownloadService extends Service {
     }
 
     /**
-     * receive download event for single url.
+     * Receive the url download event.
+     * <p>
+     * Will receive the following event:
+     * {@link DownloadFlag#NORMAL}、{@link DownloadFlag#WAITING}、
+     * {@link DownloadFlag#STARTED}、{@link DownloadFlag#PAUSED}、
+     * {@link DownloadFlag#COMPLETED}、{@link DownloadFlag#FAILED};
+     * <p>
+     * Every event has {@link DownloadStatus}, you can get it and display it on the interface.
      *
      * @param url url
      * @return DownloadEvent
@@ -129,7 +137,14 @@ public class DownloadService extends Service {
     }
 
     /**
-     * receive download event for multi mission.
+     * Receive the download event for missionId.
+     * <p>
+     * Will receive the following event:
+     * {@link DownloadFlag#NORMAL}、{@link DownloadFlag#WAITING}、
+     * {@link DownloadFlag#STARTED}、{@link DownloadFlag#PAUSED}、
+     * {@link DownloadFlag#COMPLETED}、{@link DownloadFlag#FAILED};
+     * <p>
+     * But every event has not {@link DownloadStatus}, it's NULL.
      *
      * @param missionId missionId
      * @return DownloadEvent
@@ -175,9 +190,11 @@ public class DownloadService extends Service {
     }
 
     /**
-     * pause download
+     * Pause download.
+     * <p>
+     * Pause a url or all tasks belonging to missionId.
      *
-     * @param missionId missionId
+     * @param missionId url or missionId
      */
     public void pauseDownload(String missionId) {
         DownloadMission mission = missionMap.get(missionId);
@@ -187,9 +204,11 @@ public class DownloadService extends Service {
     }
 
     /**
-     * delete download
+     * Delete download.
+     * <p>
+     * Delete a url or all tasks belonging to missionId.
      *
-     * @param missionId  missionId
+     * @param missionId  url or missionId
      * @param deleteFile whether delete file
      */
     public void deleteDownload(String missionId, boolean deleteFile) {
@@ -232,7 +251,10 @@ public class DownloadService extends Service {
                 });
     }
 
-    public void pauseAll() {
+    /**
+     * Call when service is onDestroy.
+     */
+    private void pauseAll() {
         dispose(disposable);
         for (String each : missionMap.keySet()) {
             pauseDownload(each);

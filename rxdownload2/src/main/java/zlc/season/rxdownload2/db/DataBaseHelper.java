@@ -86,21 +86,6 @@ public class DataBaseHelper {
         }
     }
 
-    public boolean recordNotExists(String url, String missionId) {
-        Cursor cursor = null;
-        try {
-            cursor = getReadableDatabase().query(TABLE_NAME, new String[]{COLUMN_ID},
-                    COLUMN_URL + "=? and " + COLUMN_MISSION_ID + "=?",
-                    new String[]{url, missionId}, null, null, null);
-            cursor.moveToFirst();
-            return cursor.getCount() == 0;
-        } finally {
-            if (cursor != null) {
-                cursor.close();
-            }
-        }
-    }
-
     public long insertRecord(DownloadBean downloadBean, int flag, String missionId) {
         return getWritableDatabase().insert(TABLE_NAME, null,
                 insert(downloadBean, flag, missionId));
@@ -146,7 +131,7 @@ public class DataBaseHelper {
                     new String[]{COLUMN_ID, COLUMN_URL, COLUMN_SAVE_NAME, COLUMN_SAVE_PATH,
                             COLUMN_DOWNLOAD_SIZE, COLUMN_TOTAL_SIZE, COLUMN_IS_CHUNKED,
                             COLUMN_EXTRA1, COLUMN_EXTRA2, COLUMN_EXTRA3, COLUMN_EXTRA4,
-                            COLUMN_EXTRA5, COLUMN_DOWNLOAD_FLAG, COLUMN_DATE},
+                            COLUMN_EXTRA5, COLUMN_DOWNLOAD_FLAG, COLUMN_DATE, COLUMN_MISSION_ID},
                     COLUMN_URL + "=?", new String[]{url}, null, null, null);
             cursor.moveToFirst();
             if (cursor.getCount() == 0) {
@@ -174,7 +159,7 @@ public class DataBaseHelper {
                     new String[]{COLUMN_ID, COLUMN_URL, COLUMN_SAVE_NAME, COLUMN_SAVE_PATH,
                             COLUMN_DOWNLOAD_SIZE, COLUMN_TOTAL_SIZE, COLUMN_IS_CHUNKED,
                             COLUMN_EXTRA1, COLUMN_EXTRA2, COLUMN_EXTRA3, COLUMN_EXTRA4,
-                            COLUMN_EXTRA5, COLUMN_DOWNLOAD_FLAG, COLUMN_DATE},
+                            COLUMN_EXTRA5, COLUMN_DOWNLOAD_FLAG, COLUMN_DATE, COLUMN_MISSION_ID},
                     COLUMN_MISSION_ID + "=?", new String[]{missionId}, null, null, null);
             List<DownloadRecord> result = new ArrayList<>();
             cursor.moveToFirst();
@@ -234,7 +219,7 @@ public class DataBaseHelper {
                                     new String[]{COLUMN_ID, COLUMN_URL, COLUMN_SAVE_NAME, COLUMN_SAVE_PATH,
                                             COLUMN_DOWNLOAD_SIZE, COLUMN_TOTAL_SIZE, COLUMN_IS_CHUNKED,
                                             COLUMN_EXTRA1, COLUMN_EXTRA2, COLUMN_EXTRA3, COLUMN_EXTRA4,
-                                            COLUMN_EXTRA5, COLUMN_DOWNLOAD_FLAG, COLUMN_DATE},
+                                            COLUMN_EXTRA5, COLUMN_DOWNLOAD_FLAG, COLUMN_DATE, COLUMN_MISSION_ID},
                                     null, null, null, null, null);
                             List<DownloadRecord> result = new ArrayList<>();
                             cursor.moveToFirst();
@@ -275,7 +260,7 @@ public class DataBaseHelper {
                                     new String[]{COLUMN_ID, COLUMN_URL, COLUMN_SAVE_NAME, COLUMN_SAVE_PATH,
                                             COLUMN_DOWNLOAD_SIZE, COLUMN_TOTAL_SIZE, COLUMN_IS_CHUNKED,
                                             COLUMN_EXTRA1, COLUMN_EXTRA2, COLUMN_EXTRA3, COLUMN_EXTRA4,
-                                            COLUMN_EXTRA5, COLUMN_DOWNLOAD_FLAG, COLUMN_DATE},
+                                            COLUMN_EXTRA5, COLUMN_DOWNLOAD_FLAG, COLUMN_DATE, COLUMN_MISSION_ID},
                                     COLUMN_URL + "=?", new String[]{url}, null, null, null);
                             cursor.moveToFirst();
                             if (cursor.getCount() == 0) {

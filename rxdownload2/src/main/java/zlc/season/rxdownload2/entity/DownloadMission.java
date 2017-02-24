@@ -22,7 +22,8 @@ import static zlc.season.rxdownload2.function.Utils.log;
  * Author: Season(ssseasonnn@gmail.com)
  * Date: 2016/11/18
  * Time: 11:38
- * FIXME
+ * <p>
+ * Represents a download task
  */
 public abstract class DownloadMission {
     protected RxDownload rxdownload;
@@ -66,8 +67,8 @@ public abstract class DownloadMission {
 
     public abstract void sendWaitingEvent(DataBaseHelper dataBaseHelper);
 
-    public Disposable start(DownloadBean bean, final Semaphore semaphore,
-                            final MissionCallback callback) {
+    protected Disposable start(DownloadBean bean, final Semaphore semaphore,
+                               final MissionCallback callback) {
         return rxdownload.download(bean)
                 .subscribeOn(Schedulers.io())
                 .doOnLifecycle(new Consumer<Disposable>() {

@@ -13,6 +13,7 @@ import zlc.season.rxdownload2.db.DataBaseHelper;
 import static zlc.season.rxdownload2.function.Constant.DOWNLOAD_URL_EXISTS;
 import static zlc.season.rxdownload2.function.DownloadEventFactory.completed;
 import static zlc.season.rxdownload2.function.DownloadEventFactory.failed;
+import static zlc.season.rxdownload2.function.DownloadEventFactory.paused;
 import static zlc.season.rxdownload2.function.DownloadEventFactory.started;
 import static zlc.season.rxdownload2.function.DownloadEventFactory.waiting;
 import static zlc.season.rxdownload2.function.Utils.formatStr;
@@ -21,7 +22,7 @@ import static zlc.season.rxdownload2.function.Utils.formatStr;
  * Author: Season(ssseasonnn@gmail.com)
  * Date: 2017/2/24
  * <p>
- * MultiMission, can add many urls.
+ * MultiMission, many urls.
  */
 public class MultiMission extends DownloadMission {
     private AtomicInteger completeNumber;
@@ -100,10 +101,10 @@ public class MultiMission extends DownloadMission {
 
     @Override
     public void sendWaitingEvent(DataBaseHelper dataBaseHelper) {
-        processor.onNext(waiting(null));
         for (SingleMission each : missions) {
             each.sendWaitingEvent(dataBaseHelper);
         }
+        processor.onNext(waiting(null));
     }
 
     @Override
@@ -119,6 +120,7 @@ public class MultiMission extends DownloadMission {
             each.pause(dataBaseHelper);
         }
         cancel();
+        processor.onNext(paused(null));
     }
 
     @Override

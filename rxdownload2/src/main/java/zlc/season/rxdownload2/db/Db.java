@@ -85,7 +85,6 @@ class Db {
             return values;
         }
 
-
         static ContentValues update(DownloadStatus status) {
             ContentValues values = new ContentValues();
             values.put(COLUMN_IS_CHUNKED, status.isChunked);
@@ -138,6 +137,7 @@ class Db {
 
             record.setFlag(cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_DOWNLOAD_FLAG)));
             record.setDate(cursor.getLong(cursor.getColumnIndexOrThrow(COLUMN_DATE)));
+            record.setMissionId(cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_MISSION_ID)));
             return record;
         }
     }

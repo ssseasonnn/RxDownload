@@ -2,6 +2,8 @@
 
 基于RxJava打造的下载工具, 支持多线程下载和断点续传, 智能判断是否支持断点续传等功能
 
+*Read this in other languages: [中文](README.md), [English](README.en.md)* 
+
 
 ## 更新日志：
 
@@ -289,6 +291,8 @@ File file = rxDownload.getRealFiles(saveName,savePath)[0];
 若您想对该项目来进行交流,可以通过以下方式:
 
 QQ : 270362455
+
+QQ群：603610731
 
 Gmail: ssseasonnn@gmail.com
 

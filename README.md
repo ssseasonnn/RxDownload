@@ -1,18 +1,12 @@
 # RxDownload
-The download tool based on RxJava . Support multi-threaded download and breakpoint download, intelligent judge whether to support multi-threaded download and breakpoint download.
-
 
 基于RxJava打造的下载工具, 支持多线程下载和断点续传, 智能判断是否支持断点续传等功能
-
-标签（空格分隔）： Android  RxJava  Download Tools Multi-threaded
 
 ---
 
 ### 更新日志：
 
 [更新日志搬到这里了](https://github.com/ssseasonnn/RxDownload/blob/master/CHANGE_LOG.md)
-
-
 
 ### 主要功能:
 
@@ -37,15 +31,6 @@ The download tool based on RxJava . Support multi-threaded download and breakpoi
 <img title="下载管理"  width="33%" src="https://raw.githubusercontent.com/ssseasonnn/RxDownload/master/gif/download_manager.gif">
 
 
-### 下载流程图
-
-<img src="https://raw.githubusercontent.com/ssseasonnn/RxDownload/master/download.png" title="下载流程图">
-
-
-
-# 注意,请仔细阅读这行文字:
-
-Demo中所有的下载链接均是从网上随意找的, 经常会出现地址失效或者下载失败等等各种错误, 如果你下载Demo运行发现结果不对, 请先行替换下载链接进行测试.
 
 ### 使用方式
 
@@ -72,6 +57,8 @@ RxDownload 现在支持RxJava2, 只需将包名改为 ```zlc.season.rxdownload2.
 ```groovy
 	dependencies{
    		 compile 'zlc.season:rxdownload2:1.1.1'
+         //or
+         compile 'zlc.season:rxdownload2:2.0.0-beta2' //测试版
 	}
 ```
 
@@ -86,92 +73,46 @@ RxDownload 现在支持RxJava2, 只需将包名改为 ```zlc.season.rxdownload2.
 
 > **注意: Android 6.0 以上还必须申请运行时权限, 如果遇到不能下载, 请先检查权限**
 
-#### 二、常规下载
+#### 二、创建实例及配置
 
-- 不具备后台下载能力
-- 取消订阅即暂停下载. 
-
-1.使用方式
+1.创建RxDownload实例
 
 ```java
-		    RxDownload.getInstance()
-                  .download(url, "weixin.apk", null)
-                  .subscribeOn(Schedulers.io())
-                  .observeOn(AndroidSchedulers.mainThread())
-                  .subscribe(new Observer<DownloadStatus>() {
-                      @Override
-                      public void onSubscribe(Disposable d) {
-                          mDisposable = d;
-                      }
-
-                      @Override
-                      public void onNext(DownloadStatus value) {
-						//获得下载状态
-                      }
-
-                      @Override
-                      public void onError(Throwable e) {
-						//下载出错
-                      }
-
-                      @Override
-                      public void onComplete() {
-						//下载完成	
-                      }
-                  });
+RxDownload rxDownload = RxDownload.getInstance(context);  //单例
 ```
 
-> 参数说明: 参数分别为下载地址,保存文件名,保存地址.
->
-> url与saveName为必传参数, savePath为可选参数, 默认的下载地址为/storage/emulated/0/Download/目录下, 也就是内置存储的Download目录
-
-2.参数配置
-
-**可以配置的参数如下:**
+2.参数配置，可以配置的参数如下:
 
 ```java
-	 RxDownload.getInstance()
-                .maxThread(10)                    //设置最大线程
-                .maxRetryCount(10)                //设置下载失败重试次数
-                .retrofit(myRetrofit)             //若需要自己的retrofit客户端,可在这里指定
-                .defaultSavePath(defaultSavePath) //设置默认的下载路径
-                .context(this)                    //自动安装需要Context
-                .autoInstall(true);               //下载完成自动安装，仅限7.0以下，7.0以上自行提供FileProvider
-                .download(url,savename,savepath)  //开始下载
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(new Observer<DownloadStatus>() {);
+RxDownload.getInstance(context)
+    .retrofit(myRetrofit)             //若需要自己的retrofit客户端,可在这里指定
+    .defaultSavePath(defaultSavePath) //设置默认的下载路径
+    .maxThread(3)                     //设置最大线程
+    .maxRetryCount(3)                 //设置下载失败重试次数
+    .maxDownloadNumber(5)             //Service同时下载数量
+    ...
 ```
 
-**Tips: **
+#### 三、开始下载
 
-- RxDownload.getInstance() 每次返回的是一个全新的对象. 
-- 每个实例都可以单独设置最大线程, 默认路径等参数.
-- 因此创建多个下载任务时应该避免多次创建实例.
+1.Normal Download
 
-```java
-RxDownload rxDownload1 = RxDownload.getInstance()
-  					   .maxThread(5) 
-  					   .maxRetryCount(10)
-  					   .defaultSavePath(defaultPath);
-//download task 1: 
-Disposable d1 = rxDownload1.download(url1,name1,null)...
-//download task 2:  
-Disposable d2 = rxDownload1.download(url2,name2,null)...  
 
-RxDownload rxDownload2 = RxDownload.getInstance()
-  					   .maxThread(10)...
-//download task 3:  
-Disposable d3 = rxDownload2.download(url3,name3,null)...   
-```
 
-3.取消或暂停下载
+3.下载参数说明
+
+- ```download(String url)```  只传url时，会自动从服务器获取文件名
+- ```download(String url, String saveName)``` 也可手动指定保存的文件名称
+- ```download(String url,String saveName,String savePath)``` 手动指定文件名和保存路径
+- ```download(DownloadBean bean)```  若需要保存额外的数据到数据库，可以手动构造Download Bean，具体细节请查看源码
+
+4.取消或暂停下载
 
 **取消订阅, 即可暂停下载**
 
 ```java
-Disposable disposable = RxDownload.getInstance()
-                .download(url, null, null)
+Disposable disposable = RxDownload.getInstance(context)
+                .download(url)
   				//...
 
 //取消订阅, 即可暂停下载, 若服务端不支持断点续传,下一次下载会重新下载,反之会继续下载
@@ -180,7 +121,7 @@ if (disposable != null && !disposable.isDisposed()) {
 }
 ```
 
-4.提供了一个transferform方式供RxJava的Compose操作符使用
+5.提供了一个transferform方式供RxJava的Compose操作符使用
 
 例如与RxPermission结合使用
 
@@ -198,7 +139,7 @@ if (disposable != null && !disposable.isDisposed()) {
                         }
                     })
                     .observeOn(Schedulers.io())
-                    .compose(RxDownload.getInstance().<Boolean>transform(data.url, data.name, null))
+                    .compose(RxDownload.getInstance(context).<Boolean>transform(url))
                     .observeOn(AndroidSchedulers.mainThread())
                     .subscribe(new Consumer<DownloadStatus>() { ... });
 ```

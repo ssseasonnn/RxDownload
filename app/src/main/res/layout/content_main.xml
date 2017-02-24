@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/content_menu"
@@ -19,18 +18,23 @@
         android:id="@+id/basic_download"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="BASIC DOWNLOAD"/>
+        android:text="BASIC DOWNLOAD" />
 
     <Button
         android:id="@+id/service_download"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Service download"/>
+        android:text="Service download" />
 
+    <Button
+        android:id="@+id/multi_mission"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Multi Mission download" />
 
     <Button
         android:id="@+id/app_market"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="APP MARKET"/>
+        android:text="APP MARKET" />
 </LinearLayout>

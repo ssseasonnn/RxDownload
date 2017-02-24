@@ -10,7 +10,7 @@ import zlc.season.practicalrecyclerview.AbstractAdapter;
  * Time: 10:02
  * FIXME
  */
-public class DownloadAdapter extends AbstractAdapter<DownloadBean, DownloadViewHolder> {
+public class DownloadAdapter extends AbstractAdapter<DownloadItem, DownloadViewHolder> {
     @Override
     protected DownloadViewHolder onNewCreateViewHolder(ViewGroup parent, int viewType) {
         return new DownloadViewHolder(parent, this);

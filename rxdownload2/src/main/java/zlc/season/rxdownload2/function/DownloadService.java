@@ -33,8 +33,6 @@ import static zlc.season.rxdownload2.function.DownloadEventFactory.completed;
 import static zlc.season.rxdownload2.function.DownloadEventFactory.createEvent;
 import static zlc.season.rxdownload2.function.DownloadEventFactory.failed;
 import static zlc.season.rxdownload2.function.DownloadEventFactory.normal;
-import static zlc.season.rxdownload2.function.DownloadEventFactory.paused;
-import static zlc.season.rxdownload2.function.Utils.deleteFiles;
 import static zlc.season.rxdownload2.function.Utils.dispose;
 import static zlc.season.rxdownload2.function.Utils.getFiles;
 import static zlc.season.rxdownload2.function.Utils.log;
@@ -172,6 +170,7 @@ public class DownloadService extends Service {
         mission.init(missionMap, processorMap);
         mission.insertOrUpdate(dataBaseHelper);
         mission.sendWaitingEvent(dataBaseHelper);
+
         downloadQueue.put(mission);
     }
 
@@ -181,15 +180,9 @@ public class DownloadService extends Service {
      * @param missionId missionId
      */
     public void pauseDownload(String missionId) {
-        cancelMission(missionId);
-        createProcessor(missionId).onNext(paused(dataBaseHelper.readStatus(missionId)));
-        missionMap.remove(missionId);
-    }
-
-    private void cancelMission(String missionId) {
         DownloadMission mission = missionMap.get(missionId);
         if (mission != null) {
-            mission.cancel();
+            mission.pause(dataBaseHelper);
         }
     }
 
@@ -200,22 +193,10 @@ public class DownloadService extends Service {
      * @param deleteFile whether delete file
      */
     public void deleteDownload(String missionId, boolean deleteFile) {
-        cancelMission(missionId);
-        createProcessor(missionId).onNext(normal(null));
-        if (deleteFile) {
-            DownloadRecord record = dataBaseHelper.readSingleRecord(missionId);
-            if (record != null) {
-                deleteFiles(getFiles(record.getSaveName(), record.getSavePath()));
-            }
-        }
-        deleteMission(missionId);
-        missionMap.remove(missionId);
-    }
-
-    private void deleteMission(String missionId) {
         DownloadMission mission = missionMap.get(missionId);
         if (mission != null) {
-            mission.delete(dataBaseHelper);
+            mission.delete(dataBaseHelper, deleteFile);
+            missionMap.remove(missionId);
         }
     }
 

@@ -19,6 +19,10 @@ import zlc.season.rxdownload2.function.FileHelper;
 
 import static android.text.TextUtils.concat;
 import static java.io.File.separator;
+import static zlc.season.rxdownload2.entity.DownloadFlag.COMPLETED;
+import static zlc.season.rxdownload2.entity.DownloadFlag.FAILED;
+import static zlc.season.rxdownload2.entity.DownloadFlag.PAUSED;
+import static zlc.season.rxdownload2.entity.DownloadFlag.STARTED;
 import static zlc.season.rxdownload2.function.Constant.CACHE;
 import static zlc.season.rxdownload2.function.Constant.RANGE_DOWNLOAD_STARTED;
 import static zlc.season.rxdownload2.function.Utils.empty;
@@ -260,9 +264,9 @@ public class TemporaryRecord {
 
     public void start() {
         if (dataBaseHelper.recordNotExists(bean.getUrl())) {
-            dataBaseHelper.insertRecord(bean, DownloadFlag.STARTED, null);
+            dataBaseHelper.insertRecord(bean, STARTED, null);
         } else {
-            dataBaseHelper.updateRecord(bean.getUrl(), bean.getSaveName(), bean.getSavePath(), DownloadFlag.STARTED);
+            dataBaseHelper.updateRecord(bean.getUrl(), bean.getSaveName(), bean.getSavePath(), STARTED);
         }
     }
 
@@ -271,15 +275,15 @@ public class TemporaryRecord {
     }
 
     public void error() {
-        dataBaseHelper.updateFlag(bean.getUrl(), DownloadFlag.FAILED);
+        dataBaseHelper.updateRecord(bean.getUrl(), FAILED, null);
     }
 
     public void complete() {
-        dataBaseHelper.updateFlag(bean.getUrl(), DownloadFlag.COMPLETED);
+        dataBaseHelper.updateRecord(bean.getUrl(), COMPLETED, null);
     }
 
     public void cancel() {
-        dataBaseHelper.updateFlag(bean.getUrl(), DownloadFlag.PAUSED);
+        dataBaseHelper.updateRecord(bean.getUrl(), PAUSED, null);
     }
 
     public void finish() {

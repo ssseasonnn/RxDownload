@@ -2,6 +2,7 @@ package zlc.season.rxdownload2.entity;
 
 import java.util.Map;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import io.reactivex.disposables.Disposable;
 import io.reactivex.functions.Action;
@@ -25,14 +26,19 @@ import static zlc.season.rxdownload2.function.Utils.log;
  */
 public abstract class DownloadMission {
     protected RxDownload rxdownload;
-    private boolean canceled = false;
+    protected FlowableProcessor<DownloadEvent> processor;
+    private AtomicBoolean canceled = new AtomicBoolean(false);
 
     public DownloadMission(RxDownload rxdownload) {
         this.rxdownload = rxdownload;
     }
 
     public void cancel() {
-        canceled = true;
+        canceled.compareAndSet(false, true);
+    }
+
+    public boolean isCancel() {
+        return canceled.get();
     }
 
     protected FlowableProcessor<DownloadEvent> getProcessor(Map<String,
@@ -54,22 +60,28 @@ public abstract class DownloadMission {
 
     public abstract void start(final Semaphore semaphore);
 
-    public abstract void delete(DataBaseHelper dataBaseHelper);
+    public abstract void pause(DataBaseHelper dataBaseHelper);
+
+    public abstract void delete(DataBaseHelper dataBaseHelper, boolean deleteFile);
 
     public abstract void sendWaitingEvent(DataBaseHelper dataBaseHelper);
 
     public Disposable start(DownloadBean bean, final Semaphore semaphore,
-                            final DownloadCallback callback) {
-
+                            final MissionCallback callback) {
         return rxdownload.download(bean)
                 .subscribeOn(Schedulers.io())
                 .doOnLifecycle(new Consumer<Disposable>() {
                     @Override
                     public void accept(Disposable disposable) throws Exception {
+                        if (canceled.get()) {
+                            dispose(disposable);
+                        }
+
                         log(TRY_TO_ACQUIRE_SEMAPHORE);
                         semaphore.acquire();
                         log(ACQUIRE_SUCCESS);
-                        if (canceled) {
+
+                        if (canceled.get()) {
                             dispose(disposable);
                         } else {
                             callback.start();
@@ -102,7 +114,7 @@ public abstract class DownloadMission {
     /**
      * Mission download callback.
      */
-    interface DownloadCallback {
+    interface MissionCallback {
         void start();
 
         void next(DownloadStatus status);
@@ -110,5 +122,9 @@ public abstract class DownloadMission {
         void error(Throwable throwable);
 
         void complete();
+    }
+
+    interface MultiMissionCallback extends MissionCallback {
+
     }
 }

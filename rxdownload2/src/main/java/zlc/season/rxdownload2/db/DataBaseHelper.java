@@ -111,8 +111,8 @@ public class DataBaseHelper {
                 COLUMN_URL + "=?", new String[]{url});
     }
 
-    public long updateFlag(String url, int flag) {
-        return getWritableDatabase().update(TABLE_NAME, update(flag),
+    public long updateRecord(String url, int flag, String missionId) {
+        return getWritableDatabase().update(TABLE_NAME, update(flag, missionId),
                 COLUMN_URL + "=?", new String[]{url});
     }
 
@@ -127,7 +127,7 @@ public class DataBaseHelper {
     }
 
     public long repairErrorFlag() {
-        return getWritableDatabase().update(TABLE_NAME, update(DownloadFlag.PAUSED),
+        return getWritableDatabase().update(TABLE_NAME, update(DownloadFlag.PAUSED, null),
                 COLUMN_DOWNLOAD_FLAG + "=? or " + COLUMN_DOWNLOAD_FLAG + "=?",
                 new String[]{DownloadFlag.WAITING + "", DownloadFlag.STARTED + ""});
     }

@@ -2,6 +2,8 @@
 
 基于RxJava打造的下载工具, 支持多线程下载和断点续传, 智能判断是否支持断点续传等功能
 
+*Read this in other languages: [中文](README.md), [English](README.en.md)* 
+
 
 ## 更新日志：
 

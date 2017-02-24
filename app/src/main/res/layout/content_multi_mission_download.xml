@@ -6,68 +6,124 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:paddingBottom="@dimen/activity_vertical_margin"
-    android:paddingLeft="@dimen/activity_horizontal_margin"
-    android:paddingRight="@dimen/activity_horizontal_margin"
-    android:paddingTop="@dimen/activity_vertical_margin"
     app:layout_behavior="@string/appbar_scrolling_view_behavior"
     tools:context="zlc.season.rxdownloadproject.multi_mission.MultiMissionDownloadActivity"
     tools:showIn="@layout/activity_multi_mission_download">
 
     <LinearLayout
-        android:id="@+id/content"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:visibility="gone">
-
-        <ImageView
-            android:id="@+id/image1"
-            android:layout_width="100dp"
-            android:layout_height="100dp"
-            android:layout_weight="1" />
-
-        <ImageView
-            android:id="@+id/image2"
-            android:layout_width="100dp"
-            android:layout_height="100dp"
-            android:layout_marginEnd="@dimen/activity_horizontal_margin"
-            android:layout_marginLeft="@dimen/activity_horizontal_margin"
-            android:layout_marginRight="@dimen/activity_horizontal_margin"
-            android:layout_marginStart="@dimen/activity_horizontal_margin"
-            android:layout_weight="1" />
-
-        <ImageView
-            android:id="@+id/image3"
-            android:layout_width="100dp"
-            android:layout_height="100dp"
-            android:layout_weight="1" />
-    </LinearLayout>
-
-    <LinearLayout
-        android:id="@+id/progress"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:gravity="center"
         android:orientation="horizontal">
 
-        <ProgressBar
-            android:layout_width="100dp"
-            android:layout_height="100dp"
-            android:layout_weight="1" />
+        <RelativeLayout
+            android:id="@+id/mission1"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1">
 
-        <ProgressBar
-            android:layout_width="100dp"
-            android:layout_height="100dp"
-            android:layout_marginEnd="@dimen/activity_horizontal_margin"
-            android:layout_marginLeft="@dimen/activity_horizontal_margin"
-            android:layout_marginRight="@dimen/activity_horizontal_margin"
-            android:layout_marginStart="@dimen/activity_horizontal_margin"
-            android:layout_weight="1" />
+            <ImageView
+                android:id="@+id/image1"
+                android:layout_width="60dp"
+                android:layout_height="60dp"
+                android:layout_centerInParent="true"
+                android:visibility="visible"
+                tools:ignore="ContentDescription" />
 
-        <ProgressBar
-            android:layout_width="100dp"
-            android:layout_height="100dp"
-            android:layout_weight="1" />
+            <online.osslab.CircleProgressBar
+                android:id="@+id/progress1"
+                android:layout_width="100dp"
+                android:layout_height="100dp"
+                android:layout_centerInParent="true"
+                android:visibility="visible"
+                app:background_color="#FFCDD2"
+                app:background_width="5dp"
+                app:progress_color="#F44336"
+                app:progress_width="10dp" />
+
+            <ImageView
+                android:id="@+id/control1"
+                android:layout_width="50dp"
+                android:layout_height="50dp"
+                android:layout_centerInParent="true"
+                android:src="@drawable/ic_play_arrow"
+                android:tint="#1976D2"
+                tools:ignore="ContentDescription" />
+        </RelativeLayout>
+
+
+        <RelativeLayout
+            android:id="@+id/mission2"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1">
+
+            <ImageView
+                android:id="@+id/image2"
+                android:layout_width="60dp"
+                android:layout_height="60dp"
+                android:layout_centerInParent="true"
+                android:visibility="visible"
+                tools:ignore="ContentDescription" />
+
+            <online.osslab.CircleProgressBar
+                android:id="@+id/progress2"
+                android:layout_width="100dp"
+                android:layout_height="100dp"
+                android:layout_centerInParent="true"
+                android:visibility="visible"
+                app:background_color="#FFCDD2"
+                app:background_width="5dp"
+                app:progress_color="#F44336"
+                app:progress_value="20"
+                app:progress_width="10dp" />
+
+            <ImageView
+                android:id="@+id/control2"
+                android:layout_width="50dp"
+                android:layout_height="50dp"
+                android:layout_centerInParent="true"
+                android:src="@drawable/ic_play_arrow"
+                android:tint="#1976D2"
+                tools:ignore="ContentDescription" />
+        </RelativeLayout>
+
+
+        <RelativeLayout
+            android:id="@+id/mission3"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1">
+
+            <ImageView
+                android:id="@+id/image3"
+                android:layout_width="60dp"
+                android:layout_height="60dp"
+                android:layout_centerInParent="true"
+                android:visibility="visible"
+                tools:ignore="ContentDescription" />
+
+            <online.osslab.CircleProgressBar
+                android:id="@+id/progress3"
+                android:layout_width="100dp"
+                android:layout_height="100dp"
+                android:layout_centerInParent="true"
+                android:visibility="visible"
+                app:background_color="#FFCDD2"
+                app:background_width="5dp"
+                app:progress_color="#F44336"
+                app:progress_width="10dp" />
+
+            <ImageView
+                android:id="@+id/control3"
+                android:layout_width="50dp"
+                android:layout_height="50dp"
+                android:layout_centerInParent="true"
+                android:src="@drawable/ic_play_arrow"
+                android:tint="#1976D2"
+                tools:ignore="ContentDescription" />
+        </RelativeLayout>
+
     </LinearLayout>
 
     <LinearLayout

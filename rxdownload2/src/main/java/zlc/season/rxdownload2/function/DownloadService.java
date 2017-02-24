@@ -28,7 +28,6 @@ import zlc.season.rxdownload2.entity.DownloadFlag;
 import zlc.season.rxdownload2.entity.DownloadMission;
 import zlc.season.rxdownload2.entity.DownloadRecord;
 
-import static zlc.season.rxdownload2.function.Constant.DOWNLOAD_URL_EXISTS;
 import static zlc.season.rxdownload2.function.Constant.WAITING_FOR_MISSION_COME;
 import static zlc.season.rxdownload2.function.DownloadEventFactory.completed;
 import static zlc.season.rxdownload2.function.DownloadEventFactory.createEvent;
@@ -37,7 +36,6 @@ import static zlc.season.rxdownload2.function.DownloadEventFactory.normal;
 import static zlc.season.rxdownload2.function.DownloadEventFactory.paused;
 import static zlc.season.rxdownload2.function.Utils.deleteFiles;
 import static zlc.season.rxdownload2.function.Utils.dispose;
-import static zlc.season.rxdownload2.function.Utils.formatStr;
 import static zlc.season.rxdownload2.function.Utils.getFiles;
 import static zlc.season.rxdownload2.function.Utils.log;
 
@@ -171,13 +169,9 @@ public class DownloadService extends Service {
      * @throws InterruptedException
      */
     public void addDownloadMission(DownloadMission mission) throws InterruptedException {
-        if (missionMap.containsKey(mission.getMissionId())) {
-            throw new IllegalArgumentException(formatStr(DOWNLOAD_URL_EXISTS, mission.getMissionId()));
-        }
-        missionMap.put(mission.getMissionId(), mission);
+        mission.init(missionMap, processorMap);
         mission.insertOrUpdate(dataBaseHelper);
-
-        createProcessor(mission.getMissionId()).onNext(mission.createWaitingEvent(dataBaseHelper));
+        mission.sendWaitingEvent(dataBaseHelper);
         downloadQueue.put(mission);
     }
 
@@ -189,6 +183,7 @@ public class DownloadService extends Service {
     public void pauseDownload(String missionId) {
         cancelMission(missionId);
         createProcessor(missionId).onNext(paused(dataBaseHelper.readStatus(missionId)));
+        missionMap.remove(missionId);
     }
 
     private void cancelMission(String missionId) {
@@ -207,15 +202,14 @@ public class DownloadService extends Service {
     public void deleteDownload(String missionId, boolean deleteFile) {
         cancelMission(missionId);
         createProcessor(missionId).onNext(normal(null));
-
         if (deleteFile) {
             DownloadRecord record = dataBaseHelper.readSingleRecord(missionId);
             if (record != null) {
                 deleteFiles(getFiles(record.getSaveName(), record.getSavePath()));
             }
         }
-
         deleteMission(missionId);
+        missionMap.remove(missionId);
     }
 
     private void deleteMission(String missionId) {
@@ -252,7 +246,7 @@ public class DownloadService extends Service {
                 .subscribe(new Consumer<DownloadMission>() {
                     @Override
                     public void accept(DownloadMission mission) throws Exception {
-                        mission.start(semaphore, processorMap);
+                        mission.start(semaphore);
                     }
                 });
     }

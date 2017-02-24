@@ -409,7 +409,7 @@ public class RxDownload {
      * @param savePath savePath
      * @return Observable<DownloadStatus>
      */
-    public Observable<?> serviceDownload(final String url, String saveName, String savePath) {
+    public Observable<?> serviceDownload(String url, String saveName, String savePath) {
         return serviceDownload(new DownloadBean.Builder(url)
                 .setSaveName(saveName).setSavePath(savePath).build());
     }

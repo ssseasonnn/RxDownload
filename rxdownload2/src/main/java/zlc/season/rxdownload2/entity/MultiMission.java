@@ -78,11 +78,13 @@ public class MultiMission extends DownloadMission {
     @Override
     public void init(Map<String, DownloadMission> missionMap,
                      Map<String, FlowableProcessor<DownloadEvent>> processorMap) {
-        if (isCancel()) {
-            missionMap.put(getMissionId(), this);
-        } else {
+        DownloadMission mission = missionMap.get(getMissionId());
+        if (mission != null && !mission.isCancel()) {
             throw new IllegalArgumentException(formatStr(DOWNLOAD_URL_EXISTS, getMissionId()));
+        } else {
+            missionMap.put(getMissionId(), this);
         }
+
         processor = getProcessor(processorMap, getMissionId());
         for (SingleMission each : missions) {
             each.init(missionMap, processorMap);

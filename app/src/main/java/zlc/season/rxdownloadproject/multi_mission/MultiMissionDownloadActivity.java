@@ -98,15 +98,24 @@ public class MultiMissionDownloadActivity extends AppCompatActivity {
                     public void accept(DownloadEvent downloadEvent) throws Exception {
                         int flag = downloadEvent.getFlag();
                         state1 = flag;
-                        if (flag == DownloadFlag.FAILED) {
-                            Throwable throwable = downloadEvent.getError();
-                            log(throwable);
-                        }
-                        if (flag == DownloadFlag.STARTED) {
-                            control1.setImageResource(R.drawable.ic_pause);
-                        }
-                        if (flag == DownloadFlag.PAUSED) {
-                            control1.setImageResource(R.drawable.ic_play_arrow);
+                        switch (flag) {
+                            case DownloadFlag.NORMAL:
+                                break;
+                            case DownloadFlag.WAITING:
+                                break;
+                            case DownloadFlag.STARTED:
+                                control1.setImageResource(R.drawable.ic_pause);
+                                break;
+                            case DownloadFlag.PAUSED:
+                                control1.setImageResource(R.drawable.ic_play_arrow);
+                                break;
+                            case DownloadFlag.COMPLETED:
+                                break;
+                            case DownloadFlag.FAILED:
+                                Throwable throwable = downloadEvent.getError();
+                                log(throwable);
+                                control1.setImageResource(R.drawable.ic_play_arrow);
+                                break;
                         }
                         DownloadStatus status = downloadEvent.getDownloadStatus();
                         progress1.setProgress(status.getPercentNumber());
@@ -119,15 +128,24 @@ public class MultiMissionDownloadActivity extends AppCompatActivity {
                     public void accept(DownloadEvent downloadEvent) throws Exception {
                         int flag = downloadEvent.getFlag();
                         state2 = flag;
-                        if (flag == DownloadFlag.FAILED) {
-                            Throwable throwable = downloadEvent.getError();
-                            log(throwable);
-                        }
-                        if (flag == DownloadFlag.STARTED) {
-                            control2.setImageResource(R.drawable.ic_pause);
-                        }
-                        if (flag == DownloadFlag.PAUSED) {
-                            control2.setImageResource(R.drawable.ic_play_arrow);
+                        switch (flag) {
+                            case DownloadFlag.NORMAL:
+                                break;
+                            case DownloadFlag.WAITING:
+                                break;
+                            case DownloadFlag.STARTED:
+                                control2.setImageResource(R.drawable.ic_pause);
+                                break;
+                            case DownloadFlag.PAUSED:
+                                control2.setImageResource(R.drawable.ic_play_arrow);
+                                break;
+                            case DownloadFlag.COMPLETED:
+                                break;
+                            case DownloadFlag.FAILED:
+                                Throwable throwable = downloadEvent.getError();
+                                log(throwable);
+                                control2.setImageResource(R.drawable.ic_play_arrow);
+                                break;
                         }
                         DownloadStatus status = downloadEvent.getDownloadStatus();
                         progress2.setProgress(status.getPercentNumber());
@@ -140,15 +158,24 @@ public class MultiMissionDownloadActivity extends AppCompatActivity {
                     public void accept(DownloadEvent downloadEvent) throws Exception {
                         int flag = downloadEvent.getFlag();
                         state3 = flag;
-                        if (flag == DownloadFlag.FAILED) {
-                            Throwable throwable = downloadEvent.getError();
-                            log(throwable);
-                        }
-                        if (flag == DownloadFlag.STARTED) {
-                            control3.setImageResource(R.drawable.ic_pause);
-                        }
-                        if (flag == DownloadFlag.PAUSED) {
-                            control3.setImageResource(R.drawable.ic_play_arrow);
+                        switch (flag) {
+                            case DownloadFlag.NORMAL:
+                                break;
+                            case DownloadFlag.WAITING:
+                                break;
+                            case DownloadFlag.STARTED:
+                                control3.setImageResource(R.drawable.ic_pause);
+                                break;
+                            case DownloadFlag.PAUSED:
+                                control3.setImageResource(R.drawable.ic_play_arrow);
+                                break;
+                            case DownloadFlag.COMPLETED:
+                                break;
+                            case DownloadFlag.FAILED:
+                                Throwable throwable = downloadEvent.getError();
+                                log(throwable);
+                                control3.setImageResource(R.drawable.ic_play_arrow);
+                                break;
                         }
                         DownloadStatus status = downloadEvent.getDownloadStatus();
                         progress3.setProgress(status.getPercentNumber());
@@ -165,7 +192,15 @@ public class MultiMissionDownloadActivity extends AppCompatActivity {
                         .subscribe(new Consumer<Object>() {
                             @Override
                             public void accept(Object o) throws Exception {
+                                control1.setVisibility(View.VISIBLE);
+                                control2.setVisibility(View.VISIBLE);
+                                control3.setVisibility(View.VISIBLE);
                                 Toast.makeText(MultiMissionDownloadActivity.this, "开始", Toast.LENGTH_SHORT).show();
+                            }
+                        }, new Consumer<Throwable>() {
+                            @Override
+                            public void accept(Throwable throwable) throws Exception {
+                                log(throwable);
                             }
                         });
 
@@ -181,23 +216,23 @@ public class MultiMissionDownloadActivity extends AppCompatActivity {
     public void onControlClick(View view) {
         switch (view.getId()) {
             case R.id.control1:
-                if (state1 == DownloadFlag.NORMAL || state1 == DownloadFlag.PAUSED) {
+                if (state1 == DownloadFlag.PAUSED || state1 == DownloadFlag.FAILED) {
                     rxDownload.serviceDownload(url1).subscribe();
-                } else {
+                } else if (state1 == DownloadFlag.STARTED) {
                     rxDownload.pauseServiceDownload(url1).subscribe();
                 }
                 break;
             case R.id.control2:
-                if (state2 == DownloadFlag.NORMAL || state2 == DownloadFlag.PAUSED) {
+                if (state2 == DownloadFlag.PAUSED || state2 == DownloadFlag.FAILED) {
                     rxDownload.serviceDownload(url2).subscribe();
-                } else {
+                } else if (state2 == DownloadFlag.STARTED) {
                     rxDownload.pauseServiceDownload(url2).subscribe();
                 }
                 break;
             case R.id.control3:
-                if (state3 == DownloadFlag.NORMAL || state3 == DownloadFlag.PAUSED) {
+                if (state3 == DownloadFlag.PAUSED || state3 == DownloadFlag.FAILED) {
                     rxDownload.serviceDownload(url3).subscribe();
-                } else {
+                } else if (state3 == DownloadFlag.STARTED) {
                     rxDownload.pauseServiceDownload(url3).subscribe();
                 }
                 break;

@@ -29,10 +29,10 @@ import io.reactivex.schedulers.Schedulers;
 import retrofit2.Retrofit;
 import zlc.season.rxdownload2.entity.DownloadBean;
 import zlc.season.rxdownload2.entity.DownloadEvent;
-import zlc.season.rxdownload2.entity.DownloadMission.MultiMission;
-import zlc.season.rxdownload2.entity.DownloadMission.SingleMission;
 import zlc.season.rxdownload2.entity.DownloadRecord;
 import zlc.season.rxdownload2.entity.DownloadStatus;
+import zlc.season.rxdownload2.entity.MultiMission;
+import zlc.season.rxdownload2.entity.SingleMission;
 import zlc.season.rxdownload2.function.DownloadHelper;
 import zlc.season.rxdownload2.function.DownloadService;
 import zlc.season.rxdownload2.function.Utils;
@@ -244,7 +244,8 @@ public class RxDownload {
             public void call() {
                 downloadService.pauseDownload(url);
             }
-        });
+        }).observeOn(AndroidSchedulers.mainThread());
+
     }
 
     /**
@@ -261,7 +262,7 @@ public class RxDownload {
             public void call() {
                 downloadService.deleteDownload(url, deleteFile);
             }
-        });
+        }).observeOn(AndroidSchedulers.mainThread());
     }
 
     /**
@@ -426,7 +427,7 @@ public class RxDownload {
             public void call() throws InterruptedException {
                 downloadService.addDownloadMission(new SingleMission(RxDownload.this, bean));
             }
-        });
+        }).observeOn(AndroidSchedulers.mainThread());
     }
 
 
@@ -487,7 +488,7 @@ public class RxDownload {
             public void call() throws InterruptedException {
                 downloadService.addDownloadMission(new MultiMission(RxDownload.this, beans, missionId));
             }
-        });
+        }).observeOn(AndroidSchedulers.mainThread());
     }
 
     /**

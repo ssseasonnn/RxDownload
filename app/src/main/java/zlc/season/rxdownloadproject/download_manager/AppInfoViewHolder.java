@@ -1,11 +1,9 @@
 package zlc.season.rxdownloadproject.download_manager;
 
-import android.Manifest;
 import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.util.Log;
-import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.ImageView;
@@ -15,18 +13,23 @@ import android.widget.Toast;
 import com.squareup.picasso.Picasso;
 import com.tbruyelle.rxpermissions2.RxPermissions;
 
+import java.io.File;
+
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
-import io.reactivex.disposables.Disposable;
 import io.reactivex.functions.Consumer;
 import zlc.season.practicalrecyclerview.AbstractViewHolder;
 import zlc.season.rxdownload2.RxDownload;
+import zlc.season.rxdownload2.entity.DownloadBean;
 import zlc.season.rxdownload2.entity.DownloadEvent;
 import zlc.season.rxdownload2.entity.DownloadFlag;
 import zlc.season.rxdownload2.function.Utils;
 import zlc.season.rxdownloadproject.DownloadController;
 import zlc.season.rxdownloadproject.R;
+
+import static android.Manifest.permission.WRITE_EXTERNAL_STORAGE;
+import static zlc.season.rxdownload2.function.Utils.log;
 
 /**
  * Author: Season(ssseasonnn@gmail.com)
@@ -45,29 +48,22 @@ public class AppInfoViewHolder extends AbstractViewHolder<AppInfoBean> {
     Button mAction;
 
     private AppInfoBean mData;
+
+    private DownloadController mDownloadController;
+
     private Context mContext;
     private RxDownload mRxDownload;
-    private DownloadController mDownloadController;
-    private Disposable mDisposable;
+    private DownloadBean downloadBean;
+    private int flag;
 
     public AppInfoViewHolder(ViewGroup parent) {
         super(parent, R.layout.app_info_item);
         ButterKnife.bind(this, itemView);
         mContext = parent.getContext();
 
-        mRxDownload = RxDownload.getInstance()
-                .context(mContext)
-                .autoInstall(true)  // 下载完成自动安装
-                .maxDownloadNumber(2);//最大下载数量
-
+        mRxDownload = RxDownload.getInstance(mContext);
 
         mDownloadController = new DownloadController(new TextView(mContext), mAction);
-        itemView.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                start();
-            }
-        });
     }
 
     @Override
@@ -77,14 +73,24 @@ public class AppInfoViewHolder extends AbstractViewHolder<AppInfoBean> {
         mTitle.setText(data.name);
         mContent.setText(data.info);
 
-        /**
-         * important!! 如果有订阅没有取消,则取消订阅!防止ViewHolder复用导致界面显示的BUG!
-         */
-        Utils.dispose(mDisposable);
-        mDisposable = mRxDownload.receiveDownloadStatus(mData.downloadUrl)
+        downloadBean = new DownloadBean
+                .Builder(data.downloadUrl)
+                .setSaveName(null)      //not need.
+                .setSavePath(null)      //not need
+                .setExtra1(mData.img)   //save extra info into database.
+                .setExtra2(mData.name)  //save extra info into database.
+                .build();
+
+        Utils.log(mData.downloadUrl);
+        mData.disposable = mRxDownload.receiveDownloadStatus(mData.downloadUrl)
                 .subscribe(new Consumer<DownloadEvent>() {
                     @Override
                     public void accept(DownloadEvent downloadEvent) throws Exception {
+                        if (flag != downloadEvent.getFlag()) {
+                            flag = downloadEvent.getFlag();
+                            log(flag + "");
+                        }
+
                         if (downloadEvent.getFlag() == DownloadFlag.FAILED) {
                             Throwable throwable = downloadEvent.getError();
                             Log.w("TAG", throwable);
@@ -108,27 +114,16 @@ public class AppInfoViewHolder extends AbstractViewHolder<AppInfoBean> {
             }
 
             @Override
-            public void cancelDownload() {
-                cancel();
-            }
-
-            @Override
             public void install() {
                 installApk();
             }
         });
     }
 
-    private void installApk() {
-        Uri uri = Uri.fromFile(mRxDownload.getRealFiles(mData.saveName, null)[0]);
-        Intent intent = new Intent(Intent.ACTION_VIEW);
-        intent.setDataAndType(uri, "application/vnd.android.package-archive");
-        mContext.startActivity(intent);
-    }
 
     private void start() {
         RxPermissions.getInstance(mContext)
-                .request(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                .request(WRITE_EXTERNAL_STORAGE)
                 .doOnNext(new Consumer<Boolean>() {
                     @Override
                     public void accept(Boolean granted) throws Exception {
@@ -137,7 +132,7 @@ public class AppInfoViewHolder extends AbstractViewHolder<AppInfoBean> {
                         }
                     }
                 })
-                .compose(mRxDownload.<Boolean>transformService(mData.downloadUrl, mData.saveName, null))
+                .compose(mRxDownload.<Boolean>transformService(downloadBean))
                 .subscribe(new Consumer<Object>() {
                     @Override
                     public void accept(Object o) throws Exception {
@@ -150,7 +145,16 @@ public class AppInfoViewHolder extends AbstractViewHolder<AppInfoBean> {
         mRxDownload.pauseServiceDownload(mData.downloadUrl).subscribe();
     }
 
-    private void cancel() {
-        mRxDownload.cancelServiceDownload(mData.downloadUrl).subscribe();
+    private void installApk() {
+        File[] files = mRxDownload.getRealFiles(mData.downloadUrl);
+        if (files != null) {
+            Uri uri = Uri.fromFile(files[0]);
+            Intent intent = new Intent(Intent.ACTION_VIEW);
+            intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            intent.setDataAndType(uri, "application/vnd.android.package-archive");
+            mContext.startActivity(intent);
+        } else {
+            Toast.makeText(mContext, "File not exists", Toast.LENGTH_SHORT).show();
+        }
     }
 }

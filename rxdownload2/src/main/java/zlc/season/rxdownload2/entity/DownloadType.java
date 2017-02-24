@@ -13,266 +13,288 @@ import io.reactivex.Flowable;
 import io.reactivex.FlowableEmitter;
 import io.reactivex.FlowableOnSubscribe;
 import io.reactivex.Observable;
-import io.reactivex.ObservableSource;
 import io.reactivex.functions.Action;
 import io.reactivex.functions.Consumer;
 import io.reactivex.functions.Function;
 import io.reactivex.schedulers.Schedulers;
 import okhttp3.ResponseBody;
 import retrofit2.Response;
-import zlc.season.rxdownload2.function.DownloadHelper;
 import zlc.season.rxdownload2.function.Utils;
 
-import static java.lang.Thread.currentThread;
 import static zlc.season.rxdownload2.function.Constant.ALREADY_DOWNLOAD_HINT;
+import static zlc.season.rxdownload2.function.Constant.CONTINUE_DOWNLOAD_CANCEL;
 import static zlc.season.rxdownload2.function.Constant.CONTINUE_DOWNLOAD_COMPLETED;
 import static zlc.season.rxdownload2.function.Constant.CONTINUE_DOWNLOAD_FAILED;
+import static zlc.season.rxdownload2.function.Constant.CONTINUE_DOWNLOAD_FINISH;
 import static zlc.season.rxdownload2.function.Constant.CONTINUE_DOWNLOAD_PREPARE;
 import static zlc.season.rxdownload2.function.Constant.CONTINUE_DOWNLOAD_STARTED;
+import static zlc.season.rxdownload2.function.Constant.MULTITHREADING_DOWNLOAD_CANCEL;
 import static zlc.season.rxdownload2.function.Constant.MULTITHREADING_DOWNLOAD_COMPLETED;
 import static zlc.season.rxdownload2.function.Constant.MULTITHREADING_DOWNLOAD_FAILED;
+import static zlc.season.rxdownload2.function.Constant.MULTITHREADING_DOWNLOAD_FINISH;
 import static zlc.season.rxdownload2.function.Constant.MULTITHREADING_DOWNLOAD_PREPARE;
 import static zlc.season.rxdownload2.function.Constant.MULTITHREADING_DOWNLOAD_STARTED;
+import static zlc.season.rxdownload2.function.Constant.NORMAL_DOWNLOAD_CANCEL;
 import static zlc.season.rxdownload2.function.Constant.NORMAL_DOWNLOAD_COMPLETED;
 import static zlc.season.rxdownload2.function.Constant.NORMAL_DOWNLOAD_FAILED;
+import static zlc.season.rxdownload2.function.Constant.NORMAL_DOWNLOAD_FINISH;
 import static zlc.season.rxdownload2.function.Constant.NORMAL_DOWNLOAD_PREPARE;
 import static zlc.season.rxdownload2.function.Constant.NORMAL_DOWNLOAD_STARTED;
-import static zlc.season.rxdownload2.function.Constant.NOT_SUPPORT_HEAD_HINT;
-import static zlc.season.rxdownload2.function.Constant.RANGE_DOWNLOAD_COMPLETED;
-import static zlc.season.rxdownload2.function.Constant.RANGE_DOWNLOAD_STARTED;
-import static zlc.season.rxdownload2.function.Constant.UNABLE_DOWNLOAD_HINT;
+import static zlc.season.rxdownload2.function.Constant.NORMAL_RETRY_HINT;
+import static zlc.season.rxdownload2.function.Constant.RANGE_RETRY_HINT;
+import static zlc.season.rxdownload2.function.Utils.formatStr;
 import static zlc.season.rxdownload2.function.Utils.log;
 
 /**
  * Author: Season(ssseasonnn@gmail.com)
  * Date: 2016/11/3
  * Time: 09:44
- * 下载类型
+ * Download Type
  */
 public abstract class DownloadType {
-    String mUrl;
-    long mFileLength;
-    String mLastModify;
-    DownloadHelper mDownloadHelper;
+    protected TemporaryRecord record;
 
-    public abstract void prepareDownload()
-            throws IOException, ParseException;
+    private DownloadType(TemporaryRecord record) {
+        this.record = record;
+    }
 
-    public abstract Observable<DownloadStatus> startDownload() throws IOException;
+    public void prepareDownload() throws IOException, ParseException {
+        log(prepareLog());
+    }
 
-    static class NormalDownload extends DownloadType {
+    public Observable<DownloadStatus> startDownload() {
+        return Flowable.just(1)
+                .doOnSubscribe(new Consumer<Subscription>() {
+                    @Override
+                    public void accept(Subscription subscription) throws Exception {
+                        log(startLog());
+                        record.start();
+                    }
+                })
+                .flatMap(new Function<Integer, Publisher<DownloadStatus>>() {
+                    @Override
+                    public Publisher<DownloadStatus> apply(Integer integer) throws Exception {
+                        return download();
+                    }
+                })
+                .doOnNext(new Consumer<DownloadStatus>() {
+                    @Override
+                    public void accept(DownloadStatus status) throws Exception {
+                        record.update(status);
+                    }
+                })
+                .doOnError(new Consumer<Throwable>() {
+                    @Override
+                    public void accept(Throwable throwable) throws Exception {
+                        log(errorLog());
+                        record.error();
+                    }
+                })
+                .doOnComplete(new Action() {
+                    @Override
+                    public void run() throws Exception {
+                        log(completeLog());
+                        record.complete();
+                    }
+                })
+                .doOnCancel(new Action() {
+                    @Override
+                    public void run() throws Exception {
+                        log(cancelLog());
+                        record.cancel();
+                    }
+                })
+                .doFinally(new Action() {
+                    @Override
+                    public void run() throws Exception {
+                        log(finishLog());
+                        record.finish();
+                    }
+                })
+                .toObservable();
+    }
+
+    protected abstract Publisher<DownloadStatus> download();
+
+    protected String prepareLog() {
+        return "";
+    }
+
+    protected String startLog() {
+        return "";
+    }
+
+    protected String completeLog() {
+        return "";
+    }
+
+    protected String errorLog() {
+        return "";
+    }
+
+    protected String cancelLog() {
+        return "";
+    }
+
+    protected String finishLog() {
+        return "";
+    }
+
+    public static class NormalDownload extends DownloadType {
+
+        public NormalDownload(TemporaryRecord record) {
+            super(record);
+        }
 
         @Override
         public void prepareDownload() throws IOException, ParseException {
-            log(NORMAL_DOWNLOAD_PREPARE);
-            mDownloadHelper.prepareNormalDownload(mUrl, mFileLength, mLastModify);
+            super.prepareDownload();
+            record.prepareNormalDownload();
         }
 
         @Override
-        public Observable<DownloadStatus> startDownload() {
-            return mDownloadHelper
-                    .getDownloadApi()
-                    .download(null, mUrl)
-                    .subscribeOn(Schedulers.io())
-                    .doOnSubscribe(new Consumer<Subscription>() {
-                        @Override
-                        public void accept(Subscription subscription) throws Exception {
-                            log(NORMAL_DOWNLOAD_STARTED);
-                        }
-                    })
-                    .doOnError(new Consumer<Throwable>() {
-                        @Override
-                        public void accept(Throwable throwable) throws Exception {
-                            log(NORMAL_DOWNLOAD_FAILED);
-                        }
-                    })
-                    .doOnComplete(new Action() {
-                        @Override
-                        public void run() throws Exception {
-                            log(NORMAL_DOWNLOAD_COMPLETED);
-                        }
-                    })
+        protected Publisher<DownloadStatus> download() {
+            return record.download()
                     .flatMap(new Function<Response<ResponseBody>, Publisher<DownloadStatus>>() {
                         @Override
-                        public Publisher<DownloadStatus> apply(Response<ResponseBody> response)
-                                throws Exception {
-                            return normalSave(response);
+                        public Publisher<DownloadStatus> apply(Response<ResponseBody> response) throws Exception {
+                            return save(response);
                         }
                     })
-                    .compose(Utils.<DownloadStatus>retry2(mDownloadHelper.getMaxRetryCount()))
-                    .toObservable();
+                    .compose(Utils.<DownloadStatus>retry2(NORMAL_RETRY_HINT, record.getMaxRetryCount()));
         }
 
-        private Publisher<DownloadStatus> normalSave(final Response<ResponseBody> response) {
-            return Flowable
-                    .create(new FlowableOnSubscribe<DownloadStatus>() {
-                        @Override
-                        public void subscribe(FlowableEmitter<DownloadStatus> e)
-                                throws Exception {
-                            mDownloadHelper.saveNormalFile(e, mUrl, response);
-                        }
-                    }, BackpressureStrategy.LATEST);
+        @Override
+        protected String prepareLog() {
+            return NORMAL_DOWNLOAD_PREPARE;
+        }
+
+        @Override
+        protected String startLog() {
+            return NORMAL_DOWNLOAD_STARTED;
+        }
+
+        @Override
+        protected String completeLog() {
+            return NORMAL_DOWNLOAD_COMPLETED;
+        }
+
+        @Override
+        protected String errorLog() {
+            return NORMAL_DOWNLOAD_FAILED;
+        }
+
+        @Override
+        protected String cancelLog() {
+            return NORMAL_DOWNLOAD_CANCEL;
+        }
+
+        @Override
+        protected String finishLog() {
+            return NORMAL_DOWNLOAD_FINISH;
+        }
+
+        private Publisher<DownloadStatus> save(final Response<ResponseBody> response) {
+            return Flowable.create(new FlowableOnSubscribe<DownloadStatus>() {
+                @Override
+                public void subscribe(FlowableEmitter<DownloadStatus> e) throws Exception {
+                    record.save(e, response);
+                }
+            }, BackpressureStrategy.LATEST);
         }
     }
 
-    static class ContinueDownload extends DownloadType {
+    public static class ContinueDownload extends DownloadType {
 
-        @Override
-        public void prepareDownload() throws IOException, ParseException {
-            log(prepareLog());
+        public ContinueDownload(TemporaryRecord record) {
+            super(record);
         }
 
         @Override
-        public Observable<DownloadStatus> startDownload() throws IOException {
+        protected Publisher<DownloadStatus> download() {
             List<Publisher<DownloadStatus>> tasks = new ArrayList<>();
-            for (int i = 0; i < mDownloadHelper.getMaxThreads(); i++) {
-                tasks.add(rangeDownloadTask(i));
+            for (int i = 0; i < record.getMaxThreads(); i++) {
+                tasks.add(rangeDownload(i));
             }
-            return Flowable
-                    .mergeDelayError(tasks)
-                    .doOnSubscribe(new Consumer<Subscription>() {
-                        @Override
-                        public void accept(Subscription subscription) throws Exception {
-                            log(startLog());
-                        }
-                    })
-                    .doOnComplete(new Action() {
-                        @Override
-                        public void run() throws Exception {
-                            log(completeLog());
-                        }
-                    })
-                    .doOnError(new Consumer<Throwable>() {
-                        @Override
-                        public void accept(Throwable throwable) throws Exception {
-                            log(errorLog());
-                        }
-                    }).toObservable();
+            return Flowable.mergeDelayError(tasks);
         }
 
+        @Override
         protected String prepareLog() {
             return CONTINUE_DOWNLOAD_PREPARE;
         }
 
+        @Override
         protected String startLog() {
             return CONTINUE_DOWNLOAD_STARTED;
         }
 
+        @Override
         protected String completeLog() {
             return CONTINUE_DOWNLOAD_COMPLETED;
         }
 
+        @Override
         protected String errorLog() {
             return CONTINUE_DOWNLOAD_FAILED;
         }
 
-        /**
-         * 分段下载的任务
-         *
-         * @param index 下载编号
-         *
-         * @return Observable
-         */
-        private Publisher<DownloadStatus> rangeDownloadTask(final int index) {
+        @Override
+        protected String cancelLog() {
+            return CONTINUE_DOWNLOAD_CANCEL;
+        }
 
-            return Flowable
-                    .create(new FlowableOnSubscribe<DownloadRange>() {
-                        @Override
-                        public void subscribe(FlowableEmitter<DownloadRange> emitter)
-                                throws Exception {
-                            DownloadRange mRange = mDownloadHelper.readDownloadRange(mUrl, index);
-                            if (mRange.legal()) {
-                                emitter.onNext(mRange);
-                            }
-                            emitter.onComplete();
-                        }
-                    }, BackpressureStrategy.ERROR)
-                    .subscribeOn(Schedulers.io())
-                    .doOnNext(new Consumer<DownloadRange>() {
-                        @Override
-                        public void accept(DownloadRange range) throws Exception {
-                            log(RANGE_DOWNLOAD_STARTED, currentThread().getName(),
-                                    range.start, range.end);
-                        }
-                    })
-                    .flatMap(new Function<DownloadRange, Publisher<DownloadStatus>>() {
-                        @Override
-                        public Publisher<DownloadStatus> apply(final DownloadRange range)
-                                throws Exception {
-
-                            return startRangeDownload(range, index);
-                        }
-                    })
-                    .doOnComplete(new Action() {
-                        @Override
-                        public void run() throws Exception {
-                            log(RANGE_DOWNLOAD_COMPLETED, currentThread().getName());
-                        }
-                    })
-                    .compose(Utils.<DownloadStatus>retry2(mDownloadHelper.getMaxRetryCount()));
+        @Override
+        protected String finishLog() {
+            return CONTINUE_DOWNLOAD_FINISH;
         }
 
         /**
-         * 开始下载
+         * 分段下载任务
          *
-         * @param range Range
-         * @param index index
-         *
-         * @return DownloadStatus
+         * @param index 下载编号
+         * @return Observable
          */
-        private Publisher<DownloadStatus> startRangeDownload(final DownloadRange range,
-                final int index) {
-
-            String rangeStr = "bytes=" + range.start + "-" + range.end;
-            return mDownloadHelper
-                    .getDownloadApi()
-                    .download(rangeStr, mUrl)
+        private Publisher<DownloadStatus> rangeDownload(final int index) {
+            return record.rangeDownload(index)
+                    .subscribeOn(Schedulers.io())  //Important!
                     .flatMap(new Function<Response<ResponseBody>, Publisher<DownloadStatus>>() {
                         @Override
-                        public Publisher<DownloadStatus> apply(Response<ResponseBody> resp)
-                                throws Exception {
-                            return rangeSave(range.start, range.end, index, resp.body());
+                        public Publisher<DownloadStatus> apply(Response<ResponseBody> response) throws Exception {
+                            return save(index, response.body());
                         }
-                    });
+                    })
+                    .compose(Utils.<DownloadStatus>retry2(formatStr(RANGE_RETRY_HINT, index), record.getMaxRetryCount()));
         }
 
         /**
          * 保存断点下载的文件,以及下载进度
          *
-         * @param start    从start开始
-         * @param end      到end结束
          * @param index    下载编号
          * @param response 响应值
-         *
          * @return Flowable
          */
-        private Publisher<DownloadStatus> rangeSave(
-                final long start, final long end,
-                final int index,
-                final ResponseBody response) {
+        private Publisher<DownloadStatus> save(final int index, final ResponseBody response) {
 
-            return Flowable
-                    .create(new FlowableOnSubscribe<DownloadStatus>() {
-                        @Override
-                        public void subscribe(FlowableEmitter<DownloadStatus> emitter)
-                                throws Exception {
-                            mDownloadHelper.saveRangeFile(emitter,
-                                    index, start, end, mUrl, response);
-                        }
-                    }, BackpressureStrategy.LATEST);
+            return Flowable.create(new FlowableOnSubscribe<DownloadStatus>() {
+                @Override
+                public void subscribe(FlowableEmitter<DownloadStatus> emitter) throws Exception {
+                    record.save(emitter, index, response);
+                }
+            }, BackpressureStrategy.LATEST);
         }
     }
 
-    static class MultiThreadDownload extends ContinueDownload {
-        @Override
-        public void prepareDownload() throws IOException, ParseException {
-            super.prepareDownload();
-            mDownloadHelper.prepareMultiThreadDownload(mUrl, mFileLength, mLastModify);
+    public static class MultiThreadDownload extends ContinueDownload {
+
+        public MultiThreadDownload(TemporaryRecord record) {
+            super(record);
         }
 
         @Override
-        public Observable<DownloadStatus> startDownload() throws IOException {
-            return super.startDownload();
+        public void prepareDownload() throws IOException, ParseException {
+            super.prepareDownload();
+            record.prepareRangeDownload();
         }
 
         @Override
@@ -294,53 +316,32 @@ public abstract class DownloadType {
         protected String errorLog() {
             return MULTITHREADING_DOWNLOAD_FAILED;
         }
-    }
-
-    static class AlreadyDownloaded extends DownloadType {
 
         @Override
-        public void prepareDownload() throws IOException, ParseException {
-            log(ALREADY_DOWNLOAD_HINT);
+        protected String cancelLog() {
+            return MULTITHREADING_DOWNLOAD_CANCEL;
         }
 
         @Override
-        public Observable<DownloadStatus> startDownload() throws IOException {
-            return Observable.just(new DownloadStatus(mFileLength, mFileLength));
+        protected String finishLog() {
+            return MULTITHREADING_DOWNLOAD_FINISH;
         }
     }
 
-    static class NotSupportHEAD extends DownloadType {
+    public static class AlreadyDownloaded extends DownloadType {
 
-        @Override
-        public void prepareDownload() throws IOException, ParseException {
-            log(NOT_SUPPORT_HEAD_HINT);
+        public AlreadyDownloaded(TemporaryRecord record) {
+            super(record);
         }
 
         @Override
-        public Observable<DownloadStatus> startDownload() throws IOException {
-            return mDownloadHelper
-                    .notSupportHead(mUrl)
-                    .flatMap(new Function<DownloadType, ObservableSource<DownloadStatus>>() {
-                        @Override
-                        public ObservableSource<DownloadStatus> apply(DownloadType downloadType)
-                                throws Exception {
-                            downloadType.prepareDownload();
-                            return downloadType.startDownload();
-                        }
-                    });
-        }
-    }
-
-    static class UnableDownload extends DownloadType {
-
-        @Override
-        public void prepareDownload() throws IOException, ParseException {
-            log(UNABLE_DOWNLOAD_HINT);
+        protected Publisher<DownloadStatus> download() {
+            return Flowable.just(new DownloadStatus(record.getContentLength(), record.getContentLength()));
         }
 
         @Override
-        public Observable<DownloadStatus> startDownload() throws IOException {
-            return Observable.error(new UnableDownloadException(UNABLE_DOWNLOAD_HINT));
+        protected String prepareLog() {
+            return ALREADY_DOWNLOAD_HINT;
         }
     }
 }

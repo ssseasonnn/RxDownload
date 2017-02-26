@@ -27,9 +27,7 @@
 
 ```groovy
 	dependencies{
-   		 compile 'zlc.season:rxdownload2:1.1.1'
-         //or
-         compile 'zlc.season:rxdownload2:2.0.0-beta2' //测试版
+         compile 'zlc.season:rxdownload2:2.0.0-beta2'
 	}
 ```
 

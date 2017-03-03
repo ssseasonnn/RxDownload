@@ -4,19 +4,10 @@ import java.util.Map;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import io.reactivex.disposables.Disposable;
-import io.reactivex.functions.Action;
-import io.reactivex.functions.Consumer;
 import io.reactivex.processors.BehaviorProcessor;
 import io.reactivex.processors.FlowableProcessor;
-import io.reactivex.schedulers.Schedulers;
 import zlc.season.rxdownload2.RxDownload;
 import zlc.season.rxdownload2.db.DataBaseHelper;
-
-import static zlc.season.rxdownload2.function.Constant.ACQUIRE_SUCCESS;
-import static zlc.season.rxdownload2.function.Constant.TRY_TO_ACQUIRE_SEMAPHORE;
-import static zlc.season.rxdownload2.function.Utils.dispose;
-import static zlc.season.rxdownload2.function.Utils.log;
 
 /**
  * Author: Season(ssseasonnn@gmail.com)
@@ -29,7 +20,7 @@ public abstract class DownloadMission {
     protected RxDownload rxdownload;
     protected FlowableProcessor<DownloadEvent> processor;
     private AtomicBoolean canceled = new AtomicBoolean(false);
-    private AtomicBoolean acquired = new AtomicBoolean(false);
+
 
     public DownloadMission(RxDownload rxdownload) {
         this.rxdownload = rxdownload;
@@ -39,17 +30,6 @@ public abstract class DownloadMission {
         canceled.compareAndSet(false, true);
     }
 
-    private void setAcquireTrue() {
-        acquired.compareAndSet(false, true);
-    }
-
-    private void setAcquireFalse() {
-        acquired.compareAndSet(true, false);
-    }
-
-    private boolean isAcquired() {
-        return acquired.get();
-    }
 
     public boolean isCancel() {
         return canceled.get();
@@ -80,62 +60,10 @@ public abstract class DownloadMission {
 
     public abstract void sendWaitingEvent(DataBaseHelper dataBaseHelper);
 
-    protected Disposable start(DownloadBean bean, final Semaphore semaphore,
-                               final MissionCallback callback) {
-        return rxdownload.download(bean)
-                .subscribeOn(Schedulers.io())
-                .doOnSubscribe(new Consumer<Disposable>() {
-                    @Override
-                    public void accept(Disposable disposable) throws Exception {
-                        if (isCancel()) {
-                            dispose(disposable);
-                            return;
-                        }
-
-                        log(TRY_TO_ACQUIRE_SEMAPHORE);
-                        semaphore.acquire();
-                        log(ACQUIRE_SUCCESS);
-
-                        setAcquireTrue();
-
-                        if (isCancel()) {
-                            dispose(disposable);
-                        } else {
-                            callback.start();
-                        }
-                    }
-                })
-                .doFinally(new Action() {
-                    @Override
-                    public void run() throws Exception {
-                        if (isAcquired()) {
-                            semaphore.release();
-                            setAcquireFalse();
-                        }
-                    }
-                })
-                .subscribe(new Consumer<DownloadStatus>() {
-                    @Override
-                    public void accept(DownloadStatus value) throws Exception {
-                        callback.next(value);
-                    }
-                }, new Consumer<Throwable>() {
-                    @Override
-                    public void accept(Throwable throwable) throws Exception {
-                        callback.error(throwable);
-                    }
-                }, new Action() {
-                    @Override
-                    public void run() throws Exception {
-                        callback.complete();
-                    }
-                });
-    }
-
     /**
      * Mission download callback.
      */
-    interface MissionCallback {
+    interface MultiMissionCallback {
         void start();
 
         void next(DownloadStatus status);
@@ -143,9 +71,5 @@ public abstract class DownloadMission {
         void error(Throwable throwable);
 
         void complete();
-    }
-
-    interface MultiMissionCallback extends MissionCallback {
-
     }
 }

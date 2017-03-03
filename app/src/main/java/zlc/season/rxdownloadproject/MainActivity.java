@@ -59,7 +59,7 @@ public class MainActivity extends AppCompatActivity {
 
         Utils.setDebug(true);
         RxDownload.getInstance(this)
-                .maxDownloadNumber(3)
+                .maxDownloadNumber(1)
                 .maxThread(3);
     }
 

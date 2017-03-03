@@ -83,7 +83,7 @@ public class DownloadService extends Service {
     public void onDestroy() {
         super.onDestroy();
         log("destroy Download Service");
-        pauseAll();
+        destroy();
         dataBaseHelper.closeDataBase();
     }
 
@@ -254,7 +254,7 @@ public class DownloadService extends Service {
     /**
      * Call when service is onDestroy.
      */
-    private void pauseAll() {
+    private void destroy() {
         dispose(disposable);
         for (String each : missionMap.keySet()) {
             pauseDownload(each);

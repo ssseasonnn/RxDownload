@@ -29,6 +29,7 @@ public abstract class DownloadMission {
     protected RxDownload rxdownload;
     protected FlowableProcessor<DownloadEvent> processor;
     private AtomicBoolean canceled = new AtomicBoolean(false);
+    private AtomicBoolean acquired = new AtomicBoolean(false);
 
     public DownloadMission(RxDownload rxdownload) {
         this.rxdownload = rxdownload;
@@ -36,6 +37,18 @@ public abstract class DownloadMission {
 
     public void cancel() {
         canceled.compareAndSet(false, true);
+    }
+
+    private void setAcquireTrue() {
+        acquired.compareAndSet(false, true);
+    }
+
+    private void setAcquireFalse() {
+        acquired.compareAndSet(true, false);
+    }
+
+    private boolean isAcquired() {
+        return acquired.get();
     }
 
     public boolean isCancel() {
@@ -71,27 +84,34 @@ public abstract class DownloadMission {
                                final MissionCallback callback) {
         return rxdownload.download(bean)
                 .subscribeOn(Schedulers.io())
-                .doOnLifecycle(new Consumer<Disposable>() {
+                .doOnSubscribe(new Consumer<Disposable>() {
                     @Override
                     public void accept(Disposable disposable) throws Exception {
-                        if (canceled.get()) {
+                        if (isCancel()) {
                             dispose(disposable);
+                            return;
                         }
 
                         log(TRY_TO_ACQUIRE_SEMAPHORE);
                         semaphore.acquire();
                         log(ACQUIRE_SUCCESS);
 
-                        if (canceled.get()) {
+                        setAcquireTrue();
+
+                        if (isCancel()) {
                             dispose(disposable);
                         } else {
                             callback.start();
                         }
                     }
-                }, new Action() {
+                })
+                .doFinally(new Action() {
                     @Override
                     public void run() throws Exception {
-                        semaphore.release();
+                        if (isAcquired()) {
+                            semaphore.release();
+                            setAcquireFalse();
+                        }
                     }
                 })
                 .subscribe(new Consumer<DownloadStatus>() {

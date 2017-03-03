@@ -206,7 +206,7 @@ public class MultiMissionDownloadActivity extends AppCompatActivity {
 
                 break;
             case R.id.pause:
-                rxDownload.pauseServiceDownload(missionId)
+                rxDownload.pauseAll()
                         .subscribe();
                 break;
         }

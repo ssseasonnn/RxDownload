@@ -32,7 +32,6 @@ import zlc.season.rxdownload2.entity.DownloadEvent;
 import zlc.season.rxdownload2.entity.DownloadFlag;
 import zlc.season.rxdownload2.entity.DownloadRecord;
 import zlc.season.rxdownload2.entity.DownloadStatus;
-import zlc.season.rxdownload2.entity.MultiMission;
 import zlc.season.rxdownload2.entity.SingleMission;
 import zlc.season.rxdownload2.function.DownloadHelper;
 import zlc.season.rxdownload2.function.DownloadService;
@@ -256,6 +255,17 @@ public class RxDownload {
             @Override
             public void call() {
                 downloadService.pauseDownload(missionId);
+            }
+        }).observeOn(AndroidSchedulers.mainThread());
+
+    }
+
+
+    public Observable<?> pauseAll() {
+        return createGeneralObservable(new GeneralObservableCallback() {
+            @Override
+            public void call() {
+                downloadService.pauseAll();
             }
         }).observeOn(AndroidSchedulers.mainThread());
 
@@ -546,7 +556,9 @@ public class RxDownload {
         return createGeneralObservable(new GeneralObservableCallback() {
             @Override
             public void call() throws InterruptedException {
-                downloadService.addDownloadMission(new MultiMission(RxDownload.this, beans, missionId));
+                for (DownloadBean each : beans) {
+                    downloadService.addDownloadMission(new SingleMission(RxDownload.this, each));
+                }
             }
         }).observeOn(AndroidSchedulers.mainThread());
     }

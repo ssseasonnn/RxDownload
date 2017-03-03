@@ -13,9 +13,7 @@ import zlc.season.rxdownload2.RxDownload;
 import zlc.season.rxdownload2.db.DataBaseHelper;
 
 import static zlc.season.rxdownload2.entity.DownloadFlag.WAITING;
-import static zlc.season.rxdownload2.function.Constant.ACQUIRE_SUCCESS;
 import static zlc.season.rxdownload2.function.Constant.DOWNLOAD_URL_EXISTS;
-import static zlc.season.rxdownload2.function.Constant.TRY_TO_ACQUIRE_SEMAPHORE;
 import static zlc.season.rxdownload2.function.DownloadEventFactory.completed;
 import static zlc.season.rxdownload2.function.DownloadEventFactory.failed;
 import static zlc.season.rxdownload2.function.DownloadEventFactory.normal;
@@ -26,7 +24,6 @@ import static zlc.season.rxdownload2.function.Utils.deleteFiles;
 import static zlc.season.rxdownload2.function.Utils.dispose;
 import static zlc.season.rxdownload2.function.Utils.formatStr;
 import static zlc.season.rxdownload2.function.Utils.getFiles;
-import static zlc.season.rxdownload2.function.Utils.log;
 
 /**
  * Author: Season(ssseasonnn@gmail.com)
@@ -37,9 +34,6 @@ import static zlc.season.rxdownload2.function.Utils.log;
 public class SingleMission extends DownloadMission {
     protected DownloadStatus status;
     protected Disposable disposable;
-
-    private AtomicBoolean acquired = new AtomicBoolean(false);
-
     private DownloadBean bean;
 
     private MultiMissionCallback callback;
@@ -57,19 +51,6 @@ public class SingleMission extends DownloadMission {
         this.multiMissionId = multiMissionId;
         this.callback = callback;
     }
-
-    private void setAcquireTrue() {
-        acquired.compareAndSet(false, true);
-    }
-
-    private void setAcquireFalse() {
-        acquired.compareAndSet(true, false);
-    }
-
-    private boolean isAcquired() {
-        return acquired.get();
-    }
-
 
     @Override
     public String getMissionId() {
@@ -103,29 +84,23 @@ public class SingleMission extends DownloadMission {
     }
 
     @Override
-    public void start(final Semaphore semaphore) {
+    public void start(final Semaphore semaphore) throws InterruptedException {
+        if (isCancel()) {
+            return;
+        }
+
+        semaphore.acquire();
+
+        if (isCancel()) {
+            semaphore.release();
+            return;
+        }
+
         disposable = rxdownload.download(bean)
                 .subscribeOn(Schedulers.io())
                 .doOnSubscribe(new Consumer<Disposable>() {
                     @Override
                     public void accept(Disposable disposable) throws Exception {
-                        if (isCancel()) {
-                            dispose(disposable);
-                            return;
-                        }
-
-                        log(TRY_TO_ACQUIRE_SEMAPHORE);
-                        semaphore.acquire();
-                        log(ACQUIRE_SUCCESS);
-
-                        setAcquireTrue();
-
-                        if (isCancel()) {
-                            dispose(disposable);
-                            semaphore.release();
-                            return;
-                        }
-
                         if (callback != null) {
                             callback.start();
                         }
@@ -134,11 +109,7 @@ public class SingleMission extends DownloadMission {
                 .doFinally(new Action() {
                     @Override
                     public void run() throws Exception {
-                        log("finally");
-                        if (isAcquired()) {
-                            semaphore.release();
-                            setAcquireFalse();
-                        }
+                        semaphore.release();
                     }
                 })
                 .subscribe(new Consumer<DownloadStatus>() {

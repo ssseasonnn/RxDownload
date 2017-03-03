@@ -108,7 +108,7 @@ public class MultiMission extends DownloadMission {
     }
 
     @Override
-    public void start(Semaphore semaphore) {
+    public void start(Semaphore semaphore) throws InterruptedException {
         for (SingleMission each : missions) {
             each.start(semaphore);
         }

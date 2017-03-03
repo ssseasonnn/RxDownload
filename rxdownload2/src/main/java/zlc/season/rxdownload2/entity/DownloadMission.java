@@ -30,7 +30,6 @@ public abstract class DownloadMission {
         canceled.compareAndSet(false, true);
     }
 
-
     public boolean isCancel() {
         return canceled.get();
     }
@@ -52,7 +51,7 @@ public abstract class DownloadMission {
 
     public abstract void insertOrUpdate(DataBaseHelper dataBaseHelper);
 
-    public abstract void start(final Semaphore semaphore);
+    public abstract void start(final Semaphore semaphore) throws InterruptedException;
 
     public abstract void pause(DataBaseHelper dataBaseHelper);
 

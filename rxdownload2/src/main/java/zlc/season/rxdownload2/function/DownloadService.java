@@ -203,6 +203,19 @@ public class DownloadService extends Service {
         }
     }
 
+    public void startAll() throws InterruptedException {
+        for (DownloadMission each : missionMap.values()) {
+            addDownloadMission(each);
+        }
+    }
+
+    public void pauseAll() {
+        for (String each : missionMap.keySet()) {
+            pauseDownload(each);
+        }
+        downloadQueue.clear();
+    }
+
     /**
      * Delete download.
      * <p>

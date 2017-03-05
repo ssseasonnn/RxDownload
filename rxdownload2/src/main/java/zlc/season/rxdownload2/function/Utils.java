@@ -20,6 +20,7 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -30,8 +31,11 @@ import io.reactivex.ObservableSource;
 import io.reactivex.ObservableTransformer;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.functions.BiPredicate;
+import io.reactivex.processors.BehaviorProcessor;
+import io.reactivex.processors.FlowableProcessor;
 import okhttp3.internal.http.HttpHeaders;
 import retrofit2.Response;
+import zlc.season.rxdownload2.entity.DownloadEvent;
 
 import static android.text.TextUtils.concat;
 import static java.io.File.separator;
@@ -131,6 +135,17 @@ public class Utils {
             } catch (Exception ignored) {
             }
         }
+    }
+
+    public static FlowableProcessor<DownloadEvent> createProcessor(
+            String missionId, Map<String, FlowableProcessor<DownloadEvent>> processorMap) {
+
+        if (processorMap.get(missionId) == null) {
+            FlowableProcessor<DownloadEvent> processor =
+                    BehaviorProcessor.<DownloadEvent>create().toSerialized();
+            processorMap.put(missionId, processor);
+        }
+        return processorMap.get(missionId);
     }
 
     public static <U> ObservableTransformer<U, U> retry(final String hint, final int retryCount) {

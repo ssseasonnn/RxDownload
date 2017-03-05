@@ -2,9 +2,15 @@ package zlc.season.rxdownload2;
 
 import org.junit.Test;
 
+import java.util.concurrent.Semaphore;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import io.reactivex.Observable;
+import io.reactivex.disposables.Disposable;
+import io.reactivex.functions.Action;
+import io.reactivex.functions.Consumer;
+import io.reactivex.schedulers.Schedulers;
 import zlc.season.rxdownload2.function.Utils;
 
 /**
@@ -50,8 +56,41 @@ public class UtilsTest {
             result = result.substring(1);
         }
         if (result.endsWith("\"")) {
-            result = result.substring(0, result.length()-1);
+            result = result.substring(0, result.length() - 1);
         }
         System.out.println(result);
+    }
+
+    @Test
+    public void lifecycleTest() throws Exception {
+        final Semaphore semaphore = new Semaphore(0);
+        Disposable disposable = Observable.just(1)
+                .subscribeOn(Schedulers.io())
+                .doOnSubscribe(new Consumer<Disposable>() {
+                    @Override
+                    public void accept(Disposable disposable) throws Exception {
+                        System.out.println("on subscribe...");
+                        System.out.println("acquiring...");
+                        semaphore.acquire();
+                        System.out.println("acquired!");
+                    }
+                })
+                .doFinally(new Action() {
+                    @Override
+                    public void run() throws Exception {
+                        System.out.println("finally");
+                        semaphore.release();
+                        System.out.println("released");
+                        System.out.println(semaphore.availablePermits());
+                    }
+                })
+                .subscribe(new Consumer<Integer>() {
+                    @Override
+                    public void accept(Integer integer) throws Exception {
+                        System.out.println(integer);
+                    }
+                });
+
+        disposable.dispose();
     }
 }

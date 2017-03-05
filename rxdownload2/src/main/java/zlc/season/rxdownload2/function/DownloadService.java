@@ -19,7 +19,6 @@ import io.reactivex.ObservableEmitter;
 import io.reactivex.ObservableOnSubscribe;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.functions.Consumer;
-import io.reactivex.processors.BehaviorProcessor;
 import io.reactivex.processors.FlowableProcessor;
 import io.reactivex.schedulers.Schedulers;
 import zlc.season.rxdownload2.db.DataBaseHelper;
@@ -28,12 +27,14 @@ import zlc.season.rxdownload2.entity.DownloadFlag;
 import zlc.season.rxdownload2.entity.DownloadMission;
 import zlc.season.rxdownload2.entity.DownloadRecord;
 import zlc.season.rxdownload2.entity.DownloadStatus;
+import zlc.season.rxdownload2.entity.MultiMission;
+import zlc.season.rxdownload2.entity.SingleMission;
 
 import static zlc.season.rxdownload2.function.Constant.WAITING_FOR_MISSION_COME;
-import static zlc.season.rxdownload2.function.DownloadEventFactory.completed;
 import static zlc.season.rxdownload2.function.DownloadEventFactory.createEvent;
-import static zlc.season.rxdownload2.function.DownloadEventFactory.failed;
 import static zlc.season.rxdownload2.function.DownloadEventFactory.normal;
+import static zlc.season.rxdownload2.function.Utils.createProcessor;
+import static zlc.season.rxdownload2.function.Utils.deleteFiles;
 import static zlc.season.rxdownload2.function.Utils.dispose;
 import static zlc.season.rxdownload2.function.Utils.getFiles;
 import static zlc.season.rxdownload2.function.Utils.log;
@@ -95,14 +96,6 @@ public class DownloadService extends Service {
         return mBinder;
     }
 
-    private FlowableProcessor<DownloadEvent> createProcessor(String missionId) {
-        if (processorMap.get(missionId) == null) {
-            FlowableProcessor<DownloadEvent> processor =
-                    BehaviorProcessor.<DownloadEvent>create().toSerialized();
-            processorMap.put(missionId, processor);
-        }
-        return processorMap.get(missionId);
-    }
 
     /**
      * Receive the url download event.
@@ -118,7 +111,7 @@ public class DownloadService extends Service {
      * @return DownloadEvent
      */
     public FlowableProcessor<DownloadEvent> receiveDownloadEvent(String url) {
-        FlowableProcessor<DownloadEvent> processor = createProcessor(url);
+        FlowableProcessor<DownloadEvent> processor = createProcessor(url, processorMap);
         DownloadMission mission = missionMap.get(url);
         if (mission == null) {  //Not yet add this url mission.
             DownloadRecord record = dataBaseHelper.readSingleRecord(url);
@@ -137,49 +130,10 @@ public class DownloadService extends Service {
     }
 
     /**
-     * Receive the download event for missionId.
-     * <p>
-     * Will receive the following event:
-     * {@link DownloadFlag#NORMAL}、{@link DownloadFlag#WAITING}、
-     * {@link DownloadFlag#STARTED}、{@link DownloadFlag#PAUSED}、
-     * {@link DownloadFlag#COMPLETED}、{@link DownloadFlag#FAILED};
-     * <p>
-     * But every event has not {@link DownloadStatus}, it's NULL.
-     *
-     * @param missionId missionId
-     * @return DownloadEvent
-     */
-    public FlowableProcessor<DownloadEvent> receiveMissionsEvent(String missionId) {
-        FlowableProcessor<DownloadEvent> processor = createProcessor(missionId);
-        DownloadMission mission = missionMap.get(missionId);
-        if (mission == null) {  //Not yet add this url mission.
-            List<DownloadRecord> records = dataBaseHelper.readMissionsRecord(missionId);
-            if (records.size() == 0) {
-                processor.onNext(normal(null));
-            } else {
-                int failed = 0;
-                for (DownloadRecord each : records) {
-                    if (each.getFlag() == DownloadFlag.FAILED ||
-                            !getFiles(each.getSaveName(), each.getSavePath())[0].exists()) {
-                        failed++;
-                        break;
-                    }
-                }
-                if (failed > 0) {
-                    processor.onNext(failed(null, new Throwable("download failed")));
-                } else {
-                    processor.onNext(completed(null));
-                }
-            }
-        }
-        return processor;
-    }
-
-    /**
      * Add this mission into download queue.
      *
      * @param mission mission
-     * @throws InterruptedException
+     * @throws InterruptedException Blocking queue
      */
     public void addDownloadMission(DownloadMission mission) throws InterruptedException {
         mission.init(missionMap, processorMap);
@@ -194,11 +148,11 @@ public class DownloadService extends Service {
      * <p>
      * Pause a url or all tasks belonging to missionId.
      *
-     * @param missionId url or missionId
+     * @param url url or missionId
      */
-    public void pauseDownload(String missionId) {
-        DownloadMission mission = missionMap.get(missionId);
-        if (mission != null) {
+    public void pauseDownload(String url) {
+        DownloadMission mission = missionMap.get(url);
+        if (mission != null && mission instanceof SingleMission) {
             mission.pause(dataBaseHelper);
         }
     }
@@ -208,14 +162,127 @@ public class DownloadService extends Service {
      * <p>
      * Delete a url or all tasks belonging to missionId.
      *
-     * @param missionId  url or missionId
+     * @param url        url or missionId
      * @param deleteFile whether delete file
      */
-    public void deleteDownload(String missionId, boolean deleteFile) {
+    public void deleteDownload(String url, boolean deleteFile) {
+        DownloadMission mission = missionMap.get(url);
+        if (mission != null && mission instanceof SingleMission) {
+            mission.delete(dataBaseHelper, deleteFile);
+            missionMap.remove(url);
+        } else {
+            createProcessor(url, processorMap).onNext(normal(null));
+
+            if (deleteFile) {
+                DownloadRecord record = dataBaseHelper.readSingleRecord(url);
+                if (record != null) {
+                    deleteFiles(getFiles(record.getSaveName(), record.getSavePath()));
+                }
+            }
+            dataBaseHelper.deleteRecord(url);
+        }
+    }
+
+    /**
+     * Start all mission. Not include MultiMission.
+     *
+     * @throws InterruptedException interrupt
+     */
+    public void startAll() throws InterruptedException {
+        for (DownloadMission each : missionMap.values()) {
+            if (each.isCompleted()) {
+                continue;
+            }
+
+            if (each instanceof SingleMission) {
+                addDownloadMission(new SingleMission((SingleMission) each));
+            }
+
+//            if (each instanceof MultiMission) {
+//                addDownloadMission(new MultiMission((MultiMission) each));
+//            }
+        }
+    }
+
+    /**
+     * Pause all mission.Not include MultiMission.
+     */
+    public void pauseAll() {
+        for (DownloadMission each : missionMap.values()) {
+            if (each instanceof SingleMission) {
+                each.pause(dataBaseHelper);
+            }
+        }
+        downloadQueue.clear();
+    }
+
+    /**
+     * Start all mission which associate with missionId.
+     *
+     * @param missionId missionId
+     * @throws InterruptedException interrupt
+     */
+    public void startAll(String missionId) throws InterruptedException {
         DownloadMission mission = missionMap.get(missionId);
-        if (mission != null) {
+        if (mission == null) {
+            log("mission not exists");
+            return;
+        }
+
+        if (mission.isCompleted()) {
+            log("mission complete");
+            return;
+        }
+
+        if (mission instanceof MultiMission) {
+            addDownloadMission(new MultiMission((MultiMission) mission));
+        }
+    }
+
+    /**
+     * Pause all mission which associate with missionId
+     *
+     * @param missionId missionId
+     */
+    public void pauseAll(String missionId) {
+        DownloadMission mission = missionMap.get(missionId);
+        if (mission == null) {
+            log("mission not exists");
+            return;
+        }
+
+        if (mission.isCompleted()) {
+            log("mission complete");
+            return;
+        }
+
+        if (mission instanceof MultiMission) {
+            mission.pause(dataBaseHelper);
+        }
+    }
+
+
+    /**
+     * Delete all mission which associate with missionId.
+     *
+     * @param missionId  missionId
+     * @param deleteFile deleteFile?
+     */
+    public void deleteAll(String missionId, boolean deleteFile) {
+        DownloadMission mission = missionMap.get(missionId);
+        if (mission != null && mission instanceof MultiMission) {
             mission.delete(dataBaseHelper, deleteFile);
             missionMap.remove(missionId);
+        } else {
+            createProcessor(missionId, processorMap).onNext(normal(null));
+
+            if (deleteFile) {
+                List<DownloadRecord> list = dataBaseHelper.readMissionsRecord(missionId);
+                for (DownloadRecord each : list) {
+                    deleteFiles(getFiles(each.getSaveName(), each.getSavePath()));
+                    dataBaseHelper.deleteRecord(each.getUrl());
+                }
+            }
         }
     }
 
@@ -248,6 +315,11 @@ public class DownloadService extends Service {
                     public void accept(DownloadMission mission) throws Exception {
                         mission.start(semaphore);
                     }
+                }, new Consumer<Throwable>() {
+                    @Override
+                    public void accept(Throwable throwable) throws Exception {
+                        log(throwable);
+                    }
                 });
     }
 
@@ -256,9 +328,10 @@ public class DownloadService extends Service {
      */
     private void destroy() {
         dispose(disposable);
-        for (String each : missionMap.keySet()) {
-            pauseDownload(each);
+        for (DownloadMission each : missionMap.values()) {
+            each.pause(dataBaseHelper);
         }
+        downloadQueue.clear();
     }
 
     public class DownloadBinder extends Binder {

@@ -23,7 +23,7 @@ import java.io.File;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
-import io.reactivex.disposables.Disposable;
+import io.reactivex.functions.Action;
 import io.reactivex.functions.Consumer;
 import zlc.season.practicalrecyclerview.AbstractAdapter;
 import zlc.season.practicalrecyclerview.AbstractViewHolder;
@@ -191,19 +191,16 @@ public class DownloadViewHolder extends AbstractViewHolder<DownloadItem> {
     }
 
     private void delete() {
+        dispose(data.disposable);
         mRxDownload.deleteServiceDownload(data.record.getUrl(), true)
-                .doOnSubscribe(new Consumer<Disposable>() {
+                .doFinally(new Action() {
                     @Override
-                    public void accept(Disposable disposable) throws Exception {
-                        dispose(data.disposable);
-                    }
-                })
-                .subscribe(new Consumer<Object>() {
-                    @Override
-                    public void accept(Object o) throws Exception {
+                    public void run() throws Exception {
                         mAdapter.remove(getAdapterPosition());
                     }
-                });
+                })
+                .subscribe();
+
     }
 
     private void showPopUpWindow(View view) {

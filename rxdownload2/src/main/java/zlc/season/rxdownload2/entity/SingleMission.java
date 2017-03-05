@@ -3,23 +3,29 @@ package zlc.season.rxdownload2.entity;
 import java.util.Map;
 import java.util.concurrent.Semaphore;
 
+import io.reactivex.Observer;
 import io.reactivex.disposables.Disposable;
+import io.reactivex.functions.Action;
+import io.reactivex.functions.Consumer;
 import io.reactivex.processors.FlowableProcessor;
+import io.reactivex.schedulers.Schedulers;
 import zlc.season.rxdownload2.RxDownload;
 import zlc.season.rxdownload2.db.DataBaseHelper;
+import zlc.season.rxdownload2.function.Constant;
 
 import static zlc.season.rxdownload2.entity.DownloadFlag.WAITING;
-import static zlc.season.rxdownload2.function.Constant.DOWNLOAD_URL_EXISTS;
 import static zlc.season.rxdownload2.function.DownloadEventFactory.completed;
 import static zlc.season.rxdownload2.function.DownloadEventFactory.failed;
 import static zlc.season.rxdownload2.function.DownloadEventFactory.normal;
 import static zlc.season.rxdownload2.function.DownloadEventFactory.paused;
 import static zlc.season.rxdownload2.function.DownloadEventFactory.started;
 import static zlc.season.rxdownload2.function.DownloadEventFactory.waiting;
+import static zlc.season.rxdownload2.function.Utils.createProcessor;
 import static zlc.season.rxdownload2.function.Utils.deleteFiles;
 import static zlc.season.rxdownload2.function.Utils.dispose;
 import static zlc.season.rxdownload2.function.Utils.formatStr;
 import static zlc.season.rxdownload2.function.Utils.getFiles;
+import static zlc.season.rxdownload2.function.Utils.log;
 
 /**
  * Author: Season(ssseasonnn@gmail.com)
@@ -30,102 +36,160 @@ import static zlc.season.rxdownload2.function.Utils.getFiles;
 public class SingleMission extends DownloadMission {
     protected DownloadStatus status;
     protected Disposable disposable;
-
     private DownloadBean bean;
 
-    private MultiMissionCallback callback;
-    private String multiMissionId;
+    private String missionId;
+    private Observer<DownloadStatus> observer;
 
     public SingleMission(RxDownload rxdownload, DownloadBean bean) {
         super(rxdownload);
         this.bean = bean;
     }
 
-    public SingleMission(RxDownload rxdownload, DownloadBean bean,
-                         String multiMissionId, MultiMissionCallback callback) {
-        super(rxdownload);
+    public SingleMission(RxDownload rxDownload, DownloadBean bean,
+                         String missionId, Observer<DownloadStatus> observer) {
+        super(rxDownload);
         this.bean = bean;
-        this.multiMissionId = multiMissionId;
-        this.callback = callback;
+        this.missionId = missionId;
+        this.observer = observer;
     }
 
+    public SingleMission(SingleMission other) {
+        super(other.rxdownload);
+        this.bean = other.getBean();
+        this.missionId = other.getMissionId();
+        this.observer = other.getObserver();
+    }
+
+    private String getMissionId() {
+        return missionId;
+    }
+
+    private Observer<DownloadStatus> getObserver() {
+        return observer;
+    }
+
+    private DownloadBean getBean() {
+        return bean;
+    }
+
+
     @Override
-    public String getMissionId() {
+    public String getUrl() {
         return bean.getUrl();
     }
 
     @Override
     public void init(Map<String, DownloadMission> missionMap,
                      Map<String, FlowableProcessor<DownloadEvent>> processorMap) {
-        DownloadMission mission = missionMap.get(getMissionId());
-        if (mission != null && !mission.isCancel()) {
-            throw new IllegalArgumentException(formatStr(DOWNLOAD_URL_EXISTS, getMissionId()));
+        DownloadMission mission = missionMap.get(getUrl());
+        if (mission == null) {
+            missionMap.put(getUrl(), this);
         } else {
-            missionMap.put(getMissionId(), this);
+            if (mission.isCanceled()) {
+                missionMap.put(getUrl(), this);
+            } else {
+                throw new IllegalArgumentException(formatStr(Constant.DOWNLOAD_URL_EXISTS, getUrl()));
+            }
         }
-        processor = getProcessor(processorMap, getMissionId());
+        this.processor = createProcessor(getUrl(), processorMap);
     }
 
     @Override
     public void insertOrUpdate(DataBaseHelper dataBaseHelper) {
-        if (dataBaseHelper.recordNotExists(getMissionId())) {
-            dataBaseHelper.insertRecord(bean, WAITING, multiMissionId);
+        if (dataBaseHelper.recordNotExists(getUrl())) {
+            dataBaseHelper.insertRecord(bean, WAITING, missionId);
         } else {
-            dataBaseHelper.updateRecord(getMissionId(), WAITING, multiMissionId);
+            dataBaseHelper.updateRecord(getUrl(), WAITING, missionId);
         }
     }
 
     @Override
     public void sendWaitingEvent(DataBaseHelper dataBaseHelper) {
-        processor.onNext(waiting(dataBaseHelper.readStatus(getMissionId())));
+        processor.onNext(waiting(dataBaseHelper.readStatus(getUrl())));
     }
 
     @Override
-    public void start(final Semaphore semaphore) {
-        disposable = start(bean, semaphore, new MissionCallback() {
-            @Override
-            public void start() {
-                if (callback != null) callback.start();
-            }
+    public void start(final Semaphore semaphore) throws InterruptedException {
+        if (isCanceled()) {
+            return;
+        }
 
-            @Override
-            public void next(DownloadStatus value) {
-                status = value;
-                processor.onNext(started(value));
-                if (callback != null) callback.next(value);
-            }
+        semaphore.acquire();
 
-            @Override
-            public void error(Throwable throwable) {
-                processor.onNext(failed(status, throwable));
-                if (callback != null) callback.error(throwable);
-            }
+        if (isCanceled()) {
+            semaphore.release();
+            return;
+        }
 
-            @Override
-            public void complete() {
-                processor.onNext(completed(status));
-                if (callback != null) callback.complete();
-            }
-        });
+        disposable = rxdownload.download(bean)
+                .subscribeOn(Schedulers.io())
+                .doOnSubscribe(new Consumer<Disposable>() {
+                    @Override
+                    public void accept(Disposable disposable) throws Exception {
+                        if (observer != null) {
+                            observer.onSubscribe(disposable);
+                        }
+                    }
+                })
+                .doFinally(new Action() {
+                    @Override
+                    public void run() throws Exception {
+                        log("finally and release...");
+                        semaphore.release();
+                    }
+                })
+                .subscribe(new Consumer<DownloadStatus>() {
+                    @Override
+                    public void accept(DownloadStatus value) throws Exception {
+                        status = value;
+                        processor.onNext(started(value));
+                        if (observer != null) {
+                            observer.onNext(value);
+                        }
+                    }
+                }, new Consumer<Throwable>() {
+                    @Override
+                    public void accept(Throwable throwable) throws Exception {
+                        processor.onNext(failed(status, throwable));
+                        if (observer != null) {
+                            observer.onError(throwable);
+                        }
+                    }
+                }, new Action() {
+                    @Override
+                    public void run() throws Exception {
+                        processor.onNext(completed(status));
+                        setCompleted(true);
+
+                        if (observer != null) {
+                            observer.onComplete();
+                        }
+                    }
+                });
     }
 
     @Override
     public void pause(DataBaseHelper dataBaseHelper) {
-        cancel();
         dispose(disposable);
-        processor.onNext(paused(dataBaseHelper.readStatus(getMissionId())));
+        setCanceled(true);
+        if (processor != null && !isCompleted()) {
+            processor.onNext(paused(dataBaseHelper.readStatus(getUrl())));
+        }
     }
 
     @Override
     public void delete(DataBaseHelper dataBaseHelper, boolean deleteFile) {
         pause(dataBaseHelper);
-        processor.onNext(normal(null));
+        if (processor != null) {
+            processor.onNext(normal(null));
+        }
         if (deleteFile) {
-            DownloadRecord record = dataBaseHelper.readSingleRecord(getMissionId());
+            DownloadRecord record = dataBaseHelper.readSingleRecord(getUrl());
             if (record != null) {
                 deleteFiles(getFiles(record.getSaveName(), record.getSavePath()));
             }
         }
-        dataBaseHelper.deleteRecord(getMissionId());
+        dataBaseHelper.deleteRecord(getUrl());
     }
 }

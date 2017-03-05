@@ -223,21 +223,42 @@ public class RxDownload {
     /**
      * Pause download.
      * <p>
-     * Pause a url or all tasks belonging to missionId.
+     * Pause a download.
      *
-     * @param missionId url or missionId
+     * @param url url
      */
-    public Observable<?> pauseServiceDownload(final String missionId) {
+    public Observable<?> pauseServiceDownload(final String url) {
         return createGeneralObservable(new GeneralObservableCallback() {
             @Override
             public void call() {
-                downloadService.pauseDownload(missionId);
+                downloadService.pauseDownload(url);
             }
         }).observeOn(AndroidSchedulers.mainThread());
 
     }
 
+    /**
+     * Delete download.
+     * <p>
+     * Delete a download.
+     *
+     * @param url        url
+     * @param deleteFile whether delete file
+     */
+    public Observable<?> deleteServiceDownload(final String url, final boolean deleteFile) {
+        return createGeneralObservable(new GeneralObservableCallback() {
+            @Override
+            public void call() {
+                downloadService.deleteDownload(url, deleteFile);
+            }
+        }).observeOn(AndroidSchedulers.mainThread());
+    }
 
+    /**
+     * Start all mission. Not include multi mission.
+     *
+     * @return Observable
+     */
     public Observable<?> startAll() {
         return createGeneralObservable(new GeneralObservableCallback() {
             @Override
@@ -248,6 +269,11 @@ public class RxDownload {
 
     }
 
+    /**
+     * Pause all mission. Not include multi mission.
+     *
+     * @return Observable
+     */
     public Observable<?> pauseAll() {
         return createGeneralObservable(new GeneralObservableCallback() {
             @Override
@@ -258,6 +284,13 @@ public class RxDownload {
 
     }
 
+
+    /**
+     * Start all mission which associate with missionId
+     *
+     * @param missionId missionId
+     * @return Observable
+     */
     public Observable<?> startAll(final String missionId) {
         return createGeneralObservable(new GeneralObservableCallback() {
             @Override
@@ -279,20 +312,20 @@ public class RxDownload {
     }
 
     /**
-     * Delete download.
-     * <p>
-     * Delete a url or all tasks belonging to missionId.
+     * Delete all mission which associate with missionId.
      *
-     * @param missionId  url or missionId
-     * @param deleteFile whether delete file
+     * @param missionId  missionId
+     * @param deleteFile deleteFile ?
+     * @return Observable
      */
-    public Observable<?> deleteServiceDownload(final String missionId, final boolean deleteFile) {
+    public Observable<?> deleteAll(final String missionId, final boolean deleteFile) {
         return createGeneralObservable(new GeneralObservableCallback() {
             @Override
             public void call() {
-                downloadService.deleteDownload(missionId, deleteFile);
+                downloadService.deleteAll(missionId, deleteFile);
             }
         }).observeOn(AndroidSchedulers.mainThread());
+
     }
 
     /**

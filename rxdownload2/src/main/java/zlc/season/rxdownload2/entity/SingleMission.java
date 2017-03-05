@@ -173,13 +173,17 @@ public class SingleMission extends DownloadMission {
     public void pause(DataBaseHelper dataBaseHelper) {
         dispose(disposable);
         setCanceled(true);
-        processor.onNext(paused(dataBaseHelper.readStatus(getUrl())));
+        if (processor != null && !isCompleted()) {
+            processor.onNext(paused(dataBaseHelper.readStatus(getUrl())));
+        }
     }
 
     @Override
     public void delete(DataBaseHelper dataBaseHelper, boolean deleteFile) {
         pause(dataBaseHelper);
-        processor.onNext(normal(null));
+        if (processor != null) {
+            processor.onNext(normal(null));
+        }
         if (deleteFile) {
             DownloadRecord record = dataBaseHelper.readSingleRecord(getUrl());
             if (record != null) {

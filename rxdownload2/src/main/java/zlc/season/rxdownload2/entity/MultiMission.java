@@ -91,7 +91,6 @@ public class MultiMission extends DownloadMission {
         }
     }
 
-
     private List<SingleMission> getMissions() {
         return missions;
     }

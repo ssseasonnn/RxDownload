@@ -13,6 +13,7 @@ import com.squareup.picasso.Picasso;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
+import io.reactivex.disposables.Disposable;
 import io.reactivex.functions.Consumer;
 import online.osslab.CircleProgressBar;
 import zlc.season.rxdownload2.RxDownload;
@@ -21,6 +22,7 @@ import zlc.season.rxdownload2.entity.DownloadFlag;
 import zlc.season.rxdownload2.entity.DownloadStatus;
 import zlc.season.rxdownloadproject.R;
 
+import static zlc.season.rxdownload2.function.Utils.dispose;
 import static zlc.season.rxdownload2.function.Utils.log;
 
 public class MultiMissionDownloadActivity extends AppCompatActivity {
@@ -28,6 +30,7 @@ public class MultiMissionDownloadActivity extends AppCompatActivity {
 
     @BindView(R.id.toolbar)
     Toolbar toolbar;
+
     @BindView(R.id.image1)
     ImageView image1;
     @BindView(R.id.progress1)
@@ -40,33 +43,29 @@ public class MultiMissionDownloadActivity extends AppCompatActivity {
     ImageView image3;
     @BindView(R.id.progress3)
     CircleProgressBar progress3;
+
     @BindView(R.id.start)
     Button start;
     @BindView(R.id.pause)
     Button pause;
+
     @BindView(R.id.control1)
-    ImageView control1;
+    Button control1;
     @BindView(R.id.control2)
-    ImageView control2;
+    Button control2;
     @BindView(R.id.control3)
-    ImageView control3;
+    Button control3;
 
 
     private static final String missionId = "testMissionId";
 
-    private int state1 = DownloadFlag.NORMAL;
-    private int state2 = DownloadFlag.NORMAL;
-
-    private int state3 = DownloadFlag.NORMAL;
     private RxDownload rxDownload;
-
-    private String img1 = "http://static.yingyonghui.com/icon/128/4189733.png";
-    private String img2 = "http://static.yingyonghui.com/icon/128/4143651.png";
-    private String img3 = "http://static.yingyonghui.com/icon/128/4256143.png";
 
     private String url1 = "https://qd.myapp.com/myapp/qqteam/AndroidQQ/mobileqq_android.apk";
     private String url2 = "http://s1.music.126.net/download/android/CloudMusic_official_3.7.3_153912.apk";
-    private String url3 = "http://dldir1.qq.com/weixin/android/weixin6330android920.apk";
+    private String url3 = "http://dl.coolapkmarket.com/down/apk_file/2017/0301/com.ss.android.article.news-6.0.2-602-0301.apk";
+
+    private Disposable disposable1, disposable2, disposable3;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -76,17 +75,22 @@ public class MultiMissionDownloadActivity extends AppCompatActivity {
         setSupportActionBar(toolbar);
         rxDownload = RxDownload.getInstance(this);
 
+        String img1 = "http://static.yingyonghui.com/icon/128/4189733.png";
         Picasso.with(this).load(img1).into(image1);
+        String img2 = "http://static.yingyonghui.com/icon/128/4143651.png";
         Picasso.with(this).load(img2).into(image2);
+        String img3 = "http://static.yingyonghui.com/icon/128/4256143.png";
         Picasso.with(this).load(img3).into(image3);
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
 
         rxDownload.serviceMultiDownload(missionId, url1, url2, url3)
                 .subscribe(new Consumer<Object>() {
                     @Override
                     public void accept(Object o) throws Exception {
-                        control1.setVisibility(View.VISIBLE);
-                        control2.setVisibility(View.VISIBLE);
-                        control3.setVisibility(View.VISIBLE);
                         Toast.makeText(MultiMissionDownloadActivity.this, "开始", Toast.LENGTH_SHORT).show();
                     }
                 }, new Consumer<Throwable>() {
@@ -96,29 +100,32 @@ public class MultiMissionDownloadActivity extends AppCompatActivity {
                     }
                 });
 
-        rxDownload.receiveDownloadStatus(url1)
+        disposable1 = rxDownload.receiveDownloadStatus(url1)
                 .subscribe(new Consumer<DownloadEvent>() {
                     @Override
                     public void accept(DownloadEvent downloadEvent) throws Exception {
                         int flag = downloadEvent.getFlag();
-                        state1 = flag;
                         switch (flag) {
                             case DownloadFlag.NORMAL:
+                                control1.setVisibility(View.GONE);
                                 break;
                             case DownloadFlag.WAITING:
+                                control1.setVisibility(View.VISIBLE);
+                                control1.setText("等待中");
                                 break;
                             case DownloadFlag.STARTED:
-                                control1.setImageResource(R.drawable.ic_pause);
+                                control1.setText("下载中");
                                 break;
                             case DownloadFlag.PAUSED:
-                                control1.setImageResource(R.drawable.ic_play_arrow);
+                                control1.setText("已暂停");
                                 break;
                             case DownloadFlag.COMPLETED:
+                                control1.setText("已完成");
                                 break;
                             case DownloadFlag.FAILED:
                                 Throwable throwable = downloadEvent.getError();
                                 log(throwable);
-                                control1.setImageResource(R.drawable.ic_play_arrow);
+                                control1.setText("失败");
                                 break;
                         }
                         DownloadStatus status = downloadEvent.getDownloadStatus();
@@ -126,29 +133,32 @@ public class MultiMissionDownloadActivity extends AppCompatActivity {
                     }
                 });
 
-        rxDownload.receiveDownloadStatus(url2)
+        disposable2 = rxDownload.receiveDownloadStatus(url2)
                 .subscribe(new Consumer<DownloadEvent>() {
                     @Override
                     public void accept(DownloadEvent downloadEvent) throws Exception {
                         int flag = downloadEvent.getFlag();
-                        state2 = flag;
                         switch (flag) {
                             case DownloadFlag.NORMAL:
+                                control2.setVisibility(View.GONE);
                                 break;
                             case DownloadFlag.WAITING:
+                                control2.setVisibility(View.VISIBLE);
+                                control2.setText("等待中");
                                 break;
                             case DownloadFlag.STARTED:
-                                control2.setImageResource(R.drawable.ic_pause);
+                                control2.setText("下载中");
                                 break;
                             case DownloadFlag.PAUSED:
-                                control2.setImageResource(R.drawable.ic_play_arrow);
+                                control2.setText("已暂停");
                                 break;
                             case DownloadFlag.COMPLETED:
+                                control2.setText("已完成");
                                 break;
                             case DownloadFlag.FAILED:
                                 Throwable throwable = downloadEvent.getError();
                                 log(throwable);
-                                control2.setImageResource(R.drawable.ic_play_arrow);
+                                control2.setText("失败");
                                 break;
                         }
                         DownloadStatus status = downloadEvent.getDownloadStatus();
@@ -156,29 +166,32 @@ public class MultiMissionDownloadActivity extends AppCompatActivity {
                     }
                 });
 
-        rxDownload.receiveDownloadStatus(url3)
+        disposable3 = rxDownload.receiveDownloadStatus(url3)
                 .subscribe(new Consumer<DownloadEvent>() {
                     @Override
                     public void accept(DownloadEvent downloadEvent) throws Exception {
                         int flag = downloadEvent.getFlag();
-                        state3 = flag;
                         switch (flag) {
                             case DownloadFlag.NORMAL:
+                                control3.setVisibility(View.GONE);
                                 break;
                             case DownloadFlag.WAITING:
+                                control3.setVisibility(View.VISIBLE);
+                                control3.setText("等待中");
                                 break;
                             case DownloadFlag.STARTED:
-                                control3.setImageResource(R.drawable.ic_pause);
+                                control3.setText("下载中");
                                 break;
                             case DownloadFlag.PAUSED:
-                                control3.setImageResource(R.drawable.ic_play_arrow);
+                                control3.setText("已暂停");
                                 break;
                             case DownloadFlag.COMPLETED:
+                                control3.setText("已完成");
                                 break;
                             case DownloadFlag.FAILED:
                                 Throwable throwable = downloadEvent.getError();
                                 log(throwable);
-                                control3.setImageResource(R.drawable.ic_play_arrow);
+                                control3.setText("失败");
                                 break;
                         }
                         DownloadStatus status = downloadEvent.getDownloadStatus();
@@ -187,7 +200,15 @@ public class MultiMissionDownloadActivity extends AppCompatActivity {
                 });
     }
 
-    @OnClick({R.id.start, R.id.pause})
+    @Override
+    protected void onPause() {
+        super.onPause();
+        dispose(disposable1);
+        dispose(disposable2);
+        dispose(disposable3);
+    }
+
+    @OnClick({R.id.start, R.id.pause, R.id.delete})
     public void onClick(View view) {
         switch (view.getId()) {
             case R.id.start:
@@ -195,7 +216,8 @@ public class MultiMissionDownloadActivity extends AppCompatActivity {
                         .subscribe(new Consumer<Object>() {
                             @Override
                             public void accept(Object o) throws Exception {
-
+                                Toast.makeText(MultiMissionDownloadActivity.this, "全部开始", Toast
+                                        .LENGTH_SHORT).show();
                             }
                         }, new Consumer<Throwable>() {
                             @Override
@@ -210,7 +232,8 @@ public class MultiMissionDownloadActivity extends AppCompatActivity {
                         .subscribe(new Consumer<Object>() {
                             @Override
                             public void accept(Object o) throws Exception {
-
+                                Toast.makeText(MultiMissionDownloadActivity.this, "全部暂停", Toast
+                                        .LENGTH_SHORT).show();
                             }
                         }, new Consumer<Throwable>() {
                             @Override
@@ -219,6 +242,20 @@ public class MultiMissionDownloadActivity extends AppCompatActivity {
                             }
                         });
                 break;
+            case R.id.delete:
+                rxDownload.deleteAll(missionId, true)
+                        .subscribe(new Consumer<Object>() {
+                            @Override
+                            public void accept(Object o) throws Exception {
+                                Toast.makeText(MultiMissionDownloadActivity.this, "删除成功", Toast
+                                        .LENGTH_SHORT).show();
+                            }
+                        }, new Consumer<Throwable>() {
+                            @Override
+                            public void accept(Throwable throwable) throws Exception {
+                                log(throwable);
+                            }
+                        });
         }
     }
 }

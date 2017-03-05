@@ -7,6 +7,7 @@ import android.os.IBinder;
 import android.support.annotation.Nullable;
 
 import java.io.File;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
@@ -33,6 +34,7 @@ import static zlc.season.rxdownload2.function.Constant.WAITING_FOR_MISSION_COME;
 import static zlc.season.rxdownload2.function.DownloadEventFactory.createEvent;
 import static zlc.season.rxdownload2.function.DownloadEventFactory.normal;
 import static zlc.season.rxdownload2.function.Utils.createProcessor;
+import static zlc.season.rxdownload2.function.Utils.deleteFiles;
 import static zlc.season.rxdownload2.function.Utils.dispose;
 import static zlc.season.rxdownload2.function.Utils.getFiles;
 import static zlc.season.rxdownload2.function.Utils.log;
@@ -146,15 +148,46 @@ public class DownloadService extends Service {
      * <p>
      * Pause a url or all tasks belonging to missionId.
      *
-     * @param missionId url or missionId
+     * @param url url or missionId
      */
-    public void pauseDownload(String missionId) {
-        DownloadMission mission = missionMap.get(missionId);
-        if (mission != null) {
+    public void pauseDownload(String url) {
+        DownloadMission mission = missionMap.get(url);
+        if (mission != null && mission instanceof SingleMission) {
             mission.pause(dataBaseHelper);
         }
     }
 
+    /**
+     * Delete download.
+     * <p>
+     * Delete a url or all tasks belonging to missionId.
+     *
+     * @param url        url or missionId
+     * @param deleteFile whether delete file
+     */
+    public void deleteDownload(String url, boolean deleteFile) {
+        DownloadMission mission = missionMap.get(url);
+        if (mission != null && mission instanceof SingleMission) {
+            mission.delete(dataBaseHelper, deleteFile);
+            missionMap.remove(url);
+        } else {
+            createProcessor(url, processorMap).onNext(normal(null));
+
+            if (deleteFile) {
+                DownloadRecord record = dataBaseHelper.readSingleRecord(url);
+                if (record != null) {
+                    deleteFiles(getFiles(record.getSaveName(), record.getSavePath()));
+                }
+            }
+            dataBaseHelper.deleteRecord(url);
+        }
+    }
+
+    /**
+     * Start all mission. Not include MultiMission.
+     *
+     * @throws InterruptedException interrupt
+     */
     public void startAll() throws InterruptedException {
         for (DownloadMission each : missionMap.values()) {
             if (each.isCompleted()) {
@@ -165,19 +198,30 @@ public class DownloadService extends Service {
                 addDownloadMission(new SingleMission((SingleMission) each));
             }
 
-            if (each instanceof MultiMission) {
-                addDownloadMission(new MultiMission((MultiMission) each));
-            }
+//            if (each instanceof MultiMission) {
+//                addDownloadMission(new MultiMission((MultiMission) each));
+//            }
         }
     }
 
+    /**
+     * Pause all mission.Not include MultiMission.
+     */
     public void pauseAll() {
         for (DownloadMission each : missionMap.values()) {
-            each.pause(dataBaseHelper);
+            if (each instanceof SingleMission) {
+                each.pause(dataBaseHelper);
+            }
         }
         downloadQueue.clear();
     }
 
+    /**
+     * Start all mission which associate with missionId.
+     *
+     * @param missionId missionId
+     * @throws InterruptedException interrupt
+     */
     public void startAll(String missionId) throws InterruptedException {
         DownloadMission mission = missionMap.get(missionId);
         if (mission == null) {
@@ -190,14 +234,16 @@ public class DownloadService extends Service {
             return;
         }
 
-        if (!(mission instanceof MultiMission)) {
-            log("mission not multiMission");
-            return;
+        if (mission instanceof MultiMission) {
+            addDownloadMission(new MultiMission((MultiMission) mission));
         }
-
-        addDownloadMission(new MultiMission((MultiMission) mission));
     }
 
+    /**
+     * Pause all mission which associate with missionId
+     *
+     * @param missionId missionId
+     */
     public void pauseAll(String missionId) {
         DownloadMission mission = missionMap.get(missionId);
         if (mission == null) {
@@ -210,22 +256,33 @@ public class DownloadService extends Service {
             return;
         }
 
-        mission.pause(dataBaseHelper);
+        if (mission instanceof MultiMission) {
+            mission.pause(dataBaseHelper);
+        }
     }
 
+
     /**
-     * Delete download.
-     * <p>
-     * Delete a url or all tasks belonging to missionId.
+     * Delete all mission which associate with missionId.
      *
-     * @param missionId  url or missionId
-     * @param deleteFile whether delete file
+     * @param missionId  missionId
+     * @param deleteFile deleteFile?
      */
-    public void deleteDownload(String missionId, boolean deleteFile) {
+    public void deleteAll(String missionId, boolean deleteFile) {
         DownloadMission mission = missionMap.get(missionId);
-        if (mission != null) {
+        if (mission != null && mission instanceof MultiMission) {
             mission.delete(dataBaseHelper, deleteFile);
             missionMap.remove(missionId);
+        } else {
+            createProcessor(missionId, processorMap).onNext(normal(null));
+
+            if (deleteFile) {
+                List<DownloadRecord> list = dataBaseHelper.readMissionsRecord(missionId);
+                for (DownloadRecord each : list) {
+                    deleteFiles(getFiles(each.getSaveName(), each.getSavePath()));
+                    dataBaseHelper.deleteRecord(each.getUrl());
+                }
+            }
         }
     }
 
@@ -271,7 +328,10 @@ public class DownloadService extends Service {
      */
     private void destroy() {
         dispose(disposable);
-        pauseAll();
+        for (DownloadMission each : missionMap.values()) {
+            each.pause(dataBaseHelper);
+        }
+        downloadQueue.clear();
     }
 
     public class DownloadBinder extends Binder {

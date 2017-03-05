@@ -52,13 +52,33 @@ public class DownloadManagerActivity extends AppCompatActivity {
             case R.id.start:
                 for (DownloadItem each : list) {
                     rxDownload.serviceDownload(each.record.getUrl())
-                            .subscribe();
+                            .subscribe(new Consumer<Object>() {
+                                @Override
+                                public void accept(Object o) throws Exception {
+
+                                }
+                            }, new Consumer<Throwable>() {
+                                @Override
+                                public void accept(Throwable throwable) throws Exception {
+                                    Utils.log(throwable);
+                                }
+                            });
                 }
                 break;
             case R.id.pause:
                 for (DownloadItem each : list) {
                     rxDownload.pauseServiceDownload(each.record.getUrl())
-                            .subscribe();
+                            .subscribe(new Consumer<Object>() {
+                                @Override
+                                public void accept(Object o) throws Exception {
+
+                                }
+                            }, new Consumer<Throwable>() {
+                                @Override
+                                public void accept(Throwable throwable) throws Exception {
+                                    Utils.log(throwable);
+                                }
+                            });
                 }
                 break;
         }

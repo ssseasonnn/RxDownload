@@ -67,7 +67,7 @@ class Db {
         static final String ALTER_TABLE_ADD_EXTRA5 = "ALTER TABLE " + TABLE_NAME + " ADD " + COLUMN_EXTRA5 + " TEXT";
         static final String ALTER_TABLE_ADD_MISSION_ID = "ALTER TABLE " + TABLE_NAME + " ADD " + COLUMN_MISSION_ID + " TEXT";
 
-        static ContentValues insert(DownloadBean bean, int flag, String missionId) {
+        static ContentValues insert(DownloadBean bean, int flag) {
             ContentValues values = new ContentValues();
             values.put(COLUMN_URL, bean.getUrl());
             values.put(COLUMN_SAVE_NAME, bean.getSaveName());
@@ -79,9 +79,6 @@ class Db {
             values.put(COLUMN_EXTRA4, bean.getExtra4());
             values.put(COLUMN_EXTRA5, bean.getExtra5());
             values.put(COLUMN_DATE, new Date().getTime());
-            if (!empty(missionId)) {
-                values.put(COLUMN_MISSION_ID, missionId);
-            }
             return values;
         }
 
@@ -93,12 +90,9 @@ class Db {
             return values;
         }
 
-        static ContentValues update(int flag, String missionId) {
+        static ContentValues update(int flag) {
             ContentValues values = new ContentValues();
             values.put(COLUMN_DOWNLOAD_FLAG, flag);
-            if (!empty(missionId)) {
-                values.put(COLUMN_MISSION_ID, missionId);
-            }
             return values;
         }
 

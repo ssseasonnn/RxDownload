@@ -105,15 +105,13 @@ public class DownloadHelper {
                 })
                 .flatMap(new Function<Integer, ObservableSource<DownloadType>>() {
                     @Override
-                    public ObservableSource<DownloadType> apply(Integer integer)
-                            throws Exception {
+                    public ObservableSource<DownloadType> apply(Integer integer) throws Exception {
                         return getDownloadType(bean.getUrl());
                     }
                 })
                 .flatMap(new Function<DownloadType, ObservableSource<DownloadStatus>>() {
                     @Override
-                    public ObservableSource<DownloadStatus> apply(DownloadType type)
-                            throws Exception {
+                    public ObservableSource<DownloadStatus> apply(DownloadType type) throws Exception {
                         return download(type);
                     }
                 })

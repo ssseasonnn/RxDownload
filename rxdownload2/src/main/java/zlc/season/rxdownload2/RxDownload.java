@@ -200,30 +200,6 @@ public class RxDownload {
     }
 
     /**
-     * Receive the download event for missionId.
-     * <p>
-     * Will receive the following event:
-     * {@link DownloadFlag#NORMAL}、{@link DownloadFlag#WAITING}、
-     * {@link DownloadFlag#STARTED}、{@link DownloadFlag#PAUSED}、
-     * {@link DownloadFlag#COMPLETED}、{@link DownloadFlag#FAILED};
-     * <p>
-     * But every event has not {@link DownloadStatus}, it's NULL.
-     *
-     * @param missionId missionId
-     * @return DownloadEvent
-     */
-    public Observable<DownloadEvent> receiveMissionsEvent(final String missionId) {
-        return createGeneralObservable(null)
-                .flatMap(new Function<Object, ObservableSource<DownloadEvent>>() {
-                    @Override
-                    public ObservableSource<DownloadEvent> apply(Object o) throws Exception {
-                        return downloadService.receiveMissionsEvent(missionId).toObservable();
-                    }
-                })
-                .observeOn(AndroidSchedulers.mainThread());
-    }
-
-    /**
      * Read all the download record from the database.
      *
      * @return Observable<List<DownloadRecord>>
@@ -260,6 +236,16 @@ public class RxDownload {
 
     }
 
+
+    public Observable<?> startAll() {
+        return createGeneralObservable(new GeneralObservableCallback() {
+            @Override
+            public void call() throws InterruptedException {
+                downloadService.startAll();
+            }
+        }).observeOn(AndroidSchedulers.mainThread());
+
+    }
 
     public Observable<?> pauseAll() {
         return createGeneralObservable(new GeneralObservableCallback() {

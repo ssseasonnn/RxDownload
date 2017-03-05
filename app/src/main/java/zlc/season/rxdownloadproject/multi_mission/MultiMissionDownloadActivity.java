@@ -81,17 +81,6 @@ public class MultiMissionDownloadActivity extends AppCompatActivity {
         Picasso.with(this).load(img2).into(image2);
         Picasso.with(this).load(img3).into(image3);
 
-        rxDownload.receiveMissionsEvent(missionId)
-                .subscribe(new Consumer<DownloadEvent>() {
-                    @Override
-                    public void accept(DownloadEvent downloadEvent) throws Exception {
-                        log(downloadEvent.getFlag() + "");
-                        if (downloadEvent.getFlag() == DownloadFlag.FAILED) {
-                            Throwable throwable = downloadEvent.getError();
-                            log(throwable);
-                        }
-                    }
-                });
         rxDownload.receiveDownloadStatus(url1)
                 .subscribe(new Consumer<DownloadEvent>() {
                     @Override

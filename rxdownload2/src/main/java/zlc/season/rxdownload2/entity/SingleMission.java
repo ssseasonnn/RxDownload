@@ -2,7 +2,6 @@ package zlc.season.rxdownload2.entity;
 
 import java.util.Map;
 import java.util.concurrent.Semaphore;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import io.reactivex.disposables.Disposable;
 import io.reactivex.functions.Action;
@@ -11,9 +10,9 @@ import io.reactivex.processors.FlowableProcessor;
 import io.reactivex.schedulers.Schedulers;
 import zlc.season.rxdownload2.RxDownload;
 import zlc.season.rxdownload2.db.DataBaseHelper;
+import zlc.season.rxdownload2.function.Constant;
 
 import static zlc.season.rxdownload2.entity.DownloadFlag.WAITING;
-import static zlc.season.rxdownload2.function.Constant.DOWNLOAD_URL_EXISTS;
 import static zlc.season.rxdownload2.function.DownloadEventFactory.completed;
 import static zlc.season.rxdownload2.function.DownloadEventFactory.failed;
 import static zlc.season.rxdownload2.function.DownloadEventFactory.normal;
@@ -24,6 +23,7 @@ import static zlc.season.rxdownload2.function.Utils.deleteFiles;
 import static zlc.season.rxdownload2.function.Utils.dispose;
 import static zlc.season.rxdownload2.function.Utils.formatStr;
 import static zlc.season.rxdownload2.function.Utils.getFiles;
+import static zlc.season.rxdownload2.function.Utils.log;
 
 /**
  * Author: Season(ssseasonnn@gmail.com)
@@ -36,21 +36,11 @@ public class SingleMission extends DownloadMission {
     protected Disposable disposable;
     private DownloadBean bean;
 
-    private MultiMissionCallback callback;
-    private String multiMissionId;
-
     public SingleMission(RxDownload rxdownload, DownloadBean bean) {
         super(rxdownload);
         this.bean = bean;
     }
 
-    public SingleMission(RxDownload rxdownload, DownloadBean bean,
-                         String multiMissionId, MultiMissionCallback callback) {
-        super(rxdownload);
-        this.bean = bean;
-        this.multiMissionId = multiMissionId;
-        this.callback = callback;
-    }
 
     @Override
     public String getMissionId() {
@@ -59,22 +49,26 @@ public class SingleMission extends DownloadMission {
 
     @Override
     public void init(Map<String, DownloadMission> missionMap,
-                     Map<String, FlowableProcessor<DownloadEvent>> processorMap) {
+                     FlowableProcessor<DownloadEvent> processor) {
         DownloadMission mission = missionMap.get(getMissionId());
-        if (mission != null && !mission.isCancel()) {
-            throw new IllegalArgumentException(formatStr(DOWNLOAD_URL_EXISTS, getMissionId()));
-        } else {
+        if (mission == null) {
             missionMap.put(getMissionId(), this);
+        } else {
+            if (mission.isCanceled()) {
+                missionMap.put(getMissionId(), this);
+            } else {
+                throw new IllegalArgumentException(formatStr(Constant.DOWNLOAD_URL_EXISTS, getMissionId()));
+            }
         }
-        processor = getProcessor(processorMap, getMissionId());
+        this.processor = processor;
     }
 
     @Override
     public void insertOrUpdate(DataBaseHelper dataBaseHelper) {
         if (dataBaseHelper.recordNotExists(getMissionId())) {
-            dataBaseHelper.insertRecord(bean, WAITING, multiMissionId);
+            dataBaseHelper.insertRecord(bean, WAITING);
         } else {
-            dataBaseHelper.updateRecord(getMissionId(), WAITING, multiMissionId);
+            dataBaseHelper.updateRecord(getMissionId(), WAITING);
         }
     }
 
@@ -85,13 +79,13 @@ public class SingleMission extends DownloadMission {
 
     @Override
     public void start(final Semaphore semaphore) throws InterruptedException {
-        if (isCancel()) {
+        if (isCanceled()) {
             return;
         }
 
         semaphore.acquire();
 
-        if (isCancel()) {
+        if (isCanceled()) {
             semaphore.release();
             return;
         }
@@ -101,14 +95,13 @@ public class SingleMission extends DownloadMission {
                 .doOnSubscribe(new Consumer<Disposable>() {
                     @Override
                     public void accept(Disposable disposable) throws Exception {
-                        if (callback != null) {
-                            callback.start();
-                        }
+
                     }
                 })
                 .doFinally(new Action() {
                     @Override
                     public void run() throws Exception {
+                        log("finally and release...");
                         semaphore.release();
                     }
                 })
@@ -117,33 +110,25 @@ public class SingleMission extends DownloadMission {
                     public void accept(DownloadStatus value) throws Exception {
                         status = value;
                         processor.onNext(started(value));
-                        if (callback != null) {
-                            callback.next(value);
-                        }
                     }
                 }, new Consumer<Throwable>() {
                     @Override
                     public void accept(Throwable throwable) throws Exception {
                         processor.onNext(failed(status, throwable));
-                        if (callback != null) {
-                            callback.error(throwable);
-                        }
                     }
                 }, new Action() {
                     @Override
                     public void run() throws Exception {
                         processor.onNext(completed(status));
-                        if (callback != null) {
-                            callback.complete();
-                        }
+                        setCompleted(true);
                     }
                 });
     }
 
     @Override
     public void pause(DataBaseHelper dataBaseHelper) {
-        cancel();
         dispose(disposable);
+        setCanceled(true);
         processor.onNext(paused(dataBaseHelper.readStatus(getMissionId())));
     }
 

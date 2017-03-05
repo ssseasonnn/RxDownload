@@ -7,7 +7,6 @@ import android.os.IBinder;
 import android.support.annotation.Nullable;
 
 import java.io.File;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
@@ -30,9 +29,7 @@ import zlc.season.rxdownload2.entity.DownloadRecord;
 import zlc.season.rxdownload2.entity.DownloadStatus;
 
 import static zlc.season.rxdownload2.function.Constant.WAITING_FOR_MISSION_COME;
-import static zlc.season.rxdownload2.function.DownloadEventFactory.completed;
 import static zlc.season.rxdownload2.function.DownloadEventFactory.createEvent;
-import static zlc.season.rxdownload2.function.DownloadEventFactory.failed;
 import static zlc.season.rxdownload2.function.DownloadEventFactory.normal;
 import static zlc.season.rxdownload2.function.Utils.dispose;
 import static zlc.season.rxdownload2.function.Utils.getFiles;
@@ -137,52 +134,14 @@ public class DownloadService extends Service {
     }
 
     /**
-     * Receive the download event for missionId.
-     * <p>
-     * Will receive the following event:
-     * {@link DownloadFlag#NORMAL}、{@link DownloadFlag#WAITING}、
-     * {@link DownloadFlag#STARTED}、{@link DownloadFlag#PAUSED}、
-     * {@link DownloadFlag#COMPLETED}、{@link DownloadFlag#FAILED};
-     * <p>
-     * But every event has not {@link DownloadStatus}, it's NULL.
-     *
-     * @param missionId missionId
-     * @return DownloadEvent
-     */
-    public FlowableProcessor<DownloadEvent> receiveMissionsEvent(String missionId) {
-        FlowableProcessor<DownloadEvent> processor = createProcessor(missionId);
-        DownloadMission mission = missionMap.get(missionId);
-        if (mission == null) {  //Not yet add this url mission.
-            List<DownloadRecord> records = dataBaseHelper.readMissionsRecord(missionId);
-            if (records.size() == 0) {
-                processor.onNext(normal(null));
-            } else {
-                int failed = 0;
-                for (DownloadRecord each : records) {
-                    if (each.getFlag() == DownloadFlag.FAILED ||
-                            !getFiles(each.getSaveName(), each.getSavePath())[0].exists()) {
-                        failed++;
-                        break;
-                    }
-                }
-                if (failed > 0) {
-                    processor.onNext(failed(null, new Throwable("download failed")));
-                } else {
-                    processor.onNext(completed(null));
-                }
-            }
-        }
-        return processor;
-    }
-
-    /**
      * Add this mission into download queue.
      *
      * @param mission mission
-     * @throws InterruptedException
+     * @throws InterruptedException Blocking queue
      */
     public void addDownloadMission(DownloadMission mission) throws InterruptedException {
-        mission.init(missionMap, processorMap);
+        FlowableProcessor<DownloadEvent> processor = createProcessor(mission.getMissionId());
+        mission.init(missionMap, processor);
         mission.insertOrUpdate(dataBaseHelper);
         mission.sendWaitingEvent(dataBaseHelper);
 
@@ -205,13 +164,16 @@ public class DownloadService extends Service {
 
     public void startAll() throws InterruptedException {
         for (DownloadMission each : missionMap.values()) {
+            if (each.isCompleted()) {
+                continue;
+            }
             addDownloadMission(each);
         }
     }
 
     public void pauseAll() {
-        for (String each : missionMap.keySet()) {
-            pauseDownload(each);
+        for (DownloadMission each : missionMap.values()) {
+            each.pause(dataBaseHelper);
         }
         downloadQueue.clear();
     }
@@ -261,6 +223,11 @@ public class DownloadService extends Service {
                     public void accept(DownloadMission mission) throws Exception {
                         mission.start(semaphore);
                     }
+                }, new Consumer<Throwable>() {
+                    @Override
+                    public void accept(Throwable throwable) throws Exception {
+                        log(throwable);
+                    }
                 });
     }
 
@@ -269,9 +236,7 @@ public class DownloadService extends Service {
      */
     private void destroy() {
         dispose(disposable);
-        for (String each : missionMap.keySet()) {
-            pauseDownload(each);
-        }
+        pauseAll();
     }
 
     public class DownloadBinder extends Binder {

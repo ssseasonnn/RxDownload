@@ -264,7 +264,7 @@ public class TemporaryRecord {
 
     public void start() {
         if (dataBaseHelper.recordNotExists(bean.getUrl())) {
-            dataBaseHelper.insertRecord(bean, STARTED, null);
+            dataBaseHelper.insertRecord(bean, STARTED);
         } else {
             dataBaseHelper.updateRecord(bean.getUrl(), bean.getSaveName(), bean.getSavePath(), STARTED);
         }
@@ -275,15 +275,15 @@ public class TemporaryRecord {
     }
 
     public void error() {
-        dataBaseHelper.updateRecord(bean.getUrl(), FAILED, null);
+        dataBaseHelper.updateRecord(bean.getUrl(), FAILED);
     }
 
     public void complete() {
-        dataBaseHelper.updateRecord(bean.getUrl(), COMPLETED, null);
+        dataBaseHelper.updateRecord(bean.getUrl(), COMPLETED);
     }
 
     public void cancel() {
-        dataBaseHelper.updateRecord(bean.getUrl(), PAUSED, null);
+        dataBaseHelper.updateRecord(bean.getUrl(), PAUSED);
     }
 
     public void finish() {

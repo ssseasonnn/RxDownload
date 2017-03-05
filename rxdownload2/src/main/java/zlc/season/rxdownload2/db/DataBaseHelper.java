@@ -37,6 +37,7 @@ import static zlc.season.rxdownload2.db.Db.RecordTable.TABLE_NAME;
 import static zlc.season.rxdownload2.db.Db.RecordTable.insert;
 import static zlc.season.rxdownload2.db.Db.RecordTable.read;
 import static zlc.season.rxdownload2.db.Db.RecordTable.update;
+import static zlc.season.rxdownload2.entity.DownloadFlag.PAUSED;
 
 /**
  * Author: Season(ssseasonnn@gmail.com)
@@ -86,13 +87,21 @@ public class DataBaseHelper {
         }
     }
 
+    public long insertRecord(DownloadBean downloadBean, int flag) {
+        return getWritableDatabase().insert(TABLE_NAME, null, insert(downloadBean, flag, null));
+    }
+
     public long insertRecord(DownloadBean downloadBean, int flag, String missionId) {
-        return getWritableDatabase().insert(TABLE_NAME, null,
-                insert(downloadBean, flag, missionId));
+        return getWritableDatabase().insert(TABLE_NAME, null, insert(downloadBean, flag, missionId));
     }
 
     public long updateStatus(String url, DownloadStatus status) {
         return getWritableDatabase().update(TABLE_NAME, update(status),
+                COLUMN_URL + "=?", new String[]{url});
+    }
+
+    public long updateRecord(String url, int flag) {
+        return getWritableDatabase().update(TABLE_NAME, update(flag),
                 COLUMN_URL + "=?", new String[]{url});
     }
 
@@ -107,12 +116,11 @@ public class DataBaseHelper {
     }
 
     public int deleteRecord(String url) {
-        return getWritableDatabase().delete(TABLE_NAME,
-                COLUMN_URL + "=?", new String[]{url});
+        return getWritableDatabase().delete(TABLE_NAME, COLUMN_URL + "=?", new String[]{url});
     }
 
     public long repairErrorFlag() {
-        return getWritableDatabase().update(TABLE_NAME, update(DownloadFlag.PAUSED, null),
+        return getWritableDatabase().update(TABLE_NAME, update(PAUSED),
                 COLUMN_DOWNLOAD_FLAG + "=? or " + COLUMN_DOWNLOAD_FLAG + "=?",
                 new String[]{DownloadFlag.WAITING + "", DownloadFlag.STARTED + ""});
     }

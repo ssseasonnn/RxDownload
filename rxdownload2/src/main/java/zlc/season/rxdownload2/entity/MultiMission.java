@@ -6,16 +6,20 @@ import java.util.Map;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import io.reactivex.Observer;
+import io.reactivex.disposables.Disposable;
 import io.reactivex.processors.FlowableProcessor;
 import zlc.season.rxdownload2.RxDownload;
 import zlc.season.rxdownload2.db.DataBaseHelper;
+import zlc.season.rxdownload2.function.Constant;
 
-import static zlc.season.rxdownload2.function.Constant.DOWNLOAD_URL_EXISTS;
 import static zlc.season.rxdownload2.function.DownloadEventFactory.completed;
 import static zlc.season.rxdownload2.function.DownloadEventFactory.failed;
+import static zlc.season.rxdownload2.function.DownloadEventFactory.normal;
 import static zlc.season.rxdownload2.function.DownloadEventFactory.paused;
 import static zlc.season.rxdownload2.function.DownloadEventFactory.started;
 import static zlc.season.rxdownload2.function.DownloadEventFactory.waiting;
+import static zlc.season.rxdownload2.function.Utils.createProcessor;
 import static zlc.season.rxdownload2.function.Utils.formatStr;
 
 /**
@@ -31,36 +35,51 @@ public class MultiMission extends DownloadMission {
 
     private String missionId;
 
-    private MultiMissionCallback callback = new MultiMissionCallback() {
+    private Observer<DownloadStatus> observer = new Observer<DownloadStatus>() {
         @Override
-        public void start() {
+        public void onSubscribe(Disposable d) {
             processor.onNext(started(null));
         }
 
+
         @Override
-        public void next(DownloadStatus status) {
+        public void onNext(DownloadStatus value) {
 
         }
 
         @Override
-        public void error(Throwable throwable) {
-            if ((failedNumber.incrementAndGet() + completeNumber.intValue()) == missions.size()) {
+        public void onError(Throwable e) {
+            int temp = failedNumber.incrementAndGet();
+            if ((temp + completeNumber.intValue()) == missions.size()) {
                 processor.onNext(failed(null, new Throwable("download failedNumber")));
             }
         }
 
         @Override
-        public void complete() {
+        public void onComplete() {
             int temp = completeNumber.incrementAndGet();
             if (temp == missions.size()) {
                 processor.onNext(completed(null));
+                setCompleted(true);
             } else if ((temp + failedNumber.intValue()) == missions.size()) {
                 processor.onNext(failed(null, new Throwable("download failedNumber")));
             }
         }
     };
 
-    public MultiMission(RxDownload rxDownload, List<DownloadBean> missions, String missionId) {
+    public MultiMission(MultiMission other) {
+        super(other.rxdownload);
+        this.missionId = other.getUrl();
+        this.missions = new ArrayList<>();
+        this.completeNumber = new AtomicInteger(0);
+        this.failedNumber = new AtomicInteger(0);
+
+        for (SingleMission each : other.getMissions()) {
+            this.missions.add(new SingleMission(each));
+        }
+    }
+
+    public MultiMission(RxDownload rxDownload, String missionId, List<DownloadBean> missions) {
         super(rxDownload);
         this.missionId = missionId;
         this.missions = new ArrayList<>();
@@ -68,25 +87,34 @@ public class MultiMission extends DownloadMission {
         this.failedNumber = new AtomicInteger(0);
 
         for (DownloadBean each : missions) {
-            this.missions.add(new SingleMission(rxDownload, each, missionId, callback));
+            this.missions.add(new SingleMission(rxDownload, each, missionId, observer));
         }
     }
 
-    public String getMissionId() {
+    private List<SingleMission> getMissions() {
+        return missions;
+    }
+
+    public String getUrl() {
         return missionId;
     }
 
     @Override
     public void init(Map<String, DownloadMission> missionMap,
                      Map<String, FlowableProcessor<DownloadEvent>> processorMap) {
-        DownloadMission mission = missionMap.get(getMissionId());
-        if (mission != null && !mission.isCancel()) {
-            throw new IllegalArgumentException(formatStr(DOWNLOAD_URL_EXISTS, getMissionId()));
+        DownloadMission mission = missionMap.get(getUrl());
+        if (mission == null) {
+            missionMap.put(getUrl(), this);
         } else {
-            missionMap.put(getMissionId(), this);
+            if (mission.isCanceled()) {
+                missionMap.put(getUrl(), this);
+            } else {
+                throw new IllegalArgumentException(formatStr(Constant.DOWNLOAD_URL_EXISTS, getUrl()));
+            }
         }
 
-        processor = getProcessor(processorMap, getMissionId());
+        this.processor = createProcessor(getUrl(), processorMap);
+
         for (SingleMission each : missions) {
             each.init(missionMap, processorMap);
         }
@@ -108,7 +136,7 @@ public class MultiMission extends DownloadMission {
     }
 
     @Override
-    public void start(Semaphore semaphore) {
+    public void start(Semaphore semaphore) throws InterruptedException {
         for (SingleMission each : missions) {
             each.start(semaphore);
         }
@@ -119,7 +147,7 @@ public class MultiMission extends DownloadMission {
         for (SingleMission each : missions) {
             each.pause(dataBaseHelper);
         }
-        cancel();
+        setCanceled(true);
         processor.onNext(paused(null));
     }
 
@@ -128,5 +156,7 @@ public class MultiMission extends DownloadMission {
         for (SingleMission each : missions) {
             each.delete(dataBaseHelper, deleteFile);
         }
+        setCanceled(true);
+        processor.onNext(normal(null));
     }
 }

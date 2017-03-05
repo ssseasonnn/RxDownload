@@ -201,30 +201,6 @@ public class RxDownload {
     }
 
     /**
-     * Receive the download event for missionId.
-     * <p>
-     * Will receive the following event:
-     * {@link DownloadFlag#NORMAL}、{@link DownloadFlag#WAITING}、
-     * {@link DownloadFlag#STARTED}、{@link DownloadFlag#PAUSED}、
-     * {@link DownloadFlag#COMPLETED}、{@link DownloadFlag#FAILED};
-     * <p>
-     * But every event has not {@link DownloadStatus}, it's NULL.
-     *
-     * @param missionId missionId
-     * @return DownloadEvent
-     */
-    public Observable<DownloadEvent> receiveMissionsEvent(final String missionId) {
-        return createGeneralObservable(null)
-                .flatMap(new Function<Object, ObservableSource<DownloadEvent>>() {
-                    @Override
-                    public ObservableSource<DownloadEvent> apply(Object o) throws Exception {
-                        return downloadService.receiveMissionsEvent(missionId).toObservable();
-                    }
-                })
-                .observeOn(AndroidSchedulers.mainThread());
-    }
-
-    /**
      * Read all the download record from the database.
      *
      * @return Observable<List<DownloadRecord>>
@@ -247,15 +223,15 @@ public class RxDownload {
     /**
      * Pause download.
      * <p>
-     * Pause a url or all tasks belonging to missionId.
+     * Pause a download.
      *
-     * @param missionId url or missionId
+     * @param url url
      */
-    public Observable<?> pauseServiceDownload(final String missionId) {
+    public Observable<?> pauseServiceDownload(final String url) {
         return createGeneralObservable(new GeneralObservableCallback() {
             @Override
             public void call() {
-                downloadService.pauseDownload(missionId);
+                downloadService.pauseDownload(url);
             }
         }).observeOn(AndroidSchedulers.mainThread());
 
@@ -264,18 +240,92 @@ public class RxDownload {
     /**
      * Delete download.
      * <p>
-     * Delete a url or all tasks belonging to missionId.
+     * Delete a download.
      *
-     * @param missionId  url or missionId
+     * @param url        url
      * @param deleteFile whether delete file
      */
-    public Observable<?> deleteServiceDownload(final String missionId, final boolean deleteFile) {
+    public Observable<?> deleteServiceDownload(final String url, final boolean deleteFile) {
         return createGeneralObservable(new GeneralObservableCallback() {
             @Override
             public void call() {
-                downloadService.deleteDownload(missionId, deleteFile);
+                downloadService.deleteDownload(url, deleteFile);
             }
         }).observeOn(AndroidSchedulers.mainThread());
+    }
+
+    /**
+     * Start all mission. Not include multi mission.
+     *
+     * @return Observable
+     */
+    public Observable<?> startAll() {
+        return createGeneralObservable(new GeneralObservableCallback() {
+            @Override
+            public void call() throws InterruptedException {
+                downloadService.startAll();
+            }
+        }).observeOn(AndroidSchedulers.mainThread());
+
+    }
+
+    /**
+     * Pause all mission. Not include multi mission.
+     *
+     * @return Observable
+     */
+    public Observable<?> pauseAll() {
+        return createGeneralObservable(new GeneralObservableCallback() {
+            @Override
+            public void call() {
+                downloadService.pauseAll();
+            }
+        }).observeOn(AndroidSchedulers.mainThread());
+
+    }
+
+
+    /**
+     * Start all mission which associate with missionId
+     *
+     * @param missionId missionId
+     * @return Observable
+     */
+    public Observable<?> startAll(final String missionId) {
+        return createGeneralObservable(new GeneralObservableCallback() {
+            @Override
+            public void call() throws InterruptedException {
+                downloadService.startAll(missionId);
+            }
+        }).observeOn(AndroidSchedulers.mainThread());
+
+    }
+
+    public Observable<?> pauseAll(final String missionId) {
+        return createGeneralObservable(new GeneralObservableCallback() {
+            @Override
+            public void call() {
+                downloadService.pauseAll(missionId);
+            }
+        }).observeOn(AndroidSchedulers.mainThread());
+
+    }
+
+    /**
+     * Delete all mission which associate with missionId.
+     *
+     * @param missionId  missionId
+     * @param deleteFile deleteFile ?
+     * @return Observable
+     */
+    public Observable<?> deleteAll(final String missionId, final boolean deleteFile) {
+        return createGeneralObservable(new GeneralObservableCallback() {
+            @Override
+            public void call() {
+                downloadService.deleteAll(missionId, deleteFile);
+            }
+        }).observeOn(AndroidSchedulers.mainThread());
+
     }
 
     /**
@@ -546,7 +596,7 @@ public class RxDownload {
         return createGeneralObservable(new GeneralObservableCallback() {
             @Override
             public void call() throws InterruptedException {
-                downloadService.addDownloadMission(new MultiMission(RxDownload.this, beans, missionId));
+                downloadService.addDownloadMission(new MultiMission(RxDownload.this, missionId, beans));
             }
         }).observeOn(AndroidSchedulers.mainThread());
     }

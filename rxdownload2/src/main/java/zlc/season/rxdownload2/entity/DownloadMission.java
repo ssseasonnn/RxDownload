@@ -2,21 +2,10 @@ package zlc.season.rxdownload2.entity;
 
 import java.util.Map;
 import java.util.concurrent.Semaphore;
-import java.util.concurrent.atomic.AtomicBoolean;
 
-import io.reactivex.disposables.Disposable;
-import io.reactivex.functions.Action;
-import io.reactivex.functions.Consumer;
-import io.reactivex.processors.BehaviorProcessor;
 import io.reactivex.processors.FlowableProcessor;
-import io.reactivex.schedulers.Schedulers;
 import zlc.season.rxdownload2.RxDownload;
 import zlc.season.rxdownload2.db.DataBaseHelper;
-
-import static zlc.season.rxdownload2.function.Constant.ACQUIRE_SUCCESS;
-import static zlc.season.rxdownload2.function.Constant.TRY_TO_ACQUIRE_SEMAPHORE;
-import static zlc.season.rxdownload2.function.Utils.dispose;
-import static zlc.season.rxdownload2.function.Utils.log;
 
 /**
  * Author: Season(ssseasonnn@gmail.com)
@@ -27,125 +16,42 @@ import static zlc.season.rxdownload2.function.Utils.log;
  */
 public abstract class DownloadMission {
     protected RxDownload rxdownload;
-    protected FlowableProcessor<DownloadEvent> processor;
-    private AtomicBoolean canceled = new AtomicBoolean(false);
-    private AtomicBoolean acquired = new AtomicBoolean(false);
+    FlowableProcessor<DownloadEvent> processor;
+    private boolean canceled = false;
+    private boolean completed = false;
 
-    public DownloadMission(RxDownload rxdownload) {
+    DownloadMission(RxDownload rxdownload) {
         this.rxdownload = rxdownload;
     }
 
-    public void cancel() {
-        canceled.compareAndSet(false, true);
+    public boolean isCanceled() {
+        return canceled;
     }
 
-    private void setAcquireTrue() {
-        acquired.compareAndSet(false, true);
+    public void setCanceled(boolean canceled) {
+        this.canceled = canceled;
     }
 
-    private void setAcquireFalse() {
-        acquired.compareAndSet(true, false);
+    public boolean isCompleted() {
+        return completed;
     }
 
-    private boolean isAcquired() {
-        return acquired.get();
+    public void setCompleted(boolean completed) {
+        this.completed = completed;
     }
 
-    public boolean isCancel() {
-        return canceled.get();
-    }
-
-    protected FlowableProcessor<DownloadEvent> getProcessor(Map<String,
-            FlowableProcessor<DownloadEvent>> processorMap, String missionId) {
-        if (processorMap.get(missionId) == null) {
-            FlowableProcessor<DownloadEvent> processor =
-                    BehaviorProcessor.<DownloadEvent>create().toSerialized();
-            processorMap.put(missionId, processor);
-        }
-        return processorMap.get(missionId);
-    }
-
-    public abstract String getMissionId();
+    public abstract String getUrl();
 
     public abstract void init(Map<String, DownloadMission> missionMap,
                               Map<String, FlowableProcessor<DownloadEvent>> processorMap);
 
     public abstract void insertOrUpdate(DataBaseHelper dataBaseHelper);
 
-    public abstract void start(final Semaphore semaphore);
+    public abstract void start(final Semaphore semaphore) throws InterruptedException;
 
     public abstract void pause(DataBaseHelper dataBaseHelper);
 
     public abstract void delete(DataBaseHelper dataBaseHelper, boolean deleteFile);
 
     public abstract void sendWaitingEvent(DataBaseHelper dataBaseHelper);
-
-    protected Disposable start(DownloadBean bean, final Semaphore semaphore,
-                               final MissionCallback callback) {
-        return rxdownload.download(bean)
-                .subscribeOn(Schedulers.io())
-                .doOnSubscribe(new Consumer<Disposable>() {
-                    @Override
-                    public void accept(Disposable disposable) throws Exception {
-                        if (isCancel()) {
-                            dispose(disposable);
-                            return;
-                        }
-
-                        log(TRY_TO_ACQUIRE_SEMAPHORE);
-                        semaphore.acquire();
-                        log(ACQUIRE_SUCCESS);
-
-                        setAcquireTrue();
-
-                        if (isCancel()) {
-                            dispose(disposable);
-                        } else {
-                            callback.start();
-                        }
-                    }
-                })
-                .doFinally(new Action() {
-                    @Override
-                    public void run() throws Exception {
-                        if (isAcquired()) {
-                            semaphore.release();
-                            setAcquireFalse();
-                        }
-                    }
-                })
-                .subscribe(new Consumer<DownloadStatus>() {
-                    @Override
-                    public void accept(DownloadStatus value) throws Exception {
-                        callback.next(value);
-                    }
-                }, new Consumer<Throwable>() {
-                    @Override
-                    public void accept(Throwable throwable) throws Exception {
-                        callback.error(throwable);
-                    }
-                }, new Action() {
-                    @Override
-                    public void run() throws Exception {
-                        callback.complete();
-                    }
-                });
-    }
-
-    /**
-     * Mission download callback.
-     */
-    interface MissionCallback {
-        void start();
-
-        void next(DownloadStatus status);
-
-        void error(Throwable throwable);
-
-        void complete();
-    }
-
-    interface MultiMissionCallback extends MissionCallback {
-
-    }
 }

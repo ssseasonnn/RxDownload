@@ -18,7 +18,6 @@ import io.reactivex.ObservableEmitter;
 import io.reactivex.ObservableOnSubscribe;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.functions.Consumer;
-import io.reactivex.processors.BehaviorProcessor;
 import io.reactivex.processors.FlowableProcessor;
 import io.reactivex.schedulers.Schedulers;
 import zlc.season.rxdownload2.db.DataBaseHelper;
@@ -27,10 +26,13 @@ import zlc.season.rxdownload2.entity.DownloadFlag;
 import zlc.season.rxdownload2.entity.DownloadMission;
 import zlc.season.rxdownload2.entity.DownloadRecord;
 import zlc.season.rxdownload2.entity.DownloadStatus;
+import zlc.season.rxdownload2.entity.MultiMission;
+import zlc.season.rxdownload2.entity.SingleMission;
 
 import static zlc.season.rxdownload2.function.Constant.WAITING_FOR_MISSION_COME;
 import static zlc.season.rxdownload2.function.DownloadEventFactory.createEvent;
 import static zlc.season.rxdownload2.function.DownloadEventFactory.normal;
+import static zlc.season.rxdownload2.function.Utils.createProcessor;
 import static zlc.season.rxdownload2.function.Utils.dispose;
 import static zlc.season.rxdownload2.function.Utils.getFiles;
 import static zlc.season.rxdownload2.function.Utils.log;
@@ -92,14 +94,6 @@ public class DownloadService extends Service {
         return mBinder;
     }
 
-    private FlowableProcessor<DownloadEvent> createProcessor(String missionId) {
-        if (processorMap.get(missionId) == null) {
-            FlowableProcessor<DownloadEvent> processor =
-                    BehaviorProcessor.<DownloadEvent>create().toSerialized();
-            processorMap.put(missionId, processor);
-        }
-        return processorMap.get(missionId);
-    }
 
     /**
      * Receive the url download event.
@@ -115,7 +109,7 @@ public class DownloadService extends Service {
      * @return DownloadEvent
      */
     public FlowableProcessor<DownloadEvent> receiveDownloadEvent(String url) {
-        FlowableProcessor<DownloadEvent> processor = createProcessor(url);
+        FlowableProcessor<DownloadEvent> processor = createProcessor(url, processorMap);
         DownloadMission mission = missionMap.get(url);
         if (mission == null) {  //Not yet add this url mission.
             DownloadRecord record = dataBaseHelper.readSingleRecord(url);
@@ -140,8 +134,7 @@ public class DownloadService extends Service {
      * @throws InterruptedException Blocking queue
      */
     public void addDownloadMission(DownloadMission mission) throws InterruptedException {
-        FlowableProcessor<DownloadEvent> processor = createProcessor(mission.getMissionId());
-        mission.init(missionMap, processor);
+        mission.init(missionMap, processorMap);
         mission.insertOrUpdate(dataBaseHelper);
         mission.sendWaitingEvent(dataBaseHelper);
 
@@ -167,7 +160,14 @@ public class DownloadService extends Service {
             if (each.isCompleted()) {
                 continue;
             }
-            addDownloadMission(each);
+
+            if (each instanceof SingleMission) {
+                addDownloadMission(new SingleMission((SingleMission) each));
+            }
+
+            if (each instanceof MultiMission) {
+                addDownloadMission(new MultiMission((MultiMission) each));
+            }
         }
     }
 
@@ -176,6 +176,41 @@ public class DownloadService extends Service {
             each.pause(dataBaseHelper);
         }
         downloadQueue.clear();
+    }
+
+    public void startAll(String missionId) throws InterruptedException {
+        DownloadMission mission = missionMap.get(missionId);
+        if (mission == null) {
+            log("mission not exists");
+            return;
+        }
+
+        if (mission.isCompleted()) {
+            log("mission complete");
+            return;
+        }
+
+        if (!(mission instanceof MultiMission)) {
+            log("mission not multiMission");
+            return;
+        }
+
+        addDownloadMission(new MultiMission((MultiMission) mission));
+    }
+
+    public void pauseAll(String missionId) {
+        DownloadMission mission = missionMap.get(missionId);
+        if (mission == null) {
+            log("mission not exists");
+            return;
+        }
+
+        if (mission.isCompleted()) {
+            log("mission complete");
+            return;
+        }
+
+        mission.pause(dataBaseHelper);
     }
 
     /**

@@ -10,8 +10,6 @@ import android.widget.Toast;
 
 import com.squareup.picasso.Picasso;
 
-import java.util.UUID;
-
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
@@ -30,8 +28,6 @@ public class MultiMissionDownloadActivity extends AppCompatActivity {
 
     @BindView(R.id.toolbar)
     Toolbar toolbar;
-    RxDownload rxDownload;
-    String missionId;
     @BindView(R.id.image1)
     ImageView image1;
     @BindView(R.id.progress1)
@@ -56,9 +52,13 @@ public class MultiMissionDownloadActivity extends AppCompatActivity {
     ImageView control3;
 
 
+    private static final String missionId = "testMissionId";
+
     private int state1 = DownloadFlag.NORMAL;
     private int state2 = DownloadFlag.NORMAL;
+
     private int state3 = DownloadFlag.NORMAL;
+    private RxDownload rxDownload;
 
     private String img1 = "http://static.yingyonghui.com/icon/128/4189733.png";
     private String img2 = "http://static.yingyonghui.com/icon/128/4143651.png";
@@ -75,11 +75,26 @@ public class MultiMissionDownloadActivity extends AppCompatActivity {
         ButterKnife.bind(this);
         setSupportActionBar(toolbar);
         rxDownload = RxDownload.getInstance(this);
-        missionId = UUID.randomUUID().toString();
 
         Picasso.with(this).load(img1).into(image1);
         Picasso.with(this).load(img2).into(image2);
         Picasso.with(this).load(img3).into(image3);
+
+        rxDownload.serviceMultiDownload(missionId, url1, url2, url3)
+                .subscribe(new Consumer<Object>() {
+                    @Override
+                    public void accept(Object o) throws Exception {
+                        control1.setVisibility(View.VISIBLE);
+                        control2.setVisibility(View.VISIBLE);
+                        control3.setVisibility(View.VISIBLE);
+                        Toast.makeText(MultiMissionDownloadActivity.this, "开始", Toast.LENGTH_SHORT).show();
+                    }
+                }, new Consumer<Throwable>() {
+                    @Override
+                    public void accept(Throwable throwable) throws Exception {
+                        log(throwable);
+                    }
+                });
 
         rxDownload.receiveDownloadStatus(url1)
                 .subscribe(new Consumer<DownloadEvent>() {
@@ -176,15 +191,11 @@ public class MultiMissionDownloadActivity extends AppCompatActivity {
     public void onClick(View view) {
         switch (view.getId()) {
             case R.id.start:
-                //批量下载
-                rxDownload.serviceMultiDownload(missionId, url1, url2, url3)
+                rxDownload.startAll(missionId)
                         .subscribe(new Consumer<Object>() {
                             @Override
                             public void accept(Object o) throws Exception {
-                                control1.setVisibility(View.VISIBLE);
-                                control2.setVisibility(View.VISIBLE);
-                                control3.setVisibility(View.VISIBLE);
-                                Toast.makeText(MultiMissionDownloadActivity.this, "开始", Toast.LENGTH_SHORT).show();
+
                             }
                         }, new Consumer<Throwable>() {
                             @Override
@@ -195,35 +206,18 @@ public class MultiMissionDownloadActivity extends AppCompatActivity {
 
                 break;
             case R.id.pause:
-                rxDownload.pauseAll()
-                        .subscribe();
-                break;
-        }
-    }
+                rxDownload.pauseAll(missionId)
+                        .subscribe(new Consumer<Object>() {
+                            @Override
+                            public void accept(Object o) throws Exception {
 
-    @OnClick({R.id.control1, R.id.control2, R.id.control3})
-    public void onControlClick(View view) {
-        switch (view.getId()) {
-            case R.id.control1:
-                if (state1 == DownloadFlag.PAUSED || state1 == DownloadFlag.FAILED) {
-                    rxDownload.serviceDownload(url1).subscribe();
-                } else if (state1 == DownloadFlag.STARTED) {
-                    rxDownload.pauseServiceDownload(url1).subscribe();
-                }
-                break;
-            case R.id.control2:
-                if (state2 == DownloadFlag.PAUSED || state2 == DownloadFlag.FAILED) {
-                    rxDownload.serviceDownload(url2).subscribe();
-                } else if (state2 == DownloadFlag.STARTED) {
-                    rxDownload.pauseServiceDownload(url2).subscribe();
-                }
-                break;
-            case R.id.control3:
-                if (state3 == DownloadFlag.PAUSED || state3 == DownloadFlag.FAILED) {
-                    rxDownload.serviceDownload(url3).subscribe();
-                } else if (state3 == DownloadFlag.STARTED) {
-                    rxDownload.pauseServiceDownload(url3).subscribe();
-                }
+                            }
+                        }, new Consumer<Throwable>() {
+                            @Override
+                            public void accept(Throwable throwable) throws Exception {
+                                log(throwable);
+                            }
+                        });
                 break;
         }
     }

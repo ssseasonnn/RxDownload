@@ -88,7 +88,11 @@ public class DataBaseHelper {
     }
 
     public long insertRecord(DownloadBean downloadBean, int flag) {
-        return getWritableDatabase().insert(TABLE_NAME, null, insert(downloadBean, flag));
+        return getWritableDatabase().insert(TABLE_NAME, null, insert(downloadBean, flag, null));
+    }
+
+    public long insertRecord(DownloadBean downloadBean, int flag, String missionId) {
+        return getWritableDatabase().insert(TABLE_NAME, null, insert(downloadBean, flag, missionId));
     }
 
     public long updateStatus(String url, DownloadStatus status) {
@@ -98,6 +102,11 @@ public class DataBaseHelper {
 
     public long updateRecord(String url, int flag) {
         return getWritableDatabase().update(TABLE_NAME, update(flag),
+                COLUMN_URL + "=?", new String[]{url});
+    }
+
+    public long updateRecord(String url, int flag, String missionId) {
+        return getWritableDatabase().update(TABLE_NAME, update(flag, missionId),
                 COLUMN_URL + "=?", new String[]{url});
     }
 

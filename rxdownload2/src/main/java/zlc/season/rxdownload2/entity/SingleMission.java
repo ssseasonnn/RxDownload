@@ -3,6 +3,7 @@ package zlc.season.rxdownload2.entity;
 import java.util.Map;
 import java.util.concurrent.Semaphore;
 
+import io.reactivex.Observer;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.functions.Action;
 import io.reactivex.functions.Consumer;
@@ -19,6 +20,7 @@ import static zlc.season.rxdownload2.function.DownloadEventFactory.normal;
 import static zlc.season.rxdownload2.function.DownloadEventFactory.paused;
 import static zlc.season.rxdownload2.function.DownloadEventFactory.started;
 import static zlc.season.rxdownload2.function.DownloadEventFactory.waiting;
+import static zlc.season.rxdownload2.function.Utils.createProcessor;
 import static zlc.season.rxdownload2.function.Utils.deleteFiles;
 import static zlc.season.rxdownload2.function.Utils.dispose;
 import static zlc.season.rxdownload2.function.Utils.formatStr;
@@ -36,45 +38,75 @@ public class SingleMission extends DownloadMission {
     protected Disposable disposable;
     private DownloadBean bean;
 
+    private String missionId;
+    private Observer<DownloadStatus> observer;
+
     public SingleMission(RxDownload rxdownload, DownloadBean bean) {
         super(rxdownload);
         this.bean = bean;
     }
 
+    public SingleMission(RxDownload rxDownload, DownloadBean bean,
+                         String missionId, Observer<DownloadStatus> observer) {
+        super(rxDownload);
+        this.bean = bean;
+        this.missionId = missionId;
+        this.observer = observer;
+    }
+
+    public SingleMission(SingleMission other) {
+        super(other.rxdownload);
+        this.bean = other.getBean();
+        this.missionId = other.getMissionId();
+        this.observer = other.getObserver();
+    }
+
+    private String getMissionId() {
+        return missionId;
+    }
+
+    private Observer<DownloadStatus> getObserver() {
+        return observer;
+    }
+
+    private DownloadBean getBean() {
+        return bean;
+    }
+
 
     @Override
-    public String getMissionId() {
+    public String getUrl() {
         return bean.getUrl();
     }
 
     @Override
     public void init(Map<String, DownloadMission> missionMap,
-                     FlowableProcessor<DownloadEvent> processor) {
-        DownloadMission mission = missionMap.get(getMissionId());
+                     Map<String, FlowableProcessor<DownloadEvent>> processorMap) {
+        DownloadMission mission = missionMap.get(getUrl());
         if (mission == null) {
-            missionMap.put(getMissionId(), this);
+            missionMap.put(getUrl(), this);
         } else {
             if (mission.isCanceled()) {
-                missionMap.put(getMissionId(), this);
+                missionMap.put(getUrl(), this);
             } else {
-                throw new IllegalArgumentException(formatStr(Constant.DOWNLOAD_URL_EXISTS, getMissionId()));
+                throw new IllegalArgumentException(formatStr(Constant.DOWNLOAD_URL_EXISTS, getUrl()));
             }
         }
-        this.processor = processor;
+        this.processor = createProcessor(getUrl(), processorMap);
     }
 
     @Override
     public void insertOrUpdate(DataBaseHelper dataBaseHelper) {
-        if (dataBaseHelper.recordNotExists(getMissionId())) {
-            dataBaseHelper.insertRecord(bean, WAITING);
+        if (dataBaseHelper.recordNotExists(getUrl())) {
+            dataBaseHelper.insertRecord(bean, WAITING, missionId);
         } else {
-            dataBaseHelper.updateRecord(getMissionId(), WAITING);
+            dataBaseHelper.updateRecord(getUrl(), WAITING, missionId);
         }
     }
 
     @Override
     public void sendWaitingEvent(DataBaseHelper dataBaseHelper) {
-        processor.onNext(waiting(dataBaseHelper.readStatus(getMissionId())));
+        processor.onNext(waiting(dataBaseHelper.readStatus(getUrl())));
     }
 
     @Override
@@ -95,7 +127,9 @@ public class SingleMission extends DownloadMission {
                 .doOnSubscribe(new Consumer<Disposable>() {
                     @Override
                     public void accept(Disposable disposable) throws Exception {
-
+                        if (observer != null) {
+                            observer.onSubscribe(disposable);
+                        }
                     }
                 })
                 .doFinally(new Action() {
@@ -110,17 +144,27 @@ public class SingleMission extends DownloadMission {
                     public void accept(DownloadStatus value) throws Exception {
                         status = value;
                         processor.onNext(started(value));
+                        if (observer != null) {
+                            observer.onNext(value);
+                        }
                     }
                 }, new Consumer<Throwable>() {
                     @Override
                     public void accept(Throwable throwable) throws Exception {
                         processor.onNext(failed(status, throwable));
+                        if (observer != null) {
+                            observer.onError(throwable);
+                        }
                     }
                 }, new Action() {
                     @Override
                     public void run() throws Exception {
                         processor.onNext(completed(status));
                         setCompleted(true);
+
+                        if (observer != null) {
+                            observer.onComplete();
+                        }
                     }
                 });
     }
@@ -129,7 +173,7 @@ public class SingleMission extends DownloadMission {
     public void pause(DataBaseHelper dataBaseHelper) {
         dispose(disposable);
         setCanceled(true);
-        processor.onNext(paused(dataBaseHelper.readStatus(getMissionId())));
+        processor.onNext(paused(dataBaseHelper.readStatus(getUrl())));
     }
 
     @Override
@@ -137,11 +181,11 @@ public class SingleMission extends DownloadMission {
         pause(dataBaseHelper);
         processor.onNext(normal(null));
         if (deleteFile) {
-            DownloadRecord record = dataBaseHelper.readSingleRecord(getMissionId());
+            DownloadRecord record = dataBaseHelper.readSingleRecord(getUrl());
             if (record != null) {
                 deleteFiles(getFiles(record.getSaveName(), record.getSavePath()));
             }
         }
-        dataBaseHelper.deleteRecord(getMissionId());
+        dataBaseHelper.deleteRecord(getUrl());
     }
 }

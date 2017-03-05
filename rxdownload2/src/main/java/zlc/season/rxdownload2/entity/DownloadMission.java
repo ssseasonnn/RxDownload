@@ -40,10 +40,10 @@ public abstract class DownloadMission {
         this.completed = completed;
     }
 
-    public abstract String getMissionId();
+    public abstract String getUrl();
 
     public abstract void init(Map<String, DownloadMission> missionMap,
-                              FlowableProcessor<DownloadEvent> processor);
+                              Map<String, FlowableProcessor<DownloadEvent>> processorMap);
 
     public abstract void insertOrUpdate(DataBaseHelper dataBaseHelper);
 

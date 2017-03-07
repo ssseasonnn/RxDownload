@@ -56,9 +56,10 @@
     <string-array name="url">
         <item>https://qd.myapp.com/myapp/qqteam/AndroidQQ/mobileqq_android.apk</item>
         <item>http://s1.music.126.net/download/android/CloudMusic_official_3.7.3_153912.apk</item>
-        <item>http://s6.pstatp.com/site/download/promotion/apk/NewsArticle_wtgao6_v5.8.7_b670e53.apk</item>
+        <item>http://dl.coolapkmarket.com/down/apk_file/2017/0301/com.ss.android.article.news–6.0.2–602–0301.apk</item>
         <item>http://zhstatic.zhihu.com/pkg/store/zhihu/futureve-mobile-update-release-4.10.1(443).apk</item>
         <item>http://zhstatic.zhihu.com/pkg/store/daily/zhihu-daily-zhihu-2.5.4(392).apk</item>
     </string-array>
+    <string name="title_activity_multi_mission_download">MultiMissionDownloadActivity</string>
 
 </resources>

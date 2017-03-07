@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              xmlns:app="http://schemas.android.com/apk/res-auto"
+              xmlns:tools="http://schemas.android.com/tools"
+              android:id="@+id/content_multi_mission_download"
+              android:layout_width="match_parent"
+              android:layout_height="match_parent"
+              android:orientation="vertical"
+              app:layout_behavior="@string/appbar_scrolling_view_behavior"
+              tools:context="zlc.season.rxdownloadproject.multi_mission.MultiMissionDownloadActivity"
+              tools:showIn="@layout/activity_multi_mission_download">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:orientation="horizontal">
+
+        <RelativeLayout
+            android:id="@+id/mission1"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1">
+
+            <ImageView
+                android:id="@+id/image1"
+                android:layout_width="60dp"
+                android:layout_height="60dp"
+                android:layout_centerInParent="true"
+                android:visibility="visible"
+                tools:ignore="ContentDescription"/>
+
+            <online.osslab.CircleProgressBar
+                android:id="@+id/progress1"
+                android:layout_width="100dp"
+                android:layout_height="100dp"
+                android:layout_centerInParent="true"
+                android:visibility="visible"
+                app:background_color="#FFCDD2"
+                app:background_width="5dp"
+                app:progress_color="#F44336"
+                app:progress_width="10dp"/>
+
+            <Button
+                android:id="@+id/control1"
+                android:layout_width="70dp"
+                android:layout_height="50dp"
+                android:layout_centerInParent="true"
+                android:text="下载中"/>
+        </RelativeLayout>
+
+
+        <RelativeLayout
+            android:id="@+id/mission2"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1">
+
+            <ImageView
+                android:id="@+id/image2"
+                android:layout_width="60dp"
+                android:layout_height="60dp"
+                android:layout_centerInParent="true"
+                android:visibility="visible"
+                tools:ignore="ContentDescription"/>
+
+            <online.osslab.CircleProgressBar
+                android:id="@+id/progress2"
+                android:layout_width="100dp"
+                android:layout_height="100dp"
+                android:layout_centerInParent="true"
+                android:visibility="visible"
+                app:background_color="#FFCDD2"
+                app:background_width="5dp"
+                app:progress_color="#F44336"
+                app:progress_value="20"
+                app:progress_width="10dp"/>
+
+            <Button
+                android:id="@+id/control2"
+                android:layout_width="70dp"
+                android:layout_height="50dp"
+                android:layout_centerInParent="true"
+                android:text="下载中"/>
+        </RelativeLayout>
+
+
+        <RelativeLayout
+            android:id="@+id/mission3"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1">
+
+            <ImageView
+                android:id="@+id/image3"
+                android:layout_width="60dp"
+                android:layout_height="60dp"
+                android:layout_centerInParent="true"
+                android:visibility="visible"
+                tools:ignore="ContentDescription"/>
+
+            <online.osslab.CircleProgressBar
+                android:id="@+id/progress3"
+                android:layout_width="100dp"
+                android:layout_height="100dp"
+                android:layout_centerInParent="true"
+                android:visibility="visible"
+                app:background_color="#FFCDD2"
+                app:background_width="5dp"
+                app:progress_color="#F44336"
+                app:progress_width="10dp"/>
+
+            <Button
+                android:id="@+id/control3"
+                android:layout_width="70dp"
+                android:layout_height="50dp"
+                android:layout_centerInParent="true"
+                android:text="下载中"/>
+        </RelativeLayout>
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/activity_horizontal_margin"
+        android:gravity="center"
+        android:orientation="horizontal">
+
+        <Button
+            android:id="@+id/start"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="全部开始"/>
+
+        <View
+            android:layout_width="10dp"
+            android:layout_height="match_parent"/>
+
+        <Button
+            android:id="@+id/pause"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="全部暂停"/>
+
+        <View
+            android:layout_width="10dp"
+            android:layout_height="match_parent"/>
+
+        <Button
+            android:id="@+id/delete"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="全部删除"/>
+    </LinearLayout>
+</LinearLayout>

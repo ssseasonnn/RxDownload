@@ -1,6 +1,5 @@
 package zlc.season.rxdownloadproject.download_manager;
 
-import android.Manifest;
 import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
@@ -19,10 +18,12 @@ import android.widget.Toast;
 import com.squareup.picasso.Picasso;
 import com.tbruyelle.rxpermissions2.RxPermissions;
 
+import java.io.File;
+
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
-import io.reactivex.disposables.Disposable;
+import io.reactivex.functions.Action;
 import io.reactivex.functions.Consumer;
 import zlc.season.practicalrecyclerview.AbstractAdapter;
 import zlc.season.practicalrecyclerview.AbstractViewHolder;
@@ -34,6 +35,10 @@ import zlc.season.rxdownload2.function.Utils;
 import zlc.season.rxdownloadproject.DownloadController;
 import zlc.season.rxdownloadproject.R;
 
+import static android.Manifest.permission.WRITE_EXTERNAL_STORAGE;
+import static zlc.season.rxdownload2.function.Utils.dispose;
+import static zlc.season.rxdownload2.function.Utils.empty;
+import static zlc.season.rxdownload2.function.Utils.log;
 import static zlc.season.rxdownloadproject.R.id.percent;
 
 /**
@@ -42,7 +47,7 @@ import static zlc.season.rxdownloadproject.R.id.percent;
  * Time: 09:37
  * FIXME
  */
-public class DownloadViewHolder extends AbstractViewHolder<DownloadBean> {
+public class DownloadViewHolder extends AbstractViewHolder<DownloadItem> {
     @BindView(R.id.img)
     ImageView mImg;
     @BindView(percent)
@@ -61,45 +66,56 @@ public class DownloadViewHolder extends AbstractViewHolder<DownloadBean> {
     Button mMore;
 
     private AbstractAdapter mAdapter;
-    private Context mContext;
-    private DownloadBean mData;
-    private RxDownload mRxDownload;
     private DownloadController mDownloadController;
-    private Disposable mDisposable;
+
+    private Context mContext;
+    private DownloadItem data;
+
+    private RxDownload mRxDownload;
+    private int flag;
 
     public DownloadViewHolder(ViewGroup parent, AbstractAdapter adapter) {
         super(parent, R.layout.download_manager_item);
         ButterKnife.bind(this, itemView);
         this.mAdapter = adapter;
         mContext = parent.getContext();
-        mRxDownload = RxDownload.getInstance().context(mContext);
+
+        mRxDownload = RxDownload.getInstance(mContext);
 
         mDownloadController = new DownloadController(mStatusText, mActionButton);
     }
 
     @Override
-    public void setData(DownloadBean param) {
-        this.mData = param;
-        Picasso.with(mContext).load(R.mipmap.ic_file_download).into(mImg);
-        mName.setText(param.mRecord.getSaveName());
+    public void setData(DownloadItem param) {
+        this.data = param;
+        if (empty(param.record.getExtra1())) {
+            Picasso.with(mContext).load(R.mipmap.ic_file_download).into(mImg);
+        } else {
+            Picasso.with(mContext).load(param.record.getExtra1()).into(mImg);
+        }
 
-        /**
-         * important!! 如果有订阅没有取消,则取消订阅!防止ViewHolder复用导致界面显示的BUG!
-         */
-        Utils.dispose(mDisposable);
-        mDisposable = mRxDownload.receiveDownloadStatus(mData.mRecord.getUrl())
-                                 .subscribe(new Consumer<DownloadEvent>() {
-                                     @Override
-                                     public void accept(DownloadEvent downloadEvent)
-                                             throws Exception {
-                                         if (downloadEvent.getFlag() == DownloadFlag.FAILED) {
-                                             Throwable throwable = downloadEvent.getError();
-                                             Log.w("TAG", throwable);
-                                         }
-                                         mDownloadController.setEvent(downloadEvent);
-                                         updateProgressStatus(downloadEvent.getDownloadStatus());
-                                     }
-                                 });
+        String name = empty(param.record.getExtra2()) ? param.record.getSaveName() : param.record.getExtra2();
+        mName.setText(name);
+
+
+        Utils.log(data.record.getUrl());
+        data.disposable = mRxDownload.receiveDownloadStatus(data.record.getUrl())
+                .subscribe(new Consumer<DownloadEvent>() {
+                    @Override
+                    public void accept(DownloadEvent downloadEvent) throws Exception {
+                        if (flag != downloadEvent.getFlag()) {
+                            flag = downloadEvent.getFlag();
+                            log(flag + "");
+                        }
+
+                        if (downloadEvent.getFlag() == DownloadFlag.FAILED) {
+                            Throwable throwable = downloadEvent.getError();
+                            Log.w("TAG", throwable);
+                        }
+                        mDownloadController.setEvent(downloadEvent);
+                        updateProgressStatus(downloadEvent.getDownloadStatus());
+                    }
+                });
     }
 
     @OnClick({R.id.action, R.id.more})
@@ -115,11 +131,6 @@ public class DownloadViewHolder extends AbstractViewHolder<DownloadBean> {
                     @Override
                     public void pauseDownload() {
                         pause();
-                    }
-
-                    @Override
-                    public void cancelDownload() {
-                        cancel();
                     }
 
                     @Override
@@ -143,54 +154,53 @@ public class DownloadViewHolder extends AbstractViewHolder<DownloadBean> {
     }
 
     private void installApk() {
-        Uri uri = Uri.fromFile(mRxDownload
-                .getRealFiles(mData.mRecord.getSaveName(), mData.mRecord.getSavePath())[0]);
-        Intent intent = new Intent(Intent.ACTION_VIEW);
-        intent.setDataAndType(uri, "application/vnd.android.package-archive");
-        mContext.startActivity(intent);
+        File[] files = mRxDownload.getRealFiles(data.record.getUrl());
+        if (files != null) {
+            Uri uri = Uri.fromFile(files[0]);
+            Intent intent = new Intent(Intent.ACTION_VIEW);
+            intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            intent.setDataAndType(uri, "application/vnd.android.package-archive");
+            mContext.startActivity(intent);
+        } else {
+            Toast.makeText(mContext, "File not exists", Toast.LENGTH_SHORT).show();
+        }
     }
 
     private void start() {
-        String url = mData.mRecord.getUrl();
-        String saveName = mData.mRecord.getSaveName();
-        String savePath = mData.mRecord.getSavePath();
-
         RxPermissions.getInstance(mContext)
-                     .request(Manifest.permission.WRITE_EXTERNAL_STORAGE)
-                     .doOnNext(new Consumer<Boolean>() {
-                         @Override
-                         public void accept(Boolean granted) throws Exception {
-                             if (!granted) {
-                                 throw new RuntimeException("no permission");
-                             }
-                         }
-                     })
-                     .compose(mRxDownload.<Boolean>transformService(url, saveName, savePath))
-                     .subscribe(new Consumer<Object>() {
-                         @Override
-                         public void accept(Object o) throws Exception {
-                             Toast.makeText(mContext, "下载开始", Toast.LENGTH_SHORT).show();
-                         }
-                     });
+                .request(WRITE_EXTERNAL_STORAGE)
+                .doOnNext(new Consumer<Boolean>() {
+                    @Override
+                    public void accept(Boolean granted) throws Exception {
+                        if (!granted) {
+                            throw new RuntimeException("no permission");
+                        }
+                    }
+                })
+                .compose(mRxDownload.<Boolean>transformService(data.record.getUrl()))
+                .subscribe(new Consumer<Object>() {
+                    @Override
+                    public void accept(Object o) throws Exception {
+                        Toast.makeText(mContext, "下载开始", Toast.LENGTH_SHORT).show();
+                    }
+                });
     }
 
     private void pause() {
-        mRxDownload.pauseServiceDownload(mData.mRecord.getUrl()).subscribe();
-    }
-
-    private void cancel() {
-        mRxDownload.cancelServiceDownload(mData.mRecord.getUrl()).subscribe();
+        mRxDownload.pauseServiceDownload(data.record.getUrl()).subscribe();
     }
 
     private void delete() {
-        mRxDownload.deleteServiceDownload(mData.mRecord.getUrl(), true)
-                   .subscribe(new Consumer<Object>() {
-                       @Override
-                       public void accept(Object o) throws Exception {
-                           Utils.dispose(mDisposable);
-                           mAdapter.remove(getAdapterPosition());
-                       }
-                   });
+        dispose(data.disposable);
+        mRxDownload.deleteServiceDownload(data.record.getUrl(), true)
+                .doFinally(new Action() {
+                    @Override
+                    public void run() throws Exception {
+                        mAdapter.remove(getAdapterPosition());
+                    }
+                })
+                .subscribe();
+
     }
 
     private void showPopUpWindow(View view) {

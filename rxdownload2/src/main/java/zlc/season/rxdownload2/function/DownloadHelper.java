@@ -1,407 +1,324 @@
 package zlc.season.rxdownload2.function;
 
 import android.content.Context;
+import android.support.annotation.Nullable;
 
 import java.io.File;
 import java.io.IOException;
 import java.text.ParseException;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
-import io.reactivex.FlowableEmitter;
 import io.reactivex.Observable;
 import io.reactivex.ObservableSource;
+import io.reactivex.disposables.Disposable;
 import io.reactivex.exceptions.CompositeException;
 import io.reactivex.functions.Action;
 import io.reactivex.functions.Consumer;
 import io.reactivex.functions.Function;
-import okhttp3.ResponseBody;
 import retrofit2.Response;
 import retrofit2.Retrofit;
-import zlc.season.rxdownload2.entity.DownloadRange;
+import zlc.season.rxdownload2.db.DataBaseHelper;
+import zlc.season.rxdownload2.entity.DownloadBean;
+import zlc.season.rxdownload2.entity.DownloadRecord;
 import zlc.season.rxdownload2.entity.DownloadStatus;
 import zlc.season.rxdownload2.entity.DownloadType;
-import zlc.season.rxdownload2.entity.DownloadTypeFactory;
+import zlc.season.rxdownload2.entity.TemporaryRecord;
 
-import static zlc.season.rxdownload2.function.Constant.CONTEXT_NULL_HINT;
-import static zlc.season.rxdownload2.function.Constant.DOWNLOAD_RECORD_FILE_DAMAGED;
+import static android.os.Environment.DIRECTORY_DOWNLOADS;
+import static android.os.Environment.getExternalStoragePublicDirectory;
 import static zlc.season.rxdownload2.function.Constant.DOWNLOAD_URL_EXISTS;
+import static zlc.season.rxdownload2.function.Constant.REQUEST_RETRY_HINT;
 import static zlc.season.rxdownload2.function.Constant.TEST_RANGE_SUPPORT;
-import static zlc.season.rxdownload2.function.Utils.contentLength;
-import static zlc.season.rxdownload2.function.Utils.installApk;
-import static zlc.season.rxdownload2.function.Utils.lastModify;
+import static zlc.season.rxdownload2.function.Constant.URL_ILLEGAL;
+import static zlc.season.rxdownload2.function.Utils.formatStr;
 import static zlc.season.rxdownload2.function.Utils.log;
-import static zlc.season.rxdownload2.function.Utils.notSupportRange;
-import static zlc.season.rxdownload2.function.Utils.requestRangeNotSatisfiable;
-import static zlc.season.rxdownload2.function.Utils.serverFileChanged;
-import static zlc.season.rxdownload2.function.Utils.serverFileNotChange;
+import static zlc.season.rxdownload2.function.Utils.retry;
 
 /**
  * Author: Season(ssseasonnn@gmail.com)
  * Date: 2016/11/2
  * Time: 09:39
- * Download helper 类
+ * Download helper
  */
 public class DownloadHelper {
+    private int maxRetryCount = 3;
+    private int maxThreads = 3;
 
-    private int MAX_RETRY_COUNT = 3;
+    private String defaultSavePath;
+    private DownloadApi downloadApi;
 
-    private DownloadApi mDownloadApi;
-    private FileHelper mFileHelper;
-    private DownloadTypeFactory typeFactory;
+    private DataBaseHelper dataBaseHelper;
+    private TemporaryRecordTable recordTable;
 
-    //Record : { "url" : new String[] { "file path" , "temp file path" , "last modify file path" }}
-    private Map<String, String[]> mDownloadRecord;
-
-    public DownloadHelper() {
-        mDownloadRecord = new HashMap<>();
-        mFileHelper = new FileHelper();
-        mDownloadApi = RetrofitProvider.getInstance().create(DownloadApi.class);
-        typeFactory = new DownloadTypeFactory(this);
+    public DownloadHelper(Context context) {
+        downloadApi = RetrofitProvider.getInstance().create(DownloadApi.class);
+        defaultSavePath = getExternalStoragePublicDirectory(DIRECTORY_DOWNLOADS).getPath();
+        recordTable = new TemporaryRecordTable();
+        dataBaseHelper = DataBaseHelper.getSingleton(context.getApplicationContext());
     }
 
     public void setRetrofit(Retrofit retrofit) {
-        mDownloadApi = retrofit.create(DownloadApi.class);
+        downloadApi = retrofit.create(DownloadApi.class);
     }
 
     public void setDefaultSavePath(String defaultSavePath) {
-        mFileHelper.setDefaultSavePath(defaultSavePath);
+        this.defaultSavePath = defaultSavePath;
     }
 
-    public int getMaxRetryCount() {
-        return MAX_RETRY_COUNT;
+    public void setMaxRetryCount(int maxRetryCount) {
+        this.maxRetryCount = maxRetryCount;
     }
 
-    public void setMaxRetryCount(int MAX_RETRY_COUNT) {
-        this.MAX_RETRY_COUNT = MAX_RETRY_COUNT;
+    public void setMaxThreads(int maxThreads) {
+        this.maxThreads = maxThreads;
     }
 
-    public String[] getFileSavePaths(String savePath) {
-        return mFileHelper.getRealDirectoryPaths(savePath);
-    }
-
-    public String[] getRealFilePaths(String saveName, String savePath) {
-        return mFileHelper.getRealFilePaths(saveName, savePath);
-    }
-
-    public DownloadApi getDownloadApi() {
-        return mDownloadApi;
-    }
-
-    public int getMaxThreads() {
-        return mFileHelper.getMaxThreads();
-    }
-
-    public void setMaxThreads(int MAX_THREADS) {
-        mFileHelper.setMaxThreads(MAX_THREADS);
-    }
-
-    public void prepareNormalDownload(String url, long fileLength, String lastModify)
-            throws IOException, ParseException {
-
-        mFileHelper.prepareDownload(getLastModifyFile(url),
-                getFile(url), fileLength, lastModify);
-    }
-
-    public void saveNormalFile(
-            FlowableEmitter<DownloadStatus> emitter,
-            String url, Response<ResponseBody> resp) {
-
-        mFileHelper.saveFile(emitter, getFile(url), resp);
-    }
-
-    public DownloadRange readDownloadRange(String url, int i)
-            throws IOException {
-        return mFileHelper.readDownloadRange(getTempFile(url), i);
-    }
-
-    public void prepareMultiThreadDownload(
-            String url, long fileLength, String lastModify)
-            throws IOException, ParseException {
-
-        mFileHelper.prepareDownload(getLastModifyFile(url),
-                getTempFile(url), getFile(url),
-                fileLength, lastModify);
-    }
-
-    public void saveRangeFile(
-            FlowableEmitter<DownloadStatus> emitter,
-            int i, long start, long end,
-            String url, ResponseBody response) {
-
-        mFileHelper.saveFile(emitter, i, start, end,
-                getTempFile(url), getFile(url), response);
+    /**
+     * return Files
+     *
+     * @param url url
+     * @return Files = {file,tempFile,lmfFile}
+     */
+    @Nullable
+    public File[] getFiles(String url) {
+        DownloadRecord record = dataBaseHelper.readSingleRecord(url);
+        if (record == null) {
+            return null;
+        } else {
+            return Utils.getFiles(record.getSaveName(), record.getSavePath());
+        }
     }
 
     /**
      * dispatch download
      *
-     * @param url         url for download
-     * @param saveName    save name
-     * @param savePath    save path
-     * @param context     context
-     * @param autoInstall auto install
-     *
+     * @param bean download bean
      * @return DownloadStatus
      */
-    public Observable<DownloadStatus> downloadDispatcher(final String url,
-            final String saveName, final String savePath,
-            final Context context, final boolean autoInstall) {
-
-        try {
-            beforeDownload(url, saveName, savePath);
-        } catch (IOException e) {
-            return Observable.error(e);
-        }
-
-        return getDownloadType(url)
-                .flatMap(new Function<DownloadType, ObservableSource<DownloadStatus>>() {
+    public Observable<DownloadStatus> downloadDispatcher(final DownloadBean bean) {
+        return Observable.just(1)
+                .doOnSubscribe(new Consumer<Disposable>() {
                     @Override
-                    public ObservableSource<DownloadStatus> apply(DownloadType downloadType)
-                            throws Exception {
-                        downloadType.prepareDownload();
-                        return downloadType.startDownload();
+                    public void accept(Disposable disposable) throws Exception {
+                        addTempRecord(bean);
                     }
                 })
-                .doOnComplete(new Action() {
+                .flatMap(new Function<Integer, ObservableSource<DownloadType>>() {
                     @Override
-                    public void run() throws Exception {
-                        autoInstall(autoInstall, context, saveName, savePath);
+                    public ObservableSource<DownloadType> apply(Integer integer) throws Exception {
+                        return getDownloadType(bean.getUrl());
+                    }
+                })
+                .flatMap(new Function<DownloadType, ObservableSource<DownloadStatus>>() {
+                    @Override
+                    public ObservableSource<DownloadStatus> apply(DownloadType type) throws Exception {
+                        return download(type);
                     }
                 })
                 .doOnError(new Consumer<Throwable>() {
                     @Override
                     public void accept(Throwable throwable) throws Exception {
-                        if (throwable instanceof CompositeException) {
-                            CompositeException realException = (CompositeException) throwable;
-                            List<Throwable> exceptions = realException.getExceptions();
-                            for (Throwable each : exceptions) {
-                                log(each);
-                            }
-                        } else {
-                            log(throwable);
-                        }
+                        logError(throwable);
                     }
                 })
                 .doFinally(new Action() {
                     @Override
                     public void run() throws Exception {
-                        deleteDownloadRecord(url);
+                        recordTable.delete(bean.getUrl());
+                    }
+                });
+    }
+
+    private ObservableSource<DownloadStatus> download(DownloadType downloadType)
+            throws IOException, ParseException {
+        downloadType.prepareDownload();
+        return downloadType.startDownload();
+    }
+
+    private void logError(Throwable throwable) {
+        if (throwable instanceof CompositeException) {
+            CompositeException realException = (CompositeException) throwable;
+            List<Throwable> exceptions = realException.getExceptions();
+            for (Throwable each : exceptions) {
+                log(each);
+            }
+        } else {
+            log(throwable);
+        }
+    }
+
+    /**
+     * Add a temporary record to the record recordTable.
+     *
+     * @param bean download bean
+     */
+    private void addTempRecord(DownloadBean bean) {
+        if (recordTable.contain(bean.getUrl())) {
+            throw new IllegalArgumentException(formatStr(DOWNLOAD_URL_EXISTS, bean.getUrl()));
+        }
+        recordTable.add(bean.getUrl(), new TemporaryRecord(bean));
+    }
+
+    /**
+     * get download type.
+     *
+     * @param url url
+     * @return download type
+     */
+    private Observable<DownloadType> getDownloadType(final String url) {
+        return Observable.just(1)
+                .flatMap(new Function<Integer, ObservableSource<Object>>() {
+                    @Override
+                    public ObservableSource<Object> apply(Integer integer)
+                            throws Exception {
+                        return checkUrl(url);
+                    }
+                })
+                .flatMap(new Function<Object, ObservableSource<Object>>() {
+                    @Override
+                    public ObservableSource<Object> apply(Object o) throws Exception {
+                        return checkRange(url);
+                    }
+                })
+                .doOnNext(new Consumer<Object>() {
+                    @Override
+                    public void accept(Object o) throws Exception {
+                        recordTable.init(url, maxThreads, maxRetryCount, defaultSavePath,
+                                downloadApi, dataBaseHelper);
+                    }
+                })
+                .flatMap(new Function<Object, ObservableSource<DownloadType>>() {
+                    @Override
+                    public ObservableSource<DownloadType> apply(Object o) throws Exception {
+                        return recordTable.fileExists(url) ? existsType(url) : nonExistsType(url);
                     }
                 });
     }
 
     /**
-     * some server such IIS does not support HEAD method, use GET.
+     * Gets the download type of file non-existence.
      *
-     * @param url url
-     *
-     * @return DownloadType
-     *
-     * @throws IOException
+     * @param url file url
+     * @return Download Type
      */
-    public Observable<DownloadType> notSupportHead(final String url)
-            throws IOException {
-
-        return mDownloadApi
-                .GET_withIfRange(TEST_RANGE_SUPPORT, readLastModify(url), url)
-                .map(new Function<Response<Void>, DownloadType>() {
+    private Observable<DownloadType> nonExistsType(final String url) {
+        return Observable.just(1)
+                .flatMap(new Function<Integer, ObservableSource<DownloadType>>() {
                     @Override
-                    public DownloadType apply(Response<Void> response)
+                    public ObservableSource<DownloadType> apply(Integer integer)
                             throws Exception {
-                        if (serverFileNotChange(response)) {
-                            return getWhenServerFileNotChange(response, url);
-                        } else if (serverFileChanged(response)) {
-                            return getWhenServerFileChanged(response, url);
-                        } else {
-                            return typeFactory.unable();
-                        }
+                        return Observable.just(recordTable.generateNonExistsType(url));
                     }
-                })
-                .compose(Utils.<DownloadType>retry(MAX_RETRY_COUNT));
-    }
-
-    private void autoInstall(boolean autoInstall, Context context,
-            String saveName, String savePath) {
-        if (autoInstall) {
-            if (context == null) {
-                throw new IllegalArgumentException(CONTEXT_NULL_HINT);
-            }
-            installApk(context, new File(getRealFilePaths(saveName, savePath)[0]));
-        }
-    }
-
-    private void beforeDownload(String url, String saveName, String savePath)
-            throws IOException {
-
-        if (recordExists(url)) {
-            throw new IOException(DOWNLOAD_URL_EXISTS);
-        }
-        addDownloadRecord(url, saveName, savePath);
-    }
-
-    private void addDownloadRecord(String url, String saveName, String savePath)
-            throws IOException {
-
-        mFileHelper.createDownloadDirs(savePath);
-        mDownloadRecord.put(url, getRealFilePaths(saveName, savePath));
-    }
-
-    private boolean recordExists(String url) {
-        return mDownloadRecord.get(url) != null;
-    }
-
-    private void deleteDownloadRecord(String url) {
-        mDownloadRecord.remove(url);
-    }
-
-    private String readLastModify(String url)
-            throws IOException {
-        return mFileHelper.getLastModify(getLastModifyFile(url));
-    }
-
-    private boolean downloadNotComplete(String url)
-            throws IOException {
-        return mFileHelper.downloadNotComplete(getTempFile(url));
-    }
-
-    private boolean downloadNotComplete(String url, long contentLength) {
-        return getFile(url).length() != contentLength;
-    }
-
-    private boolean needReDownload(String url, long contentLength)
-            throws IOException {
-        return tempFileNotExists(url) || tempFileDamaged(url, contentLength);
-    }
-
-    private boolean downloadFileExists(String url) {
-        return getFile(url).exists();
-    }
-
-    private boolean tempFileDamaged(String url, long fileLength)
-            throws IOException {
-        return mFileHelper.tempFileDamaged(getTempFile(url), fileLength);
-    }
-
-    private boolean tempFileNotExists(String url) {
-        return !getTempFile(url).exists();
-    }
-
-    private File getFile(String url) {
-        return new File(mDownloadRecord.get(url)[0]);
-    }
-
-    private File getTempFile(String url) {
-        return new File(mDownloadRecord.get(url)[1]);
-    }
-
-    private File getLastModifyFile(String url) {
-        return new File(mDownloadRecord.get(url)[2]);
+                });
     }
 
     /**
-     * 获取下载类型
+     * Gets the download type of file existence.
+     *
+     * @param url file url
+     * @return Download Type
+     */
+    private Observable<DownloadType> existsType(final String url) {
+        return Observable.just(1)
+                .map(new Function<Integer, String>() {
+                    @Override
+                    public String apply(Integer integer) throws Exception {
+                        return recordTable.readLastModify(url);
+                    }
+                })
+                .flatMap(new Function<String, ObservableSource<Object>>() {
+                    @Override
+                    public ObservableSource<Object> apply(String s) throws Exception {
+                        return checkFile(url, s);
+                    }
+                })
+                .flatMap(new Function<Object, ObservableSource<DownloadType>>() {
+                    @Override
+                    public ObservableSource<DownloadType> apply(Object o)
+                            throws Exception {
+                        return Observable.just(recordTable.generateFileExistsType(url));
+                    }
+                });
+    }
+
+    /**
+     * check url
      *
      * @param url url
-     *
-     * @return download type
+     * @return empty
      */
-    private Observable<DownloadType> getDownloadType(String url) {
-        if (downloadFileExists(url)) {
-            try {
-                return getWhenFileExists(url);
-            } catch (IOException e) {
-                return getWhenFileNotExists(url);
-            }
-        } else {
-            return getWhenFileNotExists(url);
-        }
-    }
-
-    private Observable<DownloadType> getWhenFileNotExists(final String url) {
-        return mDownloadApi
-                .HEAD(TEST_RANGE_SUPPORT, url)
-                .map(new Function<Response<Void>, DownloadType>() {
+    private ObservableSource<Object> checkUrl(final String url) {
+        return downloadApi.check(url)
+                .doOnNext(new Consumer<Response<Void>>() {
                     @Override
-                    public DownloadType apply(Response<Void> response)
-                            throws Exception {
-                        if (notSupportRange(response)) {
-                            return typeFactory.normal(url, contentLength(response),
-                                    lastModify(response));
+                    public void accept(Response<Void> response) throws Exception {
+                        if (!response.isSuccessful()) {
+                            throw new IllegalArgumentException(formatStr(URL_ILLEGAL, url));
                         } else {
-                            return typeFactory.multithread(url, contentLength(response),
-                                    lastModify(response));
+                            recordTable.saveFileInfo(url, response);
                         }
                     }
                 })
-                .compose(Utils.<DownloadType>retry(MAX_RETRY_COUNT));
-    }
-
-    private Observable<DownloadType> getWhenFileExists(final String url)
-            throws IOException {
-
-        return mDownloadApi
-                .HEAD_WithIfRange(TEST_RANGE_SUPPORT, readLastModify(url), url)
-                .map(new Function<Response<Void>, DownloadType>() {
+                .map(new Function<Response<Void>, Object>() {
                     @Override
-                    public DownloadType apply(Response<Void> resp)
-                            throws Exception {
-                        if (serverFileNotChange(resp)) {
-                            return getWhenServerFileNotChange(resp, url);
-                        } else if (serverFileChanged(resp)) {
-                            return getWhenServerFileChanged(resp, url);
-                        } else if (requestRangeNotSatisfiable(resp)) {
-                            return typeFactory.needGET(url,
-                                    contentLength(resp), lastModify(resp));
-                        } else {
-                            return typeFactory.unable();
-                        }
+                    public Object apply(Response<Void> response) throws Exception {
+                        return new Object();
                     }
                 })
-                .compose(Utils.<DownloadType>retry(MAX_RETRY_COUNT));
+                .compose(retry(REQUEST_RETRY_HINT, maxRetryCount));
     }
 
-    private DownloadType getWhenServerFileChanged(Response<Void> resp, String url) {
-        if (notSupportRange(resp)) {
-            return typeFactory.normal(url,
-                    contentLength(resp), lastModify(resp));
-        } else {
-            return typeFactory.multithread(url,
-                    contentLength(resp), lastModify(resp));
-        }
+    /**
+     * http checkRangeByHead request,checkRange need info.
+     *
+     * @param url url
+     * @return empty Observable
+     */
+    private ObservableSource<Object> checkRange(final String url) {
+        return downloadApi.checkRangeByHead(TEST_RANGE_SUPPORT, url)
+                .doOnNext(new Consumer<Response<Void>>() {
+                    @Override
+                    public void accept(Response<Void> response) throws Exception {
+                        recordTable.saveRangeInfo(url, response);
+                    }
+                })
+                .map(new Function<Response<Void>, Object>() {
+                    @Override
+                    public Object apply(Response<Void> response) throws Exception {
+                        return new Object();
+                    }
+                })
+                .compose(retry(REQUEST_RETRY_HINT, maxRetryCount));
     }
 
-    private DownloadType getWhenServerFileNotChange(Response<Void> resp, String url) {
-        if (notSupportRange(resp)) {
-            return getWhenNotSupportRange(resp, url);
-        } else {
-            return getWhenSupportRange(resp, url);
-        }
+    /**
+     * http checkRangeByHead request,checkRange need info, check whether if server file has changed.
+     *
+     * @param url url
+     * @return empty Observable
+     */
+    private ObservableSource<Object> checkFile(final String url, String lastModify) {
+        return downloadApi.checkFileByHead(lastModify, url)
+                .doOnNext(new Consumer<Response<Void>>() {
+                    @Override
+                    public void accept(Response<Void> response) throws Exception {
+                        recordTable.saveFileState(url, response);
+                    }
+                })
+                .map(new Function<Response<Void>, Object>() {
+                    @Override
+                    public Object apply(Response<Void> response) throws Exception {
+                        return new Object();
+                    }
+                })
+                .compose(retry(REQUEST_RETRY_HINT, maxRetryCount));
     }
 
-    private DownloadType getWhenSupportRange(Response<Void> resp, String url) {
-        long contentLength = contentLength(resp);
-        try {
-            if (needReDownload(url, contentLength)) {
-                return typeFactory.multithread(url, contentLength, lastModify(resp));
-            }
-            if (downloadNotComplete(url)) {
-                return typeFactory.continued(url, contentLength, lastModify(resp));
-            }
-        } catch (IOException e) {
-            log(DOWNLOAD_RECORD_FILE_DAMAGED);
-            return typeFactory.multithread(url, contentLength, lastModify(resp));
-        }
-        return typeFactory.already(contentLength);
+    public Observable<List<DownloadRecord>> readAllRecords() {
+        return dataBaseHelper.readAllRecords();
     }
 
-    private DownloadType getWhenNotSupportRange(Response<Void> resp, String url) {
-        long contentLength = contentLength(resp);
-        if (downloadNotComplete(url, contentLength)) {
-            return typeFactory.normal(url, contentLength, lastModify(resp));
-        } else {
-            return typeFactory.already(contentLength);
-        }
+    public Observable<DownloadRecord> readRecord(String url) {
+        return dataBaseHelper.readRecord(url);
     }
 }

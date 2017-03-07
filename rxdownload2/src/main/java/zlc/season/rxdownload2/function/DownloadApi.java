@@ -17,24 +17,20 @@ import retrofit2.http.Url;
  * Download Api
  */
 public interface DownloadApi {
+
     @GET
     @Streaming
-    Flowable<Response<ResponseBody>> download(
-            @Header("Range") String range, @Url String url);
+    Flowable<Response<ResponseBody>> download(@Header("Range") String range,
+                                              @Url String url);
 
     @HEAD
-    Observable<Response<Void>> HEAD(
-            @Header("Range") String range, @Url String url);
+    Observable<Response<Void>> check(@Url String url);
 
     @HEAD
-    Observable<Response<Void>> HEAD_WithIfRange(
-            @Header("Range") final String range,
-            @Header("If-Range") final String lastModify,
-            @Url String url);
+    Observable<Response<Void>> checkRangeByHead(@Header("Range") String range,
+                                                @Url String url);
 
-    @GET
-    Observable<Response<Void>> GET_withIfRange(
-            @Header("Range") final String range,
-            @Header("If-Range") final String lastModify,
-            @Url String url);
+    @HEAD
+    Observable<Response<Void>> checkFileByHead(@Header("If-Modified-Since") String lastModify,
+                                               @Url String url);
 }

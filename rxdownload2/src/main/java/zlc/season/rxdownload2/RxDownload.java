@@ -1,40 +1,43 @@
 package zlc.season.rxdownload2;
 
+import android.annotation.SuppressLint;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.os.IBinder;
-import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 
 import java.io.File;
 import java.io.InterruptedIOException;
 import java.net.SocketException;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.Semaphore;
 
 import io.reactivex.Observable;
 import io.reactivex.ObservableEmitter;
 import io.reactivex.ObservableOnSubscribe;
 import io.reactivex.ObservableSource;
 import io.reactivex.ObservableTransformer;
-import io.reactivex.Single;
-import io.reactivex.SingleEmitter;
-import io.reactivex.SingleOnSubscribe;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.functions.Consumer;
 import io.reactivex.functions.Function;
 import io.reactivex.plugins.RxJavaPlugins;
+import io.reactivex.schedulers.Schedulers;
 import retrofit2.Retrofit;
-import zlc.season.rxdownload2.db.DataBaseHelper;
+import zlc.season.rxdownload2.entity.DownloadBean;
 import zlc.season.rxdownload2.entity.DownloadEvent;
-import zlc.season.rxdownload2.entity.DownloadMission;
+import zlc.season.rxdownload2.entity.DownloadFlag;
 import zlc.season.rxdownload2.entity.DownloadRecord;
 import zlc.season.rxdownload2.entity.DownloadStatus;
+import zlc.season.rxdownload2.entity.MultiMission;
+import zlc.season.rxdownload2.entity.SingleMission;
 import zlc.season.rxdownload2.function.DownloadHelper;
 import zlc.season.rxdownload2.function.DownloadService;
+import zlc.season.rxdownload2.function.Utils;
 
-import static zlc.season.rxdownload2.function.Constant.CONTEXT_NULL_HINT;
 import static zlc.season.rxdownload2.function.Utils.log;
 
 /**
@@ -44,10 +47,10 @@ import static zlc.season.rxdownload2.function.Utils.log;
  * RxDownload
  */
 public class RxDownload {
-
-    private static DownloadService mDownloadService;
-    private static boolean bound = false;
-    private static Object object = new Object();
+    private static final Object object = new Object();
+    @SuppressLint("StaticFieldLeak")
+    private volatile static RxDownload instance;
+    private volatile static boolean bound = false;
 
     static {
         RxJavaPlugins.setErrorHandler(new Consumer<Throwable>() {
@@ -64,279 +67,372 @@ public class RxDownload {
         });
     }
 
-    private DownloadHelper mDownloadHelper;
-    private Context mContext;
-    private boolean mAutoInstall;
-    private int MAX_DOWNLOAD_NUMBER = 5;
+    private int maxDownloadNumber = 5;
 
-    private RxDownload() {
-        mDownloadHelper = new DownloadHelper();
-    }
+    private Context context;
+    private Semaphore semaphore;
 
-    public static RxDownload getInstance() {
-        return new RxDownload();
+    private DownloadService downloadService;
+    private DownloadHelper downloadHelper;
+
+    private RxDownload(Context context) {
+        this.context = context.getApplicationContext();
+        downloadHelper = new DownloadHelper(context);
+        semaphore = new Semaphore(1);
     }
 
     /**
-     * get Files.
+     * Return RxDownload Instance
+     *
+     * @param context context
+     * @return RxDownload
+     */
+    public static RxDownload getInstance(Context context) {
+        if (instance == null) {
+            synchronized (RxDownload.class) {
+                if (instance == null) {
+                    instance = new RxDownload(context);
+                }
+            }
+        }
+        return instance;
+    }
+
+    /**
+     * get Files by url. May be NULL if this url record not exists.
      * File[] {DownloadFile, TempFile, LastModifyFile}
+     *
+     * @param url url
+     * @return Files
+     */
+    @Nullable
+    public File[] getRealFiles(String url) {
+        return downloadHelper.getFiles(url);
+    }
+
+    /**
+     * get Files by saveName and savePath.
      *
      * @param saveName saveName
      * @param savePath savePath
-     *
      * @return Files
      */
     public File[] getRealFiles(String saveName, String savePath) {
-        String[] filePaths = mDownloadHelper.getRealFilePaths(saveName, savePath);
-        return new File[]{new File(filePaths[0]), new File(filePaths[1]), new File(filePaths[2])};
+        return Utils.getFiles(saveName, savePath);
     }
 
     /**
-     * 普通下载时不需要context, 使用Service下载时需要context;
+     * set default save path.
      *
-     * @param context context
-     *
-     * @return RxDownload
+     * @param savePath default save path.
+     * @return instance.
      */
-    public RxDownload context(Context context) {
-        this.mContext = context;
-        return this;
-    }
-
     public RxDownload defaultSavePath(String savePath) {
-        mDownloadHelper.setDefaultSavePath(savePath);
-        return this;
-    }
-
-    public RxDownload retrofit(Retrofit retrofit) {
-        mDownloadHelper.setRetrofit(retrofit);
-        return this;
-    }
-
-    public RxDownload maxThread(int max) {
-        mDownloadHelper.setMaxThreads(max);
-        return this;
-    }
-
-    public RxDownload maxRetryCount(int max) {
-        mDownloadHelper.setMaxRetryCount(max);
-        return this;
-    }
-
-    public RxDownload maxDownloadNumber(int max) {
-        this.MAX_DOWNLOAD_NUMBER = max;
-        return this;
-    }
-
-    public RxDownload autoInstall(boolean flag) {
-        this.mAutoInstall = flag;
+        downloadHelper.setDefaultSavePath(savePath);
         return this;
     }
 
     /**
-     * Receive the download address for the url download event and download status.
-     * 接收下载地址为url的下载事件和下载状态.
+     * If you have own Retrofit client, set it.
+     *
+     * @param retrofit retrofit client
+     * @return instance.
+     */
+    public RxDownload retrofit(Retrofit retrofit) {
+        downloadHelper.setRetrofit(retrofit);
+        return this;
+    }
+
+    /**
+     * set max thread to download file.
+     *
+     * @param max max threads
+     * @return instance
+     */
+    public RxDownload maxThread(int max) {
+        downloadHelper.setMaxThreads(max);
+        return this;
+    }
+
+    /**
+     * set max retry count when download failed
+     *
+     * @param max max retry count
+     * @return instance
+     */
+    public RxDownload maxRetryCount(int max) {
+        downloadHelper.setMaxRetryCount(max);
+        return this;
+    }
+
+    /**
+     * set max download number when service download
+     *
+     * @param max max download number
+     * @return instance
+     */
+    public RxDownload maxDownloadNumber(int max) {
+        this.maxDownloadNumber = max;
+        return this;
+    }
+
+    /**
+     * Receive the url download event.
      * <p>
-     * Note that only receive the download address for the URL.
-     * 注意只接收下载地址为url的事件和状态.
+     * Will receive the following event:
+     * {@link DownloadFlag#NORMAL}、{@link DownloadFlag#WAITING}、
+     * {@link DownloadFlag#STARTED}、{@link DownloadFlag#PAUSED}、
+     * {@link DownloadFlag#COMPLETED}、{@link DownloadFlag#FAILED};
+     * <p>
+     * Every event has {@link DownloadStatus}, you can get it and display it on the interface.
      *
-     * @param url download url
-     *
-     * @return Observable<DownloadStatus>
+     * @param url url
+     * @return DownloadEvent
      */
     public Observable<DownloadEvent> receiveDownloadStatus(final String url) {
-        return Single.create(new SingleOnSubscribe<Object>() {
-            @Override
-            public void subscribe(final SingleEmitter<Object> e) throws Exception {
-                if (!bound) {
-                    startBindServiceAndDo(new ServiceConnectedCallback() {
-                        @Override
-                        public void call() {
-                            e.onSuccess(object);
-                        }
-                    });
-                } else {
-                    e.onSuccess(object);
-                }
-            }
-        }).flatMapObservable(new Function<Object, ObservableSource<? extends DownloadEvent>>() {
-            @Override
-            public ObservableSource<? extends DownloadEvent> apply(Object o) throws Exception {
-                return mDownloadService.processor(RxDownload.this, url).toObservable();
-            }
-        }).observeOn(AndroidSchedulers.mainThread());
+        return createGeneralObservable(null)
+                .flatMap(new Function<Object, ObservableSource<DownloadEvent>>() {
+                    @Override
+                    public ObservableSource<DownloadEvent> apply(Object o) throws Exception {
+                        return downloadService.receiveDownloadEvent(url).toObservable();
+                    }
+                })
+                .observeOn(AndroidSchedulers.mainThread());
     }
 
     /**
      * Read all the download record from the database.
-     * 从数据库中读取所有的下载记录
      *
      * @return Observable<List<DownloadRecord>>
      */
     public Observable<List<DownloadRecord>> getTotalDownloadRecords() {
-        if (mContext == null) {
-            return Observable.error(new Throwable(CONTEXT_NULL_HINT));
-        }
-        DataBaseHelper dataBaseHelper = DataBaseHelper
-                .getSingleton(mContext.getApplicationContext());
-        return dataBaseHelper.readAllRecords();
+        return downloadHelper.readAllRecords();
     }
 
     /**
      * Read single download record with url.
-     * If record exists, return correct record, else return empty record.
-     * <p>
-     * 从数据库中读取下载地址为url的下载记录, 如果数据库中存在该记录，则正常返回.
-     * 如果不存在该记录，则返回一个空的DownloadRecord(url = null, saveName = null.)
+     * If record contain, return correct record, else return empty record.
      *
      * @param url download url
-     *
      * @return Observable<DownloadStatus>
      */
     public Observable<DownloadRecord> getDownloadRecord(String url) {
-        if (mContext == null) {
-            return Observable.error(new Throwable(CONTEXT_NULL_HINT));
-        }
-        DataBaseHelper dataBaseHelper = DataBaseHelper
-                .getSingleton(mContext.getApplicationContext());
-        return dataBaseHelper.readRecord(url);
+        return downloadHelper.readRecord(url);
     }
 
     /**
-     * Suspended download address for the url download task in Service.
-     * 暂停Service中下载地址为url的下载任务.
+     * Pause download.
      * <p>
-     * Book the download records in the tag database are paused.
-     * 同时标记数据库中的下载记录为暂停状态.
+     * Pause a download.
      *
-     * @param url download url
+     * @param url url
      */
     public Observable<?> pauseServiceDownload(final String url) {
         return createGeneralObservable(new GeneralObservableCallback() {
             @Override
             public void call() {
-                mDownloadService.pauseDownload(url);
+                downloadService.pauseDownload(url);
             }
-        });
+        }).observeOn(AndroidSchedulers.mainThread());
+
     }
 
     /**
-     * 取消Service中下载地址为url的下载任务.
+     * Delete download.
      * <p>
-     * 同时标记数据库中的下载记录为取消状态.
-     * 不会删除已经下载的文件.
+     * Delete a download.
      *
-     * @param url download url
-     */
-    public Observable<?> cancelServiceDownload(final String url) {
-        return createGeneralObservable(new GeneralObservableCallback() {
-            @Override
-            public void call() {
-                mDownloadService.cancelDownload(url);
-            }
-        });
-    }
-
-    /**
-     * 删除Service中下载地址为url的下载任务.
-     * <p>
-     * 同时从数据库中删除该下载记录.
-     * <p>
-     * when deleteFile is true, the downloaded file will be deleted.
-     *
-     * @param url        download url
-     * @param deleteFile whether delete  file
+     * @param url        url
+     * @param deleteFile whether delete file
      */
     public Observable<?> deleteServiceDownload(final String url, final boolean deleteFile) {
         return createGeneralObservable(new GeneralObservableCallback() {
             @Override
             public void call() {
-                mDownloadService.deleteDownload(url, deleteFile, RxDownload.this);
+                downloadService.deleteDownload(url, deleteFile);
             }
-        });
+        }).observeOn(AndroidSchedulers.mainThread());
     }
 
     /**
-     * Using Service to download. Just download, can't receive download status.
-     * 使用Service下载. 仅仅开始下载, 不会接收下载进度.
-     * <p>
-     * Un subscribe will not pause download.
-     * 取消订阅不会停止下载.
-     * <p>
-     * If you want receive download status, see {@link #receiveDownloadStatus(String)}
-     * <p>
-     * If you want pause download, see {@link #pauseServiceDownload(String)}
-     * <p>
-     * Also save the download records in the database, if you want get record from database,
-     * see  {@link #getDownloadRecord(String)}
+     * Start all mission. Not include multi mission.
      *
-     * @param url      download file Url
-     * @param saveName download file SaveName
-     * @param savePath download file SavePath. If NULL, using default save path {@code
-     *                 /storage/emulated/0/Download/}
-     *
-     * @return Observable<DownloadStatus>
+     * @return Observable
      */
-    public Observable<?> serviceDownload(@NonNull final String url,
-            @NonNull final String saveName,
-            @Nullable final String savePath) {
+    public Observable<?> startAll() {
+        return createGeneralObservable(new GeneralObservableCallback() {
+            @Override
+            public void call() throws InterruptedException {
+                downloadService.startAll();
+            }
+        }).observeOn(AndroidSchedulers.mainThread());
+
+    }
+
+    /**
+     * Pause all mission. Not include multi mission.
+     *
+     * @return Observable
+     */
+    public Observable<?> pauseAll() {
         return createGeneralObservable(new GeneralObservableCallback() {
             @Override
             public void call() {
-                addDownloadTask(url, saveName, savePath);
+                downloadService.pauseAll();
             }
-        });
+        }).observeOn(AndroidSchedulers.mainThread());
+
+    }
+
+
+    /**
+     * Start all mission which associate with missionId
+     *
+     * @param missionId missionId
+     * @return Observable
+     */
+    public Observable<?> startAll(final String missionId) {
+        return createGeneralObservable(new GeneralObservableCallback() {
+            @Override
+            public void call() throws InterruptedException {
+                downloadService.startAll(missionId);
+            }
+        }).observeOn(AndroidSchedulers.mainThread());
+
+    }
+
+    public Observable<?> pauseAll(final String missionId) {
+        return createGeneralObservable(new GeneralObservableCallback() {
+            @Override
+            public void call() {
+                downloadService.pauseAll(missionId);
+            }
+        }).observeOn(AndroidSchedulers.mainThread());
+
+    }
+
+    /**
+     * Delete all mission which associate with missionId.
+     *
+     * @param missionId  missionId
+     * @param deleteFile deleteFile ?
+     * @return Observable
+     */
+    public Observable<?> deleteAll(final String missionId, final boolean deleteFile) {
+        return createGeneralObservable(new GeneralObservableCallback() {
+            @Override
+            public void call() {
+                downloadService.deleteAll(missionId, deleteFile);
+            }
+        }).observeOn(AndroidSchedulers.mainThread());
+
     }
 
     /**
      * Normal download.
      * <p>
-     * Un subscribe will  pause download.
+     * Will save the download records in the database.
      * <p>
-     * Do not save the download records in the database.
+     * Un subscribe will pause download.
      *
-     * @param url      download file Url
-     * @param saveName download file SaveName
-     * @param savePath download file SavePath. If NULL, using default save path {@code
-     *                 /storage/emulated/0/Download/}
-     *
+     * @param url Url
      * @return Observable<DownloadStatus>
      */
-    public Observable<DownloadStatus> download(
-            @NonNull final String url,
-            @NonNull final String saveName,
-            @Nullable final String savePath) {
+    public Observable<DownloadStatus> download(String url) {
+        return download(url, null);
+    }
 
-        return mDownloadHelper.downloadDispatcher(url, saveName, savePath,
-                mContext, mAutoInstall);
+    /**
+     * Normal download with assigned Name.
+     *
+     * @param url      url
+     * @param saveName SaveName
+     * @return Observable<DownloadStatus>
+     */
+    public Observable<DownloadStatus> download(String url, String saveName) {
+        return download(url, saveName, null);
+    }
+
+    /**
+     * Normal download with assigned name and path.
+     *
+     * @param url      url
+     * @param saveName SaveName
+     * @param savePath SavePath
+     * @return Observable<DownloadStatus>
+     */
+    public Observable<DownloadStatus> download(String url, String saveName, String savePath) {
+        return download(new DownloadBean.Builder(url).setSaveName(saveName)
+                .setSavePath(savePath).build());
+    }
+
+    /**
+     * Normal download.
+     * <p>
+     * You can construct a DownloadBean to save extra data to the database.
+     *
+     * @param downloadBean download bean.
+     * @return Observable<DownloadStatus>
+     */
+    public Observable<DownloadStatus> download(DownloadBean downloadBean) {
+        return downloadHelper.downloadDispatcher(downloadBean);
+    }
+
+    /**
+     * Normal download for Transformer.
+     *
+     * @param url        url
+     * @param <Upstream> Upstream
+     * @return Transformer
+     */
+    public <Upstream> ObservableTransformer<Upstream, DownloadStatus> transform(String url) {
+        return transform(url, null);
+    }
+
+    /**
+     * Normal download for Transformer.
+     *
+     * @param url        url
+     * @param saveName   saveName
+     * @param <Upstream> Upstream
+     * @return Transformer
+     */
+    public <Upstream> ObservableTransformer<Upstream, DownloadStatus> transform(
+            String url, String saveName) {
+        return transform(url, saveName, null);
+    }
+
+    /**
+     * Normal download for Transformer.
+     *
+     * @param url        url
+     * @param saveName   saveName
+     * @param <Upstream> Upstream
+     * @return Transformer
+     */
+    public <Upstream> ObservableTransformer<Upstream, DownloadStatus> transform(
+            String url, String saveName, String savePath) {
+
+        return transform(new DownloadBean.Builder(url)
+                .setSaveName(saveName).setSavePath(savePath).build());
     }
 
     /**
      * Normal download version of the Transformer.
-     * <p>
-     * Provide RxJava Compose operator use.
      *
-     * @param url        download file Url
-     * @param saveName   download file SaveName
-     * @param savePath   download file SavePath. If NULL, using default save path {@code
-     *                   /storage/emulated/0/Download/}
-     * @param <Upstream> Upstream
-     *
+     * @param downloadBean download bean
+     * @param <Upstream>   Upstream
      * @return Transformer
      */
     public <Upstream> ObservableTransformer<Upstream, DownloadStatus> transform(
-            @NonNull final String url,
-            @NonNull final String saveName,
-            @Nullable final String savePath) {
+            final DownloadBean downloadBean) {
         return new ObservableTransformer<Upstream, DownloadStatus>() {
             @Override
-            public ObservableSource<DownloadStatus> apply(
-                    io.reactivex.Observable<Upstream> upstream) {
+            public ObservableSource<DownloadStatus> apply(Observable<Upstream> upstream) {
                 return upstream.flatMap(new Function<Upstream, ObservableSource<DownloadStatus>>() {
                     @Override
-                    public ObservableSource<DownloadStatus> apply(Upstream upstream)
-                            throws Exception {
-                        return download(url, saveName, savePath);
+                    public ObservableSource<DownloadStatus> apply(Upstream upstream) throws Exception {
+                        return download(downloadBean);
                     }
                 });
             }
@@ -344,83 +440,279 @@ public class RxDownload {
     }
 
     /**
-     * Service download without status version of the Transformer.
+     * Using Service to download single url.
      * <p>
-     * Provide RxJava Compose operator use.
+     * Will save the download records in the database.
+     * <p>
+     * Un subscribe will not pause download.
+     * <p>
+     * If you want receive download status, see {@link #receiveDownloadStatus(String)}
+     * <p>
+     * If you want pause download, see {@link #pauseServiceDownload(String)}
+     * <p>
+     * If you want get record from database, see {@link #getDownloadRecord(String)}
      *
-     * @param url        download file Url
-     * @param saveName   download file SaveName
-     * @param savePath   download file SavePath. If NULL, using default save path {@code
-     *                   /storage/emulated/0/Download/}
+     * @param url url
+     * @return Observable<DownloadStatus>
+     */
+    public Observable<?> serviceDownload(String url) {
+        return serviceDownload(url, "");
+    }
+
+    /**
+     * Using Service to download.
+     *
+     * @param url      url
+     * @param saveName saveName
+     * @return Observable<DownloadStatus>
+     */
+    public Observable<?> serviceDownload(String url, String saveName) {
+        return serviceDownload(url, saveName, null);
+    }
+
+    /**
+     * Using Service to download.
+     *
+     * @param url      url
+     * @param saveName saveName
+     * @param savePath savePath
+     * @return Observable<DownloadStatus>
+     */
+    public Observable<?> serviceDownload(String url, String saveName, String savePath) {
+        return serviceDownload(new DownloadBean.Builder(url)
+                .setSaveName(saveName).setSavePath(savePath).build());
+    }
+
+    /**
+     * Using Service to download.
+     *
+     * @param bean download bean
+     * @return Observable<DownloadStatus>
+     */
+    public Observable<?> serviceDownload(final DownloadBean bean) {
+        return createGeneralObservable(new GeneralObservableCallback() {
+            @Override
+            public void call() throws InterruptedException {
+                downloadService.addDownloadMission(new SingleMission(RxDownload.this, bean));
+            }
+        }).observeOn(AndroidSchedulers.mainThread());
+    }
+
+    /**
+     * Service download version of the Transformer.
+     *
+     * @param url        url
      * @param <Upstream> Upstream
+     * @return Transformer
+     */
+    public <Upstream> ObservableTransformer<Upstream, Object> transformService(String url) {
+        return transformService(url, null);
+    }
+
+    /**
+     * Service download version of the Transformer.
      *
+     * @param url        url
+     * @param saveName   saveName
+     * @param <Upstream> Upstream
+     * @return Transformer
+     */
+    public <Upstream> ObservableTransformer<Upstream, Object> transformService(String url,
+                                                                               String saveName) {
+        return transformService(url, saveName, null);
+    }
+
+    /**
+     * Service download version of the Transformer.
+     *
+     * @param url        url
+     * @param saveName   saveName
+     * @param savePath   savePath
+     * @param <Upstream> Upstream
      * @return Transformer
      */
     public <Upstream> ObservableTransformer<Upstream, Object> transformService(
-            @NonNull final String url,
-            @NonNull final String saveName,
-            @Nullable final String savePath) {
-        return new ObservableTransformer<Upstream, Object>() {
+            String url, String saveName, String savePath) {
 
+        return transformService(new DownloadBean.Builder(url)
+                .setSaveName(saveName).setSavePath(savePath).build());
+    }
+
+    /**
+     * Service download version of the Transformer.
+     *
+     * @param bean       download bean
+     * @param <Upstream> Upstream
+     * @return Transformer
+     */
+    public <Upstream> ObservableTransformer<Upstream, Object> transformService(final DownloadBean bean) {
+        return new ObservableTransformer<Upstream, Object>() {
             @Override
             public ObservableSource<Object> apply(Observable<Upstream> upstream) {
                 return upstream.flatMap(new Function<Upstream, ObservableSource<?>>() {
                     @Override
                     public ObservableSource<?> apply(Upstream upstream) throws Exception {
-                        return serviceDownload(url, saveName, savePath);
+                        return serviceDownload(bean);
                     }
                 });
             }
         };
     }
 
-    private void addDownloadTask(@NonNull String url, @NonNull String saveName,
-            @Nullable String savePath) {
-        mDownloadService.addDownloadMission(
-                new DownloadMission.Builder()
-                        .setRxDownload(RxDownload.this)
-                        .setUrl(url)
-                        .setSaveName(saveName)
-                        .setSavePath(savePath)
-                        .build());
+    /**
+     * Using Service to download multi urls.
+     *
+     * @param missionId missionId
+     * @param urls      urls
+     * @return Observable<DownloadStatus>
+     */
+    public Observable<?> serviceMultiDownload(String missionId, String... urls) {
+        return serviceMultiDownload(missionId, Arrays.asList(urls));
     }
 
+    /**
+     * Using Service to download multi urls.
+     *
+     * @param missionId missionId
+     * @param urls      List urls
+     * @return Observable<DownloadStatus>
+     */
+    public Observable<?> serviceMultiDownload(String missionId, List<String> urls) {
+        List<DownloadBean> list = new ArrayList<>();
+        for (String each : urls) {
+            list.add(new DownloadBean.Builder(each).build());
+        }
+        return serviceMultiDownload(list, missionId);
+    }
+
+    /**
+     * Using Service to download multi urls.
+     *
+     * @param beans     download beans
+     * @param missionId missionId
+     * @return Observable<DownloadStatus>
+     */
+    public Observable<?> serviceMultiDownload(final List<DownloadBean> beans, final String missionId) {
+        return createGeneralObservable(new GeneralObservableCallback() {
+            @Override
+            public void call() throws InterruptedException {
+                downloadService.addDownloadMission(new MultiMission(RxDownload.this, missionId, beans));
+            }
+        }).observeOn(AndroidSchedulers.mainThread());
+    }
+
+    /**
+     * Service multi download version of the Transformer.
+     *
+     * @param missionId  missionId
+     * @param urls       multi download urls
+     * @param <Upstream> Upstream
+     * @return Transformer
+     */
+    public <Upstream> ObservableTransformer<Upstream, Object> transformMulti(
+            String missionId, String... urls) {
+        return transformMulti(missionId, Arrays.asList(urls));
+    }
+
+    /**
+     * Service multi download version of the Transformer.
+     *
+     * @param missionId  missionId
+     * @param urls       multi download urls
+     * @param <Upstream> Upstream
+     * @return Transformer
+     */
+    public <Upstream> ObservableTransformer<Upstream, Object> transformMulti(
+            String missionId, List<String> urls) {
+        List<DownloadBean> list = new ArrayList<>();
+        for (String each : urls) {
+            list.add(new DownloadBean.Builder(each).build());
+        }
+        return transformMulti(list, missionId);
+    }
+
+    /**
+     * Service multi download version of the Transformer.
+     *
+     * @param beans      multi download bean
+     * @param missionId  missionId
+     * @param <Upstream> Upstream
+     * @return Transformer
+     */
+    public <Upstream> ObservableTransformer<Upstream, Object> transformMulti(
+            final List<DownloadBean> beans, final String missionId) {
+        return new ObservableTransformer<Upstream, Object>() {
+            @Override
+            public ObservableSource<Object> apply(Observable<Upstream> upstream) {
+                return upstream.flatMap(new Function<Upstream, ObservableSource<?>>() {
+                    @Override
+                    public ObservableSource<?> apply(Upstream upstream) throws Exception {
+                        return serviceMultiDownload(beans, missionId);
+                    }
+                });
+            }
+        };
+    }
+
+    /**
+     * return general observable
+     *
+     * @param callback Called when observable created.
+     * @return Observable
+     */
     private Observable<?> createGeneralObservable(final GeneralObservableCallback callback) {
         return Observable.create(new ObservableOnSubscribe<Object>() {
             @Override
             public void subscribe(final ObservableEmitter<Object> emitter) throws Exception {
                 if (!bound) {
-                    startBindServiceAndDo(new ServiceConnectedCallback() {
-                        @Override
-                        public void call() {
-                            callback.call();
-                            emitter.onNext(object);
-                            emitter.onComplete();
-                        }
-                    });
+                    semaphore.acquire();
+                    if (!bound) {
+                        startBindServiceAndDo(new ServiceConnectedCallback() {
+                            @Override
+                            public void call() {
+                                doCall(callback, emitter);
+                                semaphore.release();
+                            }
+                        });
+                    } else {
+                        doCall(callback, emitter);
+                        semaphore.release();
+                    }
                 } else {
-                    callback.call();
-                    emitter.onNext(object);
-                    emitter.onComplete();
+                    doCall(callback, emitter);
                 }
             }
-        });
+        }).subscribeOn(Schedulers.io());
     }
 
-    private void startBindServiceAndDo(final ServiceConnectedCallback callback) {
-        if (mContext == null) {
-            throw new IllegalArgumentException(CONTEXT_NULL_HINT);
+    private void doCall(GeneralObservableCallback callback, ObservableEmitter<Object> emitter) {
+        if (callback != null) {
+            try {
+                callback.call();
+            } catch (Exception e) {
+                emitter.onError(e);
+            }
         }
-        Intent intent = new Intent(mContext, DownloadService.class);
-        intent.putExtra(DownloadService.INTENT_KEY, MAX_DOWNLOAD_NUMBER);
-        mContext.startService(intent);
-        mContext.bindService(intent, new ServiceConnection() {
+        emitter.onNext(object);
+        emitter.onComplete();
+    }
+
+    /**
+     * start and bind service.
+     *
+     * @param callback Called when service connected.
+     */
+    private void startBindServiceAndDo(final ServiceConnectedCallback callback) {
+        Intent intent = new Intent(context, DownloadService.class);
+        intent.putExtra(DownloadService.INTENT_KEY, maxDownloadNumber);
+        context.startService(intent);
+        context.bindService(intent, new ServiceConnection() {
             @Override
             public void onServiceConnected(ComponentName name, IBinder binder) {
                 DownloadService.DownloadBinder downloadBinder
                         = (DownloadService.DownloadBinder) binder;
-                mDownloadService = downloadBinder.getService();
-                mContext.unbindService(this);
+                downloadService = downloadBinder.getService();
+                context.unbindService(this);
                 bound = true;
                 callback.call();
             }
@@ -434,7 +726,7 @@ public class RxDownload {
     }
 
     private interface GeneralObservableCallback {
-        void call();
+        void call() throws Exception;
     }
 
     private interface ServiceConnectedCallback {

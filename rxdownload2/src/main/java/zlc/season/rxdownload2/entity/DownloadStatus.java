@@ -108,6 +108,21 @@ public class DownloadStatus implements Parcelable {
         return percent;
     }
 
+    /**
+     * 获得下载的百分比数值
+     *
+     * @return example: 5%  will return 5, 10% will return 10.
+     */
+    public long getPercentNumber() {
+        double result;
+        if (totalSize == 0L) {
+            result = 0.0;
+        } else {
+            result = downloadSize * 1.0 / totalSize;
+        }
+        return (long) (result * 100);
+    }
+
     @Override
     public int describeContents() {
         return 0;

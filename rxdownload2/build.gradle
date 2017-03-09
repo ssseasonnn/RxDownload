@@ -40,4 +40,4 @@ dependencies {
     compile "io.reactivex.rxjava2:rxandroid:$rootProject.versions.libRxJava"
 }
 
-//apply from: "bintray.gradle"
+apply from: "bintray.gradle"

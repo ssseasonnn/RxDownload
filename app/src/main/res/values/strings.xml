@@ -60,6 +60,12 @@
         <item>http://zhstatic.zhihu.com/pkg/store/zhihu/futureve-mobile-update-release-4.10.1(443).apk</item>
         <item>http://zhstatic.zhihu.com/pkg/store/daily/zhihu-daily-zhihu-2.5.4(392).apk</item>
     </string-array>
+
     <string name="title_activity_multi_mission_download">MultiMissionDownloadActivity</string>
+    <string name="basic_download">BASIC DOWNLOAD</string>
+    <string name="service_download">Service download</string>
+    <string name="multi_mission_download">Multi Mission download</string>
+    <string name="app_market">APP MARKET</string>
+
 
 </resources>

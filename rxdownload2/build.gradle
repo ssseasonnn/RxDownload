@@ -1,14 +1,14 @@
 apply plugin: 'com.android.library'
 
 android {
-    compileSdkVersion setup.compileSdk
-    buildToolsVersion setup.buildTools
+    compileSdkVersion rootProject.setup.compileSdk
+    buildToolsVersion rootProject.setup.buildTools
 
     defaultConfig {
-        minSdkVersion setup.minSdk
-        targetSdkVersion setup.targetSdk
-        versionCode setup.vcode
-        versionName setup.vname
+        minSdkVersion rootProject.setup.minSdk
+        targetSdkVersion rootProject.setup.targetSdk
+        versionCode rootProject.setup.vcode
+        versionName rootProject.setup.vname
 
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
 
@@ -26,18 +26,18 @@ dependencies {
     androidTestCompile('com.android.support.test.espresso:espresso-core:2.2.2', {
         exclude group: 'com.android.support', module: 'support-annotations'
     })
-    compile "com.android.support:appcompat-v7:${versions.libSupport}"
+    compile "com.android.support:appcompat-v7:$rootProject.versions.libSupport"
     testCompile 'junit:junit:4.12'
     //retrofit
-    compile "com.squareup.retrofit2:retrofit:${versions.libRetrofit}"
-    compile "com.squareup.retrofit2:converter-gson:${versions.libRetrofit}"
+    compile "com.squareup.retrofit2:retrofit:$rootProject.versions.libRetrofit"
+    compile "com.squareup.retrofit2:converter-gson:$rootProject.versions.libRetrofit"
     compile 'com.jakewharton.retrofit:retrofit2-rxjava2-adapter:1.0.0'
 
-    compile "com.squareup.okhttp3:okhttp:${versions.libOkhttp3}"
-    compile "com.squareup.okhttp3:logging-interceptor:${versions.libOkhttp3}"
+    compile "com.squareup.okhttp3:okhttp:$rootProject.versions.libOkhttp"
+    compile "com.squareup.okhttp3:logging-interceptor:$rootProject.versions.libOkhttp"
 
-    compile "io.reactivex.rxjava2:rxjava:${versions.libRxJava}"
-    compile "io.reactivex.rxjava2:rxandroid:${versions.libRxJava}"
+    compile "io.reactivex.rxjava2:rxjava:$rootProject.versions.libRxJava"
+    compile "io.reactivex.rxjava2:rxandroid:$rootProject.versions.libRxJava"
 }
 
 apply from: "bintray.gradle"

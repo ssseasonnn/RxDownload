@@ -1,16 +1,17 @@
 apply plugin: 'com.android.application'
-apply plugin: 'android-apt'
+apply plugin: 'com.jakewharton.butterknife'
 
 android {
-    compileSdkVersion setup.compileSdk
-    buildToolsVersion setup.buildTools
+    compileSdkVersion rootProject.setup.compileSdk
+    buildToolsVersion rootProject.setup.buildTools
 
     defaultConfig {
         applicationId "zlc.season.rxdownloadproject"
-        minSdkVersion setup.minSdk
-        targetSdkVersion setup.targetSdk
-        versionCode setup.vcode
-        versionName setup.vname
+        minSdkVersion rootProject.setup.minSdk
+        targetSdkVersion rootProject.setup.targetSdk
+        versionCode rootProject.setup.vcode
+        versionName rootProject.setup.vname
+
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
     }
     buildTypes {
@@ -19,6 +20,9 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
+    dataBinding {
+        enabled = true
+    }
 }
 
 dependencies {
@@ -26,11 +30,12 @@ dependencies {
     androidTestCompile('com.android.support.test.espresso:espresso-core:2.2.2', {
         exclude group: 'com.android.support', module: 'support-annotations'
     })
-    compile "com.android.support:appcompat-v7:${versions.libSupport}"
-    compile "com.android.support:design:${versions.libSupport}"
+    compile "com.android.support:support-annotations:$rootProject.versions.libSupport"
+    compile "com.android.support:appcompat-v7:$rootProject.versions.libSupport"
+    compile "com.android.support:design:$rootProject.versions.libSupport"
     //
-    compile "com.jakewharton:butterknife:${versions.libButterKnife}"
-    apt "com.jakewharton:butterknife-compiler:${versions.libButterKnife}"
+    compile "com.jakewharton:butterknife:$rootProject.versions.libButterKnife"
+    annotationProcessor "com.jakewharton:butterknife-compiler:$rootProject.versions.libButterKnife"
     //
     compile 'com.squareup.picasso:picasso:2.5.2'
     compile 'zlc.season:practicalrecyclerview:1.0.8'

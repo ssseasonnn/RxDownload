@@ -5,7 +5,7 @@
 
     <data>
 
-        <import type="zlc.season.rxdownloadproject.MainActivity"/>
+        <import type="zlc.season.rxdownloadproject.activity.MainActivity"/>
 
         <variable
             name="presenter"
@@ -46,28 +46,28 @@
                 android:id="@+id/basic_download"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:onClick="@{(v) -> presenter.onClick(v)}"
+                android:onClick="@{(v)->presenter.onClick(v)}"
                 android:text="@string/basic_download"/>
 
             <Button
                 android:id="@+id/service_download"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:onClick="@{presenter::onClick}"
+                android:onClick="@{(v)->presenter.onClick(v)}"
                 android:text="@string/service_download"/>
 
             <Button
                 android:id="@+id/multi_mission"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:onClick="@{presenter::onClick}"
+                android:onClick="@{(v)->presenter.onClick(v)}"
                 android:text="@string/multi_mission_download"/>
 
             <Button
                 android:id="@+id/app_market"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:onClick="@{presenter::onClick}"
+                android:onClick="@{(v)->presenter.onClick(v)}"
                 android:text="@string/app_market"/>
         </LinearLayout>
 

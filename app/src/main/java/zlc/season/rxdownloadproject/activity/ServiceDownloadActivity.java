@@ -37,6 +37,9 @@ public class ServiceDownloadActivity extends AppCompatActivity {
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
+		// initData
+		serviceModel = new ServiceModel();
+		// initView
 		binding = DataBindingUtil.setContentView(this, R.layout.activity_service_download);
 		binding.setItem(serviceModel);
 		binding.contentServiceDownload.setPresenter(new Presenter());

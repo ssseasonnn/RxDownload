@@ -40,8 +40,9 @@ public class BasicDownloadActivity extends AppCompatActivity {
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		initData();
-		//
+		// initData
+		baseModel = new BaseModel();
+		// initView
 		binding = DataBindingUtil.setContentView(this, R.layout.activity_basic_download);
 		binding.setItem(baseModel);
 		binding.contentBasicDownload.setPresenter(new Presenter());
@@ -50,10 +51,6 @@ public class BasicDownloadActivity extends AppCompatActivity {
 		rxDownload = RxDownload.getInstance(this);
 		downloadController = new DownloadController(binding.contentBasicDownload.status, binding.contentBasicDownload.action);
 		downloadController.setState(new DownloadController.Normal());
-	}
-
-	private void initData() {
-		baseModel = new BaseModel();
 	}
 
 	public class Presenter {

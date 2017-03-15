@@ -4,7 +4,7 @@ import android.view.ViewGroup;
 
 import zlc.season.practicalrecyclerview.AbstractAdapter;
 import zlc.season.rxdownloadproject.model.DownloadItem;
-import zlc.season.rxdownloadproject.download_manager.DownloadViewHolder;
+import zlc.season.rxdownloadproject.viewholder.DownloadViewHolder;
 
 /**
  * Author: Season(ssseasonnn@gmail.com)

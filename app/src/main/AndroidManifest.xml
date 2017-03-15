@@ -17,7 +17,6 @@
         android:theme="@style/AppTheme">
         <activity
             android:name=".activity.MainActivity"
-            android:label="@string/title_activity_main"
             android:theme="@style/AppTheme.NoActionBar">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
@@ -27,23 +26,18 @@
         </activity>
         <activity
             android:name=".activity.DownloadManagerActivity"
-            android:label="@string/title_activity_download_manager"
             android:theme="@style/AppTheme.NoActionBar"/>
         <activity
             android:name=".activity.BasicDownloadActivity"
-            android:label="@string/title_activity_basic_download"
             android:theme="@style/AppTheme.NoActionBar"/>
         <activity
             android:name=".activity.ServiceDownloadActivity"
-            android:label="@string/title_activity_service_download"
             android:theme="@style/AppTheme.NoActionBar"/>
         <activity
             android:name=".activity.AppMarketActivity"
-            android:label="@string/title_activity_app_market"
             android:theme="@style/AppTheme.NoActionBar"/>
         <activity
             android:name=".activity.MultiMissionDownloadActivity"
-            android:label="@string/title_activity_multi_mission_download"
             android:theme="@style/AppTheme.NoActionBar"/>
 
         <provider

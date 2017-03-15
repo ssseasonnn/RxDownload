@@ -11,7 +11,7 @@ public class RxDownloadModel extends BaseObservable {
 	private String percent = "0.00%";
 	private String size = "0.0KB/0.0KB";
 	private String status = "";
-	private String action = "";
+	private String action = "开始";
 
 	@Bindable
 	public String getPercent() {

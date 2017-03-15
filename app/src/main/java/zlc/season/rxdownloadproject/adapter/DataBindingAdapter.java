@@ -1,7 +1,11 @@
 package zlc.season.rxdownloadproject.adapter;
 
+import android.annotation.TargetApi;
 import android.databinding.BindingAdapter;
+import android.os.Build;
+import android.support.annotation.RequiresApi;
 import android.widget.ImageView;
+import android.widget.Toolbar;
 
 import com.squareup.picasso.Picasso;
 
@@ -14,5 +18,11 @@ public class DataBindingAdapter {
 		Picasso.with(view.getContext())
 				.load(url)
 				.into(view);
+	}
+
+	@TargetApi(Build.VERSION_CODES.LOLLIPOP)
+	@BindingAdapter("title")
+	public static void setTitle(Toolbar toolbar, String resource) {
+		toolbar.setTitle(resource);
 	}
 }

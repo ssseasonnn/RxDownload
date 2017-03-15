@@ -107,7 +107,7 @@
                         android:layout_marginEnd="10dp"
                         android:layout_marginRight="10dp"
                         android:gravity="center"
-                        android:text="0.00%"/>
+                        android:text="@{item.percent}"/>
                 </LinearLayout>
 
                 <ProgressBar
@@ -125,7 +125,7 @@
                     android:layout_marginEnd="10dp"
                     android:layout_marginRight="10dp"
                     android:gravity="center"
-                    android:text="0.0KB/0.0KB"/>
+                    android:text="@{item.size}"/>
             </LinearLayout>
 
             <Button

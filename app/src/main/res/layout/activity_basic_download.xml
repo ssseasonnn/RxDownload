@@ -33,7 +33,6 @@
 
         </android.support.design.widget.AppBarLayout>
 
-        <!-- databinding在include标签上有问题 -->
         <include
             android:id="@+id/content_basic_download"
             layout="@layout/content_basic_download"

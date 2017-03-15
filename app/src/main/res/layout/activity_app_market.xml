@@ -23,6 +23,5 @@
     </android.support.design.widget.AppBarLayout>
 
     <include layout="@layout/content_app_market"/>
-
-
+    
 </android.support.design.widget.CoordinatorLayout>

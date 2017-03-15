@@ -25,6 +25,7 @@ import zlc.season.rxdownload2.entity.DownloadBean;
 import zlc.season.rxdownload2.entity.DownloadEvent;
 import zlc.season.rxdownload2.entity.DownloadFlag;
 import zlc.season.rxdownload2.function.Utils;
+import zlc.season.rxdownloadproject.model.AppInfoBean;
 import zlc.season.rxdownloadproject.model.DownloadController;
 import zlc.season.rxdownloadproject.R;
 

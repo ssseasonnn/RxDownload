@@ -16,8 +16,8 @@ import butterknife.BindView;
 import butterknife.ButterKnife;
 import zlc.season.practicalrecyclerview.PracticalRecyclerView;
 import zlc.season.rxdownloadproject.R;
-import zlc.season.rxdownloadproject.download_manager.AppInfoAdapter;
-import zlc.season.rxdownloadproject.download_manager.AppInfoBean;
+import zlc.season.rxdownloadproject.adapter.AppInfoAdapter;
+import zlc.season.rxdownloadproject.model.AppInfoBean;
 
 import static zlc.season.rxdownload2.function.Utils.dispose;
 

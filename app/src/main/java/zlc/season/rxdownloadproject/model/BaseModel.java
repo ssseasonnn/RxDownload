@@ -13,7 +13,6 @@ public class BaseModel extends BaseObservable {
 	private String state = "";
 	private String action = "开始";
 	private boolean control = true;
-
 	@Bindable
 	public String getUrl() {
 		return url;

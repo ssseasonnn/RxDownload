@@ -34,6 +34,7 @@ import zlc.season.rxdownload2.entity.DownloadStatus;
 import zlc.season.rxdownload2.function.Utils;
 import zlc.season.rxdownloadproject.model.DownloadController;
 import zlc.season.rxdownloadproject.R;
+import zlc.season.rxdownloadproject.model.DownloadItem;
 
 import static android.Manifest.permission.WRITE_EXTERNAL_STORAGE;
 import static zlc.season.rxdownload2.function.Utils.dispose;

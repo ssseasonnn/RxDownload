@@ -4,6 +4,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <data>
+
         <import type="zlc.season.rxdownloadproject.model.MutiModel"/>
 
         <variable
@@ -27,7 +28,6 @@
                 android:layout_height="?attr/actionBarSize"
                 android:background="?attr/colorPrimary"
                 app:popupTheme="@style/AppTheme.PopupOverlay"/>
-
         </android.support.design.widget.AppBarLayout>
 
         <include
@@ -42,6 +42,5 @@
             android:layout_gravity="bottom|end"
             android:layout_margin="@dimen/fab_margin"
             app:srcCompat="@android:drawable/ic_dialog_email"/>
-
     </android.support.design.widget.CoordinatorLayout>
 </layout>

@@ -4,12 +4,14 @@ import android.databinding.BaseObservable;
 import android.databinding.Bindable;
 
 /**
- * Created by xieqi on 2017/3/15.
+ *
  */
 
 public class ServiceModel extends BaseObservable {
 	private String percent = "0.00%";
 	private String size = "0.0KB/0.0KB";
+	private String status = "";
+	private String action = "";
 
 	@Bindable
 	public String getPercent() {
@@ -29,5 +31,25 @@ public class ServiceModel extends BaseObservable {
 	public void setSize(String size) {
 		this.size = size;
 		notifyPropertyChanged(zlc.season.rxdownloadproject.BR.size);
+	}
+
+	@Bindable
+	public String getStatus() {
+		return status;
+	}
+
+	public void setStatus(String status) {
+		this.status = status;
+		notifyPropertyChanged(zlc.season.rxdownloadproject.BR.status);
+	}
+
+	@Bindable
+	public String getAction() {
+		return action;
+	}
+
+	public void setAction(String action) {
+		this.action = action;
+		notifyPropertyChanged(zlc.season.rxdownloadproject.BR.action);
 	}
 }

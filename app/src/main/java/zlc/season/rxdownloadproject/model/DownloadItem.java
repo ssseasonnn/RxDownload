@@ -1,4 +1,4 @@
-package zlc.season.rxdownloadproject.download_manager;
+package zlc.season.rxdownloadproject.model;
 
 import io.reactivex.disposables.Disposable;
 import zlc.season.practicalrecyclerview.ItemType;

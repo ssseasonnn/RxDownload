@@ -19,8 +19,8 @@ import zlc.season.rxdownload2.RxDownload;
 import zlc.season.rxdownload2.entity.DownloadRecord;
 import zlc.season.rxdownload2.function.Utils;
 import zlc.season.rxdownloadproject.R;
-import zlc.season.rxdownloadproject.download_manager.DownloadAdapter;
-import zlc.season.rxdownloadproject.download_manager.DownloadItem;
+import zlc.season.rxdownloadproject.adapter.DownloadAdapter;
+import zlc.season.rxdownloadproject.model.DownloadItem;
 
 public class DownloadManagerActivity extends AppCompatActivity {
 

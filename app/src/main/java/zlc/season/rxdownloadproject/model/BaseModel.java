@@ -1,18 +1,15 @@
 package zlc.season.rxdownloadproject.model;
 
-import android.databinding.BaseObservable;
 import android.databinding.Bindable;
 
-import zlc.season.rxdownloadproject.BR;
-
-/**
- *
- */
-public class BaseModel extends BaseObservable {
+public class BaseModel extends RxDownloadModel {
 	private String url = "";
 	private String state = "";
-	private String action = "开始";
 	private boolean control = true;
+
+	public BaseModel() {
+	}
+
 	@Bindable
 	public String getUrl() {
 		return url;
@@ -41,15 +38,5 @@ public class BaseModel extends BaseObservable {
 	public void setControl(boolean control) {
 		this.control = control;
 //		notifyPropertyChanged(BR.control);
-	}
-
-	@Bindable
-	public String getAction() {
-		return action;
-	}
-
-	public void setAction(String action) {
-		this.action = action;
-		notifyPropertyChanged(BR.action);
 	}
 }

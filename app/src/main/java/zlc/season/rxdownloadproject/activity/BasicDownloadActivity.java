@@ -113,8 +113,8 @@ public class BasicDownloadActivity extends AppCompatActivity {
 						binding.contentBasicDownload.progress.setIndeterminate(status.isChunked);
 						binding.contentBasicDownload.progress.setMax((int) status.getTotalSize());
 						binding.contentBasicDownload.progress.setProgress((int) status.getDownloadSize());
-						binding.contentBasicDownload.percent.setText(status.getPercent());
-						binding.contentBasicDownload.size.setText(status.getFormatStatusString());
+						baseModel.setPercent(status.getPercent());
+						baseModel.setSize(status.getFormatStatusString());
 					}
 
 					@Override

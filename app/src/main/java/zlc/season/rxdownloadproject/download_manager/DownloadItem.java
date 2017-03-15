@@ -11,11 +11,11 @@ import zlc.season.rxdownload2.entity.DownloadRecord;
  * FIXME
  */
 public class DownloadItem implements ItemType {
-    Disposable disposable;
-    DownloadRecord record;
+	public Disposable disposable;
+	public DownloadRecord record;
 
-    @Override
-    public int itemType() {
-        return 0;
-    }
+	@Override
+	public int itemType() {
+		return 0;
+	}
 }

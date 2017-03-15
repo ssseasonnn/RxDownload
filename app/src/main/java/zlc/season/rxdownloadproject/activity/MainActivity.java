@@ -10,7 +10,6 @@ import zlc.season.rxdownload2.RxDownload;
 import zlc.season.rxdownload2.function.Utils;
 import zlc.season.rxdownloadproject.R;
 import zlc.season.rxdownloadproject.databinding.ActivityMainBinding;
-import zlc.season.rxdownloadproject.download_manager.AppMarketActivity;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -18,7 +17,7 @@ public class MainActivity extends AppCompatActivity {
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		ActivityMainBinding binding = DataBindingUtil.setContentView(this, R.layout.activity_main);
-		binding.setPresenter(new Presenter());
+		binding.contentMain.setPresenter(new Presenter());
 		setSupportActionBar(binding.toolbar);
 		//
 		Utils.setDebug(true);
@@ -37,7 +36,7 @@ public class MainActivity extends AppCompatActivity {
 					startActivity(new Intent(MainActivity.this, ServiceDownloadActivity.class));
 					break;
 				case R.id.multi_mission:
-//					startActivity(new Intent(MainActivity.this, MultiMissionDownloadActivity.class));
+					startActivity(new Intent(MainActivity.this, MultiMissionDownloadActivity.class));
 					break;
 				case R.id.app_market:
 					startActivity(new Intent(MainActivity.this, AppMarketActivity.class));

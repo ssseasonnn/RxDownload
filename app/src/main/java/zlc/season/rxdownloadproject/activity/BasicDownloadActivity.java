@@ -29,7 +29,6 @@ import zlc.season.rxdownloadproject.model.DownloadController;
 
 import static zlc.season.rxdownload2.function.Utils.dispose;
 
-
 public class BasicDownloadActivity extends AppCompatActivity {
 	private String url = Constants.URL;
 	private Disposable disposable;
@@ -43,13 +42,13 @@ public class BasicDownloadActivity extends AppCompatActivity {
 		super.onCreate(savedInstanceState);
 		initData();
 		//
-		ActivityBasicDownloadBinding binding = DataBindingUtil.setContentView(this, R.layout.activity_basic_download);
+		binding = DataBindingUtil.setContentView(this, R.layout.activity_basic_download);
 		binding.setItem(baseModel);
-		binding.setPresenter(new Presenter());
+		binding.contentBasicDownload.setPresenter(new Presenter());
 		setSupportActionBar(binding.toolbar);
 		//
 		rxDownload = RxDownload.getInstance(this);
-		downloadController = new DownloadController(binding.status, binding.action);
+		downloadController = new DownloadController(binding.contentBasicDownload.status, binding.contentBasicDownload.action);
 		downloadController.setState(new DownloadController.Normal());
 	}
 
@@ -114,11 +113,11 @@ public class BasicDownloadActivity extends AppCompatActivity {
 
 					@Override
 					public void onNext(DownloadStatus status) {
-						binding.progress.setIndeterminate(status.isChunked);
-						binding.progress.setMax((int) status.getTotalSize());
-						binding.progress.setProgress((int) status.getDownloadSize());
-						binding.percent.setText(status.getPercent());
-						binding.size.setText(status.getFormatStatusString());
+						binding.contentBasicDownload.progress.setIndeterminate(status.isChunked);
+						binding.contentBasicDownload.progress.setMax((int) status.getTotalSize());
+						binding.contentBasicDownload.progress.setProgress((int) status.getDownloadSize());
+						binding.contentBasicDownload.percent.setText(status.getPercent());
+						binding.contentBasicDownload.size.setText(status.getFormatStatusString());
 					}
 
 					@Override

@@ -4,7 +4,7 @@ import android.databinding.BaseObservable;
 import android.databinding.Bindable;
 
 /**
- * Created by xieqi on 2017/3/14.
+ *
  */
 
 public class MutiModel extends BaseObservable {

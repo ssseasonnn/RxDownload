@@ -1,156 +1,180 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-              xmlns:app="http://schemas.android.com/apk/res-auto"
-              xmlns:tools="http://schemas.android.com/tools"
-              android:id="@+id/content_multi_mission_download"
-              android:layout_width="match_parent"
-              android:layout_height="match_parent"
-              android:orientation="vertical"
-              app:layout_behavior="@string/appbar_scrolling_view_behavior"
-              tools:context="zlc.season.rxdownloadproject.multi_mission.MultiMissionDownloadActivity"
-              tools:showIn="@layout/activity_multi_mission_download">
+<layout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <data>
+
+        <import type="zlc.season.rxdownloadproject.model.MutiModel"/>
+
+        <import type="zlc.season.rxdownloadproject.activity.MultiMissionDownloadActivity"/>
+
+        <import type="zlc.season.rxdownloadproject.Constants"/>
+
+        <variable
+            name="item"
+            type="MutiModel"/>
+
+        <variable
+            name="presenter"
+            type="MultiMissionDownloadActivity.Presenter"/>
+    </data>
 
     <LinearLayout
+        android:id="@+id/content_multi_mission_download"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:gravity="center"
-        android:orientation="horizontal">
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        app:layout_behavior="@string/appbar_scrolling_view_behavior">
 
-        <RelativeLayout
-            android:id="@+id/mission1"
-            android:layout_width="0dp"
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1">
+            android:gravity="center"
+            android:orientation="horizontal">
 
-            <ImageView
-                android:id="@+id/image1"
-                android:layout_width="60dp"
-                android:layout_height="60dp"
-                android:layout_centerInParent="true"
-                android:visibility="visible"
-                tools:ignore="ContentDescription"/>
+            <RelativeLayout
+                android:id="@+id/mission1"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1">
 
-            <online.osslab.CircleProgressBar
-                android:id="@+id/progress1"
-                android:layout_width="100dp"
-                android:layout_height="100dp"
-                android:layout_centerInParent="true"
-                android:visibility="visible"
-                app:background_color="#FFCDD2"
-                app:background_width="5dp"
-                app:progress_color="#F44336"
-                app:progress_width="10dp"/>
+                <ImageView
+                    android:id="@+id/image1"
+                    android:layout_width="60dp"
+                    android:layout_height="60dp"
+                    android:layout_centerInParent="true"
+                    android:contentDescription="@null"
+                    android:visibility="visible"
+                    app:image="@{Constants.IMG1}"/>
+
+                <online.osslab.CircleProgressBar
+                    android:id="@+id/progress1"
+                    android:layout_width="100dp"
+                    android:layout_height="100dp"
+                    android:layout_centerInParent="true"
+                    android:visibility="visible"
+                    app:background_color="#FFCDD2"
+                    app:background_width="5dp"
+                    app:progress_color="#F44336"
+                    app:progress_width="10dp"/>
+
+                <Button
+                    android:id="@+id/control1"
+                    android:layout_width="70dp"
+                    android:layout_height="50dp"
+                    android:layout_centerInParent="true"
+                    android:text="下载中"/>
+            </RelativeLayout>
+
+
+            <RelativeLayout
+                android:id="@+id/mission2"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1">
+
+                <ImageView
+                    android:id="@+id/image2"
+                    android:layout_width="60dp"
+                    android:layout_height="60dp"
+                    android:layout_centerInParent="true"
+                    android:contentDescription="@null"
+                    android:visibility="visible"
+                    app:image="@{Constants.IMG2}"/>
+
+                <online.osslab.CircleProgressBar
+                    android:id="@+id/progress2"
+                    android:layout_width="100dp"
+                    android:layout_height="100dp"
+                    android:layout_centerInParent="true"
+                    android:visibility="visible"
+                    app:background_color="#FFCDD2"
+                    app:background_width="5dp"
+                    app:progress_color="#F44336"
+                    app:progress_value="20"
+                    app:progress_width="10dp"/>
+
+                <Button
+                    android:id="@+id/control2"
+                    android:layout_width="70dp"
+                    android:layout_height="50dp"
+                    android:layout_centerInParent="true"
+                    android:text="下载中"/>
+            </RelativeLayout>
+
+
+            <RelativeLayout
+                android:id="@+id/mission3"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1">
+
+                <ImageView
+                    android:id="@+id/image3"
+                    android:layout_width="60dp"
+                    android:layout_height="60dp"
+                    android:layout_centerInParent="true"
+                    android:contentDescription="@null"
+                    android:visibility="visible"
+                    app:image="@{Constants.IMG3}"/>
+
+                <online.osslab.CircleProgressBar
+                    android:id="@+id/progress3"
+                    android:layout_width="100dp"
+                    android:layout_height="100dp"
+                    android:layout_centerInParent="true"
+                    android:visibility="visible"
+                    app:background_color="#FFCDD2"
+                    app:background_width="5dp"
+                    app:progress_color="#F44336"
+                    app:progress_width="10dp"/>
+
+                <Button
+                    android:id="@+id/control3"
+                    android:layout_width="70dp"
+                    android:layout_height="50dp"
+                    android:layout_centerInParent="true"
+                    android:text="下载中"/>
+            </RelativeLayout>
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/activity_horizontal_margin"
+            android:gravity="center"
+            android:orientation="horizontal">
 
             <Button
-                android:id="@+id/control1"
-                android:layout_width="70dp"
-                android:layout_height="50dp"
-                android:layout_centerInParent="true"
-                android:text="下载中"/>
-        </RelativeLayout>
+                android:id="@+id/start"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:onClick="@{(v)->presenter.onClick(v)}"
+                android:text="全部开始"/>
 
-
-        <RelativeLayout
-            android:id="@+id/mission2"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1">
-
-            <ImageView
-                android:id="@+id/image2"
-                android:layout_width="60dp"
-                android:layout_height="60dp"
-                android:layout_centerInParent="true"
-                android:visibility="visible"
-                tools:ignore="ContentDescription"/>
-
-            <online.osslab.CircleProgressBar
-                android:id="@+id/progress2"
-                android:layout_width="100dp"
-                android:layout_height="100dp"
-                android:layout_centerInParent="true"
-                android:visibility="visible"
-                app:background_color="#FFCDD2"
-                app:background_width="5dp"
-                app:progress_color="#F44336"
-                app:progress_value="20"
-                app:progress_width="10dp"/>
+            <View
+                android:layout_width="10dp"
+                android:layout_height="match_parent"/>
 
             <Button
-                android:id="@+id/control2"
-                android:layout_width="70dp"
-                android:layout_height="50dp"
-                android:layout_centerInParent="true"
-                android:text="下载中"/>
-        </RelativeLayout>
+                android:id="@+id/pause"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:onClick="@{(v)->presenter.onClick(v)}"
+                android:text="全部暂停"/>
 
-
-        <RelativeLayout
-            android:id="@+id/mission3"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1">
-
-            <ImageView
-                android:id="@+id/image3"
-                android:layout_width="60dp"
-                android:layout_height="60dp"
-                android:layout_centerInParent="true"
-                android:visibility="visible"
-                tools:ignore="ContentDescription"/>
-
-            <online.osslab.CircleProgressBar
-                android:id="@+id/progress3"
-                android:layout_width="100dp"
-                android:layout_height="100dp"
-                android:layout_centerInParent="true"
-                android:visibility="visible"
-                app:background_color="#FFCDD2"
-                app:background_width="5dp"
-                app:progress_color="#F44336"
-                app:progress_width="10dp"/>
+            <View
+                android:layout_width="10dp"
+                android:layout_height="match_parent"/>
 
             <Button
-                android:id="@+id/control3"
-                android:layout_width="70dp"
-                android:layout_height="50dp"
-                android:layout_centerInParent="true"
-                android:text="下载中"/>
-        </RelativeLayout>
-
+                android:id="@+id/delete"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:onClick="@{(v)->presenter.onClick(v)}"
+                android:text="全部删除"/>
+        </LinearLayout>
     </LinearLayout>
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="@dimen/activity_horizontal_margin"
-        android:gravity="center"
-        android:orientation="horizontal">
-
-        <Button
-            android:id="@+id/start"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="全部开始"/>
-
-        <View
-            android:layout_width="10dp"
-            android:layout_height="match_parent"/>
-
-        <Button
-            android:id="@+id/pause"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="全部暂停"/>
-
-        <View
-            android:layout_width="10dp"
-            android:layout_height="match_parent"/>
-
-        <Button
-            android:id="@+id/delete"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="全部删除"/>
-    </LinearLayout>
-</LinearLayout>
+</layout>

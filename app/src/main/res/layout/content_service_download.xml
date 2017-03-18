@@ -1,123 +1,137 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout
+<layout
     xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/content_service_download"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:paddingBottom="@dimen/activity_vertical_margin"
-    android:paddingLeft="@dimen/activity_horizontal_margin"
-    android:paddingRight="@dimen/activity_horizontal_margin"
-    android:paddingTop="@dimen/activity_vertical_margin"
-    app:layout_behavior="@string/appbar_scrolling_view_behavior"
-    tools:context="zlc.season.rxdownloadproject.service_download.ServiceDownloadActivity"
-    tools:showIn="@layout/activity_service_download">
+    xmlns:app="http://schemas.android.com/apk/res-auto">
 
-    <LinearLayout
+    <data>
+
+        <import type="zlc.season.rxdownloadproject.activity.ServiceDownloadActivity"/>
+
+        <import type="zlc.season.rxdownloadproject.Constants"/>
+
+        <import type="zlc.season.rxdownloadproject.model.ServiceModel"/>
+
+        <variable
+            name="item"
+            type="ServiceModel"/>
+
+        <variable
+            name="presenter"
+            type="ServiceDownloadActivity.Presenter"/>
+    </data>
+
+    <RelativeLayout
+        android:id="@+id/content_service_download"
         android:layout_width="match_parent"
-        android:layout_height="?android:attr/listPreferredItemHeight"
-        android:clickable="true"
-        android:foreground="?android:attr/selectableItemBackground"
-        android:orientation="horizontal"
-        android:paddingLeft="5dp"
-        android:paddingRight="5dp">
-
-        <ImageView
-            android:id="@+id/img"
-            android:layout_width="60dp"
-            android:layout_height="60dp"
-            android:layout_gravity="center_vertical"
-            android:src="@mipmap/ic_launcher"/>
+        android:layout_height="match_parent"
+        android:paddingBottom="@dimen/activity_vertical_margin"
+        android:paddingLeft="@dimen/activity_horizontal_margin"
+        android:paddingRight="@dimen/activity_horizontal_margin"
+        android:paddingTop="@dimen/activity_vertical_margin"
+        app:layout_behavior="@string/appbar_scrolling_view_behavior">
 
         <LinearLayout
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center"
-            android:layout_marginEnd="5dp"
-            android:layout_marginLeft="5dp"
-            android:layout_marginRight="5dp"
-            android:layout_marginStart="5dp"
-            android:layout_weight="1"
-            android:orientation="vertical">
+            android:layout_width="match_parent"
+            android:layout_height="?android:attr/listPreferredItemHeight"
+            android:clickable="true"
+            android:foreground="?android:attr/selectableItemBackground"
+            android:orientation="horizontal"
+            android:paddingLeft="5dp"
+            android:paddingRight="5dp">
+
+            <ImageView
+                android:id="@+id/img"
+                android:layout_width="60dp"
+                android:layout_height="60dp"
+                android:layout_gravity="center_vertical"
+                app:image="@{Constants.IMG4}"/>
 
             <LinearLayout
-                android:layout_width="match_parent"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
-                android:orientation="horizontal">
+                android:layout_marginEnd="5dp"
+                android:layout_marginLeft="5dp"
+                android:layout_marginRight="5dp"
+                android:layout_marginStart="5dp"
+                android:layout_weight="1"
+                android:orientation="vertical">
 
-                <TextView
-                    android:id="@+id/status"
-                    android:layout_width="0dp"
+                <LinearLayout
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_gravity="start"
-                    android:layout_marginEnd="20dp"
-                    android:layout_marginRight="20dp"
-                    android:layout_weight="1"
-                    android:gravity="start"
-                    tools:text="正在下载中"/>
+                    android:layout_gravity="center"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/status"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="start"
+                        android:layout_marginEnd="20dp"
+                        android:layout_marginRight="20dp"
+                        android:layout_weight="1"
+                        android:gravity="start"
+                        android:text="正在下载中"/>
+
+                    <TextView
+                        android:id="@+id/percent"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="end"
+                        android:layout_marginEnd="10dp"
+                        android:layout_marginRight="10dp"
+                        android:gravity="center"
+                        android:text="@{item.percent}"/>
+                </LinearLayout>
+
+                <ProgressBar
+                    android:id="@+id/progress"
+                    style="?android:attr/progressBarStyleHorizontal"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"/>
 
                 <TextView
-                    android:id="@+id/percent"
+                    android:id="@+id/size"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_gravity="end"
                     android:layout_marginEnd="10dp"
                     android:layout_marginRight="10dp"
                     android:gravity="center"
-                    android:text="0.00%"/>
+                    android:text="@{item.size}"/>
             </LinearLayout>
 
-
-            <ProgressBar
-                android:id="@+id/progress"
-                style="?android:attr/progressBarStyleHorizontal"
-                android:layout_width="match_parent"
+            <Button
+                android:id="@+id/action"
+                android:layout_width="50dp"
                 android:layout_height="wrap_content"
-                android:layout_gravity="center"/>
-
-
-            <TextView
-                android:id="@+id/size"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="end"
-                android:layout_marginEnd="10dp"
-                android:layout_marginRight="10dp"
-                android:gravity="center"
-                android:text="0.0KB/0.0KB"/>
-
+                android:layout_gravity="center_vertical"
+                android:background="@null"
+                android:onClick="@{(v)->presenter.onClick(v)}"
+                android:text="开始"
+                android:textColor="@color/colorAccent"/>
         </LinearLayout>
 
-        <Button
-            android:id="@+id/action"
-            android:layout_width="50dp"
+        <TextView
+            android:id="@+id/textView"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_gravity="center_vertical"
-            android:background="@null"
-            android:textColor="@color/colorAccent"
-            tools:text="开始"/>
+            android:layout_alignParentLeft="true"
+            android:layout_alignParentStart="true"
+            android:layout_centerVertical="true"
+            android:gravity="center"
+            android:text="Service download demo.\n使用Service进行下载的示例程序.\n点击开始即开始下载,取消订阅不会暂停下载.\n下次进入Activity仍可看见当前下载进度. "/>
 
-    </LinearLayout>
-
-    <TextView
-        android:id="@+id/textView"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_alignParentLeft="true"
-        android:layout_alignParentStart="true"
-        android:gravity="center"
-        android:layout_centerVertical="true"
-        android:text="Service download demo.\n使用Service进行下载的示例程序.\n点击开始即开始下载,取消订阅不会暂停下载.\n下次进入Activity仍可看见当前下载进度. "/>
-
-    <Button
-        android:id="@+id/finish"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_above="@+id/textView"
-        android:layout_centerHorizontal="true"
-        android:layout_marginBottom="11dp"
-        android:text="FINISH ACTIVITY"/>
-
-</RelativeLayout>
+        <Button
+            android:id="@+id/finish"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_above="@+id/textView"
+            android:layout_centerHorizontal="true"
+            android:layout_marginBottom="11dp"
+            android:onClick="@{(v)->presenter.onClickFinish(v)}"
+            android:text="FINISH ACTIVITY"/>
+    </RelativeLayout>
+</layout>

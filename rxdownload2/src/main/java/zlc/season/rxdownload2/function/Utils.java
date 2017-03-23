@@ -3,8 +3,6 @@ package zlc.season.rxdownload2.function;
 import android.text.TextUtils;
 import android.util.Log;
 
-import com.jakewharton.retrofit2.adapter.rxjava2.HttpException;
-
 import org.reactivestreams.Publisher;
 
 import java.io.Closeable;
@@ -34,6 +32,7 @@ import io.reactivex.functions.BiPredicate;
 import io.reactivex.processors.BehaviorProcessor;
 import io.reactivex.processors.FlowableProcessor;
 import okhttp3.internal.http.HttpHeaders;
+import retrofit2.HttpException;
 import retrofit2.Response;
 import zlc.season.rxdownload2.entity.DownloadEvent;
 

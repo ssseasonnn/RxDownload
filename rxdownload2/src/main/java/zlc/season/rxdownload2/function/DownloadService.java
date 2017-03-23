@@ -195,7 +195,7 @@ public class DownloadService extends Service {
             }
 
             if (each instanceof SingleMission) {
-                addDownloadMission(new SingleMission((SingleMission) each));
+                addDownloadMission(new SingleMission((SingleMission) each, null));
             }
 
 //            if (each instanceof MultiMission) {

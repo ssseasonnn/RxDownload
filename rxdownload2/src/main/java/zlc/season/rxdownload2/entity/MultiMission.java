@@ -21,6 +21,7 @@ import static zlc.season.rxdownload2.function.DownloadEventFactory.started;
 import static zlc.season.rxdownload2.function.DownloadEventFactory.waiting;
 import static zlc.season.rxdownload2.function.Utils.createProcessor;
 import static zlc.season.rxdownload2.function.Utils.formatStr;
+import static zlc.season.rxdownload2.function.Utils.log;
 
 /**
  * Author: Season(ssseasonnn@gmail.com)
@@ -34,38 +35,7 @@ public class MultiMission extends DownloadMission {
     private List<SingleMission> missions;
 
     private String missionId;
-
-    private Observer<DownloadStatus> observer = new Observer<DownloadStatus>() {
-        @Override
-        public void onSubscribe(Disposable d) {
-            processor.onNext(started(null));
-        }
-
-
-        @Override
-        public void onNext(DownloadStatus value) {
-
-        }
-
-        @Override
-        public void onError(Throwable e) {
-            int temp = failedNumber.incrementAndGet();
-            if ((temp + completeNumber.intValue()) == missions.size()) {
-                processor.onNext(failed(null, new Throwable("download failedNumber")));
-            }
-        }
-
-        @Override
-        public void onComplete() {
-            int temp = completeNumber.incrementAndGet();
-            if (temp == missions.size()) {
-                processor.onNext(completed(null));
-                setCompleted(true);
-            } else if ((temp + failedNumber.intValue()) == missions.size()) {
-                processor.onNext(failed(null, new Throwable("download failedNumber")));
-            }
-        }
-    };
+    private Observer<DownloadStatus> observer;
 
     public MultiMission(MultiMission other) {
         super(other.rxdownload);
@@ -74,10 +44,13 @@ public class MultiMission extends DownloadMission {
         this.completeNumber = new AtomicInteger(0);
         this.failedNumber = new AtomicInteger(0);
 
+        this.observer = new SingleMissionObserver(this);
+
         for (SingleMission each : other.getMissions()) {
-            this.missions.add(new SingleMission(each));
+            this.missions.add(new SingleMission(each, observer));
         }
     }
+
 
     public MultiMission(RxDownload rxDownload, String missionId, List<DownloadBean> missions) {
         super(rxDownload);
@@ -86,13 +59,11 @@ public class MultiMission extends DownloadMission {
         this.completeNumber = new AtomicInteger(0);
         this.failedNumber = new AtomicInteger(0);
 
+        this.observer = new SingleMissionObserver(this);
+
         for (DownloadBean each : missions) {
             this.missions.add(new SingleMission(rxDownload, each, missionId, observer));
         }
-    }
-
-    private List<SingleMission> getMissions() {
-        return missions;
     }
 
     public String getUrl() {
@@ -148,6 +119,8 @@ public class MultiMission extends DownloadMission {
             each.pause(dataBaseHelper);
         }
         setCanceled(true);
+        completeNumber.set(0);
+        failedNumber.set(0);
         processor.onNext(paused(null));
     }
 
@@ -157,6 +130,57 @@ public class MultiMission extends DownloadMission {
             each.delete(dataBaseHelper, deleteFile);
         }
         setCanceled(true);
+        completeNumber.set(0);
+        failedNumber.set(0);
         processor.onNext(normal(null));
+    }
+
+    private List<SingleMission> getMissions() {
+        return missions;
+    }
+
+    private class SingleMissionObserver implements Observer<DownloadStatus> {
+
+        MultiMission real;
+
+        public SingleMissionObserver(MultiMission multiMission) {
+            this.real = multiMission;
+        }
+
+        @Override
+        public void onSubscribe(Disposable d) {
+            real.processor.onNext(started(null));
+        }
+
+        @Override
+        public void onNext(DownloadStatus value) {
+
+        }
+
+        @Override
+        public void onError(Throwable e) {
+            log("onerror");
+            int temp = real.failedNumber.incrementAndGet();
+            log("temp: " + temp);
+            log("size: " + real.missions.size());
+            if ((temp + real.completeNumber.intValue()) == real.missions.size()) {
+                real.processor.onNext(failed(null, new Throwable("download failed")));
+                real.setCanceled(true);
+                log("set error cancel");
+            }
+        }
+
+        @Override
+        public void onComplete() {
+            int temp = real.completeNumber.incrementAndGet();
+            if (temp == real.missions.size()) {
+                real.processor.onNext(completed(null));
+                real.setCompleted(true);
+                real.setCanceled(true);
+            } else if ((temp + real.failedNumber.intValue()) == real.missions.size()) {
+                real.processor.onNext(failed(null, new Throwable("download failed")));
+                real.setCanceled(true);
+            }
+        }
     }
 }

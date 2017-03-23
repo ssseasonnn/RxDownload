@@ -8,16 +8,17 @@ ext {
              vname     : "2.0.0-beta3"]
     versions = [libSupport    : "25.2.0",
                 libButterKnife: "8.4.0",
-                libRxJava     : "2.0.1",
-                libRetrofit   : "2.1.0",
-                libOkhttp     : "3.4.1"]
+                libRxJava     : "2.0.7",
+                libRxAndroid  : "2.0.1",
+                libRetrofit   : "2.2.0",
+                libOkhttp     : "3.6.0"]
 }
 buildscript {
     repositories {
         jcenter()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:2.2.3'
+        classpath 'com.android.tools.build:gradle:2.3.0'
         classpath 'com.github.dcendents:android-maven-gradle-plugin:1.5'
         classpath "com.jfrog.bintray.gradle:gradle-bintray-plugin:1.7.3"
         classpath 'com.jakewharton:butterknife-gradle-plugin:8.5.1'

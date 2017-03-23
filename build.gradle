@@ -1,26 +1,26 @@
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
+ext {
+    setup = [compileSdk: 25,
+             buildTools: "25.0.2",
+             minSdk    : 11,
+             targetSdk : 25,
+             vcode     : 3,
+             vname     : "2.0.0-beta3"]
+    versions = [libSupport    : "25.2.0",
+                libButterKnife: "8.4.0",
+                libRxJava     : "2.0.1",
+                libRetrofit   : "2.1.0",
+                libOkhttp     : "3.4.1"]
+}
 buildscript {
-    ext {
-        setup = [compileSdk: 25,
-                 buildTools: "25.0.2",
-                 minSdk    : 11,
-                 targetSdk : 25,
-                 vcode     : 2,
-                 vname     : "1.0.1"]
-        versions = [libSupport    : "25.1.0",
-                    libButterKnife: "8.4.0",
-                    libRxJava     : "2.0.1",
-                    libRetrofit   : "2.1.0",
-                    libOkhttp3    : "3.4.1"]
-    }
     repositories {
         jcenter()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:2.3.0'
-        classpath 'com.neenbedankt.gradle.plugins:android-apt:1.8'
+        classpath 'com.android.tools.build:gradle:2.2.3'
         classpath 'com.github.dcendents:android-maven-gradle-plugin:1.5'
         classpath "com.jfrog.bintray.gradle:gradle-bintray-plugin:1.7.3"
+        classpath 'com.jakewharton:butterknife-gradle-plugin:8.5.1'
         // NOTE: Do not place your application dependencies here; they belong
         // in the individual module build.gradle files
     }

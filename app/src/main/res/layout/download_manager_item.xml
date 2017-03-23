@@ -14,6 +14,7 @@
         android:layout_width="50dp"
         android:layout_height="50dp"
         android:layout_gravity="center"
+        android:contentDescription="@null"
         android:src="@mipmap/ic_launcher"/>
 
     <LinearLayout
@@ -100,6 +101,7 @@
     </LinearLayout>
 
     <LinearLayout
+        style="?android:buttonBarStyle"
         android:layout_width="80dp"
         android:layout_height="match_parent"
         android:gravity="center_vertical|center_horizontal"
@@ -107,6 +109,7 @@
 
         <Button
             android:id="@+id/action"
+            style="?android:buttonBarButtonStyle"
             android:layout_width="50dp"
             android:layout_height="wrap_content"
             android:background="@null"
@@ -115,12 +118,10 @@
 
         <Button
             android:id="@+id/more"
+            style="?android:buttonBarButtonStyle"
             android:layout_width="20dp"
             android:layout_height="20dp"
             android:background="@mipmap/ic_more_vert"
             android:textColor="@color/colorAccent"/>
-
     </LinearLayout>
-
-
 </LinearLayout>

@@ -7,7 +7,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     app:layout_behavior="@string/appbar_scrolling_view_behavior"
-    tools:context="zlc.season.rxdownloadproject.download_manager.AppMarketActivity"
+    tools:context="zlc.season.rxdownloadproject.activity.AppMarketActivity"
     tools:showIn="@layout/activity_app_market">
 
     <zlc.season.practicalrecyclerview.PracticalRecyclerView

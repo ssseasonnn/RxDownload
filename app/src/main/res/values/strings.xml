@@ -11,15 +11,18 @@
     <string name="title">下载</string>
     <string name="download_prepare">准备下载</string>
     <string name="download_started">正在下载</string>
+    <string name="download_during">下载中</string>
     <string name="download_failed">下载失败</string>
     <string name="download_completed">下载完成,点击安装</string>
     <string name="download_paused">下载已暂停</string>
-
     <string name="re_download">重新下载</string>
     <string name="cancel_download">取消</string>
     <string name="pause_download">暂停</string>
     <string name="continue_download">继续</string>
 
+    <string name="all_start">全部开始</string>
+    <string name="all_pause">全部暂停</string>
+    <string name="all_delete">全部删除</string>
 
     <string-array name="save_name">
         <item>qq.apk</item>
@@ -60,6 +63,12 @@
         <item>http://zhstatic.zhihu.com/pkg/store/zhihu/futureve-mobile-update-release-4.10.1(443).apk</item>
         <item>http://zhstatic.zhihu.com/pkg/store/daily/zhihu-daily-zhihu-2.5.4(392).apk</item>
     </string-array>
+
     <string name="title_activity_multi_mission_download">MultiMissionDownloadActivity</string>
+    <string name="basic_download">BASIC DOWNLOAD</string>
+    <string name="service_download">Service download</string>
+    <string name="multi_mission_download">Multi Mission download</string>
+    <string name="app_market">APP MARKET</string>
+    <string name="basic_download_demo">Basic download demo. 基本的下载示例程序. 点击开始即开始下载. 取消订阅则暂停下载.</string>
 
 </resources>

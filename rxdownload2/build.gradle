@@ -31,13 +31,13 @@ dependencies {
     //retrofit
     compile "com.squareup.retrofit2:retrofit:$rootProject.versions.libRetrofit"
     compile "com.squareup.retrofit2:converter-gson:$rootProject.versions.libRetrofit"
-    compile 'com.jakewharton.retrofit:retrofit2-rxjava2-adapter:1.0.0'
+    compile "com.squareup.retrofit2:adapter-rxjava2:$rootProject.versions.libRetrofit"
 
     compile "com.squareup.okhttp3:okhttp:$rootProject.versions.libOkhttp"
     compile "com.squareup.okhttp3:logging-interceptor:$rootProject.versions.libOkhttp"
 
     compile "io.reactivex.rxjava2:rxjava:$rootProject.versions.libRxJava"
-    compile "io.reactivex.rxjava2:rxandroid:$rootProject.versions.libRxJava"
+    compile "io.reactivex.rxjava2:rxandroid:$rootProject.versions.libRxAndroid"
 }
 
 apply from: "bintray.gradle"

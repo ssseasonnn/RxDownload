@@ -54,25 +54,12 @@ public class SingleMission extends DownloadMission {
         this.observer = observer;
     }
 
-    public SingleMission(SingleMission other) {
+    public SingleMission(SingleMission other, Observer<DownloadStatus> observer) {
         super(other.rxdownload);
         this.bean = other.getBean();
         this.missionId = other.getMissionId();
-        this.observer = other.getObserver();
+        this.observer = observer;
     }
-
-    private String getMissionId() {
-        return missionId;
-    }
-
-    private Observer<DownloadStatus> getObserver() {
-        return observer;
-    }
-
-    private DownloadBean getBean() {
-        return bean;
-    }
-
 
     @Override
     public String getUrl() {
@@ -136,6 +123,7 @@ public class SingleMission extends DownloadMission {
                     @Override
                     public void run() throws Exception {
                         log("finally and release...");
+                        setCanceled(true);
                         semaphore.release();
                     }
                 })
@@ -191,5 +179,17 @@ public class SingleMission extends DownloadMission {
             }
         }
         dataBaseHelper.deleteRecord(getUrl());
+    }
+
+    private String getMissionId() {
+        return missionId;
+    }
+
+    private Observer<DownloadStatus> getObserver() {
+        return observer;
+    }
+
+    private DownloadBean getBean() {
+        return bean;
     }
 }

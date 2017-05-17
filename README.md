@@ -27,7 +27,7 @@
 
 ```groovy
 	dependencies{
-         compile 'zlc.season:rxdownload2:2.0.1'
+         compile 'zlc.season:rxdownload2:2.0.2'
 	}
 ```
 

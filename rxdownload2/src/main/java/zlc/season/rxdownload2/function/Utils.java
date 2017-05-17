@@ -221,7 +221,7 @@ public class Utils {
     }
 
     public static boolean notSupportRange(Response<?> response) {
-        return TextUtils.isEmpty(contentRange(response)) || contentLength(response) == -1 ||
+        return (TextUtils.isEmpty(contentRange(response)) && !TextUtils.equals(acceptRanges(response), "bytes")) || contentLength(response) == -1 ||
                 isChunked(response);
     }
 
@@ -368,5 +368,9 @@ public class Utils {
 
     private static String contentRange(Response<?> response) {
         return response.headers().get("Content-Range");
+    }
+
+    private static String acceptRanges(Response<?> response) {
+        return response.headers().get("Accept-Ranges");
     }
 }

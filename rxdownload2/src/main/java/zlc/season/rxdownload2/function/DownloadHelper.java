@@ -9,7 +9,10 @@ import java.text.ParseException;
 import java.util.List;
 
 import io.reactivex.Observable;
+import io.reactivex.ObservableEmitter;
+import io.reactivex.ObservableOnSubscribe;
 import io.reactivex.ObservableSource;
+import io.reactivex.annotations.NonNull;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.exceptions.CompositeException;
 import io.reactivex.functions.Action;
@@ -249,6 +252,33 @@ public class DownloadHelper {
      */
     private ObservableSource<Object> checkUrl(final String url) {
         return downloadApi.check(url)
+                .flatMap(new Function<Response<Void>, ObservableSource<Object>>() {
+                    @Override
+                    public ObservableSource<Object> apply(@NonNull Response<Void> resp)
+                            throws Exception {
+                        if (!resp.isSuccessful()) {
+                            return checkUrlByGet(url);
+                        } else {
+                            return saveFileInfo(url, resp);
+                        }
+                    }
+                })
+                .compose(retry(REQUEST_RETRY_HINT, maxRetryCount));
+    }
+
+    private ObservableSource<Object> saveFileInfo(final String url, final Response<Void> resp) {
+        return Observable.create(new ObservableOnSubscribe<Object>() {
+            @Override
+            public void subscribe(ObservableEmitter<Object> emitter) throws Exception {
+                recordTable.saveFileInfo(url, resp);
+                emitter.onNext(new Object());
+                emitter.onComplete();
+            }
+        });
+    }
+
+    private ObservableSource<Object> checkUrlByGet(final String url) {
+        return downloadApi.checkByGet(url)
                 .doOnNext(new Consumer<Response<Void>>() {
                     @Override
                     public void accept(Response<Void> response) throws Exception {

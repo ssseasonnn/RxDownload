@@ -26,6 +26,9 @@ public interface DownloadApi {
     @HEAD
     Observable<Response<Void>> check(@Url String url);
 
+    @GET
+    Observable<Response<Void>> checkByGet(@Url String url);
+
     @HEAD
     Observable<Response<Void>> checkRangeByHead(@Header("Range") String range,
                                                 @Url String url);

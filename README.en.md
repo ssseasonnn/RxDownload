@@ -25,7 +25,7 @@ The download tool based on RxJava . Support multi-threaded download and breakpoi
 
 ```groovy
 	dependencies{
-         compile 'zlc.season:rxdownload2:2.0.0-beta4'
+         compile 'zlc.season:rxdownload2:2.0.1'
 	}
 ```
 

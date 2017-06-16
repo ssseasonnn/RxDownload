@@ -4,7 +4,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.support.v7.widget.ListPopupWindow;
-import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
@@ -19,12 +18,17 @@ import com.squareup.picasso.Picasso;
 import com.tbruyelle.rxpermissions2.RxPermissions;
 
 import java.io.File;
+import java.util.concurrent.TimeUnit;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
+import io.reactivex.Observable;
+import io.reactivex.annotations.NonNull;
 import io.reactivex.functions.Action;
 import io.reactivex.functions.Consumer;
+import io.reactivex.functions.Function;
+import io.reactivex.functions.Predicate;
 import zlc.season.practicalrecyclerview.AbstractAdapter;
 import zlc.season.practicalrecyclerview.AbstractViewHolder;
 import zlc.season.rxdownload2.RxDownload;
@@ -32,8 +36,8 @@ import zlc.season.rxdownload2.entity.DownloadEvent;
 import zlc.season.rxdownload2.entity.DownloadFlag;
 import zlc.season.rxdownload2.entity.DownloadStatus;
 import zlc.season.rxdownload2.function.Utils;
-import zlc.season.rxdownloadproject.model.DownloadController;
 import zlc.season.rxdownloadproject.R;
+import zlc.season.rxdownloadproject.model.DownloadController;
 import zlc.season.rxdownloadproject.model.DownloadItem;
 
 import static android.Manifest.permission.WRITE_EXTERNAL_STORAGE;
@@ -100,19 +104,62 @@ public class DownloadViewHolder extends AbstractViewHolder<DownloadItem> {
 
 
         Utils.log(data.record.getUrl());
-        data.disposable = mRxDownload.receiveDownloadStatus(data.record.getUrl())
+        Observable<DownloadEvent> replayDownloadStatus = mRxDownload.receiveDownloadStatus(data.record.getUrl())
+                .replay()
+                .autoConnect();
+        replayDownloadStatus.groupBy(new Function<DownloadEvent, Object>() {
+            @Override
+            public Object apply(@NonNull DownloadEvent downloadEvent) throws Exception {
+                return null;
+            }
+        });
+        Observable<DownloadEvent> sampled = replayDownloadStatus
+                .filter(new Predicate<DownloadEvent>() {
+                    @Override
+                    public boolean test(@NonNull DownloadEvent downloadEvent) throws Exception {
+                        return downloadEvent.getFlag() == DownloadFlag.STARTED;
+                    }
+                })
+                .sample(200, TimeUnit.MILLISECONDS)
+                .takeUntil(new Predicate<DownloadEvent>() {
+                    @Override
+                    public boolean test(@NonNull DownloadEvent downloadEvent) throws Exception {
+                        return false;
+                    }
+                })
+                .map(new Function<DownloadEvent, DownloadEvent>() {
+                    @Override
+                    public DownloadEvent apply(@NonNull DownloadEvent downloadEvent) throws Exception {
+                        log("sampled event" + downloadEvent.getFlag());
+                        return downloadEvent;
+                    }
+                });
+        Observable<DownloadEvent> noProgress = replayDownloadStatus
+                .filter(new Predicate<DownloadEvent>() {
+                    @Override
+                    public boolean test(@NonNull DownloadEvent downloadEvent) throws Exception {
+                        return downloadEvent.getFlag() != DownloadFlag.STARTED;
+                    }
+                }).map(new Function<DownloadEvent, DownloadEvent>() {
+                    @Override
+                    public DownloadEvent apply(@NonNull DownloadEvent downloadEvent) throws Exception {
+                        log("filtered event" + downloadEvent.getFlag());
+                        return downloadEvent;
+                    }
+                });
+        data.disposable = Observable.merge(sampled, noProgress)
                 .subscribe(new Consumer<DownloadEvent>() {
                     @Override
                     public void accept(DownloadEvent downloadEvent) throws Exception {
-                        if (flag != downloadEvent.getFlag()) {
-                            flag = downloadEvent.getFlag();
-                            log(flag + "");
-                        }
-
-                        if (downloadEvent.getFlag() == DownloadFlag.FAILED) {
-                            Throwable throwable = downloadEvent.getError();
-                            Log.w("TAG", throwable);
-                        }
+//                        if (flag != downloadEvent.getFlag()) {
+//                            flag = downloadEvent.getFlag();
+                        log(downloadEvent.getFlag() + "");
+//                        }
+//
+//                        if (downloadEvent.getFlag() == DownloadFlag.FAILED) {
+//                            Throwable throwable = downloadEvent.getError();
+//                            Log.w("TAG", throwable);
+//                        }
                         mDownloadController.setEvent(downloadEvent);
                         updateProgressStatus(downloadEvent.getDownloadStatus());
                     }

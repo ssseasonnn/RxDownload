@@ -6,6 +6,8 @@ import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.widget.Toast;
 
+import java.util.concurrent.TimeUnit;
+
 import io.reactivex.disposables.Disposable;
 import io.reactivex.functions.Consumer;
 import zlc.season.rxdownload2.RxDownload;
@@ -55,6 +57,7 @@ public class MultiMissionDownloadActivity extends AppCompatActivity {
 		startMultiMission();
 		//
 		disposable1 = rxDownload.receiveDownloadStatus(url1)
+				.sample(300, TimeUnit.MILLISECONDS)
 				.subscribe(new Consumer<DownloadEvent>() {
 					@Override
 					public void accept(DownloadEvent downloadEvent) throws Exception {

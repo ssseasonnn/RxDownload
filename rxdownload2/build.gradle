@@ -32,12 +32,12 @@ dependencies {
     compile "com.squareup.retrofit2:retrofit:$rootProject.versions.libRetrofit"
     compile "com.squareup.retrofit2:converter-gson:$rootProject.versions.libRetrofit"
     compile "com.squareup.retrofit2:adapter-rxjava2:$rootProject.versions.libRetrofit"
-
     compile "com.squareup.okhttp3:okhttp:$rootProject.versions.libOkhttp"
     compile "com.squareup.okhttp3:logging-interceptor:$rootProject.versions.libOkhttp"
-
     compile "io.reactivex.rxjava2:rxjava:$rootProject.versions.libRxJava"
     compile "io.reactivex.rxjava2:rxandroid:$rootProject.versions.libRxAndroid"
+    compile 'com.facebook.stetho:stetho:1.5.0'
+    compile 'com.facebook.stetho:stetho-okhttp3:1.5.0'
 }
 
 apply from: "bintray.gradle"

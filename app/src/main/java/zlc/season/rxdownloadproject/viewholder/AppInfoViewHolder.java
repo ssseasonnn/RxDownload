@@ -14,6 +14,7 @@ import com.squareup.picasso.Picasso;
 import com.tbruyelle.rxpermissions2.RxPermissions;
 
 import java.io.File;
+import java.util.concurrent.TimeUnit;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -84,6 +85,7 @@ public class AppInfoViewHolder extends AbstractViewHolder<AppInfoBean> {
 
         Utils.log(mData.downloadUrl);
         mData.disposable = mRxDownload.receiveDownloadStatus(mData.downloadUrl)
+                .sample(200, TimeUnit.MILLISECONDS)
                 .subscribe(new Consumer<DownloadEvent>() {
                     @Override
                     public void accept(DownloadEvent downloadEvent) throws Exception {

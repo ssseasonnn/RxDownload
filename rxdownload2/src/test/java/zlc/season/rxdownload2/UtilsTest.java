@@ -65,7 +65,7 @@ public class UtilsTest {
     public void lifecycleTest() throws Exception {
         final Semaphore semaphore = new Semaphore(0);
         Disposable disposable = Observable.just(1)
-                .subscribeOn(Schedulers.io())
+                .subscribeOn(Schedulers.from(ExecutorHelper.HIGH))
                 .doOnSubscribe(new Consumer<Disposable>() {
                     @Override
                     public void accept(Disposable disposable) throws Exception {

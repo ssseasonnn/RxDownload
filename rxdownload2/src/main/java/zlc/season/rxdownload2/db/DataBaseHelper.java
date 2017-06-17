@@ -13,6 +13,7 @@ import io.reactivex.ObservableEmitter;
 import io.reactivex.ObservableOnSubscribe;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.schedulers.Schedulers;
+import zlc.season.rxdownload2.ExecutorHelper;
 import zlc.season.rxdownload2.entity.DownloadBean;
 import zlc.season.rxdownload2.entity.DownloadFlag;
 import zlc.season.rxdownload2.entity.DownloadRecord;
@@ -245,7 +246,7 @@ public class DataBaseHelper {
                         }
                     }
                 })
-                .subscribeOn(Schedulers.io())
+                .subscribeOn(Schedulers.from(ExecutorHelper.HIGH))
                 .observeOn(AndroidSchedulers.mainThread());
     }
 
@@ -284,7 +285,7 @@ public class DataBaseHelper {
                         }
                     }
                 })
-                .subscribeOn(Schedulers.io())
+                .subscribeOn(Schedulers.from(ExecutorHelper.HIGH))
                 .observeOn(AndroidSchedulers.mainThread());
     }
 

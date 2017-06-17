@@ -19,6 +19,7 @@ import io.reactivex.functions.Function;
 import io.reactivex.schedulers.Schedulers;
 import okhttp3.ResponseBody;
 import retrofit2.Response;
+import zlc.season.rxdownload2.ExecutorHelper;
 import zlc.season.rxdownload2.function.Utils;
 
 import static zlc.season.rxdownload2.function.Constant.ALREADY_DOWNLOAD_HINT;
@@ -257,7 +258,7 @@ public abstract class DownloadType {
          */
         private Publisher<DownloadStatus> rangeDownload(final int index) {
             return record.rangeDownload(index)
-                    .subscribeOn(Schedulers.io())  //Important!
+                    .subscribeOn(Schedulers.from(ExecutorHelper.HIGH))  //Important!
                     .flatMap(new Function<Response<ResponseBody>, Publisher<DownloadStatus>>() {
                         @Override
                         public Publisher<DownloadStatus> apply(Response<ResponseBody> response) throws Exception {

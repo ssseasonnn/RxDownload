@@ -178,7 +178,7 @@ public class TemporaryRecord {
                     @Override
                     public Publisher<Response<ResponseBody>> apply(DownloadRange range)
                             throws Exception {
-                        log(RANGE_DOWNLOAD_STARTED, index, range.start, range.end);
+                        log("Thread: " + Thread.currentThread().getName() + "; " + RANGE_DOWNLOAD_STARTED, index, range.start, range.end);
                         String rangeStr = "bytes=" + range.start + "-" + range.end;
                         return downloadApi.download(rangeStr, bean.getUrl());
                     }

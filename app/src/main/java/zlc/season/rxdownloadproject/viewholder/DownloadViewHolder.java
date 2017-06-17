@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.support.v7.widget.ListPopupWindow;
+import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
@@ -24,10 +25,10 @@ import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
 import io.reactivex.Observable;
+import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.annotations.NonNull;
 import io.reactivex.functions.Action;
 import io.reactivex.functions.Consumer;
-import io.reactivex.functions.Function;
 import io.reactivex.functions.Predicate;
 import zlc.season.practicalrecyclerview.AbstractAdapter;
 import zlc.season.practicalrecyclerview.AbstractViewHolder;
@@ -107,12 +108,6 @@ public class DownloadViewHolder extends AbstractViewHolder<DownloadItem> {
         Observable<DownloadEvent> replayDownloadStatus = mRxDownload.receiveDownloadStatus(data.record.getUrl())
                 .replay()
                 .autoConnect();
-        replayDownloadStatus.groupBy(new Function<DownloadEvent, Object>() {
-            @Override
-            public Object apply(@NonNull DownloadEvent downloadEvent) throws Exception {
-                return null;
-            }
-        });
         Observable<DownloadEvent> sampled = replayDownloadStatus
                 .filter(new Predicate<DownloadEvent>() {
                     @Override
@@ -120,50 +115,92 @@ public class DownloadViewHolder extends AbstractViewHolder<DownloadItem> {
                         return downloadEvent.getFlag() == DownloadFlag.STARTED;
                     }
                 })
-                .sample(200, TimeUnit.MILLISECONDS)
-                .takeUntil(new Predicate<DownloadEvent>() {
-                    @Override
-                    public boolean test(@NonNull DownloadEvent downloadEvent) throws Exception {
-                        return false;
-                    }
-                })
-                .map(new Function<DownloadEvent, DownloadEvent>() {
-                    @Override
-                    public DownloadEvent apply(@NonNull DownloadEvent downloadEvent) throws Exception {
-                        log("sampled event" + downloadEvent.getFlag());
-                        return downloadEvent;
-                    }
-                });
+                .throttleFirst(200, TimeUnit.MILLISECONDS);
         Observable<DownloadEvent> noProgress = replayDownloadStatus
                 .filter(new Predicate<DownloadEvent>() {
                     @Override
                     public boolean test(@NonNull DownloadEvent downloadEvent) throws Exception {
                         return downloadEvent.getFlag() != DownloadFlag.STARTED;
                     }
-                }).map(new Function<DownloadEvent, DownloadEvent>() {
-                    @Override
-                    public DownloadEvent apply(@NonNull DownloadEvent downloadEvent) throws Exception {
-                        log("filtered event" + downloadEvent.getFlag());
-                        return downloadEvent;
-                    }
                 });
         data.disposable = Observable.merge(sampled, noProgress)
+                .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(new Consumer<DownloadEvent>() {
                     @Override
-                    public void accept(DownloadEvent downloadEvent) throws Exception {
-//                        if (flag != downloadEvent.getFlag()) {
-//                            flag = downloadEvent.getFlag();
-                        log(downloadEvent.getFlag() + "");
-//                        }
-//
-//                        if (downloadEvent.getFlag() == DownloadFlag.FAILED) {
-//                            Throwable throwable = downloadEvent.getError();
-//                            Log.w("TAG", throwable);
-//                        }
+                    public void accept(@NonNull DownloadEvent downloadEvent) throws Exception {
+                        if (flag != downloadEvent.getFlag()) {
+                            flag = downloadEvent.getFlag();
+                            log("all events:" + downloadEvent.getFlag());
+                        }
+                        if (downloadEvent.getFlag() == DownloadFlag.FAILED) {
+                            Throwable throwable = downloadEvent.getError();
+                            Log.w("TAG", throwable);
+                        }
                         mDownloadController.setEvent(downloadEvent);
                         updateProgressStatus(downloadEvent.getDownloadStatus());
                     }
                 });
+
+
+//        Flowable<DownloadEvent> grouped = mRxDownload.receiveDownloadStatus(data.record.getUrl())
+//                .groupBy(new Function<DownloadEvent, Boolean>() {
+//                    @Override
+//                    public Boolean apply(@NonNull DownloadEvent downloadEvent) throws Exception {
+//                        return downloadEvent.getFlag() == DownloadFlag.STARTED;
+//                    }
+//                }).flatMap(new Function<GroupedObservable<Boolean, DownloadEvent>, ObservableSource<DownloadEvent>>() {
+//                    @Override
+//                    public ObservableSource<DownloadEvent> apply(@NonNull GroupedObservable<Boolean, DownloadEvent> groupedObservable) throws Exception {
+//                        if (groupedObservable.getKey()) {
+//                            return groupedObservable.sample(300, TimeUnit.MILLISECONDS)
+//                                    .map(new Function<DownloadEvent, DownloadEvent>() {
+//                                        @Override
+//                                        public DownloadEvent apply(@NonNull DownloadEvent downloadEvent) throws Exception {
+//                                            log("sample event:" + downloadEvent.getFlag());
+//                                            return downloadEvent;
+//                                        }
+//                                    });
+//                        }
+//                        return groupedObservable.map(new Function<DownloadEvent, DownloadEvent>() {
+//                            @Override
+//                            public DownloadEvent apply(@NonNull DownloadEvent downloadEvent) throws Exception {
+//                                log("other event:" + downloadEvent.getFlag());
+//                                return downloadEvent;
+//                            }
+//                        });
+//                    }
+//                }).toFlowable(BackpressureStrategy.BUFFER);
+//        ResourceSubscriber<DownloadEvent> subscriber = new ResourceSubscriber<DownloadEvent>() {
+//
+//            @Override
+//            public void onNext(DownloadEvent downloadEvent) {
+//                if (flag != downloadEvent.getFlag()) {
+//                    flag = downloadEvent.getFlag();
+//                }
+//                log("all events final:" + downloadEvent.getFlag());
+//                if (downloadEvent.getFlag() == DownloadFlag.FAILED) {
+//                    Throwable throwable = downloadEvent.getError();
+//                    Log.w("TAG", throwable);
+//                }
+//                mDownloadController.setEvent(downloadEvent);
+//                updateProgressStatus(downloadEvent.getDownloadStatus());
+//                request(1);
+//            }
+//
+//            @Override
+//            public void onError(Throwable t) {
+//
+//            }
+//
+//            @Override
+//            public void onComplete() {
+//
+//            }
+//
+//        };
+//        data.disposable = subscriber;
+//        grouped.subscribe(subscriber);
+
     }
 
     @OnClick({R.id.action, R.id.more})

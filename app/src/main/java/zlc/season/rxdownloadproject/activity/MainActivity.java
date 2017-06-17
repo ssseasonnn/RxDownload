@@ -23,7 +23,7 @@ public class MainActivity extends AppCompatActivity {
 		Utils.setDebug(true);
 		RxDownload.getInstance(this)
 				.maxDownloadNumber(2)
-				.maxThread(4);
+				.maxThread(2);
 	}
 
 	public class Presenter {
@@ -40,6 +40,9 @@ public class MainActivity extends AppCompatActivity {
 					break;
 				case R.id.app_market:
 					startActivity(new Intent(MainActivity.this, AppMarketActivity.class));
+					break;
+				case R.id.test:
+					startActivity(new Intent(MainActivity.this, TestActivity.class));
 					break;
 			}
 		}

@@ -5,7 +5,6 @@ import com.facebook.stetho.okhttp3.StethoInterceptor;
 
 import java.util.concurrent.TimeUnit;
 
-import okhttp3.ConnectionPool;
 import okhttp3.OkHttpClient;
 import okhttp3.logging.HttpLoggingInterceptor;
 import retrofit2.Retrofit;
@@ -54,7 +53,6 @@ public class RetrofitProvider {
             OkHttpClient.Builder builder = new OkHttpClient().newBuilder();
             builder.readTimeout(10, TimeUnit.SECONDS);
             builder.connectTimeout(9, TimeUnit.SECONDS);
-            builder.connectionPool(new ConnectionPool());
             builder.addNetworkInterceptor(new StethoInterceptor());
 
             if (BuildConfig.DEBUG) {

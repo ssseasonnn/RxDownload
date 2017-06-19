@@ -14,7 +14,6 @@ import com.squareup.picasso.Picasso;
 import com.tbruyelle.rxpermissions2.RxPermissions;
 
 import java.io.File;
-import java.util.concurrent.TimeUnit;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -26,9 +25,9 @@ import zlc.season.rxdownload2.entity.DownloadBean;
 import zlc.season.rxdownload2.entity.DownloadEvent;
 import zlc.season.rxdownload2.entity.DownloadFlag;
 import zlc.season.rxdownload2.function.Utils;
+import zlc.season.rxdownloadproject.R;
 import zlc.season.rxdownloadproject.model.AppInfoBean;
 import zlc.season.rxdownloadproject.model.DownloadController;
-import zlc.season.rxdownloadproject.R;
 
 import static android.Manifest.permission.WRITE_EXTERNAL_STORAGE;
 import static zlc.season.rxdownload2.function.Utils.log;
@@ -85,7 +84,6 @@ public class AppInfoViewHolder extends AbstractViewHolder<AppInfoBean> {
 
         Utils.log(mData.downloadUrl);
         mData.disposable = mRxDownload.receiveDownloadStatus(mData.downloadUrl)
-                .sample(200, TimeUnit.MILLISECONDS)
                 .subscribe(new Consumer<DownloadEvent>() {
                     @Override
                     public void accept(DownloadEvent downloadEvent) throws Exception {

@@ -11,7 +11,6 @@ import android.widget.Toast;
 import com.tbruyelle.rxpermissions2.RxPermissions;
 
 import java.io.File;
-import java.util.concurrent.TimeUnit;
 
 import io.reactivex.functions.Consumer;
 import zlc.season.rxdownload2.RxDownload;
@@ -53,7 +52,6 @@ public class ServiceDownloadActivity extends AppCompatActivity {
 	protected void onResume() {
 		super.onResume();
 		mRxDownload.receiveDownloadStatus(url)
-				.sample(300, TimeUnit.MILLISECONDS)
 				.subscribe(new Consumer<DownloadEvent>() {
 					@Override
 					public void accept(DownloadEvent downloadEvent) throws Exception {

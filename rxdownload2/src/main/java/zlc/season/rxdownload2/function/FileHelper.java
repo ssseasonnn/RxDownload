@@ -142,16 +142,17 @@ public class FileHelper {
                 inStream = response.byteStream();
 
                 while ((readLen = inStream.read(buffer)) != -1 && !emitter.isCancelled()) {
-                    MappedByteBuffer saveBuffer = saveChannel.map(READ_WRITE, start, readLen);
+                    long tempStart = start;
                     start += readLen;
+                    if(start - oldStart > 100000L){
+                        log("Thread: " + Thread.currentThread().getName() + "; saveLenRead: " + start);
+                        oldStart = start;
+                    }
+                    MappedByteBuffer saveBuffer = saveChannel.map(READ_WRITE, tempStart, readLen);
                     saveBuffer.put(buffer, 0, readLen);
                     recordBuffer.putLong(startIndex, start);
                     status.setDownloadSize(totalSize - getResidue(recordBuffer));
                     emitter.onNext(status);
-                    if(start - oldStart > 100000L){
-                        log("Thread: " + Thread.currentThread().getName() + "; saveLen: " + start);
-                        oldStart = start;
-                    }
                 }
                 emitter.onComplete();
             } finally {

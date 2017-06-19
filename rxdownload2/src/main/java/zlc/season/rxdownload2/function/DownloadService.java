@@ -21,7 +21,6 @@ import io.reactivex.disposables.Disposable;
 import io.reactivex.functions.Consumer;
 import io.reactivex.processors.FlowableProcessor;
 import io.reactivex.schedulers.Schedulers;
-import zlc.season.rxdownload2.ExecutorHelper;
 import zlc.season.rxdownload2.db.DataBaseHelper;
 import zlc.season.rxdownload2.entity.DownloadEvent;
 import zlc.season.rxdownload2.entity.DownloadFlag;
@@ -310,7 +309,7 @@ public class DownloadService extends Service {
                         emitter.onComplete();
                     }
                 })
-                .subscribeOn(Schedulers.from(ExecutorHelper.HIGH))
+                .subscribeOn(Schedulers.io())
                 .subscribe(new Consumer<DownloadMission>() {
                     @Override
                     public void accept(DownloadMission mission) throws Exception {

@@ -682,7 +682,7 @@ public class RxDownload {
                     doCall(callback, emitter);
                 }
             }
-        }).subscribeOn(Schedulers.from(ExecutorHelper.HIGH));
+        }).subscribeOn(Schedulers.io());
     }
 
     private void doCall(GeneralObservableCallback callback, ObservableEmitter<Object> emitter) {

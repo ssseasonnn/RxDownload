@@ -9,7 +9,6 @@ import io.reactivex.functions.Action;
 import io.reactivex.functions.Consumer;
 import io.reactivex.processors.FlowableProcessor;
 import io.reactivex.schedulers.Schedulers;
-import zlc.season.rxdownload2.ExecutorHelper;
 import zlc.season.rxdownload2.RxDownload;
 import zlc.season.rxdownload2.db.DataBaseHelper;
 import zlc.season.rxdownload2.function.Constant;
@@ -111,7 +110,7 @@ public class SingleMission extends DownloadMission {
         }
 
         disposable = rxdownload.download(bean)
-                .subscribeOn(Schedulers.from(ExecutorHelper.HIGH))
+                .subscribeOn(Schedulers.io())
                 .doOnSubscribe(new Consumer<Disposable>() {
                     @Override
                     public void accept(Disposable disposable) throws Exception {

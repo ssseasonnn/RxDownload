@@ -13,7 +13,6 @@ import android.widget.Toast;
 import com.tbruyelle.rxpermissions2.RxPermissions;
 
 import java.io.File;
-import java.util.concurrent.TimeUnit;
 
 import io.reactivex.Observer;
 import io.reactivex.android.schedulers.AndroidSchedulers;
@@ -101,7 +100,6 @@ public class BasicDownloadActivity extends AppCompatActivity {
 				})
 				.observeOn(Schedulers.io())
 				.compose(rxDownload.<Boolean>transform(url))
-				.sample(300, TimeUnit.MILLISECONDS)
 				.observeOn(AndroidSchedulers.mainThread())
 				.subscribe(new Observer<DownloadStatus>() {
 					@Override

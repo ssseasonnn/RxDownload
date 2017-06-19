@@ -41,9 +41,6 @@ public class MainActivity extends AppCompatActivity {
 				case R.id.app_market:
 					startActivity(new Intent(MainActivity.this, AppMarketActivity.class));
 					break;
-				case R.id.test:
-					startActivity(new Intent(MainActivity.this, TestActivity.class));
-					break;
 			}
 		}
 	}

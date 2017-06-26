@@ -1,6 +1,8 @@
 package zlc.season.rxdownload2.function;
 
 
+import com.facebook.stetho.okhttp3.StethoInterceptor;
+
 import java.util.concurrent.TimeUnit;
 
 import okhttp3.OkHttpClient;
@@ -51,6 +53,7 @@ public class RetrofitProvider {
             OkHttpClient.Builder builder = new OkHttpClient().newBuilder();
             builder.readTimeout(10, TimeUnit.SECONDS);
             builder.connectTimeout(9, TimeUnit.SECONDS);
+            builder.addNetworkInterceptor(new StethoInterceptor());
 
             if (BuildConfig.DEBUG) {
                 HttpLoggingInterceptor interceptor = new HttpLoggingInterceptor();

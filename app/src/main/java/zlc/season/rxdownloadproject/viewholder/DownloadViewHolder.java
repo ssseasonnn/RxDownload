@@ -19,12 +19,17 @@ import com.squareup.picasso.Picasso;
 import com.tbruyelle.rxpermissions2.RxPermissions;
 
 import java.io.File;
+import java.util.concurrent.TimeUnit;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
+import io.reactivex.Observable;
+import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.annotations.NonNull;
 import io.reactivex.functions.Action;
 import io.reactivex.functions.Consumer;
+import io.reactivex.functions.Predicate;
 import zlc.season.practicalrecyclerview.AbstractAdapter;
 import zlc.season.practicalrecyclerview.AbstractViewHolder;
 import zlc.season.rxdownload2.RxDownload;
@@ -32,8 +37,8 @@ import zlc.season.rxdownload2.entity.DownloadEvent;
 import zlc.season.rxdownload2.entity.DownloadFlag;
 import zlc.season.rxdownload2.entity.DownloadStatus;
 import zlc.season.rxdownload2.function.Utils;
-import zlc.season.rxdownloadproject.model.DownloadController;
 import zlc.season.rxdownloadproject.R;
+import zlc.season.rxdownloadproject.model.DownloadController;
 import zlc.season.rxdownloadproject.model.DownloadItem;
 
 import static android.Manifest.permission.WRITE_EXTERNAL_STORAGE;
@@ -100,15 +105,33 @@ public class DownloadViewHolder extends AbstractViewHolder<DownloadItem> {
 
 
         Utils.log(data.record.getUrl());
-        data.disposable = mRxDownload.receiveDownloadStatus(data.record.getUrl())
+        Observable<DownloadEvent> replayDownloadStatus = mRxDownload.receiveDownloadStatus(data.record.getUrl())
+                .replay()
+                .autoConnect();
+        Observable<DownloadEvent> sampled = replayDownloadStatus
+                .filter(new Predicate<DownloadEvent>() {
+                    @Override
+                    public boolean test(@NonNull DownloadEvent downloadEvent) throws Exception {
+                        return downloadEvent.getFlag() == DownloadFlag.STARTED;
+                    }
+                })
+                .throttleFirst(200, TimeUnit.MILLISECONDS);
+        Observable<DownloadEvent> noProgress = replayDownloadStatus
+                .filter(new Predicate<DownloadEvent>() {
+                    @Override
+                    public boolean test(@NonNull DownloadEvent downloadEvent) throws Exception {
+                        return downloadEvent.getFlag() != DownloadFlag.STARTED;
+                    }
+                });
+        data.disposable = Observable.merge(sampled, noProgress)
+                .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(new Consumer<DownloadEvent>() {
                     @Override
-                    public void accept(DownloadEvent downloadEvent) throws Exception {
+                    public void accept(@NonNull DownloadEvent downloadEvent) throws Exception {
                         if (flag != downloadEvent.getFlag()) {
                             flag = downloadEvent.getFlag();
-                            log(flag + "");
+                            log("all events:" + downloadEvent.getFlag());
                         }
-
                         if (downloadEvent.getFlag() == DownloadFlag.FAILED) {
                             Throwable throwable = downloadEvent.getError();
                             Log.w("TAG", throwable);

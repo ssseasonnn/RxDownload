@@ -7,12 +7,14 @@ import java.io.IOException;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import io.reactivex.BackpressureStrategy;
 import io.reactivex.Flowable;
 import io.reactivex.FlowableEmitter;
 import io.reactivex.FlowableOnSubscribe;
 import io.reactivex.Observable;
+import io.reactivex.annotations.NonNull;
 import io.reactivex.functions.Action;
 import io.reactivex.functions.Consumer;
 import io.reactivex.functions.Function;
@@ -62,6 +64,8 @@ public abstract class DownloadType {
         log(prepareLog());
     }
 
+    long downloadSize = 0;
+
     public Observable<DownloadStatus> startDownload() {
         return Flowable.just(1)
                 .doOnSubscribe(new Consumer<Subscription>() {
@@ -77,10 +81,16 @@ public abstract class DownloadType {
                         return download();
                     }
                 })
-                .doOnNext(new Consumer<DownloadStatus>() {
+                .observeOn(Schedulers.io())
+                .map(new Function<DownloadStatus, DownloadStatus>() {
                     @Override
-                    public void accept(DownloadStatus status) throws Exception {
+                    public DownloadStatus apply(@NonNull DownloadStatus status) throws Exception {
+                        if (status.getDownloadSize() - downloadSize > 100000L) {
+                            log("Thread: " + Thread.currentThread().getName() + " update DB: " + status.getDownloadSize());
+                            downloadSize = status.getDownloadSize();
+                        }
                         record.update(status);
+                        return status;
                     }
                 })
                 .doOnError(new Consumer<Throwable>() {
@@ -276,12 +286,16 @@ public abstract class DownloadType {
          */
         private Publisher<DownloadStatus> save(final int index, final ResponseBody response) {
 
-            return Flowable.create(new FlowableOnSubscribe<DownloadStatus>() {
+            Flowable<DownloadStatus> flowable = Flowable.create(new FlowableOnSubscribe<DownloadStatus>() {
                 @Override
                 public void subscribe(FlowableEmitter<DownloadStatus> emitter) throws Exception {
                     record.save(emitter, index, response);
                 }
-            }, BackpressureStrategy.LATEST);
+            }, BackpressureStrategy.LATEST)
+                    .replay(1)
+                    .autoConnect();
+            return flowable.throttleFirst(100, TimeUnit.MILLISECONDS).mergeWith(flowable.takeLast(1))
+                    .subscribeOn(Schedulers.newThread());
         }
     }
 

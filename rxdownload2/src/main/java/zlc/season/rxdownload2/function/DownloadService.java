@@ -309,7 +309,7 @@ public class DownloadService extends Service {
                         emitter.onComplete();
                     }
                 })
-                .subscribeOn(Schedulers.newThread())
+                .subscribeOn(Schedulers.io())
                 .subscribe(new Consumer<DownloadMission>() {
                     @Override
                     public void accept(DownloadMission mission) throws Exception {

@@ -98,7 +98,7 @@ public class BasicDownloadActivity extends AppCompatActivity {
 						}
 					}
 				})
-				.observeOn(Schedulers.io())
+				.subscribeOn(Schedulers.io())
 				.compose(rxDownload.<Boolean>transform(url))
 				.observeOn(AndroidSchedulers.mainThread())
 				.subscribe(new Observer<DownloadStatus>() {

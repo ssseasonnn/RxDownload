@@ -39,9 +39,6 @@
         <activity
             android:name=".activity.MultiMissionDownloadActivity"
             android:theme="@style/AppTheme.NoActionBar"/>
-        <activity
-            android:name=".activity.TestActivity"
-            android:theme="@style/AppTheme.NoActionBar"/>
 
         <provider
             android:name="android.support.v4.content.FileProvider"

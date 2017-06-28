@@ -3,6 +3,8 @@ package zlc.season.rxdownloadproject.viewholder;
 import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
+import android.os.Build;
+import android.support.v4.content.FileProvider;
 import android.support.v7.widget.ListPopupWindow;
 import android.util.Log;
 import android.view.View;
@@ -180,9 +182,15 @@ public class DownloadViewHolder extends AbstractViewHolder<DownloadItem> {
     private void installApk() {
         File[] files = mRxDownload.getRealFiles(data.record.getUrl());
         if (files != null) {
-            Uri uri = Uri.fromFile(files[0]);
+            Uri uri = null;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                uri = FileProvider.getUriForFile(mContext, mContext.getApplicationInfo().packageName + ".provider", files[0]);
+            } else {
+                uri = Uri.fromFile(files[0]);
+            }
             Intent intent = new Intent(Intent.ACTION_VIEW);
             intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             intent.setDataAndType(uri, "application/vnd.android.package-archive");
             mContext.startActivity(intent);
         } else {

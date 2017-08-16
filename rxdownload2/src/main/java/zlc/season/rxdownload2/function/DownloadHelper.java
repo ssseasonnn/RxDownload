@@ -1,7 +1,6 @@
 package zlc.season.rxdownload2.function;
 
 import android.content.Context;
-import android.support.annotation.Nullable;
 
 import java.io.File;
 import java.io.IOException;
@@ -82,7 +81,7 @@ public class DownloadHelper {
      * @param url url
      * @return Files = {file,tempFile,lmfFile}
      */
-    @Nullable
+//    @Nullable
     public File[] getFiles(String url) {
         DownloadRecord record = dataBaseHelper.readSingleRecord(url);
         if (record == null) {

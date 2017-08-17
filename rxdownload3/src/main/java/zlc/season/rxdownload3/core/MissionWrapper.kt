@@ -11,6 +11,8 @@ class MissionWrapper(val mission: Mission, val processor: FlowableProcessor<Down
 
     val lastModify: String = ""
 
+    val threads: Int = 3
+    val perSize: Int = 5 * 1024  //KB
 
     init {
         processor.onNext(DownloadStatus(0))

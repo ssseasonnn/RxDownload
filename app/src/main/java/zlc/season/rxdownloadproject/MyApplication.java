@@ -4,6 +4,9 @@ import android.app.Application;
 
 import com.facebook.stetho.Stetho;
 
+import zlc.season.rxdownload2.ext.DownloadUrlAdapterFactory;
+import zlc.season.rxdownloadproject.utils.TestUrlAdapter;
+
 
 /**
  * Author: Season(ssseasonnn@gmail.com)
@@ -15,5 +18,7 @@ public class MyApplication extends Application {
     public void onCreate() {
         super.onCreate();
         Stetho.initializeWithDefaults(this);
+
+        DownloadUrlAdapterFactory.instance().setAdapter(new TestUrlAdapter());
     }
 }

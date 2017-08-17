@@ -17,6 +17,7 @@ import zlc.season.rxdownload2.entity.DownloadBean;
 import zlc.season.rxdownload2.entity.DownloadFlag;
 import zlc.season.rxdownload2.entity.DownloadRecord;
 import zlc.season.rxdownload2.entity.DownloadStatus;
+import zlc.season.rxdownload2.ext.DownloadUrlAdapterFactory;
 
 import static zlc.season.rxdownload2.db.Db.RecordTable.COLUMN_DATE;
 import static zlc.season.rxdownload2.db.Db.RecordTable.COLUMN_DOWNLOAD_FLAG;
@@ -67,6 +68,10 @@ public class DataBaseHelper {
         return singleton;
     }
 
+    public static String convertUrl(String url) {
+        return DownloadUrlAdapterFactory.instance().parseUrl(url);
+    }
+
     /**
      * Judge the url's record exists.
      *
@@ -75,6 +80,7 @@ public class DataBaseHelper {
      */
     public boolean recordNotExists(String url) {
         Cursor cursor = null;
+        url = convertUrl(url);
         try {
             cursor = getReadableDatabase().query(TABLE_NAME, new String[]{COLUMN_ID},
                     COLUMN_URL + "=?", new String[]{url}, null, null, null);
@@ -96,26 +102,31 @@ public class DataBaseHelper {
     }
 
     public long updateStatus(String url, DownloadStatus status) {
+        url = convertUrl(url);
         return getWritableDatabase().update(TABLE_NAME, update(status),
                 COLUMN_URL + "=?", new String[]{url});
     }
 
     public long updateRecord(String url, int flag) {
+        url = convertUrl(url);
         return getWritableDatabase().update(TABLE_NAME, update(flag),
                 COLUMN_URL + "=?", new String[]{url});
     }
 
     public long updateRecord(String url, int flag, String missionId) {
+        url = convertUrl(url);
         return getWritableDatabase().update(TABLE_NAME, update(flag, missionId),
                 COLUMN_URL + "=?", new String[]{url});
     }
 
     public long updateRecord(String url, String saveName, String savePath, int flag) {
+        url = convertUrl(url);
         return getWritableDatabase().update(TABLE_NAME, update(saveName, savePath, flag),
                 COLUMN_URL + "=?", new String[]{url});
     }
 
     public int deleteRecord(String url) {
+        url = convertUrl(url);
         return getWritableDatabase().delete(TABLE_NAME, COLUMN_URL + "=?", new String[]{url});
     }
 
@@ -134,6 +145,7 @@ public class DataBaseHelper {
     @Nullable
     public DownloadRecord readSingleRecord(String url) {
         Cursor cursor = null;
+        url = convertUrl(url);
         try {
             cursor = getReadableDatabase().query(TABLE_NAME,
                     new String[]{COLUMN_ID, COLUMN_URL, COLUMN_SAVE_NAME, COLUMN_SAVE_PATH,
@@ -192,6 +204,7 @@ public class DataBaseHelper {
      */
     public DownloadStatus readStatus(String url) {
         Cursor cursor = null;
+        url = convertUrl(url);
         try {
             cursor = getReadableDatabase().query(
                     TABLE_NAME,
@@ -257,7 +270,8 @@ public class DataBaseHelper {
      * @param url url
      * @return record
      */
-    public Observable<DownloadRecord> readRecord(final String url) {
+    public Observable<DownloadRecord> readRecord(String url) {
+        final String urlConvert = convertUrl(url);
         return Observable
                 .create(new ObservableOnSubscribe<DownloadRecord>() {
                     @Override
@@ -269,7 +283,7 @@ public class DataBaseHelper {
                                             COLUMN_DOWNLOAD_SIZE, COLUMN_TOTAL_SIZE, COLUMN_IS_CHUNKED,
                                             COLUMN_EXTRA1, COLUMN_EXTRA2, COLUMN_EXTRA3, COLUMN_EXTRA4,
                                             COLUMN_EXTRA5, COLUMN_DOWNLOAD_FLAG, COLUMN_DATE, COLUMN_MISSION_ID},
-                                    COLUMN_URL + "=?", new String[]{url}, null, null, null);
+                                    COLUMN_URL + "=?", new String[]{urlConvert}, null, null, null);
                             cursor.moveToFirst();
                             if (cursor.getCount() == 0) {
                                 emitter.onNext(new DownloadRecord());

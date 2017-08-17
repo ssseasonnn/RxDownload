@@ -2,7 +2,7 @@ package zlc.season.rxdownload3.core
 
 
 interface Mission {
-    fun providerTag(): String
+    fun provideTag(): String
     fun provideUrl(): String
     fun provideFileName(): String
     fun provideSavePath(): String

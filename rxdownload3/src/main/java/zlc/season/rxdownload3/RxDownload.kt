@@ -17,7 +17,7 @@ object RxDownload {
     }
 
     fun download(mission: Mission): Observable<DownloadStatus> {
-        return Observable.just(null)
+        return downloadCore.processMission(mission)
     }
 
 

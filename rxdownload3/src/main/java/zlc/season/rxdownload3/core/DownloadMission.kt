@@ -7,19 +7,19 @@ data class DownloadMission(
         val savePath: String = "") : Mission {
 
 
-    override fun provideTag(): String {
+    override fun tag(): String {
         return url
     }
 
-    override fun provideUrl(): String {
+    override fun url(): String {
         return url
     }
 
-    override fun provideFileName(): String {
+    override fun fileName(): String {
         return fileName
     }
 
-    override fun provideSavePath(): String {
+    override fun savePath(): String {
         return savePath
     }
 }

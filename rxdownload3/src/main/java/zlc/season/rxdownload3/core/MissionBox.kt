@@ -12,10 +12,10 @@ object MissionBox {
     val processorMap = mutableMapOf<String, Processor<DownloadStatus>>()
 
     fun produce(mission: Mission): Observable<DownloadStatus> {
-        var processor = processorMap[mission.provideTag()]
+        var processor = processorMap[mission.tag()]
         if (processor == null) {
             processor = BehaviorProcessor.create<DownloadStatus>().toSerialized()
-            processorMap[mission.provideTag()] = processor
+            processorMap[mission.tag()] = processor
         }
 
         queue.put(MissionWrapper(mission, processor))

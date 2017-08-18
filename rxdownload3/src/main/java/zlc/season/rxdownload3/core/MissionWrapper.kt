@@ -1,25 +1,45 @@
 package zlc.season.rxdownload3.core
 
+import io.reactivex.Maybe
 import io.reactivex.processors.FlowableProcessor
+import zlc.season.rxdownload3.http.HttpProcessor
 
 
 class MissionWrapper(val mission: Mission, val processor: FlowableProcessor<DownloadStatus>) {
 
+    var isSupportRange: Boolean = false
+    var isFileChange: Boolean = false
 
-    val rangeSupport: Boolean = false
-    val fileChanged: Boolean = false
+    var lastModify: Long = 0L
 
-    val lastModify: String = ""
+    lateinit var realFileName: String
 
-    val threads: Int = 3
-    val perSize: Int = 5 * 1024  //KB
+    lateinit var downloadType: DownloadType
+
+    lateinit var tmpFile: TmpFile
+    lateinit var targetFile: TargetFile
 
     init {
+
+
         processor.onNext(DownloadStatus(0))
     }
 
-    fun start() {
+    fun createDownloadType() {
+        if (isSupportRange) {
+            downloadType = NormalDownload(this)
+        } else {
+            downloadType = RangeDownload()
+        }
+    }
 
+    fun start() {
+        Maybe.just(1)
+                .flatMap { HttpProcessor.checkUrl(this) }
+                .doOnSuccess { createDownloadType() }
+                .toFlowable()
+                .flatMap { downloadType.download() }
+                .subscribe({ println("next") }, { println("error") }, { println("complete") })
     }
 
 

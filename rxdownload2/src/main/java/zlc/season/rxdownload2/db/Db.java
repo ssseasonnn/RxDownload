@@ -9,6 +9,7 @@ import zlc.season.rxdownload2.entity.DownloadBean;
 import zlc.season.rxdownload2.entity.DownloadRecord;
 import zlc.season.rxdownload2.entity.DownloadStatus;
 
+import static zlc.season.rxdownload2.db.DataBaseHelper.convertUrl;
 import static zlc.season.rxdownload2.function.Utils.empty;
 
 
@@ -69,7 +70,7 @@ class Db {
 
         static ContentValues insert(DownloadBean bean, int flag, String missionId) {
             ContentValues values = new ContentValues();
-            values.put(COLUMN_URL, bean.getUrl());
+            values.put(COLUMN_URL, convertUrl(bean.getUrl()));
             values.put(COLUMN_SAVE_NAME, bean.getSaveName());
             values.put(COLUMN_SAVE_PATH, bean.getSavePath());
             values.put(COLUMN_DOWNLOAD_FLAG, flag);

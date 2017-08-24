@@ -8,7 +8,7 @@ import java.io.InputStream
 import java.io.OutputStream
 
 
-class RangeTargetFile(path: String, saveName: String) : DownloadFile(path, saveName) {
+class RangeTargetFile(missionWrapper: MissionWrapper) : DownloadFile(missionWrapper) {
     lateinit var file: File
 
     fun save(emitter: FlowableEmitter<DownloadStatus>, response: Response<ResponseBody>) {

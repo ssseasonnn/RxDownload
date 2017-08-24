@@ -1,31 +1,18 @@
 package zlc.season.rxdownload3.core
 
-import io.reactivex.BackpressureStrategy
-import io.reactivex.Flowable
-import io.reactivex.FlowableEmitter
-import okhttp3.ResponseBody
-import retrofit2.Response
+import io.reactivex.Maybe
 import zlc.season.rxdownload3.http.HttpProcessor
 
 
 class NormalDownload(missionWrapper: MissionWrapper) : DownloadType(missionWrapper) {
 
+    val targetFile = NormalTargetFile(missionWrapper)
 
-    override fun download(): Flowable<DownloadStatus> {
+    override fun download(): Maybe<Any> {
         return HttpProcessor.download(missionWrapper)
-                .flatMap { resp ->
-
-                    Flowable.just(DownloadStatus(1))
+                .flatMap {
+                    targetFile.save(it)
+                    Maybe.just(1)
                 }
-    }
-
-    fun saveFile(resp: Response<ResponseBody>): Flowable<DownloadStatus> {
-        return Flowable.create({ emitter ->
-
-        }, BackpressureStrategy.LATEST)
-    }
-
-    fun realSave(emitter: FlowableEmitter<DownloadStatus>, resp: Response<ResponseBody>) {
-
     }
 }

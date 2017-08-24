@@ -1,12 +1,11 @@
 package zlc.season.rxdownload3.core
 
-import io.reactivex.Flowable
 import io.reactivex.Maybe
 
 
 abstract class DownloadType(val missionWrapper: MissionWrapper) {
 
-    abstract fun download(): Flowable<DownloadStatus>
+    abstract fun download(): Maybe<Any>
 
     companion object {
         fun generateType(missionWrapper: MissionWrapper): Maybe<DownloadType> {

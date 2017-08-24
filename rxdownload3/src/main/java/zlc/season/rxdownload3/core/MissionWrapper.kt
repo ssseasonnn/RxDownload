@@ -16,9 +16,6 @@ class MissionWrapper(val mission: Mission, val processor: FlowableProcessor<Down
     var realFileName = mission.fileName()
     var realPath = if (mission.savePath().isEmpty()) defaultSavePath else mission.savePath()
 
-    lateinit var tmpFile: TmpFile
-    lateinit var rangeTargetFile: RangeTargetFile
-
     init {
         processor.onNext(DownloadStatus(0))
     }
@@ -27,11 +24,12 @@ class MissionWrapper(val mission: Mission, val processor: FlowableProcessor<Down
     fun start() {
         Maybe.just(1)
                 .flatMap { HttpProcessor.checkUrl(this) }
-                .doOnSuccess { }
                 .flatMap { DownloadType.generateType(this) }
-                .toFlowable()
-                .flatMap { type -> type.download() }
-                .subscribe({ println("next") }, { println("error") }, { println("complete") })
+                .doOnSuccess { type -> type.download() }
+                .doOnError {
+                    println(it)
+                }
+                .subscribe()
     }
 
 

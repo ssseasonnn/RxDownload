@@ -1,6 +1,5 @@
 package zlc.season.rxdownload3.http
 
-import io.reactivex.Flowable
 import io.reactivex.Maybe
 import okhttp3.ResponseBody
 import retrofit2.Response
@@ -19,6 +18,6 @@ interface RetrofitApi {
 
     @GET
     @Streaming
-    fun download(@Header("Range") range: String,
-                 @Url url: String): Flowable<Response<ResponseBody>>
+    fun download(@Header("Range") range: String?,
+                 @Url url: String): Maybe<Response<ResponseBody>>
 }

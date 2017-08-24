@@ -1,16 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<layout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
-
-    <data>
-
-        <import type="zlc.season.rxdownloadproject.activity.MainActivity"/>
-
-        <variable
-            name="presenter"
-            type="MainActivity.Presenter"/>
-    </data>
 
     <LinearLayout
         android:id="@+id/content_menu"
@@ -27,31 +17,27 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_margin="@dimen/activity_vertical_margin"
-            android:onClick="@{(v)->presenter.onClick(v)}"
-            android:text="@string/basic_download"/>
+            android:text="@string/basic_download" />
 
         <Button
             android:id="@+id/service_download"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_margin="@dimen/activity_vertical_margin"
-            android:onClick="@{(v)->presenter.onClick(v)}"
-            android:text="@string/service_download"/>
+            android:text="@string/service_download" />
 
         <Button
             android:id="@+id/multi_mission"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_margin="@dimen/activity_vertical_margin"
-            android:onClick="@{(v)->presenter.onClick(v)}"
-            android:text="@string/multi_mission_download"/>
+            android:text="@string/multi_mission_download" />
 
         <Button
             android:id="@+id/app_market"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_margin="@dimen/activity_vertical_margin"
-            android:onClick="@{(v)->presenter.onClick(v)}"
-            android:text="@string/app_market"/>
+            android:text="@string/app_market" />
     </LinearLayout>
 </layout>

@@ -5,7 +5,7 @@ import java.io.File
 import java.io.RandomAccessFile
 
 
-class TmpFile(path: String, saveName: String) : DownloadFile(path, saveName) {
+class TmpFile(missionWrapper: MissionWrapper) : DownloadFile(missionWrapper) {
     private val TMP_DIR_SUFFIX = ".TMP"
     private val TMP_FILE_SUFFIX = ".tmp"
     //________________________________________
@@ -43,13 +43,13 @@ class TmpFile(path: String, saveName: String) : DownloadFile(path, saveName) {
     lateinit var file: RandomAccessFile
 
     init {
-        val tmpDirPath = path + File.separator + TMP_DIR_SUFFIX
-        val tmpFilePath = tmpDirPath + File.separator + saveName + TMP_FILE_SUFFIX
-        file = RandomAccessFile(File(tmpFilePath), MODE)
+//        val tmpDirPath = path + File.separator + TMP_DIR_SUFFIX
+//        val tmpFilePath = tmpDirPath + File.separator + saveName + TMP_FILE_SUFFIX
+//        file = RandomAccessFile(File(tmpFilePath), MODE)
     }
 
     fun create() {
-        realFile = RandomAccessFile(tmpFileName, MODE)
+        
     }
 
     fun open() {

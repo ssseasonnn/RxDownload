@@ -1,6 +1,5 @@
 package zlc.season.rxdownload3.http
 
-import io.reactivex.Flowable
 import io.reactivex.Maybe
 import okhttp3.ResponseBody
 import retrofit2.Response
@@ -22,7 +21,7 @@ object HttpProcessor {
                     }
 
                     if (ResponseUtil.isSupportRange(resp)) {
-                        missionWrapper.isSupportRange = true
+                        missionWrapper.isSupportRange = false
                     }
 
                     if (resp.code() == 206) {
@@ -45,8 +44,8 @@ object HttpProcessor {
                 }
     }
 
-    fun download(missionWrapper: MissionWrapper): Flowable<Response<ResponseBody>> {
-        return api.download("", missionWrapper.mission.url())
+    fun download(missionWrapper: MissionWrapper): Maybe<Response<ResponseBody>> {
+        return api.download("bytes=0-", missionWrapper.mission.url())
     }
 
 

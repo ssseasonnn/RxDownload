@@ -8,7 +8,7 @@ import java.util.concurrent.TimeUnit
 
 
 object RetrofitClient {
-    fun get(baseUrl: String? = null): Retrofit {
+    fun get(baseUrl: String = "http://www.example.com"): Retrofit {
         return Retrofit.Builder()
                 .baseUrl(baseUrl)
                 .client(generateOkHttp())

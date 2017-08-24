@@ -18,7 +18,7 @@ class ResourceHolder : Closeable {
 
 fun <R> using(block: ResourceHolder.() -> R): R {
     val holder = ResourceHolder()
-    holder.use { it ->
+    holder.use {
         return it.block()
     }
 }

@@ -1,7 +1,5 @@
 apply plugin: 'com.android.application'
 
-apply plugin: 'com.jakewharton.butterknife'
-
 apply plugin: 'kotlin-android'
 
 apply plugin: 'kotlin-android-extensions'
@@ -42,16 +40,16 @@ dependencies {
     implementation 'com.android.support:appcompat-v7:26.0.1'
     implementation "com.android.support:design:26.0.1"
 
-    implementation "com.jakewharton:butterknife:8.4.0"
-    kapt "com.jakewharton:butterknife-compiler:8.4.0"
-
     implementation 'com.squareup.picasso:picasso:2.5.2'
     implementation 'zlc.season:practicalrecyclerview:1.0.8'
     implementation 'com.tbruyelle.rxpermissions2:rxpermissions:0.8.2@aar'
     implementation 'online.osslab:CircleProgress:1.0.0'
+    implementation 'io.reactivex.rxjava2:rxjava:2.1.0'
 
 
-    implementation project(':rxdownload2')
+    implementation project(':rxdownload3')
+
+    kapt "com.android.databinding:compiler:3.0.0-beta2"
 
     testImplementation 'junit:junit:4.12'
     androidTestImplementation 'com.android.support.test:runner:1.0.0'

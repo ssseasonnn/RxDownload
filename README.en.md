@@ -10,13 +10,6 @@ The download tool based on RxJava . Support multi-threaded download and breakpoi
 [Update log moved here](https://github.com/ssseasonnn/RxDownload/blob/master/CHANGE_LOG.md)
 
 
-## Effect diagram
-
-
-<img title="普通下载" width="30%" src="https://raw.githubusercontent.com/ssseasonnn/RxDownload/master/gif/basic_download.gif">
-<img title="Service下载" width="30%" src="https://raw.githubusercontent.com/ssseasonnn/RxDownload/master/gif/service_download.gif">
-<img title="下载管理"  width="33%" src="https://raw.githubusercontent.com/ssseasonnn/RxDownload/master/gif/download_manager.gif">
-
 ## How to Use
 
 ### 1. Preparation
@@ -159,9 +152,7 @@ disposable =  RxPermissions.getInstance(mContext)
 
 - Use Service to download, with background download capabilities
 - With the download management function, can set the number of simultaneous downloads
-- Ability to add download tasks in bulk
 
-1.Add a single task
 
 ```java
 RxDownload.getInstance(this)
@@ -181,30 +172,8 @@ RxDownload.getInstance(this)
 //Just add the download task to the queue, so there is no need to dispose the Disposable, dispose the Disposable will not lead to download pause
 ```
 
-2.Add multiple tasks
 
-```java
-//Batch download
-RxDownload.getInstance(this)
-		.serviceMultiDownload(missionId, url1, url2, url3)  //Add three tasks
-        .subscribe(new Consumer<Object>() {
-            @Override
-            public void accept(Object o) throws Exception {
-                Toast.makeText(MainActivity.this, "Start download", Toast.LENGTH_SHORT).show();
-            }
-        }, new Consumer<Throwable>() {
-            @Override
-            public void accept(Throwable throwable) throws Exception {
-                 Log.w(TAG, throwable);
-                Toast.makeText(MainActivity.this, "Failed to add task", Toast.LENGTH_SHORT).show();
-            }
-        });
-//Need missionId, can be any string
-//You can pause or delete all tasks for that bulk download by the missionId
-//The missionId can be used to query the download of all the bulk downloads
-```
-
-3.Receive download events and download status.
+Receive download events and download status.
 
 ```java
 //The receiving event can be received anywhere, regardless of whether the task is started or not.
@@ -226,17 +195,15 @@ Disposable disposable =  mRxDownload.receiveDownloadStatus(url)
 // Will only receive onNext events, will not receive onError and onComplete events, so just listen on the onNext.
 ```
 
-4.Pause download
+Pause download
 
 ```java
 //Single pause, pause address for url download task
 rxDownload.pauseServiceDownload(url).subscribe();
 
-//Suspension, pause all tasks represented by missionId
-rxDownload.pauseServiceDownload(missionId).subscribe();
 ```
 
-5.Continue to download
+Continue to download
 
 ```java
 //Re-call the download () method, and pass the same url.
@@ -245,24 +212,20 @@ RxDownload.getInstance(this)
         ...
 ```
 
-6.Delete the download
+Delete the download
 
 ```java
 //Pause the address of the url download and delete records from the database, deleteFile is true will delete the url to download all the files
 rxDownload.deleteServiceDownload(url, deleteFile).subscribe();
 
-//Batch delete, suspend all tasks represented by missionId, and delete records for all tasks
-rxDownload.deleteServiceDownload(missionId,deleteFile).subscribe();
 ```
 
-7.Form of transferform
+Form of transferform
 
 ```java
 //single url
 .compose(rxDownload.<Object>transformService(url))
 
-//multi url
-.compose(rxDownload.<Object>transformMulti(missionId,url1,url2,url3)) 
 ```
 
 ### Get download records
@@ -293,15 +256,6 @@ if (files != null) {
 File file = rxDownload.getRealFiles(saveName,savePath)[0];
 ```
 
-### About me
-
-If you want to communicate with the project, you can do the following:
-
-QQ : 270362455
-
-QQ群：603610731
-
-Gmail: ssseasonnn@gmail.com
 
 ### License
 

@@ -2,6 +2,7 @@
 .gradle
 .idea
 /rxdownload
+/rxdownload3
 /local.properties
 .DS_Store
 /build

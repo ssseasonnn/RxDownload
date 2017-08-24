@@ -10,13 +10,6 @@
 [更新日志搬到这里了](https://github.com/ssseasonnn/RxDownload/blob/master/CHANGE_LOG.md)
 
 
-## 效果图
-
-
-<img title="普通下载" width="30%" src="https://raw.githubusercontent.com/ssseasonnn/RxDownload/master/gif/basic_download.gif">
-<img title="Service下载" width="30%" src="https://raw.githubusercontent.com/ssseasonnn/RxDownload/master/gif/service_download.gif">
-<img title="下载管理"  width="33%" src="https://raw.githubusercontent.com/ssseasonnn/RxDownload/master/gif/download_manager.gif">
-
 
 
 ## 使用方式
@@ -150,9 +143,7 @@ disposable =  RxPermissions.getInstance(mContext)
 
 - 使用Service进行下载, 具备后台下载能力
 - 具备下载管理功能，能设置同时下载数量
-- 能够批量添加下载任务
 
-1.添加单个任务
 
 ```java
 RxDownload.getInstance(this)
@@ -172,30 +163,8 @@ RxDownload.getInstance(this)
 //只是添加下载任务到队列中，因此不需要取消订阅，取消订阅也不会导致下载暂停
 ```
 
-2.添加多个任务
 
-```java
-//批量下载
-RxDownload.getInstance(this)
-		.serviceMultiDownload(missionId, url1, url2, url3)  //添加三个任务
-        .subscribe(new Consumer<Object>() {
-            @Override
-            public void accept(Object o) throws Exception {
-                Toast.makeText(MainActivity.this, "开始下载", Toast.LENGTH_SHORT).show();
-            }
-        }, new Consumer<Throwable>() {
-            @Override
-            public void accept(Throwable throwable) throws Exception {
-                 Log.w(TAG, throwable);
-                Toast.makeText(MainActivity.this, "添加任务失败", Toast.LENGTH_SHORT).show();
-            }
-        });
-//需要missionId，可以是任意字符串
-//可通过该missionId暂停或删除该批量下载的所有任务
-//可通过该missionId查询该批量下载的所有任务的下载情况
-```
-
-3.接收下载事件和下载状态.  
+接收下载事件和下载状态.
 
 ```java
 //接收事件可以在任何地方接收，不管该任务是否开始下载均可接收.
@@ -217,17 +186,13 @@ Disposable disposable =  mRxDownload.receiveDownloadStatus(url)
 // 只会收到onNext事件，不会收到onError和onComplete事件，因此只需监听onNext即可.
 ```
 
-4.暂停下载
+暂停下载
 
 ```java
-//单一暂停，暂停地址为url的下载任务
 rxDownload.pauseServiceDownload(url).subscribe();
-
-//批量暂停，暂停该missionId代表的所有任务
-rxDownload.pauseServiceDownload(missionId).subscribe();
 ```
 
-5.继续下载
+继续下载
 
 ```java
 //再次调用下载方法并传入相同的url即可继续下载
@@ -236,24 +201,20 @@ RxDownload.getInstance(this)
         ...
 ```
 
-6.删除下载
+删除下载
 
 ```java
 //暂停地址为url的下载并从数据库中删除记录，deleteFile为true会同时删除该url下载产生的所有文件
 rxDownload.deleteServiceDownload(url, deleteFile).subscribe();
 
-//批量删除，暂停该missionId代表的所有任务，同时删除所有任务的记录
-rxDownload.deleteServiceDownload(missionId,deleteFile).subscribe();
 ```
 
-7.transferform形式
+transferform形式
 
 ```java
-//single url
+
 .compose(rxDownload.<Object>transformService(url))
 
-//multi url
-.compose(rxDownload.<Object>transformMulti(missionId,url1,url2,url3)) 
 ```
 
 ### 获取下载记录
@@ -284,20 +245,10 @@ if (files != null) {
 File file = rxDownload.getRealFiles(saveName,savePath)[0];
 ```
 
-### 关于我
-
-若您想对该项目来进行交流,可以通过以下方式:
-
-QQ : 270362455
-
-QQ群：603610731
-
-Gmail: ssseasonnn@gmail.com
-
 ### License
 
 > ```
-> Copyright 2016 Season.Zlc
+> Copyright 2017 Season.Zlc
 >
 > Licensed under the Apache License, Version 2.0 (the "License");
 > you may not use this file except in compliance with the License.

@@ -7,6 +7,10 @@ import java.util.regex.Pattern
 class ResponseUtil {
     companion object {
 
+        fun isChunked(response: Response<*>): Boolean {
+            return "chunked" == transferEncoding(response)
+        }
+
         fun isSupportRange(resp: Response<*>): Boolean {
             if (!resp.isSuccessful) {
                 return false

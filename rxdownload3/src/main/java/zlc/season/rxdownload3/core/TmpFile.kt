@@ -1,10 +1,13 @@
 package zlc.season.rxdownload3.core
 
 import zlc.season.rxdownload3.helper.Crypto
+import java.io.File
 import java.io.RandomAccessFile
 
 
-class TmpFile(fileSaveName: String) {
+class TmpFile(path: String, saveName: String) : DownloadFile(path, saveName) {
+    private val TMP_DIR_SUFFIX = ".TMP"
+    private val TMP_FILE_SUFFIX = ".tmp"
     //________________________________________
     //|            |            |             |
     //|   Thread   | LastModify |     Byte    |
@@ -36,10 +39,14 @@ class TmpFile(fileSaveName: String) {
     val thread: Byte = 3
     val lastModify: Long = 0L
 
-    val tmpFileName = Crypto.md5(fileSaveName)
 
-    lateinit var realFile: RandomAccessFile
+    lateinit var file: RandomAccessFile
 
+    init {
+        val tmpDirPath = path + File.separator + TMP_DIR_SUFFIX
+        val tmpFilePath = tmpDirPath + File.separator + saveName + TMP_FILE_SUFFIX
+        file = RandomAccessFile(File(tmpFilePath), MODE)
+    }
 
     fun create() {
         realFile = RandomAccessFile(tmpFileName, MODE)

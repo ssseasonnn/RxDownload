@@ -33,12 +33,13 @@ object HttpProcessor {
                         missionWrapper.isFileChange = false
                     }
 
-                    var fileName = ResponseUtil.contentDisposition(resp)
-                    if (fileName.isEmpty()) {
-                        fileName = ResponseUtil.fileName(missionWrapper.mission.url())
+                    if (missionWrapper.realFileName.isEmpty()) {
+                        var fileName = ResponseUtil.contentDisposition(resp)
+                        if (fileName.isEmpty()) {
+                            fileName = ResponseUtil.fileName(missionWrapper.mission.url())
+                        }
+                        missionWrapper.realFileName = fileName
                     }
-
-                    missionWrapper.realFileName = fileName
 
                     Maybe.just(1)
                 }

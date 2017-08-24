@@ -8,7 +8,8 @@ import retrofit2.Response
 import zlc.season.rxdownload3.http.HttpProcessor
 
 
-class NormalDownload(val missionWrapper: MissionWrapper) : DownloadType {
+class NormalDownload(missionWrapper: MissionWrapper) : DownloadType(missionWrapper) {
+
 
     override fun download(): Flowable<DownloadStatus> {
         return HttpProcessor.download(missionWrapper)

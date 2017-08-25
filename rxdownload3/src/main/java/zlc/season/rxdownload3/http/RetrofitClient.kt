@@ -1,6 +1,7 @@
 package zlc.season.rxdownload3.http
 
 import okhttp3.OkHttpClient
+import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory
 import retrofit2.converter.gson.GsonConverterFactory
@@ -22,6 +23,11 @@ object RetrofitClient {
                 .connectTimeout(10, TimeUnit.SECONDS)
                 .readTimeout(15, TimeUnit.SECONDS)
                 .writeTimeout(15, TimeUnit.SECONDS)
+
+        val httpLogger = HttpLoggingInterceptor()
+        httpLogger.level = HttpLoggingInterceptor.Level.BODY
+
+//        builder.addInterceptor(httpLogger)
 
         return builder.build()
     }

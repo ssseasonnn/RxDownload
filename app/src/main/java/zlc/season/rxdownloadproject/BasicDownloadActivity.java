@@ -18,10 +18,13 @@ import zlc.season.rxdownload3.core.DownloadStatus;
 import zlc.season.rxdownloadproject.databinding.ActivityBasicDownloadBinding;
 
 public class BasicDownloadActivity extends AppCompatActivity {
+
+    private ActivityBasicDownloadBinding binding;
+
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        ActivityBasicDownloadBinding binding = DataBindingUtil.setContentView(this, R.layout.activity_basic_download);
+        binding = DataBindingUtil.setContentView(this, R.layout.activity_basic_download);
         setSupportActionBar(binding.toolbar);
 
         binding.contentBasicDownload.action.setOnClickListener(new View.OnClickListener() {
@@ -51,6 +54,8 @@ public class BasicDownloadActivity extends AppCompatActivity {
                     @Override
                     public void accept(DownloadStatus downloadStatus) throws Exception {
                         System.out.println(downloadStatus);
+                        binding.contentBasicDownload.progress.setProgress((int) downloadStatus.getDownloadSize());
+                        binding.contentBasicDownload.progress.setMax((int) downloadStatus.getTotalSize());
                     }
                 });
     }

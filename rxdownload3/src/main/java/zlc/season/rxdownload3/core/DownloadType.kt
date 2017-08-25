@@ -9,10 +9,10 @@ abstract class DownloadType(val missionWrapper: MissionWrapper) {
 
     companion object {
         fun generateType(missionWrapper: MissionWrapper): Maybe<DownloadType> {
-            if (missionWrapper.isSupportRange) {
-                return Maybe.just(RangeDownload(missionWrapper))
+            return if (missionWrapper.isSupportRange) {
+                Maybe.just(RangeDownload(missionWrapper))
             } else {
-                return Maybe.just(NormalDownload(missionWrapper))
+                Maybe.just(NormalDownload(missionWrapper))
             }
         }
     }

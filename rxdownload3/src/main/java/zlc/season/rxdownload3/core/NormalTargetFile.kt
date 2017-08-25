@@ -3,11 +3,9 @@ package zlc.season.rxdownload3.core
 import okhttp3.ResponseBody
 import retrofit2.Response
 import zlc.season.rxdownload3.helper.ResponseUtil.Companion.isChunked
-import zlc.season.rxdownload3.helper.using
 import java.io.File
 import java.io.FileOutputStream
-import java.io.InputStream
-import java.io.OutputStream
+import java.io.IOException
 
 
 class NormalTargetFile(missionWrapper: MissionWrapper) : DownloadFile(missionWrapper) {
@@ -27,32 +25,41 @@ class NormalTargetFile(missionWrapper: MissionWrapper) : DownloadFile(missionWra
     }
 
     fun save(response: Response<ResponseBody>) {
-        using {
-            var downloadSize = 0L
-            val buffer = kotlin.ByteArray(8)
+        var downloadSize = 0L
+        val buffer = ByteArray(8192)
 
-            val respBody = response.body()
-            if (respBody == null) {
-                missionWrapper.processor.onError(RuntimeException("body is null"))
-                return@using
-            }
+        val respBody = response.body()
+        if (respBody == null) {
+            missionWrapper.processor.onError(RuntimeException("body is null"))
+            return
+        }
 
-            val fileInStream: InputStream = respBody.byteStream().autoClose()
-            val fileOutSteam: OutputStream = FileOutputStream(file).autoClose()
+//        val source = Okio.buffer(Okio.source(respBody.byteStream()))
+//        val sink = Okio.buffer(Okio.sink(file))
 
-            val status = DownloadStatus(isChunked = isChunked(response), totalSize = respBody.contentLength())
+        val source = respBody.byteStream()
+        val sink = FileOutputStream(file)
 
-            var readLen = fileInStream.read(buffer)
+        val status = DownloadStatus(isChunked = isChunked(response), totalSize = respBody.contentLength())
+
+
+        try {
+            var readLen = source.read(buffer)
             while (readLen != -1) {
-                fileOutSteam.write(buffer, 0, readLen)
+                sink.write(buffer, 0, buffer.size)
                 downloadSize += readLen
                 status.downloadSize = downloadSize
                 missionWrapper.processor.onNext(status)
 
-                readLen = fileInStream.read(buffer)
+                readLen = source.read(buffer)
             }
 
-            missionWrapper.processor.onComplete()
+            sink.flush()
+        } catch (e: IOException) {
+            missionWrapper.processor.onError(e)
+        } finally {
+            sink.close()
+            source.close()
         }
     }
 }

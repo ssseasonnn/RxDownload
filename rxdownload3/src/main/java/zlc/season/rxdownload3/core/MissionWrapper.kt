@@ -25,10 +25,8 @@ class MissionWrapper(val mission: Mission, val processor: FlowableProcessor<Down
         Maybe.just(1)
                 .flatMap { HttpProcessor.checkUrl(this) }
                 .flatMap { DownloadType.generateType(this) }
-                .doOnSuccess { type -> type.download() }
-                .doOnError {
-                    println(it)
-                }
+                .flatMap { it.download() }
+                .doOnError { println(it) }
                 .subscribe()
     }
 

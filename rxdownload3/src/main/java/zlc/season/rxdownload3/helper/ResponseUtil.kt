@@ -1,5 +1,6 @@
 package zlc.season.rxdownload3.helper
 
+import okhttp3.internal.http.HttpHeaders
 import retrofit2.Response
 import java.util.regex.Pattern
 
@@ -49,6 +50,9 @@ class ResponseUtil {
             return result
         }
 
+        fun contentLength(response: Response<*>): Long {
+            return HttpHeaders.contentLength(response.headers())
+        }
 
         private fun transferEncoding(response: Response<*>): String? {
             return response.headers().get("Transfer-Encoding")

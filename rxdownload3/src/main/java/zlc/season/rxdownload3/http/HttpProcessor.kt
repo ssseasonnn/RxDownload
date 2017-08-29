@@ -9,7 +9,7 @@ import zlc.season.rxdownload3.helper.ResponseUtil
 
 
 object HttpProcessor {
-    val TEST_RANGE_SUPPORT = "bytes=0-1"
+    val TEST_RANGE_SUPPORT = "bytes=0-"
 
     val api: RetrofitApi = RetrofitClient.get().create(RetrofitApi::class.java)
 
@@ -19,6 +19,8 @@ object HttpProcessor {
                     if (!resp.isSuccessful) {
                         throw IllegalUrlException("Url is illegal, please make sure your url legal")
                     }
+
+                    missionWrapper.contentLength = ResponseUtil.contentLength(resp)
 
                     if (ResponseUtil.isSupportRange(resp)) {
                         missionWrapper.isSupportRange = false
@@ -44,8 +46,8 @@ object HttpProcessor {
                 }
     }
 
-    fun download(missionWrapper: MissionWrapper): Maybe<Response<ResponseBody>> {
-        return api.download("bytes=0-", missionWrapper.mission.url())
+    fun download(missionWrapper: MissionWrapper, range: String = ""): Maybe<Response<ResponseBody>> {
+        return api.download(range, missionWrapper.mission.url())
     }
 
 

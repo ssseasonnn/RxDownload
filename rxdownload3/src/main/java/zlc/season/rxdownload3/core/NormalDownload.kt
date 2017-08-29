@@ -6,7 +6,7 @@ import zlc.season.rxdownload3.http.HttpProcessor
 
 class NormalDownload(missionWrapper: MissionWrapper) : DownloadType(missionWrapper) {
 
-    val targetFile = NormalTargetFile(missionWrapper)
+    private val targetFile = NormalTargetFile(missionWrapper)
 
     override fun download(): Maybe<Any> {
         return HttpProcessor.download(missionWrapper)

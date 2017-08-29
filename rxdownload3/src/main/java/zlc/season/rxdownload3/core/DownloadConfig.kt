@@ -4,9 +4,9 @@ import android.os.Environment
 
 
 object DownloadConfig {
-    var defaultSavePath = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).path
+    var DEFAULT_SAVE_PATH = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).path
     var retryCount = 3
-    var threadCount = 3
-    var perSize: Int = 5 * 1024  //KB
+    var MAX_CONCURRENCY = 3
+    var RANGE_DOWNLOAD_SIZE: Long = 5 * 1024 * 1024 // 5M
 
 }

@@ -2,7 +2,7 @@ package zlc.season.rxdownload3.core
 
 import io.reactivex.Maybe
 import io.reactivex.processors.FlowableProcessor
-import zlc.season.rxdownload3.core.DownloadConfig.defaultSavePath
+import zlc.season.rxdownload3.core.DownloadConfig.DEFAULT_SAVE_PATH
 import zlc.season.rxdownload3.http.HttpProcessor
 
 
@@ -13,8 +13,10 @@ class MissionWrapper(val mission: Mission, val processor: FlowableProcessor<Down
 
     var lastModify: Long = 0L
 
+    var contentLength: Long = -1L
+
     var realFileName = mission.fileName()
-    var realPath = if (mission.savePath().isEmpty()) defaultSavePath else mission.savePath()
+    var realPath = if (mission.savePath().isEmpty()) DEFAULT_SAVE_PATH else mission.savePath()
 
     init {
         processor.onNext(DownloadStatus(0))

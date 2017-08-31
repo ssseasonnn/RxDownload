@@ -9,13 +9,13 @@ import java.io.Closeable
 import java.io.File
 
 
-class NormalTargetFile(missionWrapper: MissionWrapper) : DownloadFile(missionWrapper) {
+class NormalTargetFile(mission: RealMission) : DownloadFile(mission) {
 
-    private val filePath = missionWrapper.realPath + File.separator + missionWrapper.realFileName
+    private val filePath = mission.realPath + File.separator + mission.realFileName
     val file = File(filePath)
 
     init {
-        val dir = File(missionWrapper.realPath)
+        val dir = File(mission.realPath)
         if (!dir.exists() || !dir.isDirectory) {
             dir.mkdirs()
         }
@@ -28,7 +28,7 @@ class NormalTargetFile(missionWrapper: MissionWrapper) : DownloadFile(missionWra
     fun save(response: Response<ResponseBody>) {
         val respBody = response.body()
         if (respBody == null) {
-            missionWrapper.processor.onError(RuntimeException("body is null"))
+            mission.processor.onError(RuntimeException("body is null"))
             return
         }
 
@@ -36,14 +36,14 @@ class NormalTargetFile(missionWrapper: MissionWrapper) : DownloadFile(missionWra
         val byteSize = 8192L
         val status = DownloadStatus(isChunked = isChunked(response), totalSize = respBody.contentLength())
 
-        respBody.source().use(missionWrapper.processor) { source ->
-            Okio.buffer(Okio.sink(file)).use(missionWrapper.processor) { sink ->
+        respBody.source().use(mission.processor) { source ->
+            Okio.buffer(Okio.sink(file)).use(mission.processor) { sink ->
                 val buffer = sink.buffer()
                 var readLen = source.read(buffer, byteSize)
                 while (readLen != -1L) {
                     downloadSize += readLen
                     status.downloadSize = downloadSize
-                    missionWrapper.processor.onNext(status)
+                    mission.processor.onNext(status)
                     readLen = source.read(buffer, byteSize)
                 }
             }

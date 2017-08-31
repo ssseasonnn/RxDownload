@@ -2,19 +2,20 @@ package zlc.season.rxdownload3.core
 
 import io.reactivex.Flowable
 import io.reactivex.Maybe
+import zlc.season.rxdownload3.core.RangeTmpFile.FileSegment.Segment
 import zlc.season.rxdownload3.http.HttpProcessor
 
 
-class RangeDownload(missionWrapper: MissionWrapper) : DownloadType(missionWrapper) {
-    private val targetFile = RangeTargetFile(missionWrapper)
+class RangeDownload(mission: RealMission) : DownloadType(mission) {
+    private val targetFile = RangeTargetFile(mission)
 
     override fun download(): Maybe<Any> {
-        if (targetFile.tmpFile.isFinish()) {
+        if (targetFile.tmpFile.fileHeader.isFinish()) {
             return Maybe.just(1)
         }
 
-        val segments = targetFile.tmpFile.read().filter {
-            it.isComplete()
+        val segments = targetFile.tmpFile.fileSegment.segments.filter {
+            !it.isComplete()
         }
 
         val arrays = mutableListOf<Maybe<Any>>()
@@ -30,7 +31,7 @@ class RangeDownload(missionWrapper: MissionWrapper) : DownloadType(missionWrappe
     private fun rangeDownload(segment: Segment): Maybe<Any> {
         return Maybe.just(segment)
                 .map { "bytes=${it.start}-${it.end}" }
-                .flatMap { HttpProcessor.download(missionWrapper, it) }
+                .flatMap { HttpProcessor.download(realMission, it) }
                 .flatMap {
                     targetFile.save(it, segment)
                     Maybe.just(1)

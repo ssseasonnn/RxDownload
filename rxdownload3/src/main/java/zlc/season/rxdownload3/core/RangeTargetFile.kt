@@ -1,42 +1,43 @@
 package zlc.season.rxdownload3.core
 
 import okhttp3.ResponseBody
-import okio.Okio
 import retrofit2.Response
-import zlc.season.rxdownload3.helper.ResponseUtil
 import java.io.File
+import java.io.RandomAccessFile
+import java.nio.channels.FileChannel
 
 
-class RangeTargetFile(missionWrapper: MissionWrapper) : DownloadFile(missionWrapper) {
-    private val filePath = missionWrapper.realPath + File.separator + missionWrapper.realFileName
+class RangeTargetFile(mission: RealMission) : DownloadFile(mission) {
+    private val filePath = mission.realPath + File.separator + mission.realFileName
     private val file = File(filePath)
 
-     val tmpFile  = RangeTmpFile(missionWrapper)
+    private val MODE = "rw"
+
+    val tmpFile = RangeTmpFile(mission)
 
     fun save(response: Response<ResponseBody>, segment: Segment) {
         val respBody = response.body()
         if (respBody == null) {
-            missionWrapper.processor.onError(RuntimeException("body is null"))
+            mission.processor.onError(RuntimeException("body is null"))
             return
         }
 
-        var downloadSize = 0L
-        val byteSize = 8192L
-        val status = DownloadStatus(isChunked = ResponseUtil.isChunked(response), totalSize = respBody.contentLength())
+        val buffer = ByteArray(8192)
 
-        respBody.source().use(missionWrapper.processor) { source ->
-            Okio.buffer(Okio.sink(file)).use(missionWrapper.processor) { sink ->
-                val buffer = sink.buffer()
-                var readLen = source.read(buffer, byteSize)
-                while (readLen != -1L) {
-                    downloadSize += readLen
-                    status.downloadSize = downloadSize
-                    missionWrapper.processor.onNext(status)
-                    readLen = source.read(buffer, byteSize)
+        respBody.byteStream().use { source ->
+            RandomAccessFile(file, MODE).use {
+                it.channel.use {
+                    val mappedByteBuffer = it.map(FileChannel.MapMode.READ_WRITE,
+                            segment.start, segment.end - segment.start + 1)
+
+                    var readLen = source.read(buffer)
+                    while (readLen != -1) {
+                        mappedByteBuffer.put(buffer, 0, readLen)
+                        readLen = source.read(buffer)
+                    }
                 }
             }
         }
-
     }
 }
 

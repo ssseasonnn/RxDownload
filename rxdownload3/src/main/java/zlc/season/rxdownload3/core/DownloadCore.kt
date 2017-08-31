@@ -17,8 +17,7 @@ class DownloadCore {
 
 
     private fun initRxJavaPlugin() {
-        RxJavaPlugins.setErrorHandler {
-            t: Throwable ->
+        RxJavaPlugins.setErrorHandler { t: Throwable ->
             if (t is InterruptedException) {
                 Logger.loge("InterruptedException", t)
             } else if (t is InterruptedIOException) {
@@ -31,13 +30,13 @@ class DownloadCore {
 
 
     private fun startMissionBox() {
-        Observable.create<MissionWrapper> { e ->
+        Observable.create<RealMission> { e ->
             while (!e.isDisposed) {
-                val missionWrapper = MissionBox.consume()
-                e.onNext(missionWrapper)
+                val mission = MissionBox.consume()
+                e.onNext(mission)
             }
             e.onComplete()
-        }.subscribeOn(Schedulers.io()).subscribe({ t: MissionWrapper ->
+        }.subscribeOn(Schedulers.io()).subscribe({ t: RealMission ->
             t.start()
         }, { t ->
             Logger.loge("Mission Failed", t)

@@ -8,7 +8,7 @@ import io.reactivex.processors.FlowableProcessor as Processor
 
 
 object MissionBox {
-    val queue: BlockingQueue<MissionWrapper> = LinkedBlockingQueue()
+    val QUEUE: BlockingQueue<RealMission> = LinkedBlockingQueue()
     val processorMap = mutableMapOf<String, Processor<DownloadStatus>>()
 
     fun produce(mission: Mission): Observable<DownloadStatus> {
@@ -18,12 +18,12 @@ object MissionBox {
             processorMap[mission.tag()] = processor
         }
 
-        queue.put(MissionWrapper(mission, processor))
+        QUEUE.put(RealMission(mission, processor))
         return processor.toObservable()
     }
 
-    fun consume(): MissionWrapper {
-        return queue.take()
+    fun consume(): RealMission {
+        return QUEUE.take()
     }
 
 }

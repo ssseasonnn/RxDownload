@@ -17,11 +17,11 @@ class ResponseUtil {
                 return false
             }
 
-            if (contentRange(resp).isNullOrEmpty() || acceptRanges(resp).isNullOrEmpty()) {
-                return false
+            if (contentRange(resp).isNotEmpty() || acceptRanges(resp).isNotEmpty()) {
+                return true
             }
 
-            return true
+            return false
         }
 
         fun fileName(url: String): String {
@@ -55,15 +55,33 @@ class ResponseUtil {
         }
 
         private fun transferEncoding(response: Response<*>): String? {
-            return response.headers().get("Transfer-Encoding")
+            var header = response.headers().get("Transfer-Encoding")
+            if (header == null) {
+                header = ""
+            }
+            return header
         }
 
-        private fun contentRange(response: Response<*>): String? {
-            return response.headers().get("Content-Range")
+        fun getTotalSize(response: Response<*>): Long {
+            val contentRange = contentRange(response)
+            val tmp = contentRange.substringAfterLast('/')
+            return tmp.toLong()
         }
 
-        private fun acceptRanges(response: Response<*>): String? {
-            return response.headers().get("Accept-Ranges")
+        private fun contentRange(response: Response<*>): String {
+            var header = response.headers().get("Content-Range")
+            if (header == null) {
+                header = ""
+            }
+            return header
+        }
+
+        private fun acceptRanges(response: Response<*>): String {
+            var header = response.headers().get("Accept-Ranges")
+            if (header == null) {
+                header = ""
+            }
+            return header
         }
     }
 }

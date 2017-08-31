@@ -3,16 +3,16 @@ package zlc.season.rxdownload3.core
 import io.reactivex.Maybe
 
 
-abstract class DownloadType(val missionWrapper: MissionWrapper) {
+abstract class DownloadType(val realMission: RealMission) {
 
     abstract fun download(): Maybe<Any>
 
     companion object {
-        fun generateType(missionWrapper: MissionWrapper): Maybe<DownloadType> {
-            return if (missionWrapper.isSupportRange) {
-                Maybe.just(RangeDownload(missionWrapper))
+        fun generateType(realMission: RealMission): Maybe<DownloadType> {
+            return if (realMission.isSupportRange) {
+                Maybe.just(RangeDownload(realMission))
             } else {
-                Maybe.just(NormalDownload(missionWrapper))
+                Maybe.just(NormalDownload(realMission))
             }
         }
     }

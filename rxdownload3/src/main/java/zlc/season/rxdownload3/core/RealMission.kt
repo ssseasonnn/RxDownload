@@ -3,10 +3,11 @@ package zlc.season.rxdownload3.core
 import io.reactivex.Maybe
 import io.reactivex.processors.FlowableProcessor
 import zlc.season.rxdownload3.core.DownloadConfig.DEFAULT_SAVE_PATH
+import zlc.season.rxdownload3.helper.Logger
 import zlc.season.rxdownload3.http.HttpProcessor
 
 
-class MissionWrapper(val mission: Mission, val processor: FlowableProcessor<DownloadStatus>) {
+class RealMission(val mission: Mission, val processor: FlowableProcessor<DownloadStatus>) {
 
     var isSupportRange: Boolean = false
     var isFileChange: Boolean = false
@@ -28,7 +29,7 @@ class MissionWrapper(val mission: Mission, val processor: FlowableProcessor<Down
                 .flatMap { HttpProcessor.checkUrl(this) }
                 .flatMap { DownloadType.generateType(this) }
                 .flatMap { it.download() }
-                .doOnError { println(it) }
+                .doOnError { Logger.loge("Mission Failed", it) }
                 .subscribe()
     }
 

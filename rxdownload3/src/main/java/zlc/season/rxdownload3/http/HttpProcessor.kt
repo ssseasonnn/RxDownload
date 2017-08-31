@@ -4,7 +4,7 @@ import io.reactivex.Maybe
 import okhttp3.ResponseBody
 import retrofit2.Response
 import zlc.season.rxdownload3.core.IllegalUrlException
-import zlc.season.rxdownload3.core.MissionWrapper
+import zlc.season.rxdownload3.core.RealMission
 import zlc.season.rxdownload3.helper.ResponseUtil
 
 
@@ -13,41 +13,43 @@ object HttpProcessor {
 
     val api: RetrofitApi = RetrofitClient.get().create(RetrofitApi::class.java)
 
-    fun checkUrl(missionWrapper: MissionWrapper): Maybe<Any> {
-        return api.check(TEST_RANGE_SUPPORT, "", missionWrapper.mission.url())
+    fun checkUrl(mission: RealMission): Maybe<Any> {
+        return api.check(TEST_RANGE_SUPPORT, "", mission.mission.url())
                 .flatMap { resp ->
                     if (!resp.isSuccessful) {
                         throw IllegalUrlException("Url is illegal, please make sure your url legal")
                     }
 
-                    missionWrapper.contentLength = ResponseUtil.contentLength(resp)
+                    mission.contentLength = ResponseUtil.contentLength(resp)
+
+                    println(ResponseUtil.isSupportRange(resp))
 
                     if (ResponseUtil.isSupportRange(resp)) {
-                        missionWrapper.isSupportRange = false
+                        mission.isSupportRange = true
                     }
 
                     if (resp.code() == 206) {
-                        missionWrapper.isFileChange = true
+                        mission.isFileChange = true
                     }
 
                     if (resp.code() == 304) {
-                        missionWrapper.isFileChange = false
+                        mission.isFileChange = false
                     }
 
-                    if (missionWrapper.realFileName.isEmpty()) {
+                    if (mission.realFileName.isEmpty()) {
                         var fileName = ResponseUtil.contentDisposition(resp)
                         if (fileName.isEmpty()) {
-                            fileName = ResponseUtil.fileName(missionWrapper.mission.url())
+                            fileName = ResponseUtil.fileName(mission.mission.url())
                         }
-                        missionWrapper.realFileName = fileName
+                        mission.realFileName = fileName
                     }
 
                     Maybe.just(1)
                 }
     }
 
-    fun download(missionWrapper: MissionWrapper, range: String = ""): Maybe<Response<ResponseBody>> {
-        return api.download(range, missionWrapper.mission.url())
+    fun download(realMission: RealMission, range: String = ""): Maybe<Response<ResponseBody>> {
+        return api.download(range, realMission.mission.url())
     }
 
 

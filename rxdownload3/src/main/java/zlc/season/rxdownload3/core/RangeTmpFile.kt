@@ -1,28 +1,20 @@
 package zlc.season.rxdownload3.core
 
-import okhttp3.ResponseBody
-import okio.Buffer
-import okio.ByteString
-import okio.Okio
-import retrofit2.Response
+import okio.*
 import zlc.season.rxdownload3.core.DownloadConfig.RANGE_DOWNLOAD_SIZE
 import java.io.File
-import java.io.RandomAccessFile
-import java.nio.channels.FileChannel.MapMode.READ_WRITE
 
-class RangeTmpFile(missionWrapper: MissionWrapper) : DownloadFile(missionWrapper) {
-    private val TMP_FILE_HEADER_MAGIC_NUMBER = "A0B0C0D0E0F"
-    private val MAGIC_NUMBER = ByteString.decodeHex(TMP_FILE_HEADER_MAGIC_NUMBER)
-
+class RangeTmpFile(mission: RealMission) : DownloadFile(mission) {
     private val TMP_DIR_SUFFIX = ".TMP"
     private val TMP_FILE_SUFFIX = ".tmp"
 
-    private val tmpDirPath = missionWrapper.realPath + File.separator + TMP_DIR_SUFFIX
-    private val tmpFilePath = tmpDirPath + File.separator + missionWrapper.realFileName + TMP_FILE_SUFFIX
-    val file = File(tmpFilePath)
+    private val tmpDirPath = mission.realPath + File.separator + TMP_DIR_SUFFIX
+    private val tmpFilePath = tmpDirPath + File.separator + mission.realFileName + TMP_FILE_SUFFIX
 
+    private val file = File(tmpFilePath)
 
-    private val MODE = "rw"
+    val fileHeader = FileHeader()
+    val fileSegment = FileSegment()
 
     init {
         val dir = File(tmpDirPath)
@@ -34,93 +26,115 @@ class RangeTmpFile(missionWrapper: MissionWrapper) : DownloadFile(missionWrapper
             file.createNewFile()
 
             Okio.buffer(Okio.sink(file)).use {
-                val header = MAGIC_NUMBER
-                it.write(header)
-                it.writeLong(0L)
-                it.writeLong(missionWrapper.contentLength)
-
-                val remainder = missionWrapper.contentLength % RANGE_DOWNLOAD_SIZE
-                val total = if (remainder == 0L) {
-                    missionWrapper.contentLength / RANGE_DOWNLOAD_SIZE
-                } else {
-                    missionWrapper.contentLength / RANGE_DOWNLOAD_SIZE + 1
-                }
-
-                var start = 0L
-
-                for (i in 0..total) {
-                    it.writeLong(i)
-                    it.writeLong(start)
-                    it.writeLong(start + RANGE_DOWNLOAD_SIZE - 1)
-                    start += RANGE_DOWNLOAD_SIZE
-                }
+                fileHeader.writeHeader(it)
+                fileSegment.writeSegments(it)
+            }
+        } else {
+            Okio.buffer(Okio.source(file)).use {
+                fileHeader.readHeader(it)
+                fileSegment.readSegments(fileHeader, it)
             }
         }
     }
 
-    fun write(resp: Response<ResponseBody>, segment: Segment) {
-        RandomAccessFile(file, MODE).use {
-            it.channel.use {
-                val position = MAGIC_NUMBER.size() + Segment.SEGMENT_SIZE * segment.index
-                val byteBuffer = it.map(READ_WRITE, position, Segment.SEGMENT_SIZE)
-
-                byteBuffer.position(4)
-                byteBuffer.putLong(segment.start)
-            }
+    private fun calculateSegments(realMission: RealMission): Long {
+        val remainder = realMission.contentLength % RANGE_DOWNLOAD_SIZE
+        return if (remainder == 0L) {
+            realMission.contentLength / RANGE_DOWNLOAD_SIZE
+        } else {
+            realMission.contentLength / RANGE_DOWNLOAD_SIZE + 1
         }
     }
 
-    fun write(segment: Segment) {
-        RandomAccessFile(file, MODE).use {
-            it.channel.use {
-                val position = MAGIC_NUMBER.size() + Segment.SEGMENT_SIZE * segment.index
-                val byteBuffer = it.map(READ_WRITE, position, Segment.SEGMENT_SIZE)
+    inner class FileHeader {
+        private val FILE_HEADER_MAGIC_NUMBER = "a1b2c3d4e5f6"
+        private val FILE_HEADER_MAGIC_NUMBER_HEX = ByteString.decodeHex(FILE_HEADER_MAGIC_NUMBER)
 
-                byteBuffer.position(4)
-                byteBuffer.putLong(segment.start)
-            }
+        var currentSize: Long = 0L
+        var totalSize: Long = 0L
+        var totalSegment: Long = 0L
+
+        fun writeHeader(sink: BufferedSink) {
+            totalSize = mission.contentLength
+            totalSegment = calculateSegments(mission)
+
+            sink.write(FILE_HEADER_MAGIC_NUMBER_HEX)
+            sink.writeLong(0L)
+            sink.writeLong(totalSize)
+            sink.writeLong(totalSegment)
         }
-    }
 
-    fun isFinish(): Boolean {
-        Okio.buffer(Okio.source(file)).use {
-            val header = it.readByteString(MAGIC_NUMBER.size().toLong())
-            if (header != MAGIC_NUMBER) {
-                throw Exception("Not a tmp file")
-            }
+        fun readHeader(source: BufferedSource) {
+            checkFileHeader(source)
+            currentSize = source.readLong()
+            totalSize = source.readLong()
+            totalSegment = source.readLong()
+        }
 
-            val currentSize = it.readLong()
-            val totalSize = it.readLong()
-
+        fun isFinish(): Boolean {
             return currentSize == totalSize
         }
-    }
 
-    fun read(): List<Segment> {
-        val result = mutableListOf<Segment>()
-
-        Okio.buffer(Okio.source(file)).use {
-            val header = it.readByteString(MAGIC_NUMBER.size().toLong())
-            if (header != MAGIC_NUMBER) {
+        private fun checkFileHeader(source: BufferedSource) {
+            val header = source.readByteString(FILE_HEADER_MAGIC_NUMBER_HEX.size().toLong()).hex()
+            if (header != FILE_HEADER_MAGIC_NUMBER) {
                 throw Exception("Not a tmp file")
             }
+        }
+    }
 
-            val currentSize = it.readLong()
-            val totalSize = it.readLong()
+    inner class FileSegment {
+        private val SEGMENT_SIZE = 24L //each Long is 8 bytes
 
-            while (true) {
+        var segments = mutableListOf<Segment>()
+
+
+        fun writeSegments(sink: BufferedSink) {
+            var start = 0L
+            val total = calculateSegments(mission)
+
+            segments.clear()
+
+            for (i in 0 until total) {
+                val end = if (i == total - 1) {
+                    mission.contentLength - 1
+                } else {
+                    start + RANGE_DOWNLOAD_SIZE - 1
+                }
+
+                segments.add(Segment(i, start, end).write(sink))
+
+                start += RANGE_DOWNLOAD_SIZE
+            }
+        }
+
+        fun readSegments(fileHeader: FileHeader, source: BufferedSource) {
+            segments.clear()
+
+            for (i in 0 until fileHeader.totalSegment) {
                 val buffer = Buffer()
-                it.readFully(buffer, Segment.SEGMENT_SIZE)
+                source.readFully(buffer, SEGMENT_SIZE)
 
                 val index = buffer.readLong()
                 val start = buffer.readLong()
                 val end = buffer.readLong()
 
                 val segment = Segment(index, start, end)
-                result.add(segment)
+                segments.add(segment)
             }
         }
 
-        return result
+        inner class Segment(val index: Long, val start: Long, val end: Long) {
+            fun isComplete(): Boolean {
+                return (start - end) == 1L
+            }
+
+            fun write(sink: BufferedSink): Segment {
+                sink.writeLong(index)
+                sink.writeLong(start)
+                sink.writeLong(end)
+                return this
+            }
+        }
     }
 }

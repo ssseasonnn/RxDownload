@@ -39,6 +39,7 @@ object MissionBox {
         val realMission: RealMission = SET.find { it.mission.tag == mission.tag } ?: return
         realMission.isStoped = true
 
+        realMission.stop()
         realMission.processor.onError(MissionStoppedException())
         SET.remove(realMission)
     }

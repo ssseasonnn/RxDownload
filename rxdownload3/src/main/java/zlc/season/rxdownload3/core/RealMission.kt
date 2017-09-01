@@ -4,6 +4,7 @@ import io.reactivex.Maybe
 import io.reactivex.disposables.Disposable
 import io.reactivex.processors.FlowableProcessor
 import zlc.season.rxdownload3.core.DownloadConfig.DEFAULT_SAVE_PATH
+import zlc.season.rxdownload3.helper.dispose
 import zlc.season.rxdownload3.http.HttpProcessor
 
 
@@ -44,5 +45,9 @@ class RealMission(val mission: Mission, val processor: FlowableProcessor<Downloa
 
     fun manualStart() {
         disposable = maybe.subscribe()
+    }
+
+    fun stop() {
+        dispose(disposable)
     }
 }

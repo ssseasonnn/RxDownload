@@ -2,6 +2,7 @@ package zlc.season.rxdownload3.core
 
 import okhttp3.ResponseBody
 import retrofit2.Response
+import zlc.season.rxdownload3.core.RangeTmpFile.Segment
 import java.io.File
 import java.io.RandomAccessFile
 import java.nio.channels.FileChannel
@@ -12,8 +13,6 @@ class RangeTargetFile(mission: RealMission) : DownloadFile(mission) {
     private val file = File(filePath)
 
     private val MODE = "rw"
-
-    val tmpFile = RangeTmpFile(mission)
 
     fun save(response: Response<ResponseBody>, segment: Segment) {
         val respBody = response.body()

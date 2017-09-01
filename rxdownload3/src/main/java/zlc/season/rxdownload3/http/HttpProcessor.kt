@@ -14,7 +14,7 @@ object HttpProcessor {
     val api: RetrofitApi = RetrofitClient.get().create(RetrofitApi::class.java)
 
     fun checkUrl(mission: RealMission): Maybe<Any> {
-        return api.check(TEST_RANGE_SUPPORT, "", mission.mission.url())
+        return api.check(TEST_RANGE_SUPPORT, "", mission.mission.url)
                 .flatMap { resp ->
                     if (!resp.isSuccessful) {
                         throw IllegalUrlException("Url is illegal, please make sure your url legal")
@@ -39,7 +39,7 @@ object HttpProcessor {
                     if (mission.realFileName.isEmpty()) {
                         var fileName = ResponseUtil.contentDisposition(resp)
                         if (fileName.isEmpty()) {
-                            fileName = ResponseUtil.fileName(mission.mission.url())
+                            fileName = ResponseUtil.fileName(mission.mission.url)
                         }
                         mission.realFileName = fileName
                     }
@@ -49,7 +49,7 @@ object HttpProcessor {
     }
 
     fun download(realMission: RealMission, range: String = ""): Maybe<Response<ResponseBody>> {
-        return api.download(range, realMission.mission.url())
+        return api.download(range, realMission.mission.url)
     }
 
 

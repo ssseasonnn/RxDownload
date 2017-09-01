@@ -3,18 +3,19 @@ package zlc.season.rxdownload3.core
 import okio.*
 import zlc.season.rxdownload3.core.DownloadConfig.RANGE_DOWNLOAD_SIZE
 import java.io.File
+import java.io.File.separator
 
 class RangeTmpFile(mission: RealMission) : DownloadFile(mission) {
     private val TMP_DIR_SUFFIX = ".TMP"
     private val TMP_FILE_SUFFIX = ".tmp"
 
-    private val tmpDirPath = mission.realPath + File.separator + TMP_DIR_SUFFIX
-    private val tmpFilePath = tmpDirPath + File.separator + mission.realFileName + TMP_FILE_SUFFIX
+    private val tmpDirPath = mission.realPath + separator + TMP_DIR_SUFFIX
+    private val tmpFilePath = tmpDirPath + separator + mission.realFileName + TMP_FILE_SUFFIX
 
     private val file = File(tmpFilePath)
 
-    val fileHeader = FileHeader()
-    val fileSegment = FileSegment()
+    private val fileHeader = FileHeader()
+    private val fileSegment = FileSegment()
 
     init {
         val dir = File(tmpDirPath)
@@ -27,24 +28,24 @@ class RangeTmpFile(mission: RealMission) : DownloadFile(mission) {
 
             Okio.buffer(Okio.sink(file)).use {
                 fileHeader.writeHeader(it)
-                fileSegment.writeSegments(it)
+                fileSegment.writeSegments(it, fileHeader)
             }
         } else {
             Okio.buffer(Okio.source(file)).use {
                 fileHeader.readHeader(it)
-                fileSegment.readSegments(fileHeader, it)
+                fileSegment.readSegments(it, fileHeader)
             }
         }
     }
 
-    private fun calculateSegments(realMission: RealMission): Long {
-        val remainder = realMission.contentLength % RANGE_DOWNLOAD_SIZE
-        return if (remainder == 0L) {
-            realMission.contentLength / RANGE_DOWNLOAD_SIZE
-        } else {
-            realMission.contentLength / RANGE_DOWNLOAD_SIZE + 1
-        }
+    fun isFinish(): Boolean {
+        return fileHeader.isFinish()
     }
+
+    fun getSegments(): List<Segment> {
+        return fileSegment.segments
+    }
+
 
     inner class FileHeader {
         private val FILE_HEADER_MAGIC_NUMBER = "a1b2c3d4e5f6"
@@ -56,7 +57,7 @@ class RangeTmpFile(mission: RealMission) : DownloadFile(mission) {
 
         fun writeHeader(sink: BufferedSink) {
             totalSize = mission.contentLength
-            totalSegment = calculateSegments(mission)
+            totalSegment = calculateSegments()
 
             sink.write(FILE_HEADER_MAGIC_NUMBER_HEX)
             sink.writeLong(0L)
@@ -78,25 +79,31 @@ class RangeTmpFile(mission: RealMission) : DownloadFile(mission) {
         private fun checkFileHeader(source: BufferedSource) {
             val header = source.readByteString(FILE_HEADER_MAGIC_NUMBER_HEX.size().toLong()).hex()
             if (header != FILE_HEADER_MAGIC_NUMBER) {
-                throw Exception("Not a tmp file")
+                throw RuntimeException("Not a tmp file")
+            }
+        }
+
+        private fun calculateSegments(): Long {
+            val remainder = mission.contentLength % RANGE_DOWNLOAD_SIZE
+            return if (remainder == 0L) {
+                mission.contentLength / RANGE_DOWNLOAD_SIZE
+            } else {
+                mission.contentLength / RANGE_DOWNLOAD_SIZE + 1
             }
         }
     }
 
     inner class FileSegment {
-        private val SEGMENT_SIZE = 24L //each Long is 8 bytes
-
         var segments = mutableListOf<Segment>()
 
-
-        fun writeSegments(sink: BufferedSink) {
-            var start = 0L
-            val total = calculateSegments(mission)
-
+        fun writeSegments(sink: BufferedSink, fileHeader: FileHeader) {
             segments.clear()
 
-            for (i in 0 until total) {
-                val end = if (i == total - 1) {
+            var start = 0L
+            val totalSegments = fileHeader.totalSegment
+
+            for (i in 0 until totalSegments) {
+                val end = if (i == totalSegments - 1) {
                     mission.contentLength - 1
                 } else {
                     start + RANGE_DOWNLOAD_SIZE - 1
@@ -108,33 +115,37 @@ class RangeTmpFile(mission: RealMission) : DownloadFile(mission) {
             }
         }
 
-        fun readSegments(fileHeader: FileHeader, source: BufferedSource) {
+        fun readSegments(source: BufferedSource, fileHeader: FileHeader) {
             segments.clear()
 
             for (i in 0 until fileHeader.totalSegment) {
                 val buffer = Buffer()
-                source.readFully(buffer, SEGMENT_SIZE)
+                source.readFully(buffer, Segment.SEGMENT_SIZE)
 
                 val index = buffer.readLong()
                 val start = buffer.readLong()
                 val end = buffer.readLong()
 
-                val segment = Segment(index, start, end)
-                segments.add(segment)
+                segments.add(Segment(index, start, end))
             }
         }
+    }
 
-        inner class Segment(val index: Long, val start: Long, val end: Long) {
-            fun isComplete(): Boolean {
-                return (start - end) == 1L
-            }
+    class Segment(val index: Long, val start: Long, val end: Long) {
 
-            fun write(sink: BufferedSink): Segment {
-                sink.writeLong(index)
-                sink.writeLong(start)
-                sink.writeLong(end)
-                return this
-            }
+        companion object {
+            val SEGMENT_SIZE = 24L //each Long is 8 bytes
+        }
+
+        fun isComplete(): Boolean {
+            return (start - end) == 1L
+        }
+
+        fun write(sink: BufferedSink): Segment {
+            sink.writeLong(index)
+            sink.writeLong(start)
+            sink.writeLong(end)
+            return this
         }
     }
 }

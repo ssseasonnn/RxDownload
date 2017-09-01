@@ -1,9 +1,12 @@
 package zlc.season.rxdownload3.core
 
 
-interface Mission {
-    fun tag(): String
-    fun url(): String
-    fun fileName(): String
-    fun savePath(): String
+class Mission(
+        val url: String,
+        val fileName: String = "",
+        val savePath: String = "",
+        val autoStart: Boolean = false) {
+
+    val tag: String
+        get() = url
 }

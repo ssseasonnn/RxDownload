@@ -1,12 +1,16 @@
 package zlc.season.rxdownload3.core
 
 import io.reactivex.Flowable
+import io.reactivex.Maybe
 import io.reactivex.processors.BehaviorProcessor
 import java.util.concurrent.LinkedBlockingQueue
+import java.util.concurrent.Semaphore
 import io.reactivex.processors.FlowableProcessor as Processor
 
 
 object MissionBox {
+    val semaphore = Semaphore(DownloadConfig.MAX_MISSION_NUMBER)
+
     val SET = mutableSetOf<RealMission>()
     val QUEUE = LinkedBlockingQueue<RealMission>()
 
@@ -15,7 +19,7 @@ object MissionBox {
         if (isMissionExists(mission)) {
             processor.onError(MissionExitsException())
         } else {
-            val realMission = RealMission(mission, processor)
+            val realMission = RealMission(semaphore, mission, processor)
             QUEUE.put(realMission)
             SET.add(realMission)
         }
@@ -30,18 +34,25 @@ object MissionBox {
         SET.remove(mission)
     }
 
-    fun start(mission: Mission) {
-        val realMission: RealMission = SET.find { it.mission.tag == mission.tag } ?: return
-        realMission.manualStart()
+    fun start(mission: Mission): Maybe<Any> {
+        val realMission = SET.find { it.mission.tag == mission.tag }
+                ?: return Maybe.error(MissionNotExistsException())
+
+        return Maybe.create {
+            semaphore.acquire()
+            realMission.start()
+            it.onSuccess(Any())
+        }
     }
 
-    fun stop(mission: Mission) {
-        val realMission: RealMission = SET.find { it.mission.tag == mission.tag } ?: return
-        realMission.isStoped = true
+    fun stop(mission: Mission): Maybe<Any> {
+        val realMission = SET.find { it.mission.tag == mission.tag } ?:
+                return Maybe.error(MissionNotExistsException())
 
-        realMission.stop()
-        realMission.processor.onError(MissionStoppedException())
-        SET.remove(realMission)
+        return Maybe.create {
+            realMission.stop()
+            it.onSuccess(Any())
+        }
     }
 
     private fun isMissionExists(mission: Mission): Boolean {

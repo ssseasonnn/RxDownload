@@ -9,54 +9,72 @@ import android.view.View;
 
 import com.tbruyelle.rxpermissions2.RxPermissions;
 
-import io.reactivex.ObservableSource;
+import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.disposables.Disposable;
 import io.reactivex.functions.Consumer;
-import io.reactivex.functions.Function;
-import io.reactivex.functions.Predicate;
 import zlc.season.rxdownload3.RxDownload;
 import zlc.season.rxdownload3.core.DownloadStatus;
 import zlc.season.rxdownloadproject.databinding.ActivityBasicDownloadBinding;
 
+import static zlc.season.rxdownload3.helper.DisposableUtilKt.dispose;
+
 public class BasicDownloadActivity extends AppCompatActivity {
 
+    private static final String url = "https://qd.myapp.com/myapp/qqteam/AndroidQQ/mobileqq_android.apk";
+
     private ActivityBasicDownloadBinding binding;
+    private Disposable disposable;
+
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        requestPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE);
+
         binding = DataBindingUtil.setContentView(this, R.layout.activity_basic_download);
         setSupportActionBar(binding.toolbar);
 
         binding.contentBasicDownload.action.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                startDownload();
+                RxDownload.INSTANCE.start(url);
             }
         });
+
+
+        createDownloadMission();
     }
 
-    private void startDownload() {
-        RxPermissions.getInstance(this)
-                .request(Manifest.permission.WRITE_EXTERNAL_STORAGE)
-                .filter(new Predicate<Boolean>() {
-                    @Override
-                    public boolean test(Boolean aBoolean) throws Exception {
-                        return aBoolean;
-                    }
-                })
-                .flatMap(new Function<Boolean, ObservableSource<DownloadStatus>>() {
-                    @Override
-                    public ObservableSource<DownloadStatus> apply(Boolean aBoolean) throws Exception {
-                        return RxDownload.INSTANCE.download("https://qd.myapp.com/myapp/qqteam/AndroidQQ/mobileqq_android.apk");
-                    }
-                })
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        dispose(disposable);
+    }
+
+    private void createDownloadMission() {
+        disposable = RxDownload.INSTANCE.create(url)
+                .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(new Consumer<DownloadStatus>() {
                     @Override
                     public void accept(DownloadStatus downloadStatus) throws Exception {
-                        System.out.println(downloadStatus);
                         binding.contentBasicDownload.progress.setProgress((int) downloadStatus.getDownloadSize());
                         binding.contentBasicDownload.progress.setMax((int) downloadStatus.getTotalSize());
                     }
                 });
     }
+
+    private void requestPermission(String permission) {
+        RxPermissions.getInstance(this)
+                .request(permission)
+                .subscribe(new Consumer<Boolean>() {
+                    @Override
+                    public void accept(Boolean aBoolean) throws Exception {
+                        if (!aBoolean) {
+                            finish();
+                        }
+                    }
+                });
+    }
+
 }

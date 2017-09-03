@@ -1,6 +1,7 @@
 package zlc.season.rxdownload3
 
 import io.reactivex.Flowable
+import io.reactivex.Maybe
 import zlc.season.rxdownload3.core.DownloadCore
 import zlc.season.rxdownload3.core.DownloadStatus
 import zlc.season.rxdownload3.core.Mission
@@ -27,13 +28,14 @@ object RxDownload {
         return downloadCore.processMission(mission)
     }
 
-    fun download(url: String): Flowable<DownloadStatus> {
-        return download(Mission(url))
+
+    fun start(url: String) {
+        start(Mission(url))
     }
 
-    fun download(mission: Mission): Flowable<DownloadStatus> {
-        return downloadCore.processMission(mission)
-    }
 
+    fun start(mission: Mission): Maybe<Any> {
+        return downloadCore.start(mission)
+    }
 
 }

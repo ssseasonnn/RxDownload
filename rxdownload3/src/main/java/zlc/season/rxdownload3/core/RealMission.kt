@@ -1,15 +1,17 @@
 package zlc.season.rxdownload3.core
 
 import io.reactivex.Maybe
+import io.reactivex.MaybeEmitter
 import io.reactivex.disposables.Disposable
 import io.reactivex.processors.FlowableProcessor
 import zlc.season.rxdownload3.core.DownloadConfig.DEFAULT_SAVE_PATH
 import zlc.season.rxdownload3.helper.dispose
 import zlc.season.rxdownload3.http.HttpProcessor
+import java.util.concurrent.Semaphore
 
 
-class RealMission(val mission: Mission, val processor: FlowableProcessor<DownloadStatus>) {
-    var isStoped: Boolean = false
+class RealMission(val semaphore: Semaphore, val mission: Mission, val processor: FlowableProcessor<DownloadStatus>) {
+    var isStopped: Boolean = false
 
     var isSupportRange: Boolean = false
     var isFileChange: Boolean = false
@@ -22,32 +24,73 @@ class RealMission(val mission: Mission, val processor: FlowableProcessor<Downloa
     var realPath = if (mission.savePath.isEmpty()) DEFAULT_SAVE_PATH else mission.savePath
 
     var disposable: Disposable? = null
-    lateinit var maybe: Maybe<Any>
+
+    var maybe: Maybe<Any>? = null
 
     init {
+        processor.doOnLifecycle({ s ->
+
+        }, {
+
+        }, {
+
+        })
         processor.onNext(DownloadStatus(0))
     }
 
 
-    fun start() {
-        maybe = Maybe.just(1)
+    fun create() {
+        maybe = Maybe.create<Any> { maybe(it) }
                 .flatMap { HttpProcessor.checkUrl(this) }
                 .flatMap { DownloadType.generateType(this) }
                 .flatMap { it.download() }
+                .doOnDispose { processor.onError(MissionStoppedException()) }
                 .doOnError { processor.onError(it) }
                 .doOnSuccess { processor.onComplete() }
-                .doFinally { MissionBox.remove(this) }
+                .doFinally {
+                    MissionBox.remove(this)
+                    semaphore.release()
+                }
 
-        if (mission.autoStart) {
-            disposable = maybe.subscribe()
+    }
+
+    private fun maybe(it: MaybeEmitter<Any>) {
+        if (isStopped) {
+            it.onError(MissionStoppedException())
+        } else {
+            it.onSuccess(1)
         }
     }
 
-    fun manualStart() {
-        disposable = maybe.subscribe()
+    @Synchronized
+    fun start() {
+        if (maybe == null) {
+            throw  MissionNotCreateException()
+        }
+
+        if (disposable != null) {
+            throw MissionAlreadyStartException()
+        }
+
+        if (isStopped) {
+
+        }
+
+        disposable = maybe!!.subscribe()
     }
 
+    @Synchronized
     fun stop() {
+        if (maybe == null) {
+            throw  MissionNotCreateException()
+        }
+
+        if (disposable == null) {
+            throw  MissionNotStartException()
+        }
+
+        isStopped = true
+
         dispose(disposable)
     }
 }

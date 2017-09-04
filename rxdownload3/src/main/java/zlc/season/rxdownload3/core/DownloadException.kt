@@ -11,6 +11,9 @@ class MissionNotExistsException : RuntimeException("Mission not exists")
 
 class MissionNotCreateException : RuntimeException("Mission not create")
 
+class MissionNotStartException : RuntimeException("Mission not started")
+
 class MissionAlreadyStartException : RuntimeException("Mission already start")
 
-class MissionNotStartException : RuntimeException("Mission not started")
+class MissionAlreadyStoppedException : RuntimeException("Mission already stop")
+

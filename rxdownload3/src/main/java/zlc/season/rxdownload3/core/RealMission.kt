@@ -73,7 +73,7 @@ class RealMission(val semaphore: Semaphore, val mission: Mission, val processor:
         }
 
         if (isStopped) {
-
+            throw MissionAlreadyStoppedException()
         }
 
         disposable = maybe!!.subscribe()

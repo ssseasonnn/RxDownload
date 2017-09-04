@@ -3,13 +3,14 @@ package zlc.season.rxdownload3.core
 import io.reactivex.Flowable
 import io.reactivex.Maybe
 import io.reactivex.processors.BehaviorProcessor
+import io.reactivex.schedulers.Schedulers
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.Semaphore
 import io.reactivex.processors.FlowableProcessor as Processor
 
 
 object MissionBox {
-    val semaphore = Semaphore(DownloadConfig.MAX_MISSION_NUMBER)
+    val semaphore = Semaphore(DownloadConfig.MAX_MISSION_NUMBER, true)
 
     val SET = mutableSetOf<RealMission>()
     val QUEUE = LinkedBlockingQueue<RealMission>()
@@ -38,11 +39,15 @@ object MissionBox {
         val realMission = SET.find { it.mission.tag == mission.tag }
                 ?: return Maybe.error(MissionNotExistsException())
 
-        return Maybe.create {
-            semaphore.acquire()
-            realMission.start()
-            it.onSuccess(Any())
-        }
+        semaphore.acquire()
+
+        return Maybe
+                .create<Any> {
+                    realMission.start()
+                    it.onSuccess(Any())
+                }
+                .subscribeOn(Schedulers.newThread())
+                .doOnError { semaphore.release() }
     }
 
     fun stop(mission: Mission): Maybe<Any> {

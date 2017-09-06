@@ -5,6 +5,7 @@ import android.databinding.DataBindingUtil;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.view.View;
 
 import com.tbruyelle.rxpermissions2.RxPermissions;
@@ -38,7 +39,17 @@ public class BasicDownloadActivity extends AppCompatActivity {
         binding.contentBasicDownload.action.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                RxDownload.INSTANCE.start(url);
+                RxDownload.INSTANCE.start(url).subscribe(new Consumer<Object>() {
+                    @Override
+                    public void accept(Object o) throws Exception {
+
+                    }
+                }, new Consumer<Throwable>() {
+                    @Override
+                    public void accept(Throwable throwable) throws Exception {
+                        Log.w("TAG", throwable);
+                    }
+                });
             }
         });
 
@@ -60,6 +71,11 @@ public class BasicDownloadActivity extends AppCompatActivity {
                     public void accept(DownloadStatus downloadStatus) throws Exception {
                         binding.contentBasicDownload.progress.setProgress((int) downloadStatus.getDownloadSize());
                         binding.contentBasicDownload.progress.setMax((int) downloadStatus.getTotalSize());
+                    }
+                }, new Consumer<Throwable>() {
+                    @Override
+                    public void accept(Throwable throwable) throws Exception {
+                        Log.w("TAG", throwable);
                     }
                 });
     }

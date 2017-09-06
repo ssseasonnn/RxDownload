@@ -2,33 +2,27 @@ package zlc.season.rxdownload3.core
 
 import io.reactivex.Flowable
 import io.reactivex.Maybe
+import io.reactivex.internal.operators.maybe.MaybeToPublisher.INSTANCE
 import io.reactivex.processors.BehaviorProcessor
-import io.reactivex.schedulers.Schedulers
-import java.util.concurrent.LinkedBlockingQueue
+import zlc.season.rxdownload3.core.DownloadConfig.MAX_MISSION_NUMBER
 import java.util.concurrent.Semaphore
-import io.reactivex.processors.FlowableProcessor as Processor
 
 
 object MissionBox {
-    val semaphore = Semaphore(DownloadConfig.MAX_MISSION_NUMBER, true)
+    private val semaphore = Semaphore(MAX_MISSION_NUMBER, true)
 
-    val SET = mutableSetOf<RealMission>()
-    val QUEUE = LinkedBlockingQueue<RealMission>()
+    private val SET = mutableSetOf<RealMission>()
 
-    fun produce(mission: Mission): Flowable<DownloadStatus> {
-        val processor = BehaviorProcessor.create<DownloadStatus>().toSerialized()
-        if (isMissionExists(mission)) {
-            processor.onError(MissionExitsException())
+    fun create(mission: Mission): Flowable<DownloadStatus> {
+        val realMission = SET.find { it.mission == mission }
+        if (realMission != null) {
+            return realMission.processor.onBackpressureLatest()
         } else {
-            val realMission = RealMission(semaphore, mission, processor)
-            QUEUE.put(realMission)
-            SET.add(realMission)
+            val processor = BehaviorProcessor.create<DownloadStatus>().toSerialized()
+            val tmp = RealMission(semaphore, mission, processor)
+            SET.add(tmp)
+            return processor.onBackpressureLatest()
         }
-        return processor
-    }
-
-    fun consume(): RealMission {
-        return QUEUE.take()
     }
 
     fun remove(mission: RealMission) {
@@ -36,31 +30,33 @@ object MissionBox {
     }
 
     fun start(mission: Mission): Maybe<Any> {
-        val realMission = SET.find { it.mission.tag == mission.tag }
-                ?: return Maybe.error(MissionNotExistsException())
+        val realMission = SET.find { it.mission == mission } ?:
+                return Maybe.error(RuntimeException("Mission not exists"))
 
-        semaphore.acquire()
-
-        return Maybe
-                .create<Any> {
-                    realMission.start()
-                    it.onSuccess(Any())
-                }
-                .subscribeOn(Schedulers.newThread())
-                .doOnError { semaphore.release() }
+        return realMission.start()
     }
 
     fun stop(mission: Mission): Maybe<Any> {
-        val realMission = SET.find { it.mission.tag == mission.tag } ?:
-                return Maybe.error(MissionNotExistsException())
+        val realMission = SET.find { it.mission == mission } ?:
+                return Maybe.error(RuntimeException("Mission not exists"))
 
-        return Maybe.create {
-            realMission.stop()
-            it.onSuccess(Any())
-        }
+        return realMission.stop()
     }
 
-    private fun isMissionExists(mission: Mission): Boolean {
-        return SET.any { it.mission.tag == mission.tag }
+    fun startAll(): Maybe<Any> {
+        val arrays = mutableListOf<Maybe<Any>>()
+        SET.forEach { arrays.add(it.start()) }
+        return Flowable.fromIterable(arrays)
+                .flatMap(INSTANCE, true, MAX_MISSION_NUMBER)
+                .lastElement()
+    }
+
+
+    fun stopAll(): Maybe<Any> {
+        val arrays = mutableListOf<Maybe<Any>>()
+        SET.forEach { arrays.add(it.stop()) }
+        return Flowable.fromIterable(arrays)
+                .flatMap(INSTANCE, true, MAX_MISSION_NUMBER)
+                .lastElement()
     }
 }

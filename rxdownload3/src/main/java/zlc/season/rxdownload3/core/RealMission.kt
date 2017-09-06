@@ -1,18 +1,16 @@
 package zlc.season.rxdownload3.core
 
 import io.reactivex.Maybe
-import io.reactivex.MaybeEmitter
 import io.reactivex.disposables.Disposable
 import io.reactivex.processors.FlowableProcessor
+import io.reactivex.schedulers.Schedulers.newThread
 import zlc.season.rxdownload3.core.DownloadConfig.DEFAULT_SAVE_PATH
 import zlc.season.rxdownload3.helper.dispose
-import zlc.season.rxdownload3.http.HttpProcessor
+import zlc.season.rxdownload3.http.HttpCore
 import java.util.concurrent.Semaphore
 
 
 class RealMission(val semaphore: Semaphore, val mission: Mission, val processor: FlowableProcessor<DownloadStatus>) {
-    var isStopped: Boolean = false
-
     var isSupportRange: Boolean = false
     var isFileChange: Boolean = false
 
@@ -25,72 +23,83 @@ class RealMission(val semaphore: Semaphore, val mission: Mission, val processor:
 
     var disposable: Disposable? = null
 
-    var maybe: Maybe<Any>? = null
+    private lateinit var maybe: Maybe<Any>
+    private val ANY = Any()
 
     init {
-        processor.doOnLifecycle({ s ->
-
-        }, {
-
-        }, {
-
-        })
-        processor.onNext(DownloadStatus(0))
+        create()
+        configure()
     }
 
-
-    fun create() {
-        maybe = Maybe.create<Any> { maybe(it) }
-                .flatMap { HttpProcessor.checkUrl(this) }
+    private fun create() {
+        maybe = Maybe.just(ANY)
+                .flatMap { HttpCore.checkUrl(this) }
                 .flatMap { DownloadType.generateType(this) }
                 .flatMap { it.download() }
                 .doOnDispose { processor.onError(MissionStoppedException()) }
-                .doOnError { processor.onError(it) }
+                .doOnError { processor.onError(MissionStoppedException(it)) }
                 .doOnSuccess { processor.onComplete() }
                 .doFinally {
+                    disposable = null
                     MissionBox.remove(this)
                     semaphore.release()
                 }
-
     }
 
-    private fun maybe(it: MaybeEmitter<Any>) {
-        if (isStopped) {
-            it.onError(MissionStoppedException())
-        } else {
-            it.onSuccess(1)
-        }
+    private fun configure() {
+        processor.onNext(DownloadConfig.DB.readStatus(mission))
+
+        processor.doOnNext { DownloadConfig.DB.writeStatus(mission, it) }
+        processor.doOnError { DownloadConfig.DB.missionFailed(mission) }
+        processor.doOnComplete { DownloadConfig.DB.missionSuccess(mission) }
     }
 
-    @Synchronized
-    fun start() {
-        if (maybe == null) {
-            throw  MissionNotCreateException()
-        }
-
+    fun start(): Maybe<Any> {
         if (disposable != null) {
-            throw MissionAlreadyStartException()
+            return Maybe.error(RuntimeException("Mission already started"))
         }
 
-        if (isStopped) {
-            throw MissionAlreadyStoppedException()
-        }
-
-        disposable = maybe!!.subscribe()
+        return Maybe
+                .create<Any> {
+                    semaphore.acquire()
+                    disposable = maybe.subscribe()
+                    it.onSuccess(ANY)
+                    it.onComplete()
+                }
+                .subscribeOn(newThread())
+                .doOnError {
+                    dispose(disposable)
+                    disposable = null
+                    semaphore.release()
+                }
     }
 
-    @Synchronized
-    fun stop() {
-        if (maybe == null) {
-            throw  MissionNotCreateException()
-        }
-
+    fun stop(): Maybe<Any> {
         if (disposable == null) {
-            throw  MissionNotStartException()
+            return Maybe.error(RuntimeException("Mission has not started"))
         }
 
-        isStopped = true
+        return Maybe.create<Any> {
+            dispose(disposable)
+            disposable = null
+            semaphore.release()
+            it.onSuccess(ANY)
+            it.onComplete()
+        }
+    }
 
-        dispose(disposable)
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as RealMission
+
+        if (mission != other.mission) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        return mission.hashCode()
     }
 }

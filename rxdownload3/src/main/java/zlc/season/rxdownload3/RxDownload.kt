@@ -8,34 +8,37 @@ import zlc.season.rxdownload3.core.Mission
 
 
 object RxDownload {
-
-    val downloadCore = DownloadCore()
-
+    private val downloadCore = DownloadCore()
 
     fun create(url: String): Flowable<DownloadStatus> {
         return create(Mission(url))
     }
 
     fun create(mission: Mission): Flowable<DownloadStatus> {
-        return downloadCore.processMission(mission)
+        return downloadCore.create(mission)
     }
 
-    fun createAndStart(url: String): Flowable<DownloadStatus> {
-        return createAndStart(Mission(url, autoStart = true))
+    fun start(url: String): Maybe<Any> {
+        return start(Mission(url))
     }
-
-    fun createAndStart(mission: Mission): Flowable<DownloadStatus> {
-        return downloadCore.processMission(mission)
-    }
-
-
-    fun start(url: String) {
-        start(Mission(url))
-    }
-
 
     fun start(mission: Mission): Maybe<Any> {
         return downloadCore.start(mission)
     }
 
+    fun stop(url: String): Maybe<Any> {
+        return stop(Mission(url))
+    }
+
+    fun stop(mission: Mission): Maybe<Any> {
+        return downloadCore.stop(mission)
+    }
+
+    fun startALl(): Maybe<Any> {
+        return downloadCore.startAll()
+    }
+
+    fun stopAll(): Maybe<Any> {
+        return downloadCore.stopAll()
+    }
 }

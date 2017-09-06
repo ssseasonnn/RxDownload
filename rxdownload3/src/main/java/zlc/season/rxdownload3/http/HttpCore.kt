@@ -8,7 +8,7 @@ import zlc.season.rxdownload3.core.RealMission
 import zlc.season.rxdownload3.helper.ResponseUtil
 
 
-object HttpProcessor {
+object HttpCore {
     val TEST_RANGE_SUPPORT = "bytes=0-"
 
     val api: RetrofitApi = RetrofitClient.get().create(RetrofitApi::class.java)
@@ -21,8 +21,6 @@ object HttpProcessor {
                     }
 
                     mission.contentLength = ResponseUtil.contentLength(resp)
-
-                    println(ResponseUtil.isSupportRange(resp))
 
                     if (ResponseUtil.isSupportRange(resp)) {
                         mission.isSupportRange = true

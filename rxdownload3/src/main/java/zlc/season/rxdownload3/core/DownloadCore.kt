@@ -4,6 +4,7 @@ import io.reactivex.Flowable
 import io.reactivex.Maybe
 import io.reactivex.plugins.RxJavaPlugins.setErrorHandler
 import zlc.season.rxdownload3.helper.Logger.Companion.loge
+import zlc.season.rxdownload3.status.DownloadStatus
 import java.io.InterruptedIOException
 import java.net.SocketException
 

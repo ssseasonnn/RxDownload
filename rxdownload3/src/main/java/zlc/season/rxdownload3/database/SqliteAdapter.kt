@@ -1,10 +1,10 @@
 package zlc.season.rxdownload3.database
 
-import zlc.season.rxdownload3.core.DownloadStatus
 import zlc.season.rxdownload3.core.Mission
+import zlc.season.rxdownload3.status.DownloadStatus
 
 
-class SqliteAdapter : DbAdapter {
+class SqliteAdapter : DbAdapter<DownloadStatus> {
     init {
 
     }

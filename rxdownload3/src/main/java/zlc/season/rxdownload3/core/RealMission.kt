@@ -7,6 +7,7 @@ import io.reactivex.schedulers.Schedulers.newThread
 import zlc.season.rxdownload3.core.DownloadConfig.DEFAULT_SAVE_PATH
 import zlc.season.rxdownload3.helper.dispose
 import zlc.season.rxdownload3.http.HttpCore
+import zlc.season.rxdownload3.status.DownloadStatus
 import java.util.concurrent.Semaphore
 
 

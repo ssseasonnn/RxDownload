@@ -14,7 +14,6 @@ import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.functions.Consumer;
 import zlc.season.rxdownload3.RxDownload;
-import zlc.season.rxdownload3.core.DownloadStatus;
 import zlc.season.rxdownloadproject.databinding.ActivityBasicDownloadBinding;
 
 import static zlc.season.rxdownload3.helper.DisposableUtilKt.dispose;

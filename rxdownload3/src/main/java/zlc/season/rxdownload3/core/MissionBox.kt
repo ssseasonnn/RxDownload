@@ -5,6 +5,7 @@ import io.reactivex.Maybe
 import io.reactivex.internal.operators.maybe.MaybeToPublisher.INSTANCE
 import io.reactivex.processors.BehaviorProcessor
 import zlc.season.rxdownload3.core.DownloadConfig.MAX_MISSION_NUMBER
+import zlc.season.rxdownload3.status.DownloadStatus
 import java.util.concurrent.Semaphore
 
 

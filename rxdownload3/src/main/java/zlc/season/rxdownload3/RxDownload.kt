@@ -3,8 +3,8 @@ package zlc.season.rxdownload3
 import io.reactivex.Flowable
 import io.reactivex.Maybe
 import zlc.season.rxdownload3.core.DownloadCore
-import zlc.season.rxdownload3.core.DownloadStatus
 import zlc.season.rxdownload3.core.Mission
+import zlc.season.rxdownload3.status.DownloadStatus
 
 
 object RxDownload {

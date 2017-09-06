@@ -6,6 +6,7 @@ import io.reactivex.internal.operators.maybe.MaybeToPublisher.INSTANCE
 import io.reactivex.schedulers.Schedulers
 import zlc.season.rxdownload3.core.DownloadConfig.MAX_CONCURRENCY
 import zlc.season.rxdownload3.core.RangeTmpFile.Segment
+import zlc.season.rxdownload3.helper.Logger
 import zlc.season.rxdownload3.http.HttpCore
 
 
@@ -34,7 +35,11 @@ class RangeDownload(mission: RealMission) : DownloadType(mission) {
     private fun rangeDownload(segment: Segment): Maybe<Any> {
         return Maybe.just(segment)
                 .subscribeOn(Schedulers.io())
-                .map { "bytes=${it.start}-${it.end}" }
+                .map {
+                    val range = "bytes=${it.start}-${it.end}"
+                    Logger.logd(range)
+                    return@map range
+                }
                 .flatMap { HttpCore.download(mission, it) }
                 .flatMap {
                     targetFile.save(it, segment, tmpFile)

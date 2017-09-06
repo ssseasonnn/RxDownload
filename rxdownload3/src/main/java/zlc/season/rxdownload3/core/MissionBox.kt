@@ -15,7 +15,7 @@ object MissionBox {
     private val SET = mutableSetOf<RealMission>()
 
     fun create(mission: Mission): Flowable<Status> {
-        val realMission = SET.find { it.mission == mission }
+        val realMission = SET.find { it.actual == mission }
         return if (realMission != null) {
             realMission.processor.onBackpressureLatest()
         } else {
@@ -31,14 +31,14 @@ object MissionBox {
     }
 
     fun start(mission: Mission): Maybe<Any> {
-        val realMission = SET.find { it.mission == mission } ?:
+        val realMission = SET.find { it.actual == mission } ?:
                 return Maybe.error(RuntimeException("Mission not exists"))
 
         return realMission.start()
     }
 
     fun stop(mission: Mission): Maybe<Any> {
-        val realMission = SET.find { it.mission == mission } ?:
+        val realMission = SET.find { it.actual == mission } ?:
                 return Maybe.error(RuntimeException("Mission not exists"))
 
         return realMission.stop()

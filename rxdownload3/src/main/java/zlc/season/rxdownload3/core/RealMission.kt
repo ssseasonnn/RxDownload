@@ -4,9 +4,12 @@ import io.reactivex.Maybe
 import io.reactivex.disposables.Disposable
 import io.reactivex.processors.FlowableProcessor
 import io.reactivex.schedulers.Schedulers.newThread
+import retrofit2.Response
+import zlc.season.rxdownload3.core.DownloadConfig.ANY
 import zlc.season.rxdownload3.core.DownloadConfig.DB
 import zlc.season.rxdownload3.core.DownloadConfig.DEFAULT_SAVE_PATH
 import zlc.season.rxdownload3.core.DownloadConfig.FACTORY
+import zlc.season.rxdownload3.helper.ResponseUtil
 import zlc.season.rxdownload3.helper.dispose
 import zlc.season.rxdownload3.http.HttpCore
 import zlc.season.rxdownload3.status.Failed
@@ -14,21 +17,11 @@ import zlc.season.rxdownload3.status.Status
 import java.util.concurrent.Semaphore
 
 
-class RealMission(private val semaphore: Semaphore, val mission: Mission, val processor: FlowableProcessor<Status>) {
-    var isSupportRange: Boolean = false
-    var isFileChange: Boolean = false
-
-    var lastModify: Long = 0L
-
-    var contentLength: Long = -1L
-
-    var realFileName = mission.fileName
-    var realPath = if (mission.savePath.isEmpty()) DEFAULT_SAVE_PATH else mission.savePath
-
-    var disposable: Disposable? = null
+class RealMission(private val semaphore: Semaphore, val actual: Mission, val processor: FlowableProcessor<Status>) {
 
     private lateinit var maybe: Maybe<Any>
-    private val ANY = Any()
+
+    var disposable: Disposable? = null
 
     init {
         create()
@@ -37,14 +30,19 @@ class RealMission(private val semaphore: Semaphore, val mission: Mission, val pr
 
     private fun create() {
         maybe = Maybe.just(ANY)
-                .flatMap { HttpCore.checkUrl(this) }
-                .flatMap { DownloadType.generateType(this) }
+                .flatMap {
+                    if (check()) {
+                        HttpCore.checkUrl(this)
+                    } else {
+                        Maybe.just(it)
+                    }
+                }
+                .flatMap { generateType() }
                 .flatMap { it.download() }
                 .doOnDispose { processor.onNext(FACTORY.failed(MissionStoppedException())) }
                 .doOnError { processor.onNext(FACTORY.failed(MissionStoppedException(it))) }
                 .doOnSuccess {
                     processor.onNext(FACTORY.succeed())
-                    MissionBox.remove(this)
                 }
                 .doFinally {
                     disposable = null
@@ -53,17 +51,37 @@ class RealMission(private val semaphore: Semaphore, val mission: Mission, val pr
     }
 
     private fun configure() {
-        processor.onNext(DB.readStatus(mission))
+        processor.onNext(DB.readStatus(actual))
 
         processor
 //                .sample(100, MILLISECONDS, true)
                 .doOnNext {
-                    DB.writeStatus(mission, it)
+                    DB.writeStatus(actual, it)
                     if (it is Failed) {
 
                     }
                 }
 
+    }
+
+    fun setup(it: Response<Void>) {
+        actual.savePath = if (actual.savePath.isEmpty()) DEFAULT_SAVE_PATH else actual.savePath
+        actual.fileName = ResponseUtil.fileName(actual.fileName, actual.url, it)
+        actual.rangeFlag = ResponseUtil.isSupportRange(it)
+        actual.totalSize = ResponseUtil.contentLength(it)
+
+    }
+
+    private fun check(): Boolean {
+        return actual.rangeFlag == null
+    }
+
+    private fun generateType(): Maybe<DownloadType> {
+        return if (actual.rangeFlag!!) {
+            Maybe.just(RangeDownload(this))
+        } else {
+            Maybe.just(NormalDownload(this))
+        }
     }
 
     fun start(): Maybe<Any> {
@@ -108,12 +126,12 @@ class RealMission(private val semaphore: Semaphore, val mission: Mission, val pr
 
         other as RealMission
 
-        if (mission != other.mission) return false
+        if (actual != other.actual) return false
 
         return true
     }
 
     override fun hashCode(): Int {
-        return mission.hashCode()
+        return actual.hashCode()
     }
 }

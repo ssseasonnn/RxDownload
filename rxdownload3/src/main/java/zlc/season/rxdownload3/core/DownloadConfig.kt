@@ -7,6 +7,8 @@ import zlc.season.rxdownload3.status.StatusFactoryImpl
 
 
 internal object DownloadConfig {
+    val ANY = Any()
+
     var DEFAULT_SAVE_PATH = getExternalStoragePublicDirectory(DIRECTORY_DOWNLOADS).path
     var MAX_MISSION_NUMBER = 3
     var MAX_CONCURRENCY = 3

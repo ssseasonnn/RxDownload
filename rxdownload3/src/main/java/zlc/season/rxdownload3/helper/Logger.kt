@@ -5,7 +5,7 @@ import android.util.Log
 
 class Logger {
     companion object {
-        var DEBUG = false
+        var DEBUG = true
 
         private val TAG = "RxDownload"
 

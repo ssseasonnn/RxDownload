@@ -13,7 +13,6 @@ interface RetrofitApi {
 
     @GET
     fun check(@Header("Range") range: String,
-              @Header("If-Modified-Since") lastModify: String,
               @Url url: String): Maybe<Response<Void>>
 
     @GET

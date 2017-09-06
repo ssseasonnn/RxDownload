@@ -33,7 +33,7 @@ class RangeTargetFile(mission: RealMission) : DownloadFile(mission) {
                     target.channel.use { targetChannel ->
                         tmp.channel.use { tmpChannel ->
                             val targetBuffer = targetChannel.map(READ_WRITE,
-                                    segment.current, segment.end - segment.start + 1)
+                                    segment.current, segment.end - segment.current + 1)
                             val segmentBuffer = tmpChannel.map(READ_WRITE,
                                     tmpFile.getPosition(segment), Segment.SEGMENT_SIZE)
 
@@ -43,7 +43,7 @@ class RangeTargetFile(mission: RealMission) : DownloadFile(mission) {
                                 segment.current += readLen
 
                                 targetBuffer.put(buffer, 0, readLen)
-                                segmentBuffer.position(8)
+                                segmentBuffer.position(16)
                                 segmentBuffer.putLong(segment.current)
 
                                 mission.processor.onNext(tmpFile.currentStatus())

@@ -1,15 +1,14 @@
 package zlc.season.rxdownload3.database
 
+import io.reactivex.Maybe
 import zlc.season.rxdownload3.core.Mission
 import zlc.season.rxdownload3.status.Status
 
 
-interface DbAdapter<T : Status> {
-    fun readStatus(mission: Mission): T
+interface DbAdapter {
+    fun readStatus(mission: Mission): Status
 
-    fun writeStatus(mission: Mission, status: T)
+    fun writeStatus(mission: Mission, status: Status)
 
-    fun missionFailed(mission: Mission)
-
-    fun missionSuccess(mission: Mission)
+    fun getAllMission(): Maybe<List<Mission>>
 }

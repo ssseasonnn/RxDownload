@@ -1,12 +1,12 @@
 package zlc.season.rxdownload3.status
 
 
-interface StatusFactory<out T : Status> {
-    fun waitingStatus(): T
+interface StatusFactory {
+    fun waiting(): Status
 
-    fun downloadingStatus(): T
+    fun downloading(isChunked: Boolean, downloadSize: Long, totalSize: Long): Status
 
-    fun failedStatus(): T
+    fun failed(throwable: Throwable): Status
 
-    fun succeedStatus(): T
+    fun succeed(): Status
 }

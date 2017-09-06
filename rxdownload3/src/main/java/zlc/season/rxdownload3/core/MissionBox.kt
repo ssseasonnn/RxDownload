@@ -5,7 +5,7 @@ import io.reactivex.Maybe
 import io.reactivex.internal.operators.maybe.MaybeToPublisher.INSTANCE
 import io.reactivex.processors.BehaviorProcessor
 import zlc.season.rxdownload3.core.DownloadConfig.MAX_MISSION_NUMBER
-import zlc.season.rxdownload3.status.DownloadStatus
+import zlc.season.rxdownload3.status.Status
 import java.util.concurrent.Semaphore
 
 
@@ -14,15 +14,15 @@ object MissionBox {
 
     private val SET = mutableSetOf<RealMission>()
 
-    fun create(mission: Mission): Flowable<DownloadStatus> {
+    fun create(mission: Mission): Flowable<Status> {
         val realMission = SET.find { it.mission == mission }
-        if (realMission != null) {
-            return realMission.processor.onBackpressureLatest()
+        return if (realMission != null) {
+            realMission.processor.onBackpressureLatest()
         } else {
-            val processor = BehaviorProcessor.create<DownloadStatus>().toSerialized()
+            val processor = BehaviorProcessor.create<Status>().toSerialized()
             val tmp = RealMission(semaphore, mission, processor)
             SET.add(tmp)
-            return processor.onBackpressureLatest()
+            processor.onBackpressureLatest()
         }
     }
 

@@ -14,6 +14,9 @@ import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.functions.Consumer;
 import zlc.season.rxdownload3.RxDownload;
+import zlc.season.rxdownload3.status.Downloading;
+import zlc.season.rxdownload3.status.Failed;
+import zlc.season.rxdownload3.status.Status;
 import zlc.season.rxdownloadproject.databinding.ActivityBasicDownloadBinding;
 
 import static zlc.season.rxdownload3.helper.DisposableUtilKt.dispose;
@@ -65,16 +68,19 @@ public class BasicDownloadActivity extends AppCompatActivity {
     private void createDownloadMission() {
         disposable = RxDownload.INSTANCE.create(url)
                 .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(new Consumer<DownloadStatus>() {
+                .subscribe(new Consumer<Status>() {
                     @Override
-                    public void accept(DownloadStatus downloadStatus) throws Exception {
-                        binding.contentBasicDownload.progress.setProgress((int) downloadStatus.getDownloadSize());
-                        binding.contentBasicDownload.progress.setMax((int) downloadStatus.getTotalSize());
-                    }
-                }, new Consumer<Throwable>() {
-                    @Override
-                    public void accept(Throwable throwable) throws Exception {
-                        Log.w("TAG", throwable);
+                    public void accept(Status status) throws Exception {
+                        if (status instanceof Downloading) {
+                            Downloading downloading = (Downloading) status;
+                            binding.contentBasicDownload.progress.setProgress((int) downloading.getDownloadSize());
+                            binding.contentBasicDownload.progress.setMax((int) downloading.getTotalSize());
+                        }
+
+                        if (status instanceof Failed) {
+                            Failed failed = (Failed) status;
+                            Log.w("TAG", failed.getThrowable());
+                        }
                     }
                 });
     }

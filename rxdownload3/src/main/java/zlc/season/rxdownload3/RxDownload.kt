@@ -4,17 +4,17 @@ import io.reactivex.Flowable
 import io.reactivex.Maybe
 import zlc.season.rxdownload3.core.DownloadCore
 import zlc.season.rxdownload3.core.Mission
-import zlc.season.rxdownload3.status.DownloadStatus
+import zlc.season.rxdownload3.status.Status
 
 
 object RxDownload {
     private val downloadCore = DownloadCore()
 
-    fun create(url: String): Flowable<DownloadStatus> {
+    fun create(url: String): Flowable<Status> {
         return create(Mission(url))
     }
 
-    fun create(mission: Mission): Flowable<DownloadStatus> {
+    fun create(mission: Mission): Flowable<Status> {
         return downloadCore.create(mission)
     }
 

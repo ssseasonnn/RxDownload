@@ -4,14 +4,17 @@ import io.reactivex.Maybe
 import io.reactivex.disposables.Disposable
 import io.reactivex.processors.FlowableProcessor
 import io.reactivex.schedulers.Schedulers.newThread
+import zlc.season.rxdownload3.core.DownloadConfig.DB
 import zlc.season.rxdownload3.core.DownloadConfig.DEFAULT_SAVE_PATH
+import zlc.season.rxdownload3.core.DownloadConfig.FACTORY
 import zlc.season.rxdownload3.helper.dispose
 import zlc.season.rxdownload3.http.HttpCore
-import zlc.season.rxdownload3.status.DownloadStatus
+import zlc.season.rxdownload3.status.Failed
+import zlc.season.rxdownload3.status.Status
 import java.util.concurrent.Semaphore
 
 
-class RealMission(val semaphore: Semaphore, val mission: Mission, val processor: FlowableProcessor<DownloadStatus>) {
+class RealMission(private val semaphore: Semaphore, val mission: Mission, val processor: FlowableProcessor<Status>) {
     var isSupportRange: Boolean = false
     var isFileChange: Boolean = false
 
@@ -37,31 +40,41 @@ class RealMission(val semaphore: Semaphore, val mission: Mission, val processor:
                 .flatMap { HttpCore.checkUrl(this) }
                 .flatMap { DownloadType.generateType(this) }
                 .flatMap { it.download() }
-                .doOnDispose { processor.onError(MissionStoppedException()) }
-                .doOnError { processor.onError(MissionStoppedException(it)) }
-                .doOnSuccess { processor.onComplete() }
+                .doOnDispose { processor.onNext(FACTORY.failed(MissionStoppedException())) }
+                .doOnError { processor.onNext(FACTORY.failed(MissionStoppedException(it))) }
+                .doOnSuccess {
+                    processor.onNext(FACTORY.succeed())
+                    MissionBox.remove(this)
+                }
                 .doFinally {
                     disposable = null
-                    MissionBox.remove(this)
                     semaphore.release()
                 }
     }
 
     private fun configure() {
-        processor.onNext(DownloadConfig.DB.readStatus(mission))
+        processor.onNext(DB.readStatus(mission))
 
-        processor.doOnNext { DownloadConfig.DB.writeStatus(mission, it) }
-        processor.doOnError { DownloadConfig.DB.missionFailed(mission) }
-        processor.doOnComplete { DownloadConfig.DB.missionSuccess(mission) }
+        processor
+//                .sample(100, MILLISECONDS, true)
+                .doOnNext {
+                    DB.writeStatus(mission, it)
+                    if (it is Failed) {
+
+                    }
+                }
+
     }
 
     fun start(): Maybe<Any> {
-        if (disposable != null) {
-            return Maybe.error(RuntimeException("Mission already started"))
-        }
+//        if (disposable != null) {
+//            return Maybe.error(RuntimeException("Mission already started"))
+//        }
+
 
         return Maybe
                 .create<Any> {
+                    processor.onNext(FACTORY.waiting())
                     semaphore.acquire()
                     disposable = maybe.subscribe()
                     it.onSuccess(ANY)
@@ -76,9 +89,9 @@ class RealMission(val semaphore: Semaphore, val mission: Mission, val processor:
     }
 
     fun stop(): Maybe<Any> {
-        if (disposable == null) {
-            return Maybe.error(RuntimeException("Mission has not started"))
-        }
+//        if (disposable == null) {
+//            return Maybe.error(RuntimeException("Mission has not started"))
+//        }
 
         return Maybe.create<Any> {
             dispose(disposable)

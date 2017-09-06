@@ -25,9 +25,9 @@ object RetrofitClient {
                 .writeTimeout(15, TimeUnit.SECONDS)
 
         val httpLogger = HttpLoggingInterceptor()
-        httpLogger.level = HttpLoggingInterceptor.Level.HEADERS
+        httpLogger.level = HttpLoggingInterceptor.Level.NONE
 
-        builder.addInterceptor(httpLogger)
+//        builder.addInterceptor(httpLogger)
 
         return builder.build()
     }

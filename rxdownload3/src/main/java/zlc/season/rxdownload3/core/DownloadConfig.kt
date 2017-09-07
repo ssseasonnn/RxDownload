@@ -3,7 +3,6 @@ package zlc.season.rxdownload3.core
 import android.os.Environment.DIRECTORY_DOWNLOADS
 import android.os.Environment.getExternalStoragePublicDirectory
 import zlc.season.rxdownload3.database.SqliteAdapter
-import zlc.season.rxdownload3.status.StatusFactoryImpl
 
 
 internal object DownloadConfig {
@@ -15,5 +14,4 @@ internal object DownloadConfig {
     var RANGE_DOWNLOAD_SIZE: Long = 5 * 1024 * 1024 // 5M
 
     var DB = SqliteAdapter()
-    var STATUS_FACTORY = StatusFactoryImpl()
 }

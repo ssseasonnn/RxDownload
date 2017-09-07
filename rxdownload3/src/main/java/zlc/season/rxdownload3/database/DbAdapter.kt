@@ -2,7 +2,7 @@ package zlc.season.rxdownload3.database
 
 import io.reactivex.Maybe
 import zlc.season.rxdownload3.core.Mission
-import zlc.season.rxdownload3.status.Status
+import zlc.season.rxdownload3.core.Status
 
 
 interface DbAdapter {

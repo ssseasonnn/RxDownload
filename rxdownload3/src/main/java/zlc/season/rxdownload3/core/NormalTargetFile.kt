@@ -3,9 +3,7 @@ package zlc.season.rxdownload3.core
 import okhttp3.ResponseBody
 import okio.Okio
 import retrofit2.Response
-import zlc.season.rxdownload3.core.DownloadConfig.STATUS_FACTORY
 import zlc.season.rxdownload3.helper.ResponseUtil.isChunked
-import zlc.season.rxdownload3.status.Downloading
 import java.io.File
 import java.io.File.separator
 
@@ -31,16 +29,18 @@ class NormalTargetFile(val mission: RealMission) {
 
         var downloadSize = 0L
         val byteSize = 8192L
-        val status = STATUS_FACTORY.downloading(isChunked(response), downloadSize, respBody.contentLength()) as Downloading
+        val status = Downloading(isChunked(response), downloadSize, respBody.contentLength())
 
         respBody.source().use { source ->
             Okio.buffer(Okio.sink(file)).use { sink ->
                 val buffer = sink.buffer()
                 var readLen = source.read(buffer, byteSize)
+
                 while (readLen != -1L) {
                     downloadSize += readLen
                     status.downloadSize = downloadSize
-                    mission.emitDownloadEvent(status)
+
+                    mission.emitStatus(status)
                     readLen = source.read(buffer, byteSize)
                 }
             }

@@ -3,9 +3,7 @@ package zlc.season.rxdownload3.core
 import io.reactivex.Flowable
 import io.reactivex.Maybe
 import io.reactivex.internal.operators.maybe.MaybeToPublisher.INSTANCE
-import io.reactivex.processors.BehaviorProcessor
 import zlc.season.rxdownload3.core.DownloadConfig.MAX_MISSION_NUMBER
-import zlc.season.rxdownload3.status.Status
 import java.util.concurrent.Semaphore
 
 
@@ -16,18 +14,14 @@ object MissionBox {
 
     fun create(mission: Mission): Flowable<Status> {
         val realMission = SET.find { it.actual == mission }
-        return if (realMission != null) {
-            realMission.processor.onBackpressureLatest()
-        } else {
-            val processor = BehaviorProcessor.create<Status>().toSerialized()
-            val tmp = RealMission(semaphore, mission, processor)
-            SET.add(tmp)
-            processor.onBackpressureLatest()
-        }
-    }
 
-    fun remove(mission: RealMission) {
-        SET.remove(mission)
+        return if (realMission != null) {
+            realMission.getProcessor()
+        } else {
+            val new = RealMission(semaphore, mission)
+            SET.add(new)
+            new.getProcessor()
+        }
     }
 
     fun start(mission: Mission): Maybe<Any> {

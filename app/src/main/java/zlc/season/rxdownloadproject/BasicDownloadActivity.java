@@ -14,14 +14,18 @@ import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.functions.Consumer;
 import zlc.season.rxdownload3.RxDownload;
-import zlc.season.rxdownload3.status.Downloading;
-import zlc.season.rxdownload3.status.Failed;
-import zlc.season.rxdownload3.status.Status;
+import zlc.season.rxdownload3.core.Downloading;
+import zlc.season.rxdownload3.core.Empty;
+import zlc.season.rxdownload3.core.Failed;
+import zlc.season.rxdownload3.core.Status;
+import zlc.season.rxdownload3.core.Succeed;
+import zlc.season.rxdownload3.core.Waiting;
 import zlc.season.rxdownloadproject.databinding.ActivityBasicDownloadBinding;
 
 import static zlc.season.rxdownload3.helper.DisposableUtilKt.dispose;
 
 public class BasicDownloadActivity extends AppCompatActivity {
+    private static final String TAG = "BasicDownloadActivity";
 
     private static final String url = "https://qd.myapp.com/myapp/qqteam/AndroidQQ/mobileqq_android.apk";
 
@@ -49,7 +53,7 @@ public class BasicDownloadActivity extends AppCompatActivity {
                 }, new Consumer<Throwable>() {
                     @Override
                     public void accept(Throwable throwable) throws Exception {
-                        Log.w("TAG", throwable);
+                        Log.w(TAG, throwable);
                     }
                 });
             }
@@ -71,22 +75,42 @@ public class BasicDownloadActivity extends AppCompatActivity {
                 .subscribe(new Consumer<Status>() {
                     @Override
                     public void accept(Status status) throws Exception {
+
+                        if (status instanceof Empty) {
+                            binding.contentBasicDownload.percent.setText("0%");
+                            binding.contentBasicDownload.action.setText("开始");
+                            binding.contentBasicDownload.size.setText("");
+                        }
+
                         if (status instanceof Downloading) {
+                            binding.contentBasicDownload.action.setText("暂停");
+
                             Downloading downloading = (Downloading) status;
+                            binding.contentBasicDownload.percent.setText(downloading.percent());
+                            binding.contentBasicDownload.size.setText(downloading.formatString());
                             binding.contentBasicDownload.progress.setProgress((int) downloading.getDownloadSize());
                             binding.contentBasicDownload.progress.setMax((int) downloading.getTotalSize());
                         }
 
                         if (status instanceof Failed) {
+                            binding.contentBasicDownload.action.setText("失败");
                             Failed failed = (Failed) status;
-                            Log.w("TAG", failed.getThrowable());
+                            Log.w(TAG, failed.getThrowable());
+                        }
+
+                        if (status instanceof Waiting) {
+                            binding.contentBasicDownload.action.setText("等待中");
+                        }
+
+                        if (status instanceof Succeed) {
+                            binding.contentBasicDownload.action.setText("完成");
                         }
                     }
                 });
     }
 
     private void requestPermission(String permission) {
-        RxPermissions.getInstance(this)
+        new RxPermissions(this)
                 .request(permission)
                 .subscribe(new Consumer<Boolean>() {
                     @Override

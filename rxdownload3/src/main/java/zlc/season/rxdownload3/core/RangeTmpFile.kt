@@ -7,7 +7,6 @@ import okio.ByteString.decodeHex
 import okio.Okio
 import zlc.season.rxdownload3.core.DownloadConfig.RANGE_DOWNLOAD_SIZE
 import zlc.season.rxdownload3.core.RangeTmpFile.Segment.Companion.SEGMENT_SIZE
-import zlc.season.rxdownload3.status.Status
 import java.io.File
 import java.io.File.separator
 
@@ -74,11 +73,11 @@ class RangeTmpFile(val mission: RealMission) {
 
     fun currentStatus(): Status {
         var downloadSize = 0L
-        val totalSize = mission.actual.totalSize
+        val totalSize = fileStructure.totalSize
 
         val segments = getSegments()
         segments.forEach { downloadSize += (it.current - it.start) }
-        return DownloadConfig.STATUS_FACTORY.downloading(false, downloadSize, totalSize)
+        return Downloading(false, downloadSize, totalSize)
     }
 
     inner class FileStructure {
@@ -95,7 +94,7 @@ class RangeTmpFile(val mission: RealMission) {
         }
 
         fun writeHeader(sink: BufferedSink) {
-            totalSize = mission.actual.totalSize
+            totalSize = mission.totalSize
             totalSegments = calculateSegments()
 
             sink.write(FILE_HEADER_MAGIC_NUMBER_HEX)
@@ -116,7 +115,7 @@ class RangeTmpFile(val mission: RealMission) {
 
             for (i in 0 until totalSegments) {
                 val end = if (i == totalSegments - 1) {
-                    mission.actual.totalSize - 1
+                    mission.totalSize - 1
                 } else {
                     start + RANGE_DOWNLOAD_SIZE - 1
                 }
@@ -159,11 +158,11 @@ class RangeTmpFile(val mission: RealMission) {
         }
 
         private fun calculateSegments(): Long {
-            val remainder = mission.actual.totalSize % RANGE_DOWNLOAD_SIZE
+            val remainder = mission.totalSize % RANGE_DOWNLOAD_SIZE
             return if (remainder == 0L) {
-                mission.actual.totalSize / RANGE_DOWNLOAD_SIZE
+                mission.totalSize / RANGE_DOWNLOAD_SIZE
             } else {
-                mission.actual.totalSize / RANGE_DOWNLOAD_SIZE + 1
+                mission.totalSize / RANGE_DOWNLOAD_SIZE + 1
             }
         }
     }

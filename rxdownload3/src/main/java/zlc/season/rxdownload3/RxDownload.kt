@@ -4,7 +4,7 @@ import io.reactivex.Flowable
 import io.reactivex.Maybe
 import zlc.season.rxdownload3.core.DownloadCore
 import zlc.season.rxdownload3.core.Mission
-import zlc.season.rxdownload3.status.Status
+import zlc.season.rxdownload3.core.Status
 
 
 object RxDownload {

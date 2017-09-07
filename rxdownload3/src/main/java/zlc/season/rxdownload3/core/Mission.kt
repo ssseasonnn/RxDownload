@@ -2,17 +2,12 @@ package zlc.season.rxdownload3.core
 
 
 class Mission(val url: String) {
-    var tag: String = url
-
-    var fileName: String = ""
-    var savePath: String = ""
-
-    var forceReDownload: Boolean = false
+    var tag = url
+    var fileName = ""
+    var savePath = ""
 
     var rangeFlag: Boolean? = null
-
-    var currentSize: Long = 0L
-    var totalSize: Long = 0L
+    var forceReDownload = false
 
     constructor(
             url: String,

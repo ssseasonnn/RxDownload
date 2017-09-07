@@ -1,36 +1,41 @@
 package zlc.season.rxdownload3.core
 
+import io.reactivex.Flowable
 import io.reactivex.Maybe
 import io.reactivex.android.schedulers.AndroidSchedulers.mainThread
 import io.reactivex.disposables.Disposable
-import io.reactivex.processors.FlowableProcessor
+import io.reactivex.processors.BehaviorProcessor
 import io.reactivex.schedulers.Schedulers.io
 import io.reactivex.schedulers.Schedulers.newThread
 import retrofit2.Response
 import zlc.season.rxdownload3.core.DownloadConfig.ANY
 import zlc.season.rxdownload3.core.DownloadConfig.DB
 import zlc.season.rxdownload3.core.DownloadConfig.DEFAULT_SAVE_PATH
-import zlc.season.rxdownload3.core.DownloadConfig.STATUS_FACTORY
 import zlc.season.rxdownload3.helper.ResponseUtil.contentLength
 import zlc.season.rxdownload3.helper.ResponseUtil.fileName
 import zlc.season.rxdownload3.helper.ResponseUtil.isSupportRange
 import zlc.season.rxdownload3.helper.dispose
 import zlc.season.rxdownload3.http.HttpCore
-import zlc.season.rxdownload3.status.Failed
-import zlc.season.rxdownload3.status.Status
 import java.util.concurrent.Semaphore
 
 
-class RealMission(private val semaphore: Semaphore, val actual: Mission, val processor: FlowableProcessor<Status>) {
+class RealMission(private val semaphore: Semaphore, val actual: Mission) {
+    private val processor = BehaviorProcessor.create<Status>().toSerialized()
 
-    private lateinit var maybe: Maybe<Any>
+    lateinit var maybe: Maybe<Any>
 
     var disposable: Disposable? = null
+    var totalSize = 0L
+    var status: Status = DB.readStatus(actual)
 
     init {
         create()
         configure()
-        emitDownloadEvent(DB.readStatus(actual))
+    }
+
+    fun getProcessor(): Flowable<Status> {
+        emitStatus(status)
+        return processor.onBackpressureLatest()
     }
 
     private fun create() {
@@ -40,25 +45,14 @@ class RealMission(private val semaphore: Semaphore, val actual: Mission, val pro
                 .flatMap { generateType() }
                 .flatMap { it.download() }
                 .observeOn(mainThread())
-                .doOnDispose { emitFailedEvent(RuntimeException("Mission failed"), true) }
-                .doOnError { emitFailedEvent(it) }
-                .doOnSuccess { emitSuccessEvent() }
+                .doOnDispose { emitStatus(Failed(status, RuntimeException("Mission failed"), true)) }
+                .doOnError { emitStatus(Failed(status, it)) }
+                .doOnSuccess { emitStatus(Succeed(status)) }
                 .doFinally { semaphore.release() }
     }
 
-    private fun emitSuccessEvent() {
-        processor.onNext(STATUS_FACTORY.succeed())
-    }
-
-    private fun emitFailedEvent(throwable: Throwable, manualFlag: Boolean = false) {
-        processor.onNext(STATUS_FACTORY.failed(throwable, manualFlag))
-    }
-
-    private fun emitWaitEvent() {
-        processor.onNext(STATUS_FACTORY.waiting())
-    }
-
-    fun emitDownloadEvent(status: Status) {
+    fun emitStatus(status: Status) {
+        this.status = status
         processor.onNext(status)
     }
 
@@ -77,12 +71,12 @@ class RealMission(private val semaphore: Semaphore, val actual: Mission, val pro
         actual.savePath = if (actual.savePath.isEmpty()) DEFAULT_SAVE_PATH else actual.savePath
         actual.fileName = fileName(actual.fileName, actual.url, it)
         actual.rangeFlag = isSupportRange(it)
-        actual.totalSize = contentLength(it)
+        totalSize = contentLength(it)
 
     }
 
     private fun check(): Maybe<Any> {
-        return if (actual.rangeFlag == null) {
+        return if (actual.rangeFlag == null || actual.forceReDownload) {
             HttpCore.checkUrl(this)
         } else {
             Maybe.just(ANY)
@@ -99,7 +93,7 @@ class RealMission(private val semaphore: Semaphore, val actual: Mission, val pro
 
     fun start(): Maybe<Any> {
         return Maybe.create<Any> {
-            emitWaitEvent()
+            emitStatus(Waiting(status))
             semaphore.acquire()
             disposable = maybe.subscribe()
             it.onSuccess(ANY)

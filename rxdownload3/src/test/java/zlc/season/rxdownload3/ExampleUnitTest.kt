@@ -1,7 +1,9 @@
 package zlc.season.rxdownload3
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
+import zlc.season.rxdownload3.core.Mission
 import zlc.season.rxdownload3.core.RangeTmpFile
 
 /**
@@ -27,5 +29,23 @@ class ExampleUnitTest {
 
         testList.filter { !it.isComplete() }
                 .forEach { println("${it.start}-${it.current}-${it.end}") }
+    }
+
+    @Test
+    @Throws(Exception::class)
+    fun missionEqualTest() {
+        val mission1 = Mission("test1")
+        val mission2 = Mission("test2")
+        val mission3 = Mission("test3")
+
+        val set = mutableSetOf<Mission>()
+        set.add(mission1)
+        set.add(mission2)
+        set.add(mission3)
+
+        val testMission = Mission("test1")
+        val result = set.find { it == testMission }
+
+        assertTrue(result != null)
     }
 }

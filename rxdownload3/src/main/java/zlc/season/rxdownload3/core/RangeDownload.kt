@@ -17,7 +17,7 @@ class RangeDownload(mission: RealMission) : DownloadType(mission) {
 
     override fun download(): Maybe<Any> {
         if (tmpFile.isFinish()) {
-            throw  RuntimeException("Mission already finished")
+            return Maybe.just(ANY)
         }
 
         val arrays = mutableListOf<Maybe<Any>>()

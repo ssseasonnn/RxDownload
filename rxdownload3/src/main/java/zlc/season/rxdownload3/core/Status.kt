@@ -4,9 +4,9 @@ import zlc.season.rxdownload3.helper.formatSize
 import java.text.NumberFormat.getPercentInstance
 
 
-open class Status(var chunkFlag: Boolean = false,
-                  var downloadSize: Long = 0L,
-                  var totalSize: Long = 0L) {
+abstract class Status(var chunkFlag: Boolean = false,
+                      var downloadSize: Long = 0L,
+                      var totalSize: Long = 0L) {
 
     constructor(status: Status) : this() {
         this.chunkFlag = status.chunkFlag
@@ -40,7 +40,7 @@ open class Status(var chunkFlag: Boolean = false,
     }
 }
 
-class Empty(status: Status) : Status(status)
+class Empty : Status()
 
 class Waiting(status: Status) : Status(status)
 

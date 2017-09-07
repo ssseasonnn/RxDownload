@@ -56,6 +56,10 @@ class RealMission(private val semaphore: Semaphore, val actual: Mission) {
         processor.onNext(status)
     }
 
+    fun emitStatus() {
+        processor.onNext(status)
+    }
+
     private fun configure() {
         processor
 //                .sample(100, MILLISECONDS, true)
@@ -93,6 +97,11 @@ class RealMission(private val semaphore: Semaphore, val actual: Mission) {
 
     fun start(): Maybe<Any> {
         return Maybe.create<Any> {
+            if (disposable != null && !disposable!!.isDisposed) {
+                it.onSuccess(ANY)
+                return@create
+            }
+
             emitStatus(Waiting(status))
             semaphore.acquire()
             disposable = maybe.subscribe()

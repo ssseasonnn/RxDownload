@@ -15,5 +15,5 @@ internal object DownloadConfig {
     var RANGE_DOWNLOAD_SIZE: Long = 5 * 1024 * 1024 // 5M
 
     var DB = SqliteAdapter()
-    var FACTORY = StatusFactoryImpl()
+    var STATUS_FACTORY = StatusFactoryImpl()
 }

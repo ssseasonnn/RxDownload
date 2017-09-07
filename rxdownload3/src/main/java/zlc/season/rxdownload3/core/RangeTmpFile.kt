@@ -11,12 +11,12 @@ import zlc.season.rxdownload3.status.Status
 import java.io.File
 import java.io.File.separator
 
-class RangeTmpFile(mission: RealMission) : DownloadFile(mission) {
+class RangeTmpFile(val mission: RealMission) {
     private val TMP_DIR_SUFFIX = ".TMP"
     private val TMP_FILE_SUFFIX = ".tmp"
 
-    private val tmpDirPath = mission.realPath + separator + TMP_DIR_SUFFIX
-    private val tmpFilePath = tmpDirPath + separator + mission.realFileName + TMP_FILE_SUFFIX
+    private val tmpDirPath = mission.actual.savePath + separator + TMP_DIR_SUFFIX
+    private val tmpFilePath = tmpDirPath + separator + mission.actual.fileName + TMP_FILE_SUFFIX
 
     private val file = File(tmpFilePath)
 
@@ -30,16 +30,29 @@ class RangeTmpFile(mission: RealMission) : DownloadFile(mission) {
 
         if (!file.exists()) {
             file.createNewFile()
-
-            Okio.buffer(Okio.sink(file)).use {
-                fileStructure.writeHeader(it)
-                fileStructure.writeSegments(it)
-            }
+            writeTmp()
         } else {
-            Okio.buffer(Okio.source(file)).use {
-                fileStructure.readHeader(it)
-                fileStructure.readSegments(it)
+            if (mission.actual.forceReDownload) {
+                file.delete()
+                file.createNewFile()
+                writeTmp()
+            } else {
+                readTmp()
             }
+        }
+    }
+
+    private fun readTmp() {
+        Okio.buffer(Okio.source(file)).use {
+            fileStructure.readHeader(it)
+            fileStructure.readSegments(it)
+        }
+    }
+
+    private fun writeTmp() {
+        Okio.buffer(Okio.sink(file)).use {
+            fileStructure.writeHeader(it)
+            fileStructure.writeSegments(it)
         }
     }
 
@@ -61,11 +74,11 @@ class RangeTmpFile(mission: RealMission) : DownloadFile(mission) {
 
     fun currentStatus(): Status {
         var downloadSize = 0L
-        val totalSize = mission.contentLength
+        val totalSize = mission.actual.totalSize
 
         val segments = getSegments()
         segments.forEach { downloadSize += (it.current - it.start) }
-        return DownloadConfig.FACTORY.downloading(false, downloadSize, totalSize)
+        return DownloadConfig.STATUS_FACTORY.downloading(false, downloadSize, totalSize)
     }
 
     inner class FileStructure {
@@ -82,7 +95,7 @@ class RangeTmpFile(mission: RealMission) : DownloadFile(mission) {
         }
 
         fun writeHeader(sink: BufferedSink) {
-            totalSize = mission.contentLength
+            totalSize = mission.actual.totalSize
             totalSegments = calculateSegments()
 
             sink.write(FILE_HEADER_MAGIC_NUMBER_HEX)
@@ -103,7 +116,7 @@ class RangeTmpFile(mission: RealMission) : DownloadFile(mission) {
 
             for (i in 0 until totalSegments) {
                 val end = if (i == totalSegments - 1) {
-                    mission.contentLength - 1
+                    mission.actual.totalSize - 1
                 } else {
                     start + RANGE_DOWNLOAD_SIZE - 1
                 }
@@ -146,11 +159,11 @@ class RangeTmpFile(mission: RealMission) : DownloadFile(mission) {
         }
 
         private fun calculateSegments(): Long {
-            val remainder = mission.contentLength % RANGE_DOWNLOAD_SIZE
+            val remainder = mission.actual.totalSize % RANGE_DOWNLOAD_SIZE
             return if (remainder == 0L) {
-                mission.contentLength / RANGE_DOWNLOAD_SIZE
+                mission.actual.totalSize / RANGE_DOWNLOAD_SIZE
             } else {
-                mission.contentLength / RANGE_DOWNLOAD_SIZE + 1
+                mission.actual.totalSize / RANGE_DOWNLOAD_SIZE + 1
             }
         }
     }
@@ -171,6 +184,10 @@ class RangeTmpFile(mission: RealMission) : DownloadFile(mission) {
             sink.writeLong(current)
             sink.writeLong(end)
             return this
+        }
+
+        fun size(): Long {
+            return end - current + 1
         }
     }
 }

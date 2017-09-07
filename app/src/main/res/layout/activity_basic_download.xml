@@ -21,7 +21,6 @@
                 android:background="?attr/colorPrimary"
                 app:popupTheme="@style/AppTheme.PopupOverlay"
                 app:title="@string/title_activity_basic_download" />
-
         </android.support.design.widget.AppBarLayout>
 
         <include

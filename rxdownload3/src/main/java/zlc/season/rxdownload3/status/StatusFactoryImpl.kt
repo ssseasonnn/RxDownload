@@ -6,12 +6,12 @@ class StatusFactoryImpl : StatusFactory {
         return Waiting()
     }
 
-    override fun downloading(isChunked: Boolean, downloadSize: Long, totalSize: Long): Status {
-        return Downloading(isChunked, downloadSize, totalSize)
+    override fun downloading(chunkFlag: Boolean, downloadSize: Long, totalSize: Long): Status {
+        return Downloading(chunkFlag, downloadSize, totalSize)
     }
 
-    override fun failed(throwable: Throwable): Status {
-        return Failed(throwable)
+    override fun failed(throwable: Throwable, manualFlag: Boolean): Status {
+        return Failed(throwable, manualFlag)
     }
 
     override fun succeed(): Status {

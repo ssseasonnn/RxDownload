@@ -13,11 +13,11 @@ abstract class Status(val status: Int) {
 
 class Waiting : Status(WAITING)
 
-class Downloading(var isChunked: Boolean = false,
+class Downloading(var chunkFlag: Boolean = false,
                   var downloadSize: Long = 0L,
                   var totalSize: Long = 0L) : Status(DOWNLOADING)
 
-class Failed(val throwable: Throwable) : Status(FAILED)
+class Failed(val throwable: Throwable, val manualFlag: Boolean) : Status(FAILED)
 
 class Succeed : Status(SUCCEED)
 

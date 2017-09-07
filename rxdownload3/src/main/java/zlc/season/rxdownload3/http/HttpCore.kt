@@ -3,7 +3,7 @@ package zlc.season.rxdownload3.http
 import io.reactivex.Maybe
 import okhttp3.ResponseBody
 import retrofit2.Response
-import zlc.season.rxdownload3.core.IllegalUrlException
+import zlc.season.rxdownload3.core.DownloadConfig.ANY
 import zlc.season.rxdownload3.core.RealMission
 
 
@@ -15,16 +15,19 @@ object HttpCore {
         return api.check(TEST_RANGE_SUPPORT, mission.actual.url)
                 .flatMap {
                     if (!it.isSuccessful) {
-                        throw IllegalUrlException("Url is illegal, please make sure your url correct")
+                        throw  RuntimeException(it.message())
                     }
                     mission.setup(it)
-                    Maybe.just(1)
+                    Maybe.just(ANY)
                 }
     }
 
-    fun download(realMission: RealMission, range: String = ""): Maybe<Response<ResponseBody>> {
-        return api.download(range, realMission.actual.url)
+    fun download(mission: RealMission, range: String = ""): Maybe<Response<ResponseBody>> {
+        return api.download(range, mission.actual.url)
+                .doOnSuccess {
+                    if (!it.isSuccessful) {
+                        throw  RuntimeException(it.message())
+                    }
+                }
     }
-
-
 }

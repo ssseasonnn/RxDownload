@@ -19,7 +19,7 @@ object ResponseUtil {
         if (resp.code() == 206 || contentRange(resp).isNotEmpty() || acceptRanges(resp).isNotEmpty()) {
             return true
         }
-
+ 
         return false
     }
 

@@ -6,6 +6,13 @@ import zlc.season.rxdownload3.core.Status
 
 
 interface DbAdapter {
+    fun create(mission: Mission)
+
+    fun read(mission: Mission)
+
+    fun delete(mission: Mission)
+
+
     fun readStatus(mission: Mission): Status
 
     fun writeStatus(mission: Mission, status: Status)

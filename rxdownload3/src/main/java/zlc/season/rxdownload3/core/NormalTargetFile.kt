@@ -21,11 +21,14 @@ class NormalTargetFile(val mission: RealMission) {
 
         if (!file.exists()) {
             file.createNewFile()
+        } else {
+            file.delete()
+            file.createNewFile()
         }
     }
 
     fun save(response: Response<ResponseBody>) {
-        val respBody = response.body() ?: throw RuntimeException("Response body is NULL")
+        val respBody = response.body() ?: throw Throwable("Response body is NULL")
 
         var downloadSize = 0L
         val byteSize = 8192L

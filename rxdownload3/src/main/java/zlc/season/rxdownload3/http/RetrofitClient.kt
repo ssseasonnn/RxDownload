@@ -9,16 +9,18 @@ import java.util.concurrent.TimeUnit
 
 
 object RetrofitClient {
-    fun get(baseUrl: String = "http://www.example.com"): Retrofit {
+    private val FAKE_BASE_URL = "http://www.example.com"
+
+    fun get(baseUrl: String = FAKE_BASE_URL): Retrofit {
         return Retrofit.Builder()
                 .baseUrl(baseUrl)
-                .client(generateOkHttp())
+                .client(okHttpClient())
                 .addConverterFactory(GsonConverterFactory.create())
                 .addCallAdapterFactory(RxJava2CallAdapterFactory.create())
                 .build()
     }
 
-    private fun generateOkHttp(): OkHttpClient {
+    private fun okHttpClient(): OkHttpClient {
         val builder = OkHttpClient().newBuilder()
                 .connectTimeout(10, TimeUnit.SECONDS)
                 .readTimeout(15, TimeUnit.SECONDS)

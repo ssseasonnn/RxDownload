@@ -1,7 +1,13 @@
 package zlc.season.rxdownload3.helper
 
+import io.reactivex.disposables.Disposable
 import java.text.DecimalFormat
 
+fun dispose(disposable: Disposable?) {
+    if (disposable != null && !disposable.isDisposed) {
+        disposable.dispose()
+    }
+}
 
 fun formatSize(size: Long): String {
     val b = size.toDouble()

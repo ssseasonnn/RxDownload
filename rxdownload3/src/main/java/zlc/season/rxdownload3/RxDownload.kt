@@ -41,4 +41,7 @@ object RxDownload {
     fun stopAll(): Maybe<Any> {
         return downloadCore.stopAll()
     }
+
+    fun setDbAdapter(){
+    }
 }

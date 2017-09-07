@@ -34,7 +34,7 @@ class RangeTargetFile(val mission: RealMission) {
     }
 
     fun save(response: Response<ResponseBody>, segment: Segment, tmpFile: RangeTmpFile) {
-        val respBody = response.body() ?: throw RuntimeException("Response body is NULL")
+        val respBody = response.body() ?: throw Throwable("Response body is NULL")
 
         val buffer = ByteArray(BUFFER_SIZE)
 

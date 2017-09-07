@@ -22,7 +22,7 @@ import zlc.season.rxdownload3.core.Succeed;
 import zlc.season.rxdownload3.core.Waiting;
 import zlc.season.rxdownloadproject.databinding.ActivityBasicDownloadBinding;
 
-import static zlc.season.rxdownload3.helper.DisposableUtilKt.dispose;
+import static zlc.season.rxdownload3.helper.UtilsKt.dispose;
 
 public class BasicDownloadActivity extends AppCompatActivity {
     private static final String TAG = "BasicDownloadActivity";
@@ -75,21 +75,19 @@ public class BasicDownloadActivity extends AppCompatActivity {
                 .subscribe(new Consumer<Status>() {
                     @Override
                     public void accept(Status status) throws Exception {
+                        System.out.println(status.getDownloadSize());
+                        System.out.println(status.getTotalSize());
+                        binding.contentBasicDownload.percent.setText(status.percent());
+                        binding.contentBasicDownload.size.setText(status.formatString());
+                        binding.contentBasicDownload.progress.setProgress((int) status.getDownloadSize());
+                        binding.contentBasicDownload.progress.setMax((int) status.getTotalSize());
 
                         if (status instanceof Empty) {
-                            binding.contentBasicDownload.percent.setText("0%");
                             binding.contentBasicDownload.action.setText("开始");
-                            binding.contentBasicDownload.size.setText("");
                         }
 
                         if (status instanceof Downloading) {
                             binding.contentBasicDownload.action.setText("暂停");
-
-                            Downloading downloading = (Downloading) status;
-                            binding.contentBasicDownload.percent.setText(downloading.percent());
-                            binding.contentBasicDownload.size.setText(downloading.formatString());
-                            binding.contentBasicDownload.progress.setProgress((int) downloading.getDownloadSize());
-                            binding.contentBasicDownload.progress.setMax((int) downloading.getTotalSize());
                         }
 
                         if (status instanceof Failed) {

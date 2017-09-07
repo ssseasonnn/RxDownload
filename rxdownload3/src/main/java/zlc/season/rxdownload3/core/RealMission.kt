@@ -41,11 +41,12 @@ class RealMission(private val semaphore: Semaphore, val actual: Mission) {
     private fun create() {
         maybe = Maybe.just(ANY)
                 .subscribeOn(io())
+                .flatMap { readMission() }
                 .flatMap { check() }
                 .flatMap { generateType() }
                 .flatMap { it.download() }
                 .observeOn(mainThread())
-                .doOnDispose { emitStatus(Failed(status, RuntimeException("Mission failed"), true)) }
+                .doOnDispose { emitStatus(Failed(status, Throwable("Mission failed"), true)) }
                 .doOnError { emitStatus(Failed(status, it)) }
                 .doOnSuccess { emitStatus(Succeed(status)) }
                 .doFinally { semaphore.release() }
@@ -53,10 +54,6 @@ class RealMission(private val semaphore: Semaphore, val actual: Mission) {
 
     fun emitStatus(status: Status) {
         this.status = status
-        processor.onNext(status)
-    }
-
-    fun emitStatus() {
         processor.onNext(status)
     }
 
@@ -77,6 +74,11 @@ class RealMission(private val semaphore: Semaphore, val actual: Mission) {
         actual.rangeFlag = isSupportRange(it)
         totalSize = contentLength(it)
 
+    }
+
+    private fun readMission(): Maybe<Any> {
+        DB.read(actual)
+        return Maybe.just(ANY)
     }
 
     private fun check(): Maybe<Any> {

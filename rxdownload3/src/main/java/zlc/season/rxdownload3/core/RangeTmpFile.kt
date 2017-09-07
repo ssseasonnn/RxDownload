@@ -28,17 +28,27 @@ class RangeTmpFile(val mission: RealMission) {
         }
 
         if (!file.exists()) {
-            file.createNewFile()
-            writeTmp()
+            createTmpFile()
         } else {
             if (mission.actual.forceReDownload) {
-                file.delete()
-                file.createNewFile()
-                writeTmp()
+                recreateTmpFile()
             } else {
                 readTmp()
+                if (fileStructure.totalSize != mission.totalSize) {
+                    recreateTmpFile()
+                }
             }
         }
+    }
+
+    private fun recreateTmpFile() {
+        file.delete()
+        createTmpFile()
+    }
+
+    private fun createTmpFile() {
+        file.createNewFile()
+        writeTmp()
     }
 
     private fun readTmp() {

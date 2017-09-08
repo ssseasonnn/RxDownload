@@ -20,7 +20,7 @@ class SqliteActor(context: Context) : DbActor {
 
     override fun create(mission: Mission) {
         val writableDatabase = sqliteOpenHelper.writableDatabase
-        
+
     }
 
     override fun read(mission: Mission) {

@@ -28,7 +28,6 @@ class RealMission(private val semaphore: Semaphore, val actual: Mission) {
 
     init {
         create()
-        configure()
     }
 
     fun getProcessor(): Flowable<Status> {
@@ -55,12 +54,6 @@ class RealMission(private val semaphore: Semaphore, val actual: Mission) {
     fun emitStatus(status: Status) {
         this.status = status
         processor.onNext(status)
-    }
-
-    private fun configure() {
-        processor.doOnNext {
-            //            DB.writeStatus(actual, it)
-        }
     }
 
     fun setup(it: Response<Void>) {

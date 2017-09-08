@@ -19,6 +19,7 @@ import zlc.season.rxdownload3.core.Failed;
 import zlc.season.rxdownload3.core.Status;
 import zlc.season.rxdownload3.core.Succeed;
 import zlc.season.rxdownload3.core.Waiting;
+import zlc.season.rxdownload3.helper.LoggerKt;
 import zlc.season.rxdownloadproject.databinding.ActivityBasicDownloadBinding;
 
 import static android.Manifest.permission.WRITE_EXTERNAL_STORAGE;
@@ -79,24 +80,29 @@ public class BasicDownloadActivity extends AppCompatActivity {
 
                         if (status instanceof Empty) {
                             binding.contentBasicDownload.action.setText("开始");
+                            LoggerKt.logd("empty");
+                        }
+
+                        if (status instanceof Waiting) {
+                            binding.contentBasicDownload.action.setText("等待中");
+                            LoggerKt.logd("wait");
                         }
 
                         if (status instanceof Downloading) {
                             binding.contentBasicDownload.action.setText("暂停");
+                            LoggerKt.logd("download");
                         }
 
                         if (status instanceof Failed) {
                             binding.contentBasicDownload.action.setText("失败");
                             Failed failed = (Failed) status;
                             Log.w(TAG, failed.getThrowable());
-                        }
-
-                        if (status instanceof Waiting) {
-                            binding.contentBasicDownload.action.setText("等待中");
+                            LoggerKt.logd("failed");
                         }
 
                         if (status instanceof Succeed) {
                             binding.contentBasicDownload.action.setText("完成");
+                            LoggerKt.logd("succeed");
                         }
                     }
                 });

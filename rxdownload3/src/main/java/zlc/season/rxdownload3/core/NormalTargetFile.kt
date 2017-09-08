@@ -1,8 +1,10 @@
 package zlc.season.rxdownload3.core
 
+import io.reactivex.Maybe
 import okhttp3.ResponseBody
 import okio.Okio
 import retrofit2.Response
+import zlc.season.rxdownload3.core.DownloadConfig.ANY
 import zlc.season.rxdownload3.core.DownloadConfig.DOWNLOADING_FILE_SUFFIX
 import zlc.season.rxdownload3.helper.isChunked
 import java.io.File
@@ -36,7 +38,7 @@ class NormalTargetFile(val mission: RealMission) {
         }
     }
 
-    fun save(response: Response<ResponseBody>) {
+    fun save(response: Response<ResponseBody>): Maybe<Any> {
         val respBody = response.body() ?: throw Throwable("Response body is NULL")
 
         var downloadSize = 0L
@@ -45,21 +47,24 @@ class NormalTargetFile(val mission: RealMission) {
 
         val downloading = Downloading(isChunked(response), downloadSize, totalSize)
 
-        respBody.source().use { source ->
-            Okio.buffer(Okio.sink(realFile)).use { sink ->
-                val buffer = sink.buffer()
-                var readLen = source.read(buffer, byteSize)
+        return Maybe.create {
+            respBody.source().use { source ->
+                Okio.buffer(Okio.sink(realFile)).use { sink ->
+                    val buffer = sink.buffer()
+                    var readLen = source.read(buffer, byteSize)
 
-                while (readLen != -1L) {
-                    downloadSize += readLen
-                    downloading.downloadSize = downloadSize
+                    while (readLen != -1L && !it.isDisposed) {
+                        downloadSize += readLen
+                        downloading.downloadSize = downloadSize
 
-                    mission.emitStatus(downloading)
-                    readLen = source.read(buffer, byteSize)
+                        mission.emitStatus(downloading)
+                        readLen = source.read(buffer, byteSize)
+                    }
+
+                    downloadFile.renameTo(realFile)
+
+                    it.onSuccess(ANY)
                 }
-
-                downloadFile.renameTo(realFile)
-                mission.emitStatus(Succeed(totalSize))
             }
         }
     }

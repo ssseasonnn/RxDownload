@@ -41,16 +41,10 @@ class RangeDownload(mission: RealMission) : DownloadType(mission) {
     private fun rangeDownload(segment: Segment): Maybe<Any> {
         return Maybe.just(segment)
                 .subscribeOn(Schedulers.io())
-                .map {
-                    val range = "bytes=${it.start}-${it.end}"
-                    logd("Range: $range")
-                    return@map range
-                }
+                .map { "bytes=${it.start}-${it.end}" }
+                .doOnSuccess { logd("Range: $it") }
                 .flatMap { HttpCore.download(mission, it) }
-                .flatMap {
-                    targetFile.save(it, segment, tmpFile)
-                    Maybe.just(ANY)
-                }
+                .flatMap { targetFile.save(it, segment, tmpFile) }
     }
 }
 

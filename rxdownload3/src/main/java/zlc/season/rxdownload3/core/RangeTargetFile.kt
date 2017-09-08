@@ -1,7 +1,9 @@
 package zlc.season.rxdownload3.core
 
+import io.reactivex.Maybe
 import okhttp3.ResponseBody
 import retrofit2.Response
+import zlc.season.rxdownload3.core.DownloadConfig.ANY
 import zlc.season.rxdownload3.core.DownloadConfig.DOWNLOADING_FILE_SUFFIX
 import zlc.season.rxdownload3.core.RangeTmpFile.Segment
 import java.io.File
@@ -37,40 +39,44 @@ class RangeTargetFile(val mission: RealMission) {
         downloadFile.renameTo(realFile)
     }
 
-    fun save(response: Response<ResponseBody>, segment: Segment, tmpFile: RangeTmpFile) {
+    fun save(response: Response<ResponseBody>, segment: Segment, tmpFile: RangeTmpFile): Maybe<Any> {
         val respBody = response.body() ?: throw Throwable("Response body is NULL")
 
-        val buffer = ByteArray(BUFFER_SIZE)
+        return Maybe.create {
+            val buffer = ByteArray(BUFFER_SIZE)
 
-        respBody.byteStream().use { source ->
-            RandomAccessFile(downloadFile, MODE).use { target ->
-                RandomAccessFile(tmpFile.getFile(), MODE).use { tmp ->
-                    target.channel.use { targetChannel ->
-                        tmp.channel.use { tmpChannel ->
+            respBody.byteStream().use { source ->
+                RandomAccessFile(downloadFile, MODE).use { target ->
+                    RandomAccessFile(tmpFile.getFile(), MODE).use { tmp ->
+                        target.channel.use { targetChannel ->
+                            tmp.channel.use { tmpChannel ->
 
-                            val targetBuffer = targetChannel.map(
-                                    READ_WRITE,
-                                    segment.current,
-                                    segment.size()
-                            )
+                                val targetBuffer = targetChannel.map(
+                                        READ_WRITE,
+                                        segment.current,
+                                        segment.size()
+                                )
 
-                            val segmentBuffer = tmpChannel.map(
-                                    READ_WRITE,
-                                    tmpFile.getPosition(segment),
-                                    Segment.SEGMENT_SIZE
-                            )
+                                val segmentBuffer = tmpChannel.map(
+                                        READ_WRITE,
+                                        tmpFile.getPosition(segment),
+                                        Segment.SEGMENT_SIZE
+                                )
 
-                            var readLen = source.read(buffer)
+                                var readLen = source.read(buffer)
 
-                            while (readLen != -1) {
-                                segment.current += readLen
+                                while (readLen != -1 && !it.isDisposed) {
+                                    segment.current += readLen
 
-                                targetBuffer.put(buffer, 0, readLen)
-                                segmentBuffer.position(16)
-                                segmentBuffer.putLong(segment.current)
+                                    targetBuffer.put(buffer, 0, readLen)
+                                    segmentBuffer.position(16)
+                                    segmentBuffer.putLong(segment.current)
 
-                                mission.emitStatus(tmpFile.currentStatus())
-                                readLen = source.read(buffer)
+                                    mission.emitStatus(tmpFile.currentStatus())
+                                    readLen = source.read(buffer)
+                                }
+
+                                it.onSuccess(ANY)
                             }
                         }
                     }

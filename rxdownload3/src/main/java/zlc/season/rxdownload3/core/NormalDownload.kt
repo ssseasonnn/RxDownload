@@ -10,6 +10,10 @@ class NormalDownload(mission: RealMission) : DownloadType(mission) {
     private val targetFile = NormalTargetFile(mission)
 
     override fun download(): Maybe<Any> {
+        if (targetFile.ensureFinish()) {
+            return Maybe.just(ANY)
+        }
+
         return Maybe.just(ANY)
                 .flatMap { HttpCore.download(mission) }
                 .flatMap {

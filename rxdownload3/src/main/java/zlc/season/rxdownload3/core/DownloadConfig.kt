@@ -6,12 +6,18 @@ import zlc.season.rxdownload3.database.EmptyDbAdapter
 
 
 object DownloadConfig {
+    var DEBUG = true
+
     val ANY = Any()
+    val DOWNLOADING_FILE_SUFFIX = ".download"
+    val TMP_DIR_SUFFIX = ".TMP"
+    val TMP_FILE_SUFFIX = ".tmp"
+
 
     /**
      * Every range download size.
      */
-    val RANGE_DOWNLOAD_SIZE: Long = 5 * 1024 * 1024 // 5M
+    val RANGE_DOWNLOAD_SIZE: Long = 5 * 1024 * 1024  // 5M
 
     /**
      * Max download mission number, default is 3 count

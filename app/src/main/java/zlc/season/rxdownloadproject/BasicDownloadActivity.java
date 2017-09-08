@@ -1,6 +1,5 @@
 package zlc.season.rxdownloadproject;
 
-import android.Manifest;
 import android.databinding.DataBindingUtil;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
@@ -22,6 +21,7 @@ import zlc.season.rxdownload3.core.Succeed;
 import zlc.season.rxdownload3.core.Waiting;
 import zlc.season.rxdownloadproject.databinding.ActivityBasicDownloadBinding;
 
+import static android.Manifest.permission.WRITE_EXTERNAL_STORAGE;
 import static zlc.season.rxdownload3.helper.UtilsKt.dispose;
 
 public class BasicDownloadActivity extends AppCompatActivity {
@@ -31,36 +31,30 @@ public class BasicDownloadActivity extends AppCompatActivity {
 
     private ActivityBasicDownloadBinding binding;
     private Disposable disposable;
-
+    private Status currentStatus;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
-        requestPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE);
-
+        requestPermission(WRITE_EXTERNAL_STORAGE);
         binding = DataBindingUtil.setContentView(this, R.layout.activity_basic_download);
         setSupportActionBar(binding.toolbar);
 
+        setAction();
+        createDownloadMission();
+    }
+
+    private void setAction() {
         binding.contentBasicDownload.action.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                RxDownload.INSTANCE.start(url).subscribe(new Consumer<Object>() {
-                    @Override
-                    public void accept(Object o) throws Exception {
-
-                    }
-                }, new Consumer<Throwable>() {
-                    @Override
-                    public void accept(Throwable throwable) throws Exception {
-                        Log.w(TAG, throwable);
-                    }
-                });
+                if (currentStatus instanceof Downloading) {
+                    RxDownload.INSTANCE.stop(url).subscribe();
+                } else {
+                    RxDownload.INSTANCE.start(url).subscribe();
+                }
             }
         });
-
-
-        createDownloadMission();
     }
 
     @Override
@@ -75,12 +69,13 @@ public class BasicDownloadActivity extends AppCompatActivity {
                 .subscribe(new Consumer<Status>() {
                     @Override
                     public void accept(Status status) throws Exception {
-                        System.out.println(status.getDownloadSize());
-                        System.out.println(status.getTotalSize());
+                        currentStatus = status;
+
+                        binding.contentBasicDownload.progress.setMax((int) status.getTotalSize());
+                        binding.contentBasicDownload.progress.setProgress((int) status.getDownloadSize());
+
                         binding.contentBasicDownload.percent.setText(status.percent());
                         binding.contentBasicDownload.size.setText(status.formatString());
-                        binding.contentBasicDownload.progress.setProgress((int) status.getDownloadSize());
-                        binding.contentBasicDownload.progress.setMax((int) status.getTotalSize());
 
                         if (status instanceof Empty) {
                             binding.contentBasicDownload.action.setText("开始");

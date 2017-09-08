@@ -2,31 +2,29 @@ package zlc.season.rxdownload3.core
 
 import io.reactivex.Flowable
 import io.reactivex.Maybe
-import io.reactivex.android.schedulers.AndroidSchedulers.mainThread
 import io.reactivex.disposables.Disposable
 import io.reactivex.processors.BehaviorProcessor
 import io.reactivex.schedulers.Schedulers.io
 import io.reactivex.schedulers.Schedulers.newThread
 import retrofit2.Response
 import zlc.season.rxdownload3.core.DownloadConfig.ANY
-import zlc.season.rxdownload3.core.DownloadConfig.DB
 import zlc.season.rxdownload3.core.DownloadConfig.DEFAULT_SAVE_PATH
-import zlc.season.rxdownload3.helper.ResponseUtil.contentLength
-import zlc.season.rxdownload3.helper.ResponseUtil.fileName
-import zlc.season.rxdownload3.helper.ResponseUtil.isSupportRange
+import zlc.season.rxdownload3.helper.contentLength
 import zlc.season.rxdownload3.helper.dispose
+import zlc.season.rxdownload3.helper.fileName
+import zlc.season.rxdownload3.helper.isSupportRange
 import zlc.season.rxdownload3.http.HttpCore
 import java.util.concurrent.Semaphore
 
 
 class RealMission(private val semaphore: Semaphore, val actual: Mission) {
     private val processor = BehaviorProcessor.create<Status>().toSerialized()
+    private var status: Status = Empty()
 
     lateinit var maybe: Maybe<Any>
 
     var disposable: Disposable? = null
     var totalSize = 0L
-    var status: Status = DB.readStatus(actual)
 
     init {
         create()
@@ -41,15 +39,17 @@ class RealMission(private val semaphore: Semaphore, val actual: Mission) {
     private fun create() {
         maybe = Maybe.just(ANY)
                 .subscribeOn(io())
-                .flatMap { readMission() }
                 .flatMap { check() }
                 .flatMap { generateType() }
                 .flatMap { it.download() }
-                .observeOn(mainThread())
                 .doOnDispose { emitStatus(Failed(status, Throwable("Mission failed"), true)) }
                 .doOnError { emitStatus(Failed(status, it)) }
                 .doOnSuccess { emitStatus(Succeed(status)) }
                 .doFinally { semaphore.release() }
+    }
+
+    fun setStatus(status: Status) {
+        this.status = status
     }
 
     fun emitStatus(status: Status) {
@@ -58,14 +58,9 @@ class RealMission(private val semaphore: Semaphore, val actual: Mission) {
     }
 
     private fun configure() {
-        processor
-//                .sample(100, MILLISECONDS, true)
-                .doOnNext {
-                    DB.writeStatus(actual, it)
-                    if (it is Failed) {
-
-                    }
-                }
+        processor.doOnNext {
+            //            DB.writeStatus(actual, it)
+        }
     }
 
     fun setup(it: Response<Void>) {
@@ -76,13 +71,8 @@ class RealMission(private val semaphore: Semaphore, val actual: Mission) {
 
     }
 
-    private fun readMission(): Maybe<Any> {
-        DB.read(actual)
-        return Maybe.just(ANY)
-    }
-
     private fun check(): Maybe<Any> {
-        return if (actual.rangeFlag == null || actual.forceReDownload) {
+        return if (actual.rangeFlag == null) {
             HttpCore.checkUrl(this)
         } else {
             Maybe.just(ANY)

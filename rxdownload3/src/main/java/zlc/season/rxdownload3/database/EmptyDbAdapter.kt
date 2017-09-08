@@ -6,6 +6,18 @@ import zlc.season.rxdownload3.core.Mission
 import zlc.season.rxdownload3.core.Status
 
 class EmptyDbAdapter : DbAdapter {
+    override fun create(mission: Mission) {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun read(mission: Mission) {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun delete(mission: Mission) {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
     override fun readStatus(mission: Mission): Status {
         return Empty()
     }

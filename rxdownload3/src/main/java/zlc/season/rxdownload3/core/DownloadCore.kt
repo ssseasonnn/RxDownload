@@ -3,7 +3,7 @@ package zlc.season.rxdownload3.core
 import io.reactivex.Flowable
 import io.reactivex.Maybe
 import io.reactivex.plugins.RxJavaPlugins.setErrorHandler
-import zlc.season.rxdownload3.helper.Logger.loge
+import zlc.season.rxdownload3.helper.loge
 import java.io.InterruptedIOException
 import java.net.SocketException
 

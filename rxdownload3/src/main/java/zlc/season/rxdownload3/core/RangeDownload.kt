@@ -7,7 +7,7 @@ import io.reactivex.schedulers.Schedulers
 import zlc.season.rxdownload3.core.DownloadConfig.ANY
 import zlc.season.rxdownload3.core.DownloadConfig.MAX_CONCURRENCY
 import zlc.season.rxdownload3.core.RangeTmpFile.Segment
-import zlc.season.rxdownload3.helper.Logger
+import zlc.season.rxdownload3.helper.logd
 import zlc.season.rxdownload3.http.HttpCore
 
 
@@ -16,8 +16,12 @@ class RangeDownload(mission: RealMission) : DownloadType(mission) {
     private val tmpFile = RangeTmpFile(mission)
 
     override fun download(): Maybe<Any> {
-        if (tmpFile.isFinish()) {
-            return Maybe.just(ANY)
+        if (tmpFile.ensureFinish()) {
+            if (targetFile.ensureFinish()) {
+                return Maybe.just(ANY)
+            } else {
+                tmpFile.reset()
+            }
         }
 
         val arrays = mutableListOf<Maybe<Any>>()
@@ -30,6 +34,7 @@ class RangeDownload(mission: RealMission) : DownloadType(mission) {
         return Flowable.fromIterable(arrays)
                 .flatMap(INSTANCE, true, MAX_CONCURRENCY)
                 .lastElement()
+                .doOnSuccess { targetFile.rename() }
     }
 
 
@@ -38,7 +43,7 @@ class RangeDownload(mission: RealMission) : DownloadType(mission) {
                 .subscribeOn(Schedulers.io())
                 .map {
                     val range = "bytes=${it.start}-${it.end}"
-                    Logger.logd("Range: $range")
+                    logd("Range: $range")
                     return@map range
                 }
                 .flatMap { HttpCore.download(mission, it) }

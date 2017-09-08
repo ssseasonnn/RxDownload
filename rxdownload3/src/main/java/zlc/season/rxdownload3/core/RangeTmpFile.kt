@@ -6,14 +6,13 @@ import okio.BufferedSource
 import okio.ByteString.decodeHex
 import okio.Okio
 import zlc.season.rxdownload3.core.DownloadConfig.RANGE_DOWNLOAD_SIZE
+import zlc.season.rxdownload3.core.DownloadConfig.TMP_DIR_SUFFIX
+import zlc.season.rxdownload3.core.DownloadConfig.TMP_FILE_SUFFIX
 import zlc.season.rxdownload3.core.RangeTmpFile.Segment.Companion.SEGMENT_SIZE
 import java.io.File
 import java.io.File.separator
 
 class RangeTmpFile(val mission: RealMission) {
-    private val TMP_DIR_SUFFIX = ".TMP"
-    private val TMP_FILE_SUFFIX = ".tmp"
-
     private val tmpDirPath = mission.actual.savePath + separator + TMP_DIR_SUFFIX
     private val tmpFilePath = tmpDirPath + separator + mission.actual.fileName + TMP_FILE_SUFFIX
 
@@ -26,39 +25,36 @@ class RangeTmpFile(val mission: RealMission) {
         if (!dir.exists() || !dir.isDirectory) {
             dir.mkdirs()
         }
+    }
 
-        if (!file.exists()) {
-            createTmpFile()
-        } else {
-            if (mission.actual.forceReDownload) {
-                recreateTmpFile()
+    fun ensureFinish(): Boolean {
+        return if (file.exists()) {
+            readStructure()
+            if (fileStructure.isFinish()) {
+                mission.setStatus(Succeed(fileStructure.totalSize))
+                true
             } else {
-                readTmp()
-                if (fileStructure.totalSize != mission.totalSize) {
-                    recreateTmpFile()
-                }
+                false
             }
+        } else {
+            reset()
+            false
         }
     }
 
-    private fun recreateTmpFile() {
-        file.delete()
-        createTmpFile()
-    }
-
-    private fun createTmpFile() {
+    fun reset() {
         file.createNewFile()
-        writeTmp()
+        writeStructure()
     }
 
-    private fun readTmp() {
+    private fun readStructure() {
         Okio.buffer(Okio.source(file)).use {
             fileStructure.readHeader(it)
             fileStructure.readSegments(it)
         }
     }
 
-    private fun writeTmp() {
+    private fun writeStructure() {
         Okio.buffer(Okio.sink(file)).use {
             fileStructure.writeHeader(it)
             fileStructure.writeSegments(it)
@@ -67,10 +63,6 @@ class RangeTmpFile(val mission: RealMission) {
 
     fun getFile(): File {
         return file
-    }
-
-    fun isFinish(): Boolean {
-        return fileStructure.isFinish()
     }
 
     fun getSegments(): List<Segment> {

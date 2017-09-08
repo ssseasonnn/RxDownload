@@ -7,19 +7,16 @@ class Mission(val url: String) {
     var savePath = ""
 
     var rangeFlag: Boolean? = null
-    var forceReDownload = false
 
     constructor(
             url: String,
             fileName: String = "",
             savePath: String = "",
-            tag: String = "",
-            forceReDownload: Boolean = false
+            tag: String = ""
     ) : this(url) {
         this.fileName = fileName
         this.savePath = savePath
         this.tag = tag
-        this.forceReDownload = forceReDownload
     }
 
     override fun equals(other: Any?): Boolean {

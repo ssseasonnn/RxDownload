@@ -1,5 +1,6 @@
 package zlc.season.rxdownload3.database
 
+import android.content.ContentValues
 import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
@@ -11,28 +12,70 @@ class SqliteActor(context: Context) : DbActor {
     val DATABASE_NAME = "RxDownload.db"
     val DATABASE_VERSION = 1
 
-    val sqliteOpenHelper: SQLiteOpenHelper = SqliteOpenHelper(context, DATABASE_NAME, DATABASE_VERSION)
+    val sqliteOpenHelper = object : SQLiteOpenHelper(context, DATABASE_NAME, null, DATABASE_VERSION) {
+        override fun onCreate(db: SQLiteDatabase?) {
+            if (db == null) {
+                return
+            }
 
+            db.beginTransaction()
+            try {
+                db.execSQL(Table.CREATE)
+                db.setTransactionSuccessful()
+            } finally {
+                db.endTransaction()
+            }
+        }
+
+        override fun onUpgrade(db: SQLiteDatabase?, oldVersion: Int, newVersion: Int) {
+        }
+    }
 
     override fun update(mission: Mission) {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        val writableDatabase = sqliteOpenHelper.writableDatabase
+        val cv = ContentValues()
+        cv.put(Table.URL, mission.url)
+        cv.put(Table.SAVE_NAME, mission.saveName)
+        cv.put(Table.SAVE_PATH, mission.savePath)
+        cv.put(Table.RANGE_FLAG, mission.rangeFlag)
+        writableDatabase.update(Table.TABLE_NAME, cv, "${Table.TAG}=?", arrayOf(mission.tag))
     }
 
     override fun create(mission: Mission) {
         val writableDatabase = sqliteOpenHelper.writableDatabase
-
+        val cv = ContentValues()
+        cv.put(Table.TAG, mission.tag)
+        cv.put(Table.URL, mission.url)
+        cv.put(Table.SAVE_NAME, mission.saveName)
+        cv.put(Table.SAVE_PATH, mission.savePath)
+        cv.put(Table.RANGE_FLAG, mission.rangeFlag)
+        writableDatabase.insert(Table.TABLE_NAME, null, cv)
     }
 
     override fun read(mission: Mission) {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        val readableDatabase = sqliteOpenHelper.readableDatabase
+        val cursor = readableDatabase.query(Table.TABLE_NAME,
+                arrayOf(Table.TAG, Table.URL, Table.SAVE_NAME, Table.SAVE_PATH, Table.RANGE_FLAG),
+                "${Table.TAG}=?", arrayOf(mission.tag),
+                null, null, null)
+        cursor.use {
+            cursor.moveToFirst()
+            if (cursor.count == 0) {
+                return
+            }
+            val saveName = cursor.getString(cursor.getColumnIndexOrThrow(Table.SAVE_NAME))
+            val savePath = cursor.getString(cursor.getColumnIndexOrThrow(Table.SAVE_PATH))
+            val rangeFlag = cursor.getInt(cursor.getColumnIndexOrThrow(Table.RANGE_FLAG)) > 0
+
+            mission.saveName = saveName
+            mission.savePath = savePath
+            mission.rangeFlag = rangeFlag
+        }
     }
 
     override fun delete(mission: Mission) {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
-    }
-
-    init {
-
+        val writableDatabase = sqliteOpenHelper.writableDatabase
+        writableDatabase.delete(Table.TABLE_NAME, "${Table.TAG}=?", arrayOf(mission.tag))
     }
 
     override fun getAllMission(): Maybe<List<Mission>> {
@@ -48,7 +91,7 @@ object Table {
     val SAVE_NAME = "save_name"
     val SAVE_PATH = "save_path"
     val RANGE_FLAG = "range_flag"
-    val STATUS = "status"
+    val STATUS = "initStatus"
 
     val CREATE = """
             CREATE TABLE $TABLE_NAME (
@@ -59,26 +102,4 @@ object Table {
                 $RANGE_FLAG INTEGER NOT NULL,
                 $STATUS INTEGER NOT NULL )
             """
-}
-
-class SqliteOpenHelper(context: Context, name: String, version: Int)
-    : SQLiteOpenHelper(context, name, null, version) {
-    override fun onCreate(db: SQLiteDatabase?) {
-        if (db == null) {
-            return
-        }
-
-        db.beginTransaction()
-        try {
-            db.execSQL(Table.CREATE)
-            db.setTransactionSuccessful()
-        } finally {
-            db.endTransaction()
-        }
-    }
-
-    override fun onUpgrade(db: SQLiteDatabase?, oldVersion: Int, newVersion: Int) {
-
-    }
-
 }

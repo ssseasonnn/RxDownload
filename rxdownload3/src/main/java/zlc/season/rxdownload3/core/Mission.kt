@@ -3,7 +3,7 @@ package zlc.season.rxdownload3.core
 
 class Mission(val url: String) {
     var tag = url
-    var fileName = ""
+    var saveName = ""
     var savePath = ""
 
     var rangeFlag: Boolean? = null
@@ -14,7 +14,7 @@ class Mission(val url: String) {
             savePath: String = "",
             tag: String = ""
     ) : this(url) {
-        this.fileName = fileName
+        this.saveName = fileName
         this.savePath = savePath
         this.tag = tag
     }

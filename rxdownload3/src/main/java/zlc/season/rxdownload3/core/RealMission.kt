@@ -24,10 +24,18 @@ class RealMission(private val semaphore: Semaphore, val actual: Mission) {
     lateinit var maybe: Maybe<Any>
 
     var disposable: Disposable? = null
+    var downloadType: DownloadType? = null
+
     var totalSize = 0L
 
     init {
-        create()
+        DownloadConfig.DB.read(actual)
+        createDownloadType()
+        if (downloadType != null) {
+            downloadType!!.initStatus()
+        }
+
+        createMaybe()
     }
 
     fun getProcessor(): Flowable<Status> {
@@ -35,16 +43,19 @@ class RealMission(private val semaphore: Semaphore, val actual: Mission) {
         return processor.onBackpressureLatest()
     }
 
-    private fun create() {
+    private fun createMaybe() {
         maybe = Maybe.just(ANY)
                 .subscribeOn(io())
                 .flatMap { check() }
-                .flatMap { generateType() }
-                .flatMap { it.download() }
+                .doOnSuccess { download() }
                 .doOnDispose { emitStatus(Failed(status, Throwable("Mission failed"), true)) }
                 .doOnError { emitStatus(Failed(status, it)) }
-                .doOnSuccess { emitStatus(Succeed(status)) }
+                .doOnComplete { emitStatus(Succeed(status)) }
                 .doFinally { semaphore.release() }
+    }
+
+    private fun download() {
+        downloadType!!.download()
     }
 
     fun setStatus(status: Status) {
@@ -58,25 +69,31 @@ class RealMission(private val semaphore: Semaphore, val actual: Mission) {
 
     fun setup(it: Response<Void>) {
         actual.savePath = if (actual.savePath.isEmpty()) DEFAULT_SAVE_PATH else actual.savePath
-        actual.fileName = fileName(actual.fileName, actual.url, it)
+        actual.saveName = fileName(actual.saveName, actual.url, it)
         actual.rangeFlag = isSupportRange(it)
+
+        createDownloadType()
+
         totalSize = contentLength(it)
 
+    }
+
+    private fun createDownloadType() {
+        downloadType = when {
+            actual.rangeFlag == true -> RangeDownload(this)
+            actual.rangeFlag == false -> NormalDownload(this)
+            else -> {
+                null
+            }
+        }
     }
 
     private fun check(): Maybe<Any> {
         return if (actual.rangeFlag == null) {
             HttpCore.checkUrl(this)
         } else {
+            createDownloadType()
             Maybe.just(ANY)
-        }
-    }
-
-    private fun generateType(): Maybe<DownloadType> {
-        return if (actual.rangeFlag!!) {
-            Maybe.just(RangeDownload(this))
-        } else {
-            Maybe.just(NormalDownload(this))
         }
     }
 

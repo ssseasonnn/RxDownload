@@ -15,13 +15,13 @@ class RangeDownload(mission: RealMission) : DownloadType(mission) {
     private val targetFile = RangeTargetFile(mission)
     private val tmpFile = RangeTmpFile(mission)
 
+    override fun initStatus() {
+        mission.setStatus(tmpFile.currentStatus())
+    }
+
     override fun download(): Maybe<Any> {
-        if (tmpFile.ensureFinish()) {
-            if (targetFile.ensureFinish()) {
-                return Maybe.just(ANY)
-            } else {
-                tmpFile.reset()
-            }
+        if (tmpFile.ensureFinish() && targetFile.ensureFinish()) {
+            return Maybe.just(ANY)
         }
 
         val arrays = mutableListOf<Maybe<Any>>()

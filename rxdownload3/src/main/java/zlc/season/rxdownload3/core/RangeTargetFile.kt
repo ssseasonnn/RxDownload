@@ -14,7 +14,7 @@ import java.nio.channels.FileChannel.MapMode.READ_WRITE
 
 class RangeTargetFile(val mission: RealMission) {
     private val realFileDirPath = mission.actual.savePath
-    private val realFilePath = realFileDirPath + separator + mission.actual.fileName
+    private val realFilePath = realFileDirPath + separator + mission.actual.saveName
 
     private val downloadFilePath = realFilePath + DOWNLOADING_FILE_SUFFIX
 

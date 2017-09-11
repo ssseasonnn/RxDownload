@@ -12,7 +12,7 @@ import java.io.File.separator
 
 
 class NormalTargetFile(val mission: RealMission) {
-    private val realFilePath = mission.actual.savePath + separator + mission.actual.fileName
+    private val realFilePath = mission.actual.savePath + separator + mission.actual.saveName
     private val downloadFilePath = realFilePath + DOWNLOADING_FILE_SUFFIX
 
     private val realFile = File(realFilePath)
@@ -27,7 +27,6 @@ class NormalTargetFile(val mission: RealMission) {
 
     fun ensureFinish(): Boolean {
         return if (realFile.exists()) {
-            mission.setStatus(Succeed(realFile.length()))
             true
         } else {
             if (downloadFile.exists()) {
@@ -35,6 +34,14 @@ class NormalTargetFile(val mission: RealMission) {
             }
             downloadFile.createNewFile()
             false
+        }
+    }
+
+    fun getStatus(): Status {
+        return if (ensureFinish()) {
+            Succeed(realFile.length())
+        } else {
+            Empty()
         }
     }
 

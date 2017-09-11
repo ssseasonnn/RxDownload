@@ -14,7 +14,7 @@ import java.io.File.separator
 
 class RangeTmpFile(val mission: RealMission) {
     private val tmpDirPath = mission.actual.savePath + separator + TMP_DIR_SUFFIX
-    private val tmpFilePath = tmpDirPath + separator + mission.actual.fileName + TMP_FILE_SUFFIX
+    private val tmpFilePath = tmpDirPath + separator + mission.actual.saveName + TMP_FILE_SUFFIX
 
     private val file = File(tmpFilePath)
 
@@ -30,21 +30,12 @@ class RangeTmpFile(val mission: RealMission) {
     fun ensureFinish(): Boolean {
         return if (file.exists()) {
             readStructure()
-            if (fileStructure.isFinish()) {
-                mission.setStatus(Succeed(fileStructure.totalSize))
-                true
-            } else {
-                false
-            }
+            fileStructure.isFinish()
         } else {
-            reset()
+            file.createNewFile()
+            writeStructure()
             false
         }
-    }
-
-    fun reset() {
-        file.createNewFile()
-        writeStructure()
     }
 
     private fun readStructure() {

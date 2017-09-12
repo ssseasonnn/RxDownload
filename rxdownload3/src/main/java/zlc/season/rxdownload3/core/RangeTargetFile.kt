@@ -72,7 +72,7 @@ class RangeTargetFile(val mission: RealMission) {
                                     segmentBuffer.position(16)
                                     segmentBuffer.putLong(segment.current)
 
-                                    mission.emitStatus(tmpFile.currentStatus())
+                                    mission.emitStatus(Downloading(tmpFile.currentStatus()))
                                     readLen = source.read(buffer)
                                 }
 

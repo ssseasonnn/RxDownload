@@ -9,6 +9,18 @@ import zlc.season.rxdownload3.core.Mission
 
 
 class SqliteActor(context: Context) : DbActor {
+    override fun isExists(mission: Mission): Boolean {
+        val readableDatabase = sqliteOpenHelper.readableDatabase
+        val cursor = readableDatabase.rawQuery(
+                "SELECT ${Table.TAG} FROM ${Table.TABLE_NAME} where ${Table.TAG} = ?",
+                arrayOf(mission.tag)
+        )
+        cursor.use {
+            cursor.moveToFirst()
+            return cursor.count != 0
+        }
+    }
+
     val DATABASE_NAME = "RxDownload.db"
     val DATABASE_VERSION = 1
 
@@ -54,10 +66,15 @@ class SqliteActor(context: Context) : DbActor {
 
     override fun read(mission: Mission) {
         val readableDatabase = sqliteOpenHelper.readableDatabase
-        val cursor = readableDatabase.query(Table.TABLE_NAME,
-                arrayOf(Table.TAG, Table.URL, Table.SAVE_NAME, Table.SAVE_PATH, Table.RANGE_FLAG),
-                "${Table.TAG}=?", arrayOf(mission.tag),
-                null, null, null)
+        val cursor = readableDatabase.rawQuery(
+                """
+                    SELECT ${Table.TAG},${Table.URL},${Table.SAVE_NAME},${Table.SAVE_PATH},${Table.RANGE_FLAG}
+                    FROM ${Table.TABLE_NAME}
+                    where ${Table.TAG} = ?
+                    """,
+                arrayOf(mission.tag)
+        )
+
         cursor.use {
             cursor.moveToFirst()
             if (cursor.count == 0) {
@@ -91,7 +108,7 @@ object Table {
     val SAVE_NAME = "save_name"
     val SAVE_PATH = "save_path"
     val RANGE_FLAG = "range_flag"
-    val STATUS = "initStatus"
+    val STATUS = "status"
 
     val CREATE = """
             CREATE TABLE $TABLE_NAME (
@@ -99,7 +116,7 @@ object Table {
                 $URL TEXT NOT NULL,
                 $SAVE_NAME TEXT  NOT NULL,
                 $SAVE_PATH TEXT  NOT NULL,
-                $RANGE_FLAG INTEGER NOT NULL,
-                $STATUS INTEGER NOT NULL )
+                $RANGE_FLAG INTEGER,
+                $STATUS INTEGER )
             """
 }

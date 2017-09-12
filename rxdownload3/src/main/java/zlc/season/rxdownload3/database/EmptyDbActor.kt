@@ -4,6 +4,10 @@ import io.reactivex.Maybe
 import zlc.season.rxdownload3.core.Mission
 
 class EmptyDbActor : DbActor {
+    override fun isExists(mission: Mission): Boolean {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
     override fun update(mission: Mission) {
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }

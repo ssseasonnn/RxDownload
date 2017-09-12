@@ -29,10 +29,12 @@ class RealMission(private val semaphore: Semaphore, val actual: Mission) {
     var totalSize = 0L
 
     init {
-        DownloadConfig.DB.read(actual)
-        createDownloadType()
-        if (downloadType != null) {
-            downloadType!!.initStatus()
+        if (DownloadConfig.DB.isExists(actual)) {
+            DownloadConfig.DB.read(actual)
+            createDownloadType()
+            if (downloadType != null) {
+                downloadType!!.initStatus()
+            }
         }
 
         createMaybe()
@@ -47,10 +49,10 @@ class RealMission(private val semaphore: Semaphore, val actual: Mission) {
         maybe = Maybe.just(ANY)
                 .subscribeOn(io())
                 .flatMap { check() }
-                .doOnSuccess { download() }
+                .flatMap { downloadType!!.download() }
                 .doOnDispose { emitStatus(Failed(status, Throwable("Mission failed"), true)) }
                 .doOnError { emitStatus(Failed(status, it)) }
-                .doOnComplete { emitStatus(Succeed(status)) }
+                .doOnSuccess { emitStatus(Succeed(status)) }
                 .doFinally { semaphore.release() }
     }
 
@@ -71,11 +73,9 @@ class RealMission(private val semaphore: Semaphore, val actual: Mission) {
         actual.savePath = if (actual.savePath.isEmpty()) DEFAULT_SAVE_PATH else actual.savePath
         actual.saveName = fileName(actual.saveName, actual.url, it)
         actual.rangeFlag = isSupportRange(it)
-
-        createDownloadType()
-
         totalSize = contentLength(it)
-
+        createDownloadType()
+        DownloadConfig.DB.create(actual)
     }
 
     private fun createDownloadType() {

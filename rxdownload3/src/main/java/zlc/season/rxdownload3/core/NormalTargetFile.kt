@@ -52,7 +52,8 @@ class NormalTargetFile(val mission: RealMission) {
         val byteSize = 8192L
         val totalSize = respBody.contentLength()
 
-        val downloading = Downloading(isChunked(response), downloadSize, totalSize)
+        val status = Status(isChunked(response), downloadSize, totalSize)
+        val downloading = Downloading(status)
 
         return Maybe.create {
             respBody.source().use { source ->

@@ -1,8 +1,9 @@
 package zlc.season.rxdownload3.core
 
+import android.content.Context
 import android.os.Environment.DIRECTORY_DOWNLOADS
 import android.os.Environment.getExternalStoragePublicDirectory
-import zlc.season.rxdownload3.database.EmptyDbActor
+import zlc.season.rxdownload3.database.DbActor
 import zlc.season.rxdownload3.database.SqliteActor
 
 
@@ -35,5 +36,9 @@ object DownloadConfig {
      */
     var DEFAULT_SAVE_PATH = getExternalStoragePublicDirectory(DIRECTORY_DOWNLOADS).path
 
-    var DB = SqliteActor()
+    lateinit var DB :DbActor
+
+    fun init(context: Context) {
+        DB = SqliteActor(context.applicationContext)
+    }
 }

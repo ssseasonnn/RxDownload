@@ -5,6 +5,8 @@ import zlc.season.rxdownload3.core.Mission
 
 
 interface DbActor {
+    fun isExists(mission: Mission): Boolean
+
     fun create(mission: Mission)
 
     fun read(mission: Mission)

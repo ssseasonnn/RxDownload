@@ -70,7 +70,7 @@ class RangeTmpFile(val mission: RealMission) {
 
         val segments = getSegments()
         segments.forEach { downloadSize += (it.current - it.start) }
-        return Downloading(false, downloadSize, totalSize)
+        return Status(false, downloadSize, totalSize)
     }
 
     inner class FileStructure {

@@ -44,7 +44,7 @@ class Empty : Status()
 
 class Waiting(status: Status) : Status(status)
 
-class Downloading(chunkFlag: Boolean, downloadSize: Long, totalSize: Long) : Status(chunkFlag, downloadSize, totalSize)
+class Downloading(status: Status) : Status(status)
 
 class Failed(status: Status, val throwable: Throwable, val manualFlag: Boolean = false) : Status(status)
 

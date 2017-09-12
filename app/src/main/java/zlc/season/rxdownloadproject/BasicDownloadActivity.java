@@ -14,7 +14,7 @@ import io.reactivex.disposables.Disposable;
 import io.reactivex.functions.Consumer;
 import zlc.season.rxdownload3.RxDownload;
 import zlc.season.rxdownload3.core.Downloading;
-import zlc.season.rxdownload3.core.Empty;
+import zlc.season.rxdownload3.core.Suspend;
 import zlc.season.rxdownload3.core.Failed;
 import zlc.season.rxdownload3.core.Status;
 import zlc.season.rxdownload3.core.Succeed;
@@ -78,9 +78,9 @@ public class BasicDownloadActivity extends AppCompatActivity {
                         binding.contentBasicDownload.percent.setText(status.percent());
                         binding.contentBasicDownload.size.setText(status.formatString());
 
-                        if (status instanceof Empty) {
+                        if (status instanceof Suspend) {
                             binding.contentBasicDownload.action.setText("开始");
-                            LoggerKt.logd("empty");
+                            LoggerKt.logd("suspend");
                         }
 
                         if (status instanceof Waiting) {

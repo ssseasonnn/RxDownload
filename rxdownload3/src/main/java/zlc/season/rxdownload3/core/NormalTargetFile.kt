@@ -41,7 +41,7 @@ class NormalTargetFile(val mission: RealMission) {
         return if (ensureFinish()) {
             Succeed(realFile.length())
         } else {
-            Empty()
+            Suspend()
         }
     }
 

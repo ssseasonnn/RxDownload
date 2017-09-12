@@ -25,17 +25,17 @@ class RangeTmpFile(val mission: RealMission) {
         if (!dir.exists() || !dir.isDirectory) {
             dir.mkdirs()
         }
-    }
 
-    fun ensureFinish(): Boolean {
-        return if (file.exists()) {
+        if (file.exists()) {
             readStructure()
-            fileStructure.isFinish()
         } else {
             file.createNewFile()
             writeStructure()
-            false
         }
+    }
+
+    fun ensureFinish(): Boolean {
+        return fileStructure.isFinish()
     }
 
     private fun readStructure() {

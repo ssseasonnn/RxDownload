@@ -40,7 +40,7 @@ open class Status(var chunkFlag: Boolean = false,
     }
 }
 
-class Empty : Status()
+class Suspend(status: Status = Status()) : Status(status)
 
 class Waiting(status: Status) : Status(status)
 

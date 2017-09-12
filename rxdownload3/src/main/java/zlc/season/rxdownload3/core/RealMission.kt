@@ -19,7 +19,7 @@ import java.util.concurrent.Semaphore
 
 class RealMission(private val semaphore: Semaphore, val actual: Mission) {
     private val processor = BehaviorProcessor.create<Status>().toSerialized()
-    private var status: Status = Empty()
+    private var status: Status = Suspend()
 
     lateinit var maybe: Maybe<Any>
 

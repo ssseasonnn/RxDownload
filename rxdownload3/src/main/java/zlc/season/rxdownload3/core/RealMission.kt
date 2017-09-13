@@ -4,8 +4,8 @@ import io.reactivex.Flowable
 import io.reactivex.Maybe
 import io.reactivex.disposables.Disposable
 import io.reactivex.processors.BehaviorProcessor
+import io.reactivex.schedulers.Schedulers
 import io.reactivex.schedulers.Schedulers.io
-import io.reactivex.schedulers.Schedulers.newThread
 import retrofit2.Response
 import zlc.season.rxdownload3.core.DownloadConfig.ANY
 import zlc.season.rxdownload3.core.DownloadConfig.DEFAULT_SAVE_PATH
@@ -23,78 +23,46 @@ class RealMission(private val semaphore: Semaphore, val actual: Mission) {
 
     lateinit var maybe: Maybe<Any>
 
-    var disposable: Disposable? = null
-    var downloadType: DownloadType? = null
+    private var disposable: Disposable? = null
 
     var totalSize = 0L
 
     init {
-        if (DownloadConfig.DB.isExists(actual)) {
-            DownloadConfig.DB.read(actual)
-            createDownloadType()
-            if (downloadType != null) {
-                downloadType!!.initStatus()
-            }
-        }
-
         createMaybe()
+        initStatus()
     }
 
-    fun getProcessor(): Flowable<Status> {
-        emitStatus(status)
-        return processor.onBackpressureLatest()
+    private fun initStatus() {
+        Maybe.create<Any> {
+            DownloadConfig.DB.read(actual)
+            if (actual.rangeFlag == null) {
+                it.onSuccess(ANY)
+            } else {
+                val type = createType()
+                type.initStatus()
+                it.onSuccess(ANY)
+            }
+        }.subscribeOn(io()).subscribe()
     }
 
     private fun createMaybe() {
         maybe = Maybe.just(ANY)
                 .subscribeOn(io())
-                .flatMap { check() }
-                .flatMap { downloadType!!.download() }
+                .flatMap {
+                    HttpCore.checkUrl(this)
+                }
+                .flatMap {
+                    val type = createType()
+                    type.download()
+                }
                 .doOnDispose { emitStatus(Failed(status, Throwable("Mission failed"), true)) }
                 .doOnError { emitStatus(Failed(status, it)) }
                 .doOnSuccess { emitStatus(Succeed(status)) }
                 .doFinally { semaphore.release() }
     }
 
-    private fun download() {
-        downloadType!!.download()
-    }
-
-    fun setStatus(status: Status) {
-        this.status = status
-    }
-
-    fun emitStatus(status: Status) {
-        this.status = status
-        processor.onNext(status)
-    }
-
-    fun setup(it: Response<Void>) {
-        actual.savePath = if (actual.savePath.isEmpty()) DEFAULT_SAVE_PATH else actual.savePath
-        actual.saveName = fileName(actual.saveName, actual.url, it)
-        actual.rangeFlag = isSupportRange(it)
-        totalSize = contentLength(it)
-        createDownloadType()
-        DownloadConfig.DB.create(actual)
-    }
-
-    private fun createDownloadType() {
-        downloadType = when {
-            actual.rangeFlag == true -> RangeDownload(this)
-            actual.rangeFlag == false -> NormalDownload(this)
-            else -> {
-                null
-            }
-        }
-    }
-
-    private fun check(): Maybe<Any> {
-        return if (actual.rangeFlag == null) {
-            HttpCore.checkUrl(this)
-        } else {
-            createDownloadType()
-            Maybe.just(ANY)
-        }
+    fun getProcessor(): Flowable<Status> {
+        return processor.onBackpressureLatest()
     }
 
     fun start(): Maybe<Any> {
@@ -108,7 +76,7 @@ class RealMission(private val semaphore: Semaphore, val actual: Mission) {
             semaphore.acquire()
             disposable = maybe.subscribe()
             it.onSuccess(ANY)
-        }.subscribeOn(newThread())
+        }.subscribeOn(Schedulers.newThread())
     }
 
     fun stop(): Maybe<Any> {
@@ -126,6 +94,40 @@ class RealMission(private val semaphore: Semaphore, val actual: Mission) {
             disposable = null
             semaphore.release()
             it.onSuccess(ANY)
+        }
+    }
+
+    fun emitStatus(status: Status) {
+        this.status = status
+        processor.onNext(status)
+    }
+
+    fun setup(it: Response<Void>) {
+        actual.savePath = if (actual.savePath.isEmpty()) DEFAULT_SAVE_PATH else actual.savePath
+        actual.saveName = fileName(actual.saveName, actual.url, it)
+        actual.rangeFlag = isSupportRange(it)
+        totalSize = contentLength(it)
+
+        if (!DownloadConfig.DB.isExists(actual)) {
+            DownloadConfig.DB.create(actual)
+        }
+    }
+
+    private fun createType(): DownloadType {
+        return when {
+            actual.rangeFlag == true -> RangeDownload(this)
+            actual.rangeFlag == false -> NormalDownload(this)
+            else -> {
+                throw IllegalStateException("Mission range flag wrong")
+            }
+        }
+    }
+
+    private fun check(): Maybe<Any> {
+        return if (actual.rangeFlag == null) {
+            HttpCore.checkUrl(this)
+        } else {
+            Maybe.just(ANY)
         }
     }
 

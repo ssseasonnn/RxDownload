@@ -9,7 +9,7 @@ class NormalDownload(mission: RealMission) : DownloadType(mission) {
     private val targetFile = NormalTargetFile(mission)
 
     override fun initStatus() {
-        mission.setStatus(targetFile.getStatus())
+        mission.emitStatus(targetFile.getStatus())
     }
 
     override fun download(): Maybe<Any> {

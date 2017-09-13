@@ -28,13 +28,27 @@ class RangeTmpFile(val mission: RealMission) {
 
         if (file.exists()) {
             readStructure()
-        } else {
-            file.createNewFile()
-            writeStructure()
         }
     }
 
-    fun ensureFinish(): Boolean {
+    fun checkFile() {
+        if (!file.exists()) {
+            file.createNewFile()
+            writeStructure()
+        } else {
+            if (fileStructure.totalSize != mission.totalSize) {
+                reset()
+            }
+        }
+    }
+
+    fun reset() {
+        file.delete()
+        file.createNewFile()
+        writeStructure()
+    }
+
+    fun isFinish(): Boolean {
         return fileStructure.isFinish()
     }
 

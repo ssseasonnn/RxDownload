@@ -31,8 +31,12 @@ class RangeTargetFile(val mission: RealMission) {
         }
     }
 
-    fun ensureFinish(): Boolean {
+    fun isFinish(): Boolean {
         return realFile.exists()
+    }
+
+    fun isDownloadFileExists(): Boolean {
+        return downloadFile.exists()
     }
 
     fun rename() {

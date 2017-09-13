@@ -15,26 +15,35 @@ class RangeDownload(mission: RealMission) : DownloadType(mission) {
     private val targetFile = RangeTargetFile(mission)
     private val tmpFile = RangeTmpFile(mission)
 
+    private fun isFinish(): Boolean {
+        return tmpFile.isFinish() && targetFile.isFinish()
+    }
+
     override fun initStatus() {
         val status = tmpFile.currentStatus()
-        if (tmpFile.ensureFinish() && targetFile.ensureFinish()) {
-            mission.setStatus(Succeed(status))
-        }else{
-            mission.setStatus(Suspend(status))
+        when {
+            isFinish() -> mission.emitStatus(Succeed(status))
+            targetFile.isDownloadFileExists() -> mission.emitStatus(Suspend(status))
+            else -> mission.emitStatus(Suspend())
         }
     }
 
     override fun download(): Maybe<Any> {
-        if (tmpFile.ensureFinish() && targetFile.ensureFinish()) {
+        if (isFinish()) {
             return Maybe.just(ANY)
         }
 
         val arrays = mutableListOf<Maybe<Any>>()
 
+        if (targetFile.isDownloadFileExists()) {
+            tmpFile.checkFile()
+        } else {
+            tmpFile.reset()
+        }
+
         tmpFile.getSegments()
                 .filter { !it.isComplete() }
                 .forEach { arrays.add(rangeDownload(it)) }
-
 
         return Flowable.fromIterable(arrays)
                 .flatMap(INSTANCE, true, MAX_CONCURRENCY)
@@ -46,7 +55,7 @@ class RangeDownload(mission: RealMission) : DownloadType(mission) {
     private fun rangeDownload(segment: Segment): Maybe<Any> {
         return Maybe.just(segment)
                 .subscribeOn(Schedulers.io())
-                .map { "bytes=${it.start}-${it.end}" }
+                .map { "bytes=${it.current}-${it.end}" }
                 .doOnSuccess { logd("Range: $it") }
                 .flatMap { HttpCore.download(mission, it) }
                 .flatMap { targetFile.save(it, segment, tmpFile) }

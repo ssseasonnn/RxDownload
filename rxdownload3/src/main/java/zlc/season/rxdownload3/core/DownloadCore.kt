@@ -9,6 +9,8 @@ import java.net.SocketException
 
 
 class DownloadCore {
+    val missionBox: MissionBox = LocalMissionBox()
+
     init {
         initRxJavaPlugin()
     }
@@ -24,22 +26,22 @@ class DownloadCore {
     }
 
     fun create(mission: Mission): Flowable<Status> {
-        return MissionBox.create(mission)
+        return missionBox.create(mission)
     }
 
     fun startAll(): Maybe<Any> {
-        return MissionBox.startAll()
+        return missionBox.startAll()
     }
 
     fun stopAll(): Maybe<Any> {
-        return MissionBox.stopAll()
+        return missionBox.stopAll()
     }
 
     fun start(mission: Mission): Maybe<Any> {
-        return MissionBox.start(mission)
+        return missionBox.start(mission)
     }
 
     fun stop(mission: Mission): Maybe<Any> {
-        return MissionBox.stop(mission)
+        return missionBox.stop(mission)
     }
 }

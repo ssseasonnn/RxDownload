@@ -34,7 +34,7 @@ class RealMission(private val semaphore: Semaphore, val actual: Mission) {
 
     private fun initStatus() {
         Maybe.create<Any> {
-            DownloadConfig.DB.read(actual)
+            DownloadConfig.DB.read(this)
             if (actual.rangeFlag == null) {
                 it.onSuccess(ANY)
             } else {
@@ -48,9 +48,7 @@ class RealMission(private val semaphore: Semaphore, val actual: Mission) {
     private fun createMaybe() {
         maybe = Maybe.just(ANY)
                 .subscribeOn(io())
-                .flatMap {
-                    HttpCore.checkUrl(this)
-                }
+                .flatMap { check() }
                 .flatMap {
                     val type = createType()
                     type.download()
@@ -108,8 +106,8 @@ class RealMission(private val semaphore: Semaphore, val actual: Mission) {
         actual.rangeFlag = isSupportRange(it)
         totalSize = contentLength(it)
 
-        if (!DownloadConfig.DB.isExists(actual)) {
-            DownloadConfig.DB.create(actual)
+        if (!DownloadConfig.DB.isExists(this)) {
+            DownloadConfig.DB.create(this)
         }
     }
 

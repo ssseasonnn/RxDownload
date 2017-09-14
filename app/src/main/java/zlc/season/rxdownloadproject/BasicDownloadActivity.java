@@ -4,7 +4,6 @@ import android.databinding.DataBindingUtil;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
-import android.util.Log;
 import android.view.View;
 
 import com.tbruyelle.rxpermissions2.RxPermissions;
@@ -13,12 +12,7 @@ import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.functions.Consumer;
 import zlc.season.rxdownload3.RxDownload;
-import zlc.season.rxdownload3.core.Downloading;
-import zlc.season.rxdownload3.core.Suspend;
-import zlc.season.rxdownload3.core.Failed;
 import zlc.season.rxdownload3.core.Status;
-import zlc.season.rxdownload3.core.Succeed;
-import zlc.season.rxdownload3.core.Waiting;
 import zlc.season.rxdownload3.helper.LoggerKt;
 import zlc.season.rxdownloadproject.databinding.ActivityBasicDownloadBinding;
 
@@ -49,7 +43,7 @@ public class BasicDownloadActivity extends AppCompatActivity {
         binding.contentBasicDownload.action.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                if (currentStatus instanceof Downloading) {
+                if (currentStatus.getFlag() == Status.CREATOR.getDOWNLOADING()) {
                     RxDownload.INSTANCE.stop(url).subscribe();
                 } else {
                     RxDownload.INSTANCE.start(url).subscribe();
@@ -72,35 +66,35 @@ public class BasicDownloadActivity extends AppCompatActivity {
                     public void accept(Status status) throws Exception {
                         currentStatus = status;
 
+                        System.out.println(status.getClass().getCanonicalName());
+
                         binding.contentBasicDownload.progress.setMax((int) status.getTotalSize());
                         binding.contentBasicDownload.progress.setProgress((int) status.getDownloadSize());
 
                         binding.contentBasicDownload.percent.setText(status.percent());
                         binding.contentBasicDownload.size.setText(status.formatString());
 
-                        if (status instanceof Suspend) {
+                        if (Status.CREATOR.isSuspend(status)) {
                             binding.contentBasicDownload.action.setText("开始");
                             LoggerKt.logd("suspend");
                         }
 
-                        if (status instanceof Waiting) {
+                        if (Status.CREATOR.isWaiting(status)) {
                             binding.contentBasicDownload.action.setText("等待中");
                             LoggerKt.logd("wait");
                         }
 
-                        if (status instanceof Downloading) {
+                        if (Status.CREATOR.isDownloading(status)) {
                             binding.contentBasicDownload.action.setText("暂停");
                             LoggerKt.logd("download");
                         }
 
-                        if (status instanceof Failed) {
+                        if (Status.CREATOR.isFailed(status)) {
                             binding.contentBasicDownload.action.setText("失败");
-                            Failed failed = (Failed) status;
-                            Log.w(TAG, failed.getThrowable());
                             LoggerKt.logd("failed");
                         }
 
-                        if (status instanceof Succeed) {
+                        if (Status.CREATOR.isSucceed(status)) {
                             binding.contentBasicDownload.action.setText("完成");
                             LoggerKt.logd("succeed");
                         }

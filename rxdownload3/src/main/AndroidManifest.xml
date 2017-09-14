@@ -1,2 +1,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="zlc.season.rxdownload3" />
+    package="zlc.season.rxdownload3">
+
+    <application>
+        <service
+            android:name=".core.DownloadService"
+            android:process=".RxDownload" />
+    </application>
+</manifest>

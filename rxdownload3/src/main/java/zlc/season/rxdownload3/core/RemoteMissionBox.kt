@@ -2,61 +2,82 @@ package zlc.season.rxdownload3.core
 
 import android.content.ComponentName
 import android.content.Context
+import android.content.Context.BIND_AUTO_CREATE
 import android.content.Intent
 import android.content.ServiceConnection
 import android.os.IBinder
+import io.reactivex.BackpressureStrategy.LATEST
 import io.reactivex.Flowable
 import io.reactivex.Maybe
+import io.reactivex.schedulers.Schedulers.newThread
+import zlc.season.rxdownload3.IDownloadCallback
+import zlc.season.rxdownload3.IDownloadService
 
 
 class RemoteMissionBox : MissionBox {
 
-    lateinit var missionBox: MissionBox
-    lateinit var context: Context
+    var context: Context = DownloadConfig.applicationContext
 
-    init {
-
+    override fun create(mission: Mission): Flowable<Status> {
+        return Flowable.create<Status>({ emitter ->
+            startBindServiceAndDo {
+                val callback = object : IDownloadCallback.Stub() {
+                    override fun onUpdate(status: Status?) {
+                        if (status == null) return
+                        emitter.onNext(status)
+                    }
+                }
+                it.registerDownloadCallback(callback, mission)
+            }
+        }, LATEST).subscribeOn(newThread())
     }
 
+    override fun start(mission: Mission): Maybe<Any> {
+        return Maybe.create<Any> { emitter ->
+            startBindServiceAndDo {
+                it.start(mission)
+                emitter.onSuccess(Any())
+            }
+        }.subscribeOn(newThread())
+    }
 
-    private fun startBindServiceAndDo(callback: (MissionBox) -> Unit) {
+    override fun stop(mission: Mission): Maybe<Any> {
+        return Maybe.create<Any> { emitter ->
+            startBindServiceAndDo {
+                //                it.stop(emitter, mission)
+            }
+        }.subscribeOn(newThread())
+    }
+
+    override fun startAll(): Maybe<Any> {
+        return Maybe.create<Any> { emitter ->
+            startBindServiceAndDo {
+                //                it.startAll(emitter)
+            }
+        }.subscribeOn(newThread())
+    }
+
+    override fun stopAll(): Maybe<Any> {
+        return Maybe.create<Any> { emitter ->
+            startBindServiceAndDo {
+                //                it.stopAll(emitter)
+            }
+        }.subscribeOn(newThread())
+    }
+
+    private fun startBindServiceAndDo(callback: (IDownloadService) -> Unit) {
         val intent = Intent(context, DownloadService::class.java)
         context.startService(intent)
         context.bindService(intent, object : ServiceConnection {
             override fun onServiceConnected(name: ComponentName, binder: IBinder) {
-                val downloadBinder = binder as DownloadService.DownloadBinder
-                val missionBox = downloadBinder.missionBox
+//                val downloadBinder = binder as DownloadService.DownloadBinder
+                val downloadBinder = IDownloadService.Stub.asInterface(binder)
+                callback(downloadBinder)
                 context.unbindService(this)
-                callback(missionBox)
             }
 
             override fun onServiceDisconnected(name: ComponentName) {
-                //注意!!这个方法只会在系统杀掉Service时才会调用!!
             }
-        }, Context.BIND_AUTO_CREATE)
-    }
-
-    override fun create(mission: Mission): Flowable<Status> {
-        var flowable: Flowable<Status> = Flowable.empty()
-        startBindServiceAndDo {
-            flowable = it.create(mission)
-        }
-        return flowable
-    }
-
-    override fun start(mission: Mission): Maybe<Any> {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
-    }
-
-    override fun stop(mission: Mission): Maybe<Any> {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
-    }
-
-    override fun startAll(): Maybe<Any> {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
-    }
-
-    override fun stopAll(): Maybe<Any> {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        }, BIND_AUTO_CREATE)
     }
 }

@@ -22,9 +22,9 @@ class RangeDownload(mission: RealMission) : DownloadType(mission) {
     override fun initStatus() {
         val status = tmpFile.currentStatus()
         when {
-            isFinish() -> mission.emitStatus(Succeed(status))
-            targetFile.isDownloadFileExists() -> mission.emitStatus(Suspend(status))
-            else -> mission.emitStatus(Suspend())
+            isFinish() -> mission.emitStatus(status.toSucceed())
+            targetFile.isDownloadFileExists() -> mission.emitStatus(status.toSuspend())
+            else -> mission.emitStatus(Status(0, 0).toSuspend())
         }
     }
 

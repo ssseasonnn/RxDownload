@@ -39,9 +39,9 @@ class NormalTargetFile(val mission: RealMission) {
 
     fun getStatus(): Status {
         return if (ensureFinish()) {
-            Succeed(realFile.length())
+            Status(realFile.length(), realFile.length()).toSucceed()
         } else {
-            Suspend()
+            Status(0, 0).toSuspend()
         }
     }
 
@@ -52,8 +52,11 @@ class NormalTargetFile(val mission: RealMission) {
         val byteSize = 8192L
         val totalSize = respBody.contentLength()
 
-        val status = Status(isChunked(response), downloadSize, totalSize)
-        val downloading = Downloading(status)
+        val downloading = Status(downloadSize, totalSize).toDownloading()
+
+        if (isChunked(response)) {
+            downloading.toChunked()
+        }
 
         return Maybe.create {
             respBody.source().use { source ->

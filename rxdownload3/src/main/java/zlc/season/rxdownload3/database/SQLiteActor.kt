@@ -129,7 +129,7 @@ class SQLiteActor(context: Context) : DbActor {
                 val url = cursor.getString(cursor.getColumnIndexOrThrow(URL))
                 val saveName = cursor.getString(cursor.getColumnIndexOrThrow(SAVE_NAME))
                 val savePath = cursor.getString(cursor.getColumnIndexOrThrow(SAVE_PATH))
-                list.add(Mission(url, saveName, savePath, tag))
+                list.add(Mission(url, saveName, savePath, null, tag))
             }
             return Maybe.just(list)
         }

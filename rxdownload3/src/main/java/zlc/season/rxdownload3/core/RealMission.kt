@@ -19,7 +19,7 @@ import java.util.concurrent.Semaphore
 
 class RealMission(private val semaphore: Semaphore, val actual: Mission) {
     private val processor = BehaviorProcessor.create<Status>().toSerialized()
-    private var status: Status = Suspend()
+    private var status: Status = Status(0, 0).toSuspend()
 
     lateinit var maybe: Maybe<Any>
 
@@ -55,9 +55,9 @@ class RealMission(private val semaphore: Semaphore, val actual: Mission) {
                     val type = createType()
                     type.download()
                 }
-                .doOnDispose { emitStatus(Failed(status, Throwable("Mission failed"), true)) }
-                .doOnError { emitStatus(Failed(status, it)) }
-                .doOnSuccess { emitStatus(Succeed(status)) }
+                .doOnDispose { emitStatus(status.toFailed()) }
+                .doOnError { emitStatus(status.toFailed()) }
+                .doOnSuccess { emitStatus(status.toSucceed()) }
                 .doFinally { semaphore.release() }
     }
 
@@ -72,7 +72,7 @@ class RealMission(private val semaphore: Semaphore, val actual: Mission) {
                 return@create
             }
 
-            emitStatus(Waiting(status))
+            emitStatus(status.toWaiting())
             semaphore.acquire()
             disposable = maybe.subscribe()
             it.onSuccess(ANY)

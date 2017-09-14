@@ -9,7 +9,7 @@ import java.net.SocketException
 
 
 class DownloadCore {
-    val missionBox: MissionBox = LocalMissionBox()
+    private val missionBox: MissionBox = RemoteMissionBox()
 
     init {
         initRxJavaPlugin()

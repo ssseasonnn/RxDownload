@@ -26,7 +26,7 @@ public class BasicDownloadActivity extends AppCompatActivity {
 
     private ActivityBasicDownloadBinding binding;
     private Disposable disposable;
-    private Status currentStatus;
+    private Status currentStatus = new Status(0, 0).toSuspend();
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -43,7 +43,7 @@ public class BasicDownloadActivity extends AppCompatActivity {
         binding.contentBasicDownload.action.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                if (currentStatus.getFlag() == Status.CREATOR.getDOWNLOADING()) {
+                if (Status.CREATOR.isDownloading(currentStatus)) {
                     RxDownload.INSTANCE.stop(url).subscribe();
                 } else {
                     RxDownload.INSTANCE.start(url).subscribe();

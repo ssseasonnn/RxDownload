@@ -28,8 +28,8 @@ class RealMission(private val semaphore: Semaphore, val actual: Mission) {
     var totalSize = 0L
 
     init {
-        createMaybe()
         initStatus()
+        createMaybe()
     }
 
     private fun initStatus() {

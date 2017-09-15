@@ -8,7 +8,7 @@ import io.reactivex.schedulers.Schedulers
 import io.reactivex.schedulers.Schedulers.io
 import retrofit2.Response
 import zlc.season.rxdownload3.core.DownloadConfig.ANY
-import zlc.season.rxdownload3.core.DownloadConfig.DEFAULT_SAVE_PATH
+import zlc.season.rxdownload3.core.DownloadConfig.defaultSavePath
 import zlc.season.rxdownload3.helper.contentLength
 import zlc.season.rxdownload3.helper.dispose
 import zlc.season.rxdownload3.helper.fileName
@@ -19,9 +19,9 @@ import java.util.concurrent.Semaphore
 
 class RealMission(private val semaphore: Semaphore, val actual: Mission) {
     private val processor = BehaviorProcessor.create<Status>().toSerialized()
-    private var status: Status = Status(0, 0).toSuspend()
+    private var status = Status().toSuspend()
 
-    lateinit var maybe: Maybe<Any>
+    private var maybe = Maybe.empty<Any>()
 
     private var disposable: Disposable? = null
 
@@ -35,14 +35,15 @@ class RealMission(private val semaphore: Semaphore, val actual: Mission) {
     private fun initStatus() {
         Maybe.create<Any> {
             DownloadConfig.DB.read(this)
-            if (actual.rangeFlag == null) {
-                it.onSuccess(ANY)
-            } else {
+            it.onSuccess(ANY)
+        }.doOnSuccess {
+            if (actual.rangeFlag != null) {
                 val type = createType()
                 type.initStatus()
-                it.onSuccess(ANY)
             }
-        }.subscribeOn(io()).subscribe()
+        }.subscribeOn(io()).subscribe({
+            emitStatus(status)
+        })
     }
 
     private fun createMaybe() {
@@ -50,13 +51,15 @@ class RealMission(private val semaphore: Semaphore, val actual: Mission) {
                 .subscribeOn(io())
                 .flatMap { check() }
                 .flatMap {
-                    val type = createType()
-                    type.download()
+                    HttpCore.checkUrl(this)
                 }
                 .doOnDispose { emitStatus(status.toFailed()) }
                 .doOnError { emitStatus(status.toFailed()) }
                 .doOnSuccess { emitStatus(status.toSucceed()) }
-                .doFinally { semaphore.release() }
+                .doFinally {
+                    semaphore.release()
+                    disposable = null
+                }
     }
 
     fun getProcessor(): Flowable<Status> {
@@ -95,13 +98,17 @@ class RealMission(private val semaphore: Semaphore, val actual: Mission) {
         }
     }
 
+    fun setStatus(status: Status) {
+        this.status = status
+    }
+
     fun emitStatus(status: Status) {
         this.status = status
         processor.onNext(status)
     }
 
     fun setup(it: Response<Void>) {
-        actual.savePath = if (actual.savePath.isEmpty()) DEFAULT_SAVE_PATH else actual.savePath
+        actual.savePath = if (actual.savePath.isEmpty()) defaultSavePath else actual.savePath
         actual.saveName = fileName(actual.saveName, actual.url, it)
         actual.rangeFlag = isSupportRange(it)
         totalSize = contentLength(it)

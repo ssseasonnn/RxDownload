@@ -26,23 +26,22 @@ class NormalTargetFile(val mission: RealMission) {
     }
 
     fun ensureFinish(): Boolean {
-        return if (realFile.exists()) {
-            true
-        } else {
-            if (downloadFile.exists()) {
-                downloadFile.delete()
-            }
-            downloadFile.createNewFile()
-            false
-        }
+        return realFile.exists()
     }
 
     fun getStatus(): Status {
         return if (ensureFinish()) {
             Status(realFile.length(), realFile.length()).toSucceed()
         } else {
-            Status(0, 0).toSuspend()
+            Status().toSuspend()
         }
+    }
+
+    fun checkFile() {
+        if (downloadFile.exists()) {
+            downloadFile.delete()
+        }
+        downloadFile.createNewFile()
     }
 
     fun save(response: Response<ResponseBody>): Maybe<Any> {

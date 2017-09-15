@@ -5,7 +5,7 @@ import io.reactivex.Maybe
 import io.reactivex.internal.operators.maybe.MaybeToPublisher.INSTANCE
 import io.reactivex.schedulers.Schedulers
 import zlc.season.rxdownload3.core.DownloadConfig.ANY
-import zlc.season.rxdownload3.core.DownloadConfig.MAX_CONCURRENCY
+import zlc.season.rxdownload3.core.DownloadConfig.maxConcurrencyRange
 import zlc.season.rxdownload3.core.RangeTmpFile.Segment
 import zlc.season.rxdownload3.helper.logd
 import zlc.season.rxdownload3.http.HttpCore
@@ -22,9 +22,9 @@ class RangeDownload(mission: RealMission) : DownloadType(mission) {
     override fun initStatus() {
         val status = tmpFile.currentStatus()
         when {
-            isFinish() -> mission.emitStatus(status.toSucceed())
-            targetFile.isDownloadFileExists() -> mission.emitStatus(status.toSuspend())
-            else -> mission.emitStatus(Status(0, 0).toSuspend())
+            isFinish() -> mission.setStatus(status.toSucceed())
+            targetFile.isDownloadFileExists() -> mission.setStatus(status.toSuspend())
+            else -> mission.setStatus(Status().toSuspend())
         }
     }
 
@@ -46,7 +46,7 @@ class RangeDownload(mission: RealMission) : DownloadType(mission) {
                 .forEach { arrays.add(rangeDownload(it)) }
 
         return Flowable.fromIterable(arrays)
-                .flatMap(INSTANCE, true, MAX_CONCURRENCY)
+                .flatMap(INSTANCE, true, maxConcurrencyRange)
                 .lastElement()
                 .doOnSuccess { targetFile.rename() }
     }

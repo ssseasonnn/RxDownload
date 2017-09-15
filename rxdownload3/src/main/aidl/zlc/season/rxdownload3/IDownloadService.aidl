@@ -10,9 +10,7 @@ interface IDownloadService {
      * Demonstrates some basic types that you can use as parameters
      * and return values in AIDL.
      */
-    void registerDownloadCallback(in IDownloadCallback callback, in Mission mission);
-
-    void unregisterDownloadCallback(in IDownloadCallback callback);
+    void create(in IDownloadCallback callback, in Mission mission);
 
     void start(in Mission mission);
 }

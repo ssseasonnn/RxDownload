@@ -4,6 +4,6 @@
     <application>
         <service
             android:name=".core.DownloadService"
-            android:process=".RxDownload" />
+            android:process=":RxDownload" />
     </application>
 </manifest>

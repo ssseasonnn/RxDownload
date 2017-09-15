@@ -7,8 +7,16 @@ import zlc.season.rxdownload3.core.Mission
 import zlc.season.rxdownload3.core.Status
 
 
-object RxDownload {
+class RxDownload private constructor() {
     private val downloadCore = DownloadCore()
+
+    companion object {
+        fun get(): RxDownload {
+            return RxDownload()
+        }
+    }
+
+
 
     fun create(url: String): Flowable<Status> {
         return create(Mission(url))
@@ -42,6 +50,6 @@ object RxDownload {
         return downloadCore.stopAll()
     }
 
-    fun setDbAdapter(){
+    fun setDbAdapter() {
     }
 }

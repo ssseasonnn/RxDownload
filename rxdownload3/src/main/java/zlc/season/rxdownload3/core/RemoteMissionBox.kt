@@ -15,7 +15,6 @@ import zlc.season.rxdownload3.IDownloadService
 
 
 class RemoteMissionBox : MissionBox {
-
     var context: Context = DownloadConfig.applicationContext
 
     override fun create(mission: Mission): Flowable<Status> {
@@ -23,11 +22,11 @@ class RemoteMissionBox : MissionBox {
             startBindServiceAndDo {
                 val callback = object : IDownloadCallback.Stub() {
                     override fun onUpdate(status: Status?) {
-                        if (status == null) return
+                        status as Status
                         emitter.onNext(status)
                     }
                 }
-                it.registerDownloadCallback(callback, mission)
+                it.create(callback, mission)
             }
         }, LATEST).subscribeOn(newThread())
     }
@@ -70,9 +69,8 @@ class RemoteMissionBox : MissionBox {
         context.startService(intent)
         context.bindService(intent, object : ServiceConnection {
             override fun onServiceConnected(name: ComponentName, binder: IBinder) {
-//                val downloadBinder = binder as DownloadService.DownloadBinder
-                val downloadBinder = IDownloadService.Stub.asInterface(binder)
-                callback(downloadBinder)
+                val iDownloadService = IDownloadService.Stub.asInterface(binder)
+                callback(iDownloadService)
                 context.unbindService(this)
             }
 

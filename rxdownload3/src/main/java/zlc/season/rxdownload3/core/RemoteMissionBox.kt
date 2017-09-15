@@ -12,10 +12,26 @@ import io.reactivex.Maybe
 import io.reactivex.schedulers.Schedulers.newThread
 import zlc.season.rxdownload3.IDownloadCallback
 import zlc.season.rxdownload3.IDownloadService
+import zlc.season.rxdownload3.core.DownloadConfig.ANY
 
 
 class RemoteMissionBox : MissionBox {
-    var context: Context = DownloadConfig.applicationContext
+    var service: IDownloadService? = null
+    var context: Context = DownloadConfig.context
+
+    init {
+        Maybe.create<Any> { emitter ->
+            startBindServiceAndDo {
+                it.config(
+                        DownloadConfig.maxRange,
+                        DownloadConfig.maxMission,
+                        DownloadConfig.defaultSavePath,
+                        DownloadConfig.enableDataBase
+                )
+                emitter.onSuccess(ANY)
+            }
+        }.subscribeOn(newThread()).subscribe()
+    }
 
     override fun create(mission: Mission): Flowable<Status> {
         return Flowable.create<Status>({ emitter ->
@@ -35,7 +51,7 @@ class RemoteMissionBox : MissionBox {
         return Maybe.create<Any> { emitter ->
             startBindServiceAndDo {
                 it.start(mission)
-                emitter.onSuccess(Any())
+                emitter.onSuccess(ANY)
             }
         }.subscribeOn(newThread())
     }
@@ -43,7 +59,8 @@ class RemoteMissionBox : MissionBox {
     override fun stop(mission: Mission): Maybe<Any> {
         return Maybe.create<Any> { emitter ->
             startBindServiceAndDo {
-                //                it.stop(emitter, mission)
+                it.stop(mission)
+                emitter.onSuccess(ANY)
             }
         }.subscribeOn(newThread())
     }
@@ -51,7 +68,8 @@ class RemoteMissionBox : MissionBox {
     override fun startAll(): Maybe<Any> {
         return Maybe.create<Any> { emitter ->
             startBindServiceAndDo {
-                //                it.startAll(emitter)
+                it.startAll()
+                emitter.onSuccess(ANY)
             }
         }.subscribeOn(newThread())
     }
@@ -59,22 +77,30 @@ class RemoteMissionBox : MissionBox {
     override fun stopAll(): Maybe<Any> {
         return Maybe.create<Any> { emitter ->
             startBindServiceAndDo {
-                //                it.stopAll(emitter)
+                it.stopAll()
+                emitter.onSuccess(ANY)
             }
         }.subscribeOn(newThread())
     }
 
+
     private fun startBindServiceAndDo(callback: (IDownloadService) -> Unit) {
+        if (service != null) {
+            callback(service!!)
+            return
+        }
+
         val intent = Intent(context, DownloadService::class.java)
         context.startService(intent)
         context.bindService(intent, object : ServiceConnection {
             override fun onServiceConnected(name: ComponentName, binder: IBinder) {
-                val iDownloadService = IDownloadService.Stub.asInterface(binder)
-                callback(iDownloadService)
+                service = IDownloadService.Stub.asInterface(binder)
+                callback(service!!)
                 context.unbindService(this)
             }
 
             override fun onServiceDisconnected(name: ComponentName) {
+                service = null
             }
         }, BIND_AUTO_CREATE)
     }

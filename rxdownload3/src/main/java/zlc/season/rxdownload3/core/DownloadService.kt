@@ -13,11 +13,6 @@ class DownloadService : Service() {
     private val binder = DownloadBinder()
     private val callbacks = RemoteCallbackList<IDownloadCallback>()
 
-    override fun onCreate() {
-        super.onCreate()
-        DownloadConfig.init(this)
-    }
-
     override fun onBind(intent: Intent?): IBinder {
         return binder
     }
@@ -33,10 +28,14 @@ class DownloadService : Service() {
     }
 
     inner class DownloadBinder : IDownloadService.Stub() {
-        override fun start(mission: Mission?) {
-            if (mission == null) return
+        override fun config(maxRange: Int, maxMission: Int, path: String?, enableDatabase: Boolean) {
+            val configBuilder = ConfigBuilder.create(this@DownloadService)
+                    .setMaxRange(maxRange)
+                    .setMaxMission(maxMission)
+                    .setDefaultPath(path!!)
+                    .enableDataBase(enableDatabase)
 
-            missionBox.start(mission).subscribe()
+            DownloadConfig.init(configBuilder)
         }
 
         override fun create(callback: IDownloadCallback?, mission: Mission?) {
@@ -47,6 +46,26 @@ class DownloadService : Service() {
             missionBox.create(mission).subscribe({
                 callback.onUpdate(it)
             })
+        }
+
+        override fun start(mission: Mission?) {
+            if (mission == null) return
+
+            missionBox.start(mission).subscribe()
+        }
+
+        override fun stop(mission: Mission?) {
+            if (mission == null) return
+
+            missionBox.stop(mission).subscribe()
+        }
+
+        override fun startAll() {
+            missionBox.startAll().subscribe()
+        }
+
+        override fun stopAll() {
+            missionBox.stopAll().subscribe()
         }
     }
 

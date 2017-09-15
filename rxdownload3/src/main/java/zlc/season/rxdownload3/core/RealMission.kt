@@ -34,7 +34,7 @@ class RealMission(private val semaphore: Semaphore, val actual: Mission) {
 
     private fun initStatus() {
         Maybe.create<Any> {
-            DownloadConfig.DB.read(this)
+            DownloadConfig.dbActor.read(this)
             it.onSuccess(ANY)
         }.doOnSuccess {
             if (actual.rangeFlag != null) {
@@ -113,8 +113,8 @@ class RealMission(private val semaphore: Semaphore, val actual: Mission) {
         actual.rangeFlag = isSupportRange(it)
         totalSize = contentLength(it)
 
-        if (!DownloadConfig.DB.isExists(this)) {
-            DownloadConfig.DB.create(this)
+        if (!DownloadConfig.dbActor.isExists(this)) {
+            DownloadConfig.dbActor.create(this)
         }
     }
 

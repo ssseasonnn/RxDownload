@@ -5,7 +5,7 @@ import io.reactivex.Maybe
 import io.reactivex.internal.operators.maybe.MaybeToPublisher.INSTANCE
 import io.reactivex.schedulers.Schedulers
 import zlc.season.rxdownload3.core.DownloadConfig.ANY
-import zlc.season.rxdownload3.core.DownloadConfig.maxConcurrencyRange
+import zlc.season.rxdownload3.core.DownloadConfig.maxRange
 import zlc.season.rxdownload3.core.RangeTmpFile.Segment
 import zlc.season.rxdownload3.helper.logd
 import zlc.season.rxdownload3.http.HttpCore
@@ -46,7 +46,7 @@ class RangeDownload(mission: RealMission) : DownloadType(mission) {
                 .forEach { arrays.add(rangeDownload(it)) }
 
         return Flowable.fromIterable(arrays)
-                .flatMap(INSTANCE, true, maxConcurrencyRange)
+                .flatMap(INSTANCE, true, maxRange)
                 .lastElement()
                 .doOnSuccess { targetFile.rename() }
     }

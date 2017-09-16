@@ -51,7 +51,8 @@ class RealMission(private val semaphore: Semaphore, val actual: Mission) {
                 .subscribeOn(io())
                 .flatMap { check() }
                 .flatMap {
-                    HttpCore.checkUrl(this)
+                    val type = createType()
+                    type.download()
                 }
                 .doOnDispose { emitStatus(status.toFailed()) }
                 .doOnError { emitStatus(status.toFailed()) }

@@ -16,7 +16,6 @@ import zlc.season.rxdownload3.core.DownloadConfig.ANY
 
 
 class RemoteMissionBox : MissionBox {
-    var service: IDownloadService? = null
     var context: Context = DownloadConfig.context
 
     init {
@@ -85,22 +84,16 @@ class RemoteMissionBox : MissionBox {
 
 
     private fun startBindServiceAndDo(callback: (IDownloadService) -> Unit) {
-        if (service != null) {
-            callback(service!!)
-            return
-        }
-
         val intent = Intent(context, DownloadService::class.java)
         context.startService(intent)
         context.bindService(intent, object : ServiceConnection {
             override fun onServiceConnected(name: ComponentName, binder: IBinder) {
-                service = IDownloadService.Stub.asInterface(binder)
+                val service = IDownloadService.Stub.asInterface(binder)
                 callback(service!!)
                 context.unbindService(this)
             }
 
             override fun onServiceDisconnected(name: ComponentName) {
-                service = null
             }
         }, BIND_AUTO_CREATE)
     }

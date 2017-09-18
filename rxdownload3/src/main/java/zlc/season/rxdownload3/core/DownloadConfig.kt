@@ -8,6 +8,8 @@ import zlc.season.rxdownload3.database.DbActor
 import zlc.season.rxdownload3.database.EmptyDbActor
 import zlc.season.rxdownload3.http.OkHttpClientFactory
 import zlc.season.rxdownload3.http.OkHttpClientFactoryImpl
+import zlc.season.rxdownload3.notification.ForeServiceNotificationFactory
+import zlc.season.rxdownload3.notification.ForeServiceNotificationFactoryImpl
 import zlc.season.rxdownload3.notification.NotificationFactory
 import zlc.season.rxdownload3.notification.NotificationFactoryImpl
 
@@ -40,6 +42,11 @@ object DownloadConfig {
 
     internal var okHttpClientFactory: OkHttpClientFactory = OkHttpClientFactoryImpl()
 
+    internal var enableForegroundService = false
+
+    internal var foreServiceNotificationFactory: ForeServiceNotificationFactory =
+            ForeServiceNotificationFactoryImpl()
+
     internal lateinit var context: Context
 
     fun init(builder: Builder) {
@@ -61,6 +68,9 @@ object DownloadConfig {
         if (enableService) {
             missionBox = RemoteMissionBox()
         }
+
+        this.enableForegroundService = builder.enableForegroundService
+        this.foreServiceNotificationFactory = builder.foreServiceNotificationFactory
     }
 
     class Builder private constructor(val context: Context) {
@@ -72,6 +82,9 @@ object DownloadConfig {
         internal var enableNotification = false
         internal var notificationFactory: NotificationFactory = NotificationFactoryImpl()
         internal var okHttpClientFactory: OkHttpClientFactory = OkHttpClientFactoryImpl()
+        internal var enableForegroundService = false
+        internal var foreServiceNotificationFactory: ForeServiceNotificationFactory =
+                ForeServiceNotificationFactoryImpl()
 
         companion object {
             fun create(context: Context): Builder {
@@ -116,6 +129,17 @@ object DownloadConfig {
 
         fun setOkHttpClientFacotry(okHttpClientFactory: OkHttpClientFactory): Builder {
             this.okHttpClientFactory = okHttpClientFactory
+            return this
+        }
+
+        fun enableForegroundService(enable: Boolean): Builder {
+            this.enableForegroundService = enable
+            return this
+        }
+
+        fun setForegroundServiceNotificationFactory(foreServiceNotificationFactory:
+                                                    ForeServiceNotificationFactory): Builder {
+            this.foreServiceNotificationFactory = foreServiceNotificationFactory
             return this
         }
     }

@@ -1,14 +1,11 @@
 package zlc.season.rxdownload3.core
 
-import android.app.Notification
 import android.app.NotificationManager
 import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.os.Binder
 import android.os.IBinder
-import android.support.v4.app.NotificationCompat
-import zlc.season.rxdownload3.R
 import java.io.File
 
 
@@ -17,21 +14,16 @@ class DownloadService : Service() {
     private val binder = DownloadBinder()
     lateinit var notificationManager: NotificationManager
 
+    private val enableForeService = DownloadConfig.enableForegroundService
+    private val foreServiceNotificationFactory = DownloadConfig.foreServiceNotificationFactory
+
     override fun onCreate() {
         super.onCreate()
         notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-    }
 
-    private fun createNotification(): Notification {
-        val builder = NotificationCompat.Builder(this, "")
-                .setSmallIcon(R.drawable.ic_download)
-                .setContentTitle("任务下载中")
-        return builder.build()
-    }
-
-    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        startForeground(1, createNotification())
-        return super.onStartCommand(intent, flags, startId)
+        if (enableForeService) {
+            startForeground(Int.MAX_VALUE, foreServiceNotificationFactory.build(this))
+        }
     }
 
     override fun onBind(intent: Intent?): IBinder {
@@ -39,12 +31,9 @@ class DownloadService : Service() {
     }
 
     override fun onDestroy() {
+        stopForeground(true)
         missionBox.stopAll()
         super.onDestroy()
-    }
-
-    override fun onTaskRemoved(rootIntent: Intent?) {
-        super.onTaskRemoved(rootIntent)
     }
 
     inner class DownloadBinder : Binder() {

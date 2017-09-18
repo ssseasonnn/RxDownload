@@ -4,6 +4,7 @@ import io.reactivex.Flowable
 import io.reactivex.Maybe
 import io.reactivex.plugins.RxJavaPlugins.setErrorHandler
 import zlc.season.rxdownload3.helper.loge
+import java.io.File
 import java.io.InterruptedIOException
 import java.net.SocketException
 
@@ -43,5 +44,9 @@ class DownloadCore {
 
     fun stop(mission: Mission): Maybe<Any> {
         return missionBox.stop(mission)
+    }
+
+    fun getFile(mission: Mission): Maybe<File> {
+        return missionBox.getFile(mission)
     }
 }

@@ -5,6 +5,7 @@ import io.reactivex.Maybe
 import zlc.season.rxdownload3.core.DownloadCore
 import zlc.season.rxdownload3.core.Mission
 import zlc.season.rxdownload3.core.Status
+import java.io.File
 
 
 object RxDownload {
@@ -40,5 +41,9 @@ object RxDownload {
 
     fun stopAll(): Maybe<Any> {
         return downloadCore.stopAll()
+    }
+
+    fun getFile(mission: Mission):Maybe<File>{
+        return downloadCore.getFile(mission)
     }
 }

@@ -2,6 +2,7 @@ package zlc.season.rxdownload3.core
 
 import io.reactivex.Flowable
 import io.reactivex.Maybe
+import java.io.File
 
 
 interface MissionBox {
@@ -14,4 +15,6 @@ interface MissionBox {
     fun startAll(): Maybe<Any>
 
     fun stopAll(): Maybe<Any>
+
+    fun getFile(mission: Mission): Maybe<File>
 }

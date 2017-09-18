@@ -4,8 +4,8 @@ import io.reactivex.Flowable
 import io.reactivex.Maybe
 import io.reactivex.internal.operators.maybe.MaybeToPublisher.INSTANCE
 import zlc.season.rxdownload3.core.DownloadConfig.maxMission
+import java.io.File
 import java.util.concurrent.Semaphore
-
 
 class LocalMissionBox : MissionBox {
     private val semaphore = Semaphore(maxMission, true)
@@ -46,12 +46,16 @@ class LocalMissionBox : MissionBox {
                 .lastElement()
     }
 
-
     override fun stopAll(): Maybe<Any> {
         val arrays = mutableListOf<Maybe<Any>>()
         SET.forEach { arrays.add(it.stop()) }
         return Flowable.fromIterable(arrays)
                 .flatMap(INSTANCE)
                 .lastElement()
+    }
+
+    override fun getFile(mission: Mission): Maybe<File> {
+        val real = RealMission(semaphore, mission)
+        return real.getFile()
     }
 }

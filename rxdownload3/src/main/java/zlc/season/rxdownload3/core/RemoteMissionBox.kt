@@ -11,6 +11,7 @@ import io.reactivex.Flowable
 import io.reactivex.Maybe
 import io.reactivex.schedulers.Schedulers.newThread
 import zlc.season.rxdownload3.core.DownloadConfig.ANY
+import java.io.File
 
 
 class RemoteMissionBox : MissionBox {
@@ -19,8 +20,8 @@ class RemoteMissionBox : MissionBox {
     override fun create(mission: Mission): Flowable<Status> {
         return Flowable.create<Status>({ emitter ->
             startBindServiceAndDo {
-                val callback = object : DownloadService.BinderCallback {
-                    override fun onUpdate(status: Status) {
+                val callback = object : DownloadService.StatusCallback {
+                    override fun apply(status: Status) {
                         emitter.onNext(status)
                     }
                 }
@@ -61,6 +62,19 @@ class RemoteMissionBox : MissionBox {
             startBindServiceAndDo {
                 it.stopAll()
                 emitter.onSuccess(ANY)
+            }
+        }.subscribeOn(newThread())
+    }
+
+    override fun getFile(mission: Mission): Maybe<File> {
+        return Maybe.create<File> { emitter ->
+            startBindServiceAndDo {
+                val callback = object : DownloadService.FileCallback {
+                    override fun apply(file: File) {
+                        emitter.onSuccess(file)
+                    }
+                }
+                it.getFile(callback, mission)
             }
         }.subscribeOn(newThread())
     }

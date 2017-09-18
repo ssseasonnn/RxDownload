@@ -9,6 +9,7 @@ import android.os.Binder
 import android.os.IBinder
 import android.support.v4.app.NotificationCompat
 import zlc.season.rxdownload3.R
+import java.io.File
 
 
 class DownloadService : Service() {
@@ -47,9 +48,9 @@ class DownloadService : Service() {
     }
 
     inner class DownloadBinder : Binder() {
-        fun create(callback: BinderCallback, mission: Mission) {
+        fun create(callback: StatusCallback, mission: Mission) {
             missionBox.create(mission).subscribe({
-                callback.onUpdate(it)
+                callback.apply(it)
             })
         }
 
@@ -68,11 +69,20 @@ class DownloadService : Service() {
         fun stopAll() {
             missionBox.stopAll().subscribe()
         }
+
+        fun getFile(fileCallback: FileCallback, mission: Mission) {
+            missionBox.getFile(mission).subscribe({
+                fileCallback.apply(it)
+            })
+        }
     }
 
 
-    interface BinderCallback {
-        fun onUpdate(status: Status)
+    interface StatusCallback {
+        fun apply(status: Status)
     }
 
+    interface FileCallback {
+        fun apply(file: File)
+    }
 }

@@ -1,14 +1,11 @@
-package zlc.season.rxdownload3.core
+package zlc.season.rxdownload3.notification
 
 import android.app.Notification
 import android.content.Context
 import android.support.v4.app.NotificationCompat
 import zlc.season.rxdownload3.R
-
-
-interface NotificationFactory {
-    fun build(context: Context, mission: Mission, status: Status): Notification
-}
+import zlc.season.rxdownload3.core.Mission
+import zlc.season.rxdownload3.core.Status
 
 class NotificationFactoryImpl : NotificationFactory {
     override fun build(context: Context, mission: Mission, status: Status): Notification {
@@ -37,7 +34,7 @@ class NotificationFactoryImpl : NotificationFactory {
 
         if (Status.isSucceed(status)) {
             builder.setContentText("下载成功")
-                    .setProgress(0, 0, false)
+                    .setProgress(status.totalSize.toInt(), status.downloadSize.toInt(), false)
         }
 
         if (Status.isSuspend(status)) {

@@ -13,7 +13,9 @@ import zlc.season.rxdownload3.core.DownloadConfig.ANY
 import zlc.season.rxdownload3.core.DownloadConfig.defaultSavePath
 import zlc.season.rxdownload3.helper.*
 import zlc.season.rxdownload3.http.HttpCore
+import java.io.File
 import java.util.concurrent.Semaphore
+import java.util.concurrent.TimeUnit
 
 
 class RealMission(private val semaphore: Semaphore, val actual: Mission) {
@@ -30,6 +32,8 @@ class RealMission(private val semaphore: Semaphore, val actual: Mission) {
     private val enableNotification = DownloadConfig.enableNotification
     private val notificationFactory = DownloadConfig.notificationFactory
 
+    private val dbActor = DownloadConfig.dbActor
+
     init {
         initStatus()
         createMaybe()
@@ -37,7 +41,7 @@ class RealMission(private val semaphore: Semaphore, val actual: Mission) {
 
     private fun initStatus() {
         Maybe.create<Any> {
-            DownloadConfig.dbActor.read(this)
+            dbActor.read(this)
             it.onSuccess(ANY)
         }.doOnSuccess {
             if (actual.rangeFlag != null) {
@@ -70,7 +74,8 @@ class RealMission(private val semaphore: Semaphore, val actual: Mission) {
     }
 
     fun getProcessor(): Flowable<Status> {
-        return processor.onBackpressureLatest()
+        return processor.debounce(1, TimeUnit.SECONDS)
+                .onBackpressureLatest()
     }
 
     fun start(): Maybe<Any> {
@@ -109,6 +114,19 @@ class RealMission(private val semaphore: Semaphore, val actual: Mission) {
         }
     }
 
+    fun getFile(): Maybe<File> {
+        return Maybe
+                .create<Any> {
+                    dbActor.read(this)
+                    it.onSuccess(ANY)
+                }
+                .subscribeOn(io())
+                .flatMap {
+                    val filePath = actual.savePath + File.separator + actual.saveName
+                    Maybe.just(File(filePath))
+                }
+    }
+
     fun setStatus(status: Status) {
         this.status = status
     }
@@ -137,8 +155,8 @@ class RealMission(private val semaphore: Semaphore, val actual: Mission) {
         actual.rangeFlag = isSupportRange(it)
         totalSize = contentLength(it)
 
-        if (!DownloadConfig.dbActor.isExists(this)) {
-            DownloadConfig.dbActor.create(this)
+        if (!dbActor.isExists(this)) {
+            dbActor.create(this)
         }
     }
 

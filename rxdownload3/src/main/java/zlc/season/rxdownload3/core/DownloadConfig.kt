@@ -6,6 +6,8 @@ import android.os.Environment.DIRECTORY_DOWNLOADS
 import android.os.Environment.getExternalStoragePublicDirectory
 import zlc.season.rxdownload3.database.DbActor
 import zlc.season.rxdownload3.database.EmptyDbActor
+import zlc.season.rxdownload3.notification.NotificationFactory
+import zlc.season.rxdownload3.notification.NotificationFactoryImpl
 
 @SuppressLint("StaticFieldLeak")
 object DownloadConfig {

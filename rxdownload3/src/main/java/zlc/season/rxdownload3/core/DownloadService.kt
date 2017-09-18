@@ -1,11 +1,14 @@
 package zlc.season.rxdownload3.core
 
+import android.app.Notification
 import android.app.NotificationManager
 import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.os.Binder
 import android.os.IBinder
+import android.support.v4.app.NotificationCompat
+import zlc.season.rxdownload3.R
 
 
 class DownloadService : Service() {
@@ -18,7 +21,15 @@ class DownloadService : Service() {
         notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
     }
 
+    private fun createNotification(): Notification {
+        val builder = NotificationCompat.Builder(this, "")
+                .setSmallIcon(R.drawable.ic_download)
+                .setContentTitle("任务下载中")
+        return builder.build()
+    }
+
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        startForeground(1, createNotification())
         return super.onStartCommand(intent, flags, startId)
     }
 
@@ -27,6 +38,7 @@ class DownloadService : Service() {
     }
 
     override fun onDestroy() {
+        missionBox.stopAll()
         super.onDestroy()
     }
 

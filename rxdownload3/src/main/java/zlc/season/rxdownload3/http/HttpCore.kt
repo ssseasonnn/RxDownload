@@ -15,7 +15,7 @@ object HttpCore {
         return api.check(TEST_RANGE_SUPPORT, mission.actual.url)
                 .flatMap {
                     if (!it.isSuccessful) {
-                        throw  RuntimeException(it.message())
+                        throw Throwable(it.message())
                     }
                     mission.setup(it)
                     Maybe.just(ANY)
@@ -26,7 +26,7 @@ object HttpCore {
         return api.download(range, mission.actual.url)
                 .doOnSuccess {
                     if (!it.isSuccessful) {
-                        throw  RuntimeException(it.message())
+                        throw Throwable(it.message())
                     }
                 }
     }

@@ -6,6 +6,8 @@ import android.os.Environment.DIRECTORY_DOWNLOADS
 import android.os.Environment.getExternalStoragePublicDirectory
 import zlc.season.rxdownload3.database.DbActor
 import zlc.season.rxdownload3.database.EmptyDbActor
+import zlc.season.rxdownload3.http.OkHttpClientFactory
+import zlc.season.rxdownload3.http.OkHttpClientFactoryImpl
 import zlc.season.rxdownload3.notification.NotificationFactory
 import zlc.season.rxdownload3.notification.NotificationFactoryImpl
 
@@ -36,6 +38,8 @@ object DownloadConfig {
 
     internal var notificationFactory: NotificationFactory = NotificationFactoryImpl()
 
+    internal var okHttpClientFactory: OkHttpClientFactory = OkHttpClientFactoryImpl()
+
     internal lateinit var context: Context
 
     fun init(builder: Builder) {
@@ -51,6 +55,8 @@ object DownloadConfig {
         this.enableNotification = builder.enableNotification
         this.notificationFactory = builder.notificationFactory
 
+        this.okHttpClientFactory = builder.okHttpClientFactory
+
         val enableService = builder.enableService
         if (enableService) {
             missionBox = RemoteMissionBox()
@@ -65,7 +71,7 @@ object DownloadConfig {
         internal var dbActor: DbActor = EmptyDbActor()
         internal var enableNotification = false
         internal var notificationFactory: NotificationFactory = NotificationFactoryImpl()
-
+        internal var okHttpClientFactory: OkHttpClientFactory = OkHttpClientFactoryImpl()
 
         companion object {
             fun create(context: Context): Builder {
@@ -105,6 +111,11 @@ object DownloadConfig {
 
         fun setDbActor(dbActor: DbActor): Builder {
             this.dbActor = dbActor
+            return this
+        }
+
+        fun setOkHttpClientFacotry(okHttpClientFactory: OkHttpClientFactory): Builder {
+            this.okHttpClientFactory = okHttpClientFactory
             return this
         }
     }

@@ -6,7 +6,6 @@ import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 
-import zlc.season.rxdownload3.core.ConfigBuilder;
 import zlc.season.rxdownload3.core.DownloadConfig;
 import zlc.season.rxdownloadproject.databinding.ActivityMainBinding;
 
@@ -26,11 +25,11 @@ public class MainActivity extends AppCompatActivity {
         });
 
 
-        ConfigBuilder configBuilder = ConfigBuilder.Companion.create(this)
-                .enableDataBase(true)
-                .enableService(true);
+        DownloadConfig.Builder builder = DownloadConfig.Builder.Companion.create(this)
+                .enableService(true)
+                .enableNotification(true);
 
-        DownloadConfig.INSTANCE.init(configBuilder);
+        DownloadConfig.INSTANCE.init(builder);
     }
 
 }

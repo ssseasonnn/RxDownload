@@ -67,7 +67,7 @@ class NormalTargetFile(val mission: RealMission) {
                         downloadSize += readLen
                         downloading.downloadSize = downloadSize
 
-                        mission.emitStatus(downloading)
+                        mission.emitStatusWithNotification(downloading)
                         readLen = source.read(buffer, byteSize)
                     }
 

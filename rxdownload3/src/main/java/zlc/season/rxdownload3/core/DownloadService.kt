@@ -1,17 +1,26 @@
 package zlc.season.rxdownload3.core
 
+import android.app.NotificationManager
 import android.app.Service
+import android.content.Context
 import android.content.Intent
+import android.os.Binder
 import android.os.IBinder
-import android.os.RemoteCallbackList
-import zlc.season.rxdownload3.IDownloadCallback
-import zlc.season.rxdownload3.IDownloadService
 
 
 class DownloadService : Service() {
     private val missionBox = LocalMissionBox()
     private val binder = DownloadBinder()
-    private val callbacks = RemoteCallbackList<IDownloadCallback>()
+    lateinit var notificationManager: NotificationManager
+
+    override fun onCreate() {
+        super.onCreate()
+        notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+    }
+
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        return super.onStartCommand(intent, flags, startId)
+    }
 
     override fun onBind(intent: Intent?): IBinder {
         return binder
@@ -19,54 +28,39 @@ class DownloadService : Service() {
 
     override fun onDestroy() {
         super.onDestroy()
-        missionBox.stopAll()
-        callbacks.kill()
     }
 
     override fun onTaskRemoved(rootIntent: Intent?) {
         super.onTaskRemoved(rootIntent)
     }
 
-    inner class DownloadBinder : IDownloadService.Stub() {
-        override fun config(maxRange: Int, maxMission: Int, path: String?, enableDatabase: Boolean) {
-            val configBuilder = ConfigBuilder.create(this@DownloadService)
-                    .setMaxRange(maxRange)
-                    .setMaxMission(maxMission)
-                    .setDefaultPath(path!!)
-                    .enableDataBase(enableDatabase)
-
-            DownloadConfig.init(configBuilder)
-        }
-
-        override fun create(callback: IDownloadCallback?, mission: Mission?) {
-            if (callback == null || mission == null) return
-
-            callbacks.register(callback)
-
+    inner class DownloadBinder : Binder() {
+        fun create(callback: BinderCallback, mission: Mission) {
             missionBox.create(mission).subscribe({
                 callback.onUpdate(it)
             })
         }
 
-        override fun start(mission: Mission?) {
-            if (mission == null) return
-
+        fun start(mission: Mission) {
             missionBox.start(mission).subscribe()
         }
 
-        override fun stop(mission: Mission?) {
-            if (mission == null) return
-
+        fun stop(mission: Mission) {
             missionBox.stop(mission).subscribe()
         }
 
-        override fun startAll() {
+        fun startAll() {
             missionBox.startAll().subscribe()
         }
 
-        override fun stopAll() {
+        fun stopAll() {
             missionBox.stopAll().subscribe()
         }
+    }
+
+
+    interface BinderCallback {
+        fun onUpdate(status: Status)
     }
 
 }

@@ -26,14 +26,14 @@ class LocalMissionBox : MissionBox {
 
     override fun start(mission: Mission): Maybe<Any> {
         val realMission = SET.find { it.actual == mission } ?:
-                return Maybe.empty()
+                return Maybe.error(Throwable("Mission not create"))
 
         return realMission.start()
     }
 
     override fun stop(mission: Mission): Maybe<Any> {
         val realMission = SET.find { it.actual == mission } ?:
-                return Maybe.empty()
+                return Maybe.error(Throwable("Mission not create"))
 
         return realMission.stop()
     }

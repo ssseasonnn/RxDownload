@@ -48,7 +48,7 @@ dependencies {
 
     implementation project(':rxdownload3')
 
-    kapt "com.android.databinding:compiler:3.0.0-beta4"
+    kapt "com.android.databinding:compiler:3.0.0-beta6"
 
     testImplementation 'junit:junit:4.12'
     androidTestImplementation 'com.android.support.test:runner:1.0.1'

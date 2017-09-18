@@ -10,34 +10,17 @@ import io.reactivex.BackpressureStrategy.LATEST
 import io.reactivex.Flowable
 import io.reactivex.Maybe
 import io.reactivex.schedulers.Schedulers.newThread
-import zlc.season.rxdownload3.IDownloadCallback
-import zlc.season.rxdownload3.IDownloadService
 import zlc.season.rxdownload3.core.DownloadConfig.ANY
 
 
 class RemoteMissionBox : MissionBox {
     var context: Context = DownloadConfig.context
 
-    init {
-        Maybe.create<Any> { emitter ->
-            startBindServiceAndDo {
-                it.config(
-                        DownloadConfig.maxRange,
-                        DownloadConfig.maxMission,
-                        DownloadConfig.defaultSavePath,
-                        DownloadConfig.enableDataBase
-                )
-                emitter.onSuccess(ANY)
-            }
-        }.subscribeOn(newThread()).subscribe()
-    }
-
     override fun create(mission: Mission): Flowable<Status> {
         return Flowable.create<Status>({ emitter ->
             startBindServiceAndDo {
-                val callback = object : IDownloadCallback.Stub() {
-                    override fun onUpdate(status: Status?) {
-                        status as Status
+                val callback = object : DownloadService.BinderCallback {
+                    override fun onUpdate(status: Status) {
                         emitter.onNext(status)
                     }
                 }
@@ -83,13 +66,13 @@ class RemoteMissionBox : MissionBox {
     }
 
 
-    private fun startBindServiceAndDo(callback: (IDownloadService) -> Unit) {
+    private fun startBindServiceAndDo(callback: (DownloadService.DownloadBinder) -> Unit) {
         val intent = Intent(context, DownloadService::class.java)
         context.startService(intent)
         context.bindService(intent, object : ServiceConnection {
             override fun onServiceConnected(name: ComponentName, binder: IBinder) {
-                val service = IDownloadService.Stub.asInterface(binder)
-                callback(service!!)
+                val downloadBinder = binder as DownloadService.DownloadBinder
+                callback(downloadBinder)
                 context.unbindService(this)
             }
 

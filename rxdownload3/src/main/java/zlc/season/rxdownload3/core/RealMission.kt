@@ -1,5 +1,7 @@
 package zlc.season.rxdownload3.core
 
+import android.app.NotificationManager
+import android.content.Context.NOTIFICATION_SERVICE
 import io.reactivex.Flowable
 import io.reactivex.Maybe
 import io.reactivex.disposables.Disposable
@@ -9,10 +11,7 @@ import io.reactivex.schedulers.Schedulers.io
 import retrofit2.Response
 import zlc.season.rxdownload3.core.DownloadConfig.ANY
 import zlc.season.rxdownload3.core.DownloadConfig.defaultSavePath
-import zlc.season.rxdownload3.helper.contentLength
-import zlc.season.rxdownload3.helper.dispose
-import zlc.season.rxdownload3.helper.fileName
-import zlc.season.rxdownload3.helper.isSupportRange
+import zlc.season.rxdownload3.helper.*
 import zlc.season.rxdownload3.http.HttpCore
 import java.util.concurrent.Semaphore
 
@@ -26,6 +25,10 @@ class RealMission(private val semaphore: Semaphore, val actual: Mission) {
     private var disposable: Disposable? = null
 
     var totalSize = 0L
+
+    private val notificationManager = DownloadConfig.context.getSystemService(NOTIFICATION_SERVICE) as NotificationManager
+    private val enableNotification = DownloadConfig.enableNotification
+    private val notificationFactory = DownloadConfig.notificationFactory
 
     init {
         initStatus()
@@ -54,9 +57,12 @@ class RealMission(private val semaphore: Semaphore, val actual: Mission) {
                     val type = createType()
                     type.download()
                 }
-                .doOnDispose { emitStatus(status.toFailed()) }
-                .doOnError { emitStatus(status.toFailed()) }
-                .doOnSuccess { emitStatus(status.toSucceed()) }
+                .doOnDispose { emitStatusWithNotification(status.toFailed()) }
+                .doOnError {
+                    loge("Download Error!", it)
+                    emitStatusWithNotification(status.toFailed())
+                }
+                .doOnSuccess { emitStatusWithNotification(status.toSucceed()) }
                 .doFinally {
                     semaphore.release()
                     disposable = null
@@ -74,7 +80,8 @@ class RealMission(private val semaphore: Semaphore, val actual: Mission) {
                 return@create
             }
 
-            emitStatus(status.toWaiting())
+            emitStatusWithNotification(status.toWaiting())
+
             semaphore.acquire()
             disposable = maybe.subscribe()
             it.onSuccess(ANY)
@@ -95,6 +102,9 @@ class RealMission(private val semaphore: Semaphore, val actual: Mission) {
             dispose(disposable)
             disposable = null
             semaphore.release()
+
+            emitStatusWithNotification(status.toSuspend())
+
             it.onSuccess(ANY)
         }
     }
@@ -106,6 +116,19 @@ class RealMission(private val semaphore: Semaphore, val actual: Mission) {
     fun emitStatus(status: Status) {
         this.status = status
         processor.onNext(status)
+    }
+
+    fun emitStatusWithNotification(status: Status) {
+        this.status = status
+        processor.onNext(status)
+        notifyNotification()
+    }
+
+    private fun notifyNotification() {
+        if (enableNotification) {
+            notificationManager.notify(hashCode(),
+                    notificationFactory.build(DownloadConfig.context, actual, status))
+        }
     }
 
     fun setup(it: Response<Void>) {

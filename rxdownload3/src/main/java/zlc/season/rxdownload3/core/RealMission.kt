@@ -14,11 +14,10 @@ import zlc.season.rxdownload3.core.DownloadConfig.defaultSavePath
 import zlc.season.rxdownload3.helper.*
 import zlc.season.rxdownload3.http.HttpCore
 import java.io.File
-import java.util.concurrent.Semaphore
 import java.util.concurrent.TimeUnit
 
 
-class RealMission(private val semaphore: Semaphore, val actual: Mission) {
+class RealMission(val actual: Mission) {
     private val processor = BehaviorProcessor.create<Status>().toSerialized()
     private var status = Status().toSuspend()
 
@@ -42,12 +41,11 @@ class RealMission(private val semaphore: Semaphore, val actual: Mission) {
     private fun initStatus() {
         Maybe.create<Any> {
             dbActor.read(this)
-            it.onSuccess(ANY)
-        }.doOnSuccess {
             if (actual.rangeFlag != null) {
                 val type = createType()
-                type.initStatus()
+                status = type.initStatus()
             }
+            it.onSuccess(ANY)
         }.subscribeOn(io()).subscribe({
             emitStatus(status)
         })
@@ -59,6 +57,8 @@ class RealMission(private val semaphore: Semaphore, val actual: Mission) {
                 .flatMap { check() }
                 .flatMap {
                     val type = createType()
+                    val status = type.initStatus()
+                    emitStatusWithNotification(status)
                     type.download()
                 }
                 .doOnDispose { emitStatusWithNotification(status.toFailed()) }
@@ -68,7 +68,6 @@ class RealMission(private val semaphore: Semaphore, val actual: Mission) {
                 }
                 .doOnSuccess { emitStatusWithNotification(status.toSucceed()) }
                 .doFinally {
-                    semaphore.release()
                     disposable = null
                 }
     }
@@ -85,9 +84,8 @@ class RealMission(private val semaphore: Semaphore, val actual: Mission) {
                 return@create
             }
 
-            emitStatusWithNotification(status.toWaiting())
+            emitStatusWithNotification(status.toDownloading())
 
-            semaphore.acquire()
             disposable = maybe.subscribe()
             it.onSuccess(ANY)
         }.subscribeOn(Schedulers.newThread())
@@ -106,7 +104,6 @@ class RealMission(private val semaphore: Semaphore, val actual: Mission) {
 
             dispose(disposable)
             disposable = null
-            semaphore.release()
 
             emitStatusWithNotification(status.toSuspend())
 
@@ -123,30 +120,19 @@ class RealMission(private val semaphore: Semaphore, val actual: Mission) {
                 .subscribeOn(io())
                 .flatMap {
                     val filePath = actual.savePath + File.separator + actual.saveName
-                    Maybe.just(File(filePath))
+                    val file = File(filePath)
+                    if (file.exists()) {
+                        Maybe.just(File(filePath))
+                    } else {
+                        Maybe.empty()
+                    }
                 }
-    }
-
-    fun setStatus(status: Status) {
-        this.status = status
-    }
-
-    fun emitStatus(status: Status) {
-        this.status = status
-        processor.onNext(status)
     }
 
     fun emitStatusWithNotification(status: Status) {
         this.status = status
         processor.onNext(status)
         notifyNotification()
-    }
-
-    private fun notifyNotification() {
-        if (enableNotification) {
-            notificationManager.notify(hashCode(),
-                    notificationFactory.build(DownloadConfig.context, actual, status))
-        }
     }
 
     fun setup(it: Response<Void>) {
@@ -157,6 +143,18 @@ class RealMission(private val semaphore: Semaphore, val actual: Mission) {
 
         if (!dbActor.isExists(this)) {
             dbActor.create(this)
+        }
+    }
+
+    private fun emitStatus(status: Status) {
+        this.status = status
+        processor.onNext(status)
+    }
+
+    private fun notifyNotification() {
+        if (enableNotification) {
+            notificationManager.notify(hashCode(),
+                    notificationFactory.build(DownloadConfig.context, actual, status))
         }
     }
 

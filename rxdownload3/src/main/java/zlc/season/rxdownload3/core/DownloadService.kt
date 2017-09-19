@@ -12,18 +12,12 @@ import java.io.File
 class DownloadService : Service() {
     private val missionBox = LocalMissionBox()
     private val binder = DownloadBinder()
-    lateinit var notificationManager: NotificationManager
 
-    private val enableForeService = DownloadConfig.enableForegroundService
-    private val foreServiceNotificationFactory = DownloadConfig.foreServiceNotificationFactory
+    private lateinit var notificationManager: NotificationManager
 
     override fun onCreate() {
         super.onCreate()
         notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-
-        if (enableForeService) {
-            startForeground(Int.MAX_VALUE, foreServiceNotificationFactory.build(this))
-        }
     }
 
     override fun onBind(intent: Intent?): IBinder {
@@ -37,9 +31,9 @@ class DownloadService : Service() {
     }
 
     inner class DownloadBinder : Binder() {
-        fun create(callback: StatusCallback, mission: Mission) {
+        fun create(statusCallback: StatusCallback, mission: Mission) {
             missionBox.create(mission).subscribe({
-                callback.apply(it)
+                statusCallback.apply(it)
             })
         }
 

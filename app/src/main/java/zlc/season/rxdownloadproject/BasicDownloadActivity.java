@@ -6,6 +6,7 @@ import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 
+import com.squareup.picasso.Picasso;
 import com.tbruyelle.rxpermissions2.RxPermissions;
 
 import io.reactivex.android.schedulers.AndroidSchedulers;
@@ -13,7 +14,6 @@ import io.reactivex.disposables.Disposable;
 import io.reactivex.functions.Consumer;
 import zlc.season.rxdownload3.RxDownload;
 import zlc.season.rxdownload3.core.Status;
-import zlc.season.rxdownload3.helper.LoggerKt;
 import zlc.season.rxdownloadproject.databinding.ActivityBasicDownloadBinding;
 
 import static android.Manifest.permission.WRITE_EXTERNAL_STORAGE;
@@ -22,11 +22,12 @@ import static zlc.season.rxdownload3.helper.UtilsKt.dispose;
 public class BasicDownloadActivity extends AppCompatActivity {
     private static final String TAG = "BasicDownloadActivity";
 
+    private static final String iconUrl = "http://pp.myapp.com/ma_icon/0/icon_6633_1505724536/256";
     private static final String url = "https://qd.myapp.com/myapp/qqteam/AndroidQQ/mobileqq_android.apk";
 
     private ActivityBasicDownloadBinding binding;
     private Disposable disposable;
-    private Status currentStatus = new Status(0, 0).toSuspend();
+    private Status currentStatus = new Status().toSuspend();
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -35,8 +36,9 @@ public class BasicDownloadActivity extends AppCompatActivity {
         binding = DataBindingUtil.setContentView(this, R.layout.activity_basic_download);
         setSupportActionBar(binding.toolbar);
 
+        Picasso.with(this).load(iconUrl).into(binding.contentBasicDownload.img);
+
         setAction();
-        createDownloadMission();
     }
 
     private void setAction() {
@@ -44,29 +46,41 @@ public class BasicDownloadActivity extends AppCompatActivity {
             @Override
             public void onClick(View view) {
                 if (Status.CREATOR.isDownloading(currentStatus)) {
-                    RxDownload.INSTANCE.stop(url).subscribe();
+                    stop();
                 } else {
-                    RxDownload.INSTANCE.start(url).subscribe();
+                    start();
                 }
             }
         });
     }
 
     @Override
-    protected void onDestroy() {
-        super.onDestroy();
+    protected void onResume() {
+        super.onResume();
+        create();
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
         dispose(disposable);
     }
 
-    private void createDownloadMission() {
+    private void start() {
+        RxDownload.INSTANCE.start(url).subscribe();
+    }
+
+    private void stop() {
+        RxDownload.INSTANCE.stop(url).subscribe();
+    }
+
+    private void create() {
         disposable = RxDownload.INSTANCE.create(url)
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(new Consumer<Status>() {
                     @Override
                     public void accept(Status status) throws Exception {
                         currentStatus = status;
-
-                        System.out.println(status.getClass().getCanonicalName());
 
                         binding.contentBasicDownload.progress.setMax((int) status.getTotalSize());
                         binding.contentBasicDownload.progress.setProgress((int) status.getDownloadSize());
@@ -76,27 +90,22 @@ public class BasicDownloadActivity extends AppCompatActivity {
 
                         if (Status.CREATOR.isSuspend(status)) {
                             binding.contentBasicDownload.action.setText("开始");
-                            LoggerKt.logd("suspend");
                         }
 
                         if (Status.CREATOR.isWaiting(status)) {
                             binding.contentBasicDownload.action.setText("等待中");
-                            LoggerKt.logd("wait");
                         }
 
                         if (Status.CREATOR.isDownloading(status)) {
                             binding.contentBasicDownload.action.setText("暂停");
-                            LoggerKt.logd("download");
                         }
 
                         if (Status.CREATOR.isFailed(status)) {
                             binding.contentBasicDownload.action.setText("失败");
-                            LoggerKt.logd("failed");
                         }
 
                         if (Status.CREATOR.isSucceed(status)) {
                             binding.contentBasicDownload.action.setText("完成");
-                            LoggerKt.logd("succeed");
                         }
                     }
                 });

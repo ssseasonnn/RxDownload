@@ -113,7 +113,6 @@
                 android:layout_height="wrap_content"
                 android:layout_gravity="center_vertical"
                 android:background="@null"
-                android:text="start"
                 android:textColor="@color/colorAccent" />
         </LinearLayout>
     </RelativeLayout>

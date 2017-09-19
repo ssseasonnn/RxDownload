@@ -1,15 +1,36 @@
 package zlc.season.rxdownload3.notification
 
 import android.app.Notification
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.content.Context
+import android.content.Context.NOTIFICATION_SERVICE
+import android.graphics.Color
+import android.os.Build.VERSION.SDK_INT
+import android.os.Build.VERSION_CODES.O
 import android.support.v4.app.NotificationCompat
 import zlc.season.rxdownload3.R
 import zlc.season.rxdownload3.core.Mission
 import zlc.season.rxdownload3.core.Status
 
+
 class NotificationFactoryImpl : NotificationFactory {
     override fun build(context: Context, mission: Mission, status: Status): Notification {
-        val builder = NotificationCompat.Builder(context, "")
+        val channelId = "RxDownload"
+        val channelName = "RxDownload"
+
+        if (SDK_INT >= O) {
+            val notificationManager = context.getSystemService(NOTIFICATION_SERVICE) as NotificationManager
+            val channel = NotificationChannel(channelId, channelName, NotificationManager.IMPORTANCE_LOW)
+            channel.enableLights(true)
+            channel.setShowBadge(true)
+            channel.lightColor = Color.RED
+            channel.lockscreenVisibility = Notification.VISIBILITY_PUBLIC
+
+            notificationManager.createNotificationChannel(channel)
+        }
+
+        val builder = NotificationCompat.Builder(context, channelId)
                 .setSmallIcon(R.drawable.ic_download)
                 .setContentTitle(mission.saveName)
 

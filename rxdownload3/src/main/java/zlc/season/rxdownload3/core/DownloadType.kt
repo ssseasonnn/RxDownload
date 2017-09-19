@@ -4,7 +4,7 @@ import io.reactivex.Maybe
 
 
 abstract class DownloadType(val mission: RealMission) {
-    abstract fun initStatus()
+    abstract fun initStatus(): Status
 
     abstract fun download(): Maybe<Any>
 }

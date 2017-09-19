@@ -8,8 +8,6 @@ import zlc.season.rxdownload3.database.DbActor
 import zlc.season.rxdownload3.database.EmptyDbActor
 import zlc.season.rxdownload3.http.OkHttpClientFactory
 import zlc.season.rxdownload3.http.OkHttpClientFactoryImpl
-import zlc.season.rxdownload3.notification.ForeServiceNotificationFactory
-import zlc.season.rxdownload3.notification.ForeServiceNotificationFactoryImpl
 import zlc.season.rxdownload3.notification.NotificationFactory
 import zlc.season.rxdownload3.notification.NotificationFactoryImpl
 
@@ -28,8 +26,6 @@ object DownloadConfig {
 
     internal var maxRange = 3
 
-    internal var maxMission = 3
-
     internal var defaultSavePath = getExternalStoragePublicDirectory(DIRECTORY_DOWNLOADS).path
 
     internal var dbActor: DbActor = EmptyDbActor()
@@ -42,19 +38,11 @@ object DownloadConfig {
 
     internal var okHttpClientFactory: OkHttpClientFactory = OkHttpClientFactoryImpl()
 
-    internal var enableForegroundService = false
-
-    internal var foreServiceNotificationFactory: ForeServiceNotificationFactory =
-            ForeServiceNotificationFactoryImpl()
-
     internal lateinit var context: Context
 
     fun init(builder: Builder) {
         this.context = builder.context
-
         this.maxRange = builder.maxRange
-        this.maxMission = builder.maxMission
-
         this.defaultSavePath = builder.defaultSavePath
 
         this.dbActor = builder.dbActor
@@ -68,23 +56,16 @@ object DownloadConfig {
         if (enableService) {
             missionBox = RemoteMissionBox()
         }
-
-        this.enableForegroundService = builder.enableForegroundService
-        this.foreServiceNotificationFactory = builder.foreServiceNotificationFactory
     }
 
     class Builder private constructor(val context: Context) {
         internal var maxRange = 3
-        internal var maxMission = 3
         internal var defaultSavePath = getExternalStoragePublicDirectory(DIRECTORY_DOWNLOADS).path
         internal var enableService = false
         internal var dbActor: DbActor = EmptyDbActor()
         internal var enableNotification = false
         internal var notificationFactory: NotificationFactory = NotificationFactoryImpl()
         internal var okHttpClientFactory: OkHttpClientFactory = OkHttpClientFactoryImpl()
-        internal var enableForegroundService = false
-        internal var foreServiceNotificationFactory: ForeServiceNotificationFactory =
-                ForeServiceNotificationFactoryImpl()
 
         companion object {
             fun create(context: Context): Builder {
@@ -94,11 +75,6 @@ object DownloadConfig {
 
         fun setMaxRange(max: Int): Builder {
             this.maxRange = max
-            return this
-        }
-
-        fun setMaxMission(max: Int): Builder {
-            this.maxMission = max
             return this
         }
 
@@ -129,17 +105,6 @@ object DownloadConfig {
 
         fun setOkHttpClientFacotry(okHttpClientFactory: OkHttpClientFactory): Builder {
             this.okHttpClientFactory = okHttpClientFactory
-            return this
-        }
-
-        fun enableForegroundService(enable: Boolean): Builder {
-            this.enableForegroundService = enable
-            return this
-        }
-
-        fun setForegroundServiceNotificationFactory(foreServiceNotificationFactory:
-                                                    ForeServiceNotificationFactory): Builder {
-            this.foreServiceNotificationFactory = foreServiceNotificationFactory
             return this
         }
     }

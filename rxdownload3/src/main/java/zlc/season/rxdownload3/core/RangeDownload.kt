@@ -15,17 +15,19 @@ class RangeDownload(mission: RealMission) : DownloadType(mission) {
     private val targetFile = RangeTargetFile(mission)
     private val tmpFile = RangeTmpFile(mission)
 
-    private fun isFinish(): Boolean {
-        return tmpFile.isFinish() && targetFile.isFinish()
+    override fun prepare() {
+        val status = tmpFile.currentStatus()
+
+        when {
+            isFinish() -> status.toSucceed()
+            else -> status.toSuspend()
+        }
+
+        mission.setStatus(status)
     }
 
-    override fun initStatus(): Status {
-        val status = tmpFile.currentStatus()
-        return when {
-            isFinish() -> status.toSucceed()
-            targetFile.isDownloadFileExists() -> status.toSuspend()
-            else -> Status().toSuspend()
-        }
+    private fun isFinish(): Boolean {
+        return tmpFile.isFinish() && targetFile.isFinish()
     }
 
     override fun download(): Maybe<Any> {
@@ -35,7 +37,7 @@ class RangeDownload(mission: RealMission) : DownloadType(mission) {
 
         val arrays = mutableListOf<Maybe<Any>>()
 
-        if (targetFile.isDownloadFileExists()) {
+        if (targetFile.isShadowExists()) {
             tmpFile.checkFile()
         } else {
             tmpFile.reset()

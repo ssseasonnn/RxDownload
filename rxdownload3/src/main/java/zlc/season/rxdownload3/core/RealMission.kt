@@ -24,6 +24,7 @@ class RealMission(val actual: Mission) {
     private var maybe = Maybe.empty<Any>()
 
     private var disposable: Disposable? = null
+    private var downloadType: DownloadType? = null
 
     var totalSize = 0L
 
@@ -39,37 +40,32 @@ class RealMission(val actual: Mission) {
     }
 
     private fun initStatus() {
-        Maybe.create<Any> {
-            dbActor.read(this)
-            if (actual.rangeFlag != null) {
-                val type = createType()
-                status = type.initStatus()
-            }
-            it.onSuccess(ANY)
-        }.subscribeOn(io()).subscribe({
-            emitStatus(status)
-        })
+        Maybe.just(ANY)
+                .subscribeOn(io())
+                .doOnSuccess {
+                    if (dbActor.isExists(this)) {
+                        dbActor.read(this)
+                        downloadType = generateType()
+                        downloadType!!.prepare()
+                    }
+                }
+                .subscribe({
+                    emitStatus(status)
+                })
     }
 
     private fun createMaybe() {
         maybe = Maybe.just(ANY)
                 .subscribeOn(io())
                 .flatMap { check() }
-                .flatMap {
-                    val type = createType()
-                    val status = type.initStatus()
-                    emitStatusWithNotification(status)
-                    type.download()
-                }
+                .flatMap { downloadType!!.download() }
                 .doOnDispose { emitStatusWithNotification(status.toFailed()) }
                 .doOnError {
                     loge("Download Error!", it)
                     emitStatusWithNotification(status.toFailed())
                 }
                 .doOnSuccess { emitStatusWithNotification(status.toSucceed()) }
-                .doFinally {
-                    disposable = null
-                }
+                .doFinally { disposable = null }
     }
 
     fun getProcessor(): Flowable<Status> {
@@ -144,6 +140,14 @@ class RealMission(val actual: Mission) {
         if (!dbActor.isExists(this)) {
             dbActor.create(this)
         }
+
+        downloadType = generateType()
+        downloadType!!.prepare()
+        emitStatusWithNotification(status)
+    }
+
+    fun setStatus(status: Status) {
+        this.status = status
     }
 
     private fun emitStatus(status: Status) {
@@ -158,7 +162,7 @@ class RealMission(val actual: Mission) {
         }
     }
 
-    private fun createType(): DownloadType {
+    private fun generateType(): DownloadType {
         return when {
             actual.rangeFlag == true -> RangeDownload(this)
             actual.rangeFlag == false -> NormalDownload(this)

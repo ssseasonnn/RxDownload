@@ -45,7 +45,7 @@ public class BasicDownloadActivity extends AppCompatActivity {
         binding.contentBasicDownload.action.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                if (Status.CREATOR.isDownloading(currentStatus)) {
+                if (Status.Companion.isDownloading(currentStatus)) {
                     stop();
                 } else {
                     start();
@@ -82,29 +82,31 @@ public class BasicDownloadActivity extends AppCompatActivity {
                     public void accept(Status status) throws Exception {
                         currentStatus = status;
 
+                        System.out.println(status.getDownloadSize() + " " + status.getTotalSize());
+
                         binding.contentBasicDownload.progress.setMax((int) status.getTotalSize());
                         binding.contentBasicDownload.progress.setProgress((int) status.getDownloadSize());
 
                         binding.contentBasicDownload.percent.setText(status.percent());
                         binding.contentBasicDownload.size.setText(status.formatString());
 
-                        if (Status.CREATOR.isSuspend(status)) {
+                        if (Status.Companion.isSuspend(status)) {
                             binding.contentBasicDownload.action.setText("开始");
                         }
 
-                        if (Status.CREATOR.isWaiting(status)) {
+                        if (Status.Companion.isWaiting(status)) {
                             binding.contentBasicDownload.action.setText("等待中");
                         }
 
-                        if (Status.CREATOR.isDownloading(status)) {
+                        if (Status.Companion.isDownloading(status)) {
                             binding.contentBasicDownload.action.setText("暂停");
                         }
 
-                        if (Status.CREATOR.isFailed(status)) {
+                        if (Status.Companion.isFailed(status)) {
                             binding.contentBasicDownload.action.setText("失败");
                         }
 
-                        if (Status.CREATOR.isSucceed(status)) {
+                        if (Status.Companion.isSucceed(status)) {
                             binding.contentBasicDownload.action.setText("完成");
                         }
                     }

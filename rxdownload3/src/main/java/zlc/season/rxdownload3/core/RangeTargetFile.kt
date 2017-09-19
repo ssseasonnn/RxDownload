@@ -16,10 +16,10 @@ class RangeTargetFile(val mission: RealMission) {
     private val realFileDirPath = mission.actual.savePath
     private val realFilePath = realFileDirPath + separator + mission.actual.saveName
 
-    private val downloadFilePath = realFilePath + DOWNLOADING_FILE_SUFFIX
+    private val shadowFilePath = realFilePath + DOWNLOADING_FILE_SUFFIX
 
     private val realFile = File(realFilePath)
-    private val downloadFile = File(downloadFilePath)
+    private val shadowFile = File(shadowFilePath)
 
     private val MODE = "rw"
     private val BUFFER_SIZE = 8192
@@ -35,12 +35,12 @@ class RangeTargetFile(val mission: RealMission) {
         return realFile.exists()
     }
 
-    fun isDownloadFileExists(): Boolean {
-        return downloadFile.exists()
+    fun isShadowExists(): Boolean {
+        return shadowFile.exists()
     }
 
     fun rename() {
-        downloadFile.renameTo(realFile)
+        shadowFile.renameTo(realFile)
     }
 
     fun save(response: Response<ResponseBody>, segment: Segment, tmpFile: RangeTmpFile): Maybe<Any> {
@@ -50,7 +50,7 @@ class RangeTargetFile(val mission: RealMission) {
             val buffer = ByteArray(BUFFER_SIZE)
 
             respBody.byteStream().use { source ->
-                RandomAccessFile(downloadFile, MODE).use { target ->
+                RandomAccessFile(shadowFile, MODE).use { target ->
                     RandomAccessFile(tmpFile.getFile(), MODE).use { tmp ->
                         target.channel.use { targetChannel ->
                             tmp.channel.use { tmpChannel ->

@@ -32,13 +32,13 @@ class RangeTmpFile(val mission: RealMission) {
     }
 
     fun checkFile() {
-        if (!file.exists()) {
-            file.createNewFile()
-            writeStructure()
-        } else {
+        if (file.exists()) {
             if (fileStructure.totalSize != mission.totalSize) {
                 reset()
             }
+        } else {
+            file.createNewFile()
+            writeStructure()
         }
     }
 
@@ -83,7 +83,10 @@ class RangeTmpFile(val mission: RealMission) {
         val totalSize = fileStructure.totalSize
 
         val segments = getSegments()
-        segments.forEach { downloadSize += (it.current - it.start) }
+        segments.forEach {
+            downloadSize += (it.current - it.start)
+        }
+
         return Status(downloadSize, totalSize)
     }
 

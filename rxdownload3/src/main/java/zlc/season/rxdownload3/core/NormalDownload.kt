@@ -8,8 +8,8 @@ import zlc.season.rxdownload3.http.HttpCore
 class NormalDownload(mission: RealMission) : DownloadType(mission) {
     private val targetFile = NormalTargetFile(mission)
 
-    override fun initStatus(): Status {
-        return targetFile.getStatus()
+    override fun prepare() {
+        mission.setStatus(targetFile.getStatus())
     }
 
     override fun download(): Maybe<Any> {

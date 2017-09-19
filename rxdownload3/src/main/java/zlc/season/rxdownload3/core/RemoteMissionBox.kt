@@ -79,18 +79,24 @@ class RemoteMissionBox : MissionBox {
         }.subscribeOn(newThread())
     }
 
+    var downloadBinder: DownloadService.DownloadBinder? = null
 
     private fun startBindServiceAndDo(callback: (DownloadService.DownloadBinder) -> Unit) {
+        if (downloadBinder != null) {
+            callback(downloadBinder!!)
+            return
+        }
+
         val intent = Intent(context, DownloadService::class.java)
         context.startService(intent)
         context.bindService(intent, object : ServiceConnection {
             override fun onServiceConnected(name: ComponentName, binder: IBinder) {
-                val downloadBinder = binder as DownloadService.DownloadBinder
-                callback(downloadBinder)
-                context.unbindService(this)
+                downloadBinder = binder as DownloadService.DownloadBinder
+                callback(downloadBinder!!)
             }
 
             override fun onServiceDisconnected(name: ComponentName) {
+                downloadBinder = null
             }
         }, BIND_AUTO_CREATE)
     }

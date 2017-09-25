@@ -13,10 +13,8 @@ import retrofit2.Response
 import zlc.season.rxdownload3.core.DownloadConfig.ANY
 import zlc.season.rxdownload3.core.DownloadConfig.defaultSavePath
 import zlc.season.rxdownload3.database.DbActor
-import zlc.season.rxdownload3.helper.contentLength
-import zlc.season.rxdownload3.helper.dispose
-import zlc.season.rxdownload3.helper.fileName
-import zlc.season.rxdownload3.helper.isSupportRange
+import zlc.season.rxdownload3.extension.Extension
+import zlc.season.rxdownload3.helper.*
 import zlc.season.rxdownload3.http.HttpCore
 import zlc.season.rxdownload3.notification.NotificationFactory
 import java.io.File
@@ -25,7 +23,7 @@ import java.util.concurrent.TimeUnit
 
 class RealMission(val actual: Mission) {
     private val processor = BehaviorProcessor.create<Status>().toSerialized()
-    private var status = Status().toSuspend()
+    private var status: Status = Suspend(Status())
 
     private lateinit var maybe: Maybe<Any>
     private var downloadType: DownloadType? = null
@@ -41,6 +39,8 @@ class RealMission(val actual: Mission) {
     private val enableDb = DownloadConfig.enableDb
     private lateinit var dbActor: DbActor
 
+    private val extensions = DownloadConfig.extensions
+
     init {
         if (enableNotification) {
             notificationManager = DownloadConfig.context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
@@ -53,19 +53,17 @@ class RealMission(val actual: Mission) {
 
         createMaybe()
         initStatus()
+
+        for (item in extensions) {
+            item.init(this)
+        }
     }
 
     private fun initStatus() {
-        Maybe.create<Any> {
-            readFromDb()
-
-            downloadType = generateType()
-            downloadType?.initStatus(true)
-
-            it.onSuccess(ANY)
-        }.subscribeOn(io()).subscribe({
-            emitStatus(status)
-        })
+        readFromDb()
+        downloadType = generateType()
+        downloadType?.initStatus(true)
+        emitStatus(status)
     }
 
     private fun createMaybe() {
@@ -73,10 +71,14 @@ class RealMission(val actual: Mission) {
                 .subscribeOn(io())
                 .flatMap { check() }
                 .flatMap { download() }
-                .doOnDispose { emitStatusWithNotification(status.toSuspend()) }
-                .doOnError { emitStatusWithNotification(status.toFailed()) }
-                .doOnSuccess { emitStatusWithNotification(status.toSucceed()) }
+                .doOnDispose { emitStatusWithNotification(Suspend(status)) }
+                .doOnError { emitStatusWithNotification(Failed(status)) }
+                .doOnSuccess { emitStatusWithNotification(Succeed(status)) }
                 .doFinally { disposable = null }
+    }
+
+    fun findExtension(extension: Class<out Extension>): Extension {
+        return extensions.first { extension.isInstance(it) }
     }
 
     fun getFlowable(): Flowable<Status> {
@@ -90,8 +92,10 @@ class RealMission(val actual: Mission) {
                 it.onSuccess(ANY)
                 return@create
             }
-            emitStatusWithNotification(status.toWaiting())
-            disposable = maybe.subscribe()
+            emitStatusWithNotification(Waiting(status))
+            disposable = maybe.subscribe({}, {
+                loge("Start failed!", it)
+            })
 
             it.onSuccess(ANY)
         }.subscribeOn(Schedulers.newThread())
@@ -106,11 +110,28 @@ class RealMission(val actual: Mission) {
         }
     }
 
-    fun getFile(): Maybe<File> {
+    fun getFile(): File? {
+        if (actual.saveName.isEmpty()) {
+            return null
+        }
+
+        var path = actual.savePath
+        if (path.isEmpty()) {
+            path = DownloadConfig.defaultSavePath
+        }
+        val file = File(path + File.separator + actual.saveName)
+        if (file.exists()) {
+            return file
+        }
+
+        return null
+    }
+
+    fun file(): Maybe<File> {
         return Maybe.create<File> {
             readFromDb()
             if (actual.saveName.isEmpty()) {
-                it.onError(Throwable("Save Name is empty!"))
+                it.onError(RuntimeException("Save Name is empty!"))
                 return@create
             }
 
@@ -124,7 +145,7 @@ class RealMission(val actual: Mission) {
                 return@create
             }
 
-            it.onError(Throwable("No such file"))
+            it.onError(RuntimeException("No such file"))
         }.subscribeOn(newThread())
     }
 
@@ -158,6 +179,10 @@ class RealMission(val actual: Mission) {
 
     fun setStatus(status: Status) {
         this.status = status
+    }
+
+    fun getStatus(): Status {
+        return status
     }
 
     fun emitStatusWithNotification(status: Status) {

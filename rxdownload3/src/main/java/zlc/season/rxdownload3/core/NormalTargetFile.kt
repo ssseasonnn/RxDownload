@@ -49,17 +49,13 @@ class NormalTargetFile(val mission: RealMission) {
     }
 
     fun save(response: Response<ResponseBody>): Maybe<Any> {
-        val respBody = response.body() ?: throw Throwable("Response body is NULL")
+        val respBody = response.body() ?: throw RuntimeException("Response body is NULL")
 
         var downloadSize = 0L
         val byteSize = 8192L
         val totalSize = respBody.contentLength()
 
-        val downloading = Status(downloadSize, totalSize).toDownloading()
-
-        if (isChunked(response)) {
-            downloading.toChunked()
-        }
+        val downloading = Downloading(Status(downloadSize, totalSize, isChunked(response)))
 
         return Maybe.create {
             respBody.source().use { source ->

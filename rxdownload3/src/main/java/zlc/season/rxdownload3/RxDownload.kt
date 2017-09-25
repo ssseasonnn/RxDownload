@@ -5,6 +5,7 @@ import io.reactivex.Maybe
 import zlc.season.rxdownload3.core.DownloadCore
 import zlc.season.rxdownload3.core.Mission
 import zlc.season.rxdownload3.core.Status
+import zlc.season.rxdownload3.extension.Extension
 import java.io.File
 
 
@@ -49,5 +50,13 @@ object RxDownload {
 
     fun getFile(mission: Mission): Maybe<File> {
         return downloadCore.getFile(mission)
+    }
+
+    fun extension(url: String, type: Class<out Extension>): Maybe<Any> {
+        return RxDownload.extension(Mission(url), type)
+    }
+
+    fun extension(mission: Mission, type: Class<out Extension>): Maybe<Any> {
+        return downloadCore.extension(mission, type)
     }
 }

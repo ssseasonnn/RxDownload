@@ -3,6 +3,7 @@ package zlc.season.rxdownload3.core
 import io.reactivex.Flowable
 import io.reactivex.Maybe
 import io.reactivex.plugins.RxJavaPlugins.setErrorHandler
+import zlc.season.rxdownload3.extension.Extension
 import zlc.season.rxdownload3.helper.loge
 import java.io.File
 import java.io.InterruptedIOException
@@ -22,6 +23,7 @@ class DownloadCore {
                 is InterruptedException -> loge("InterruptedException", it)
                 is InterruptedIOException -> loge("InterruptedIOException", it)
                 is SocketException -> loge("SocketException", it)
+//                else -> loge("Unknown error", it)
             }
         }
     }
@@ -48,5 +50,9 @@ class DownloadCore {
 
     fun getFile(mission: Mission): Maybe<File> {
         return missionBox.getFile(mission)
+    }
+
+    fun extension(mission: Mission, type: Class<out Extension>): Maybe<Any> {
+        return missionBox.extension(mission, type)
     }
 }

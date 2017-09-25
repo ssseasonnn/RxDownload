@@ -3,9 +3,11 @@ package zlc.season.rxdownload3.core
 import io.reactivex.Flowable
 import io.reactivex.Maybe
 import io.reactivex.internal.operators.maybe.MaybeToPublisher.INSTANCE
+import zlc.season.rxdownload3.extension.Extension
 import java.io.File
 
 class LocalMissionBox : MissionBox {
+
     private val SET = mutableSetOf<RealMission>()
 
     override fun create(mission: Mission): Flowable<Status> {
@@ -22,14 +24,14 @@ class LocalMissionBox : MissionBox {
 
     override fun start(mission: Mission): Maybe<Any> {
         val realMission = SET.find { it.actual == mission } ?:
-                return Maybe.error(Throwable("Mission not create"))
+                return Maybe.error(RuntimeException("Mission not create"))
 
         return realMission.start()
     }
 
     override fun stop(mission: Mission): Maybe<Any> {
         val realMission = SET.find { it.actual == mission } ?:
-                return Maybe.error(Throwable("Mission not create"))
+                return Maybe.error(RuntimeException("Mission not create"))
 
         return realMission.stop()
     }
@@ -51,7 +53,19 @@ class LocalMissionBox : MissionBox {
     }
 
     override fun getFile(mission: Mission): Maybe<File> {
-        val real = RealMission(mission)
-        return real.getFile()
+        var realMission = SET.find { it.actual == mission }
+        if (realMission == null) {
+            realMission = RealMission(mission)
+        }
+        return realMission.file()
+    }
+
+    override fun extension(mission: Mission, type: Class<out Extension>): Maybe<Any> {
+        val realMission = SET.find { it.actual == mission }
+        if (realMission == null) {
+            return Maybe.empty()
+        }
+
+        return realMission.findExtension(type).action()
     }
 }

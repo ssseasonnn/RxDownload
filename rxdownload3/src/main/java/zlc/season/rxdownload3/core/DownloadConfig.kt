@@ -6,6 +6,7 @@ import android.os.Environment.DIRECTORY_DOWNLOADS
 import android.os.Environment.getExternalStoragePublicDirectory
 import zlc.season.rxdownload3.database.DbActor
 import zlc.season.rxdownload3.database.SQLiteActor
+import zlc.season.rxdownload3.extension.Extension
 import zlc.season.rxdownload3.http.OkHttpClientFactory
 import zlc.season.rxdownload3.http.OkHttpClientFactoryImpl
 import zlc.season.rxdownload3.notification.NotificationFactory
@@ -41,6 +42,7 @@ object DownloadConfig {
 
     internal var okHttpClientFactory: OkHttpClientFactory = OkHttpClientFactoryImpl()
 
+    internal var extensions = mutableListOf<Extension>()
 
     fun init(builder: Builder) {
         this.context = builder.context
@@ -54,6 +56,8 @@ object DownloadConfig {
         this.notificationFactory = builder.notificationFactory
 
         this.okHttpClientFactory = builder.okHttpClientFactory
+
+        this.extensions = builder.extensions
 
         val enableService = builder.enableService
         if (enableService) {
@@ -69,9 +73,13 @@ object DownloadConfig {
         internal var dbActor: DbActor = SQLiteActor(context)
 
         internal var enableService = false
+
         internal var enableNotification = false
         internal var notificationFactory: NotificationFactory = NotificationFactoryImpl()
+
         internal var okHttpClientFactory: OkHttpClientFactory = OkHttpClientFactoryImpl()
+
+        internal var extensions = mutableListOf<Extension>()
 
         companion object {
             fun create(context: Context): Builder {
@@ -116,6 +124,11 @@ object DownloadConfig {
 
         fun setOkHttpClientFacotry(okHttpClientFactory: OkHttpClientFactory): Builder {
             this.okHttpClientFactory = okHttpClientFactory
+            return this
+        }
+
+        fun addExtension(extension: Extension): Builder {
+            this.extensions.add(extension)
             return this
         }
     }

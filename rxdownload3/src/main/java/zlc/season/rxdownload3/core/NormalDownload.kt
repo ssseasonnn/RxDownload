@@ -12,8 +12,8 @@ class NormalDownload(mission: RealMission) : DownloadType(mission) {
         val status = targetFile.getStatus()
         if (withFlag) {
             when {
-                targetFile.ensureFinish() -> status.toSucceed()
-                else -> status.toSuspend()
+                targetFile.ensureFinish() -> Succeed(status)
+                else -> Suspend(status)
             }
         }
         mission.setStatus(status)

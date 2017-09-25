@@ -44,7 +44,7 @@ class RangeTargetFile(val mission: RealMission) {
     }
 
     fun save(response: Response<ResponseBody>, segment: Segment, tmpFile: RangeTmpFile): Maybe<Any> {
-        val respBody = response.body() ?: throw Throwable("Response body is NULL")
+        val respBody = response.body() ?: throw RuntimeException("Response body is NULL")
 
         return Maybe.create {
             val buffer = ByteArray(BUFFER_SIZE)
@@ -76,7 +76,7 @@ class RangeTargetFile(val mission: RealMission) {
                                     segmentBuffer.position(16)
                                     segmentBuffer.putLong(segment.current)
 
-                                    mission.emitStatusWithNotification(tmpFile.currentStatus().toDownloading())
+                                    mission.emitStatusWithNotification(Downloading(tmpFile.currentStatus()))
                                     readLen = source.read(buffer)
                                 }
 

@@ -1,8 +1,10 @@
 package zlc.season.rxdownload3.notification
 
 import android.app.Notification
+import android.app.Notification.VISIBILITY_PUBLIC
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.app.NotificationManager.IMPORTANCE_LOW
 import android.content.Context
 import android.content.Context.NOTIFICATION_SERVICE
 import android.graphics.Color
@@ -21,11 +23,11 @@ class NotificationFactoryImpl : NotificationFactory {
 
         if (SDK_INT >= O) {
             val notificationManager = context.getSystemService(NOTIFICATION_SERVICE) as NotificationManager
-            val channel = NotificationChannel(channelId, channelName, NotificationManager.IMPORTANCE_LOW)
+            val channel = NotificationChannel(channelId, channelName, IMPORTANCE_LOW)
             channel.enableLights(true)
             channel.setShowBadge(true)
-            channel.lightColor = Color.RED
-            channel.lockscreenVisibility = Notification.VISIBILITY_PUBLIC
+            channel.lightColor = Color.GREEN
+            channel.lockscreenVisibility = VISIBILITY_PUBLIC
 
             notificationManager.createNotificationChannel(channel)
         }
@@ -55,7 +57,7 @@ class NotificationFactoryImpl : NotificationFactory {
 
         if (Status.isSucceed(status)) {
             builder.setContentText("下载成功")
-                    .setProgress(status.totalSize.toInt(), status.downloadSize.toInt(), false)
+                    .setProgress(0, 0, false)
         }
 
         if (Status.isSuspend(status)) {

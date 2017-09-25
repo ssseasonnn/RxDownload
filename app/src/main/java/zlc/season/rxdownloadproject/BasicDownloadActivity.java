@@ -9,6 +9,8 @@ import android.view.View;
 import com.squareup.picasso.Picasso;
 import com.tbruyelle.rxpermissions2.RxPermissions;
 
+import java.io.File;
+
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.functions.Consumer;
@@ -47,9 +49,20 @@ public class BasicDownloadActivity extends AppCompatActivity {
             public void onClick(View view) {
                 if (Status.Companion.isDownloading(currentStatus)) {
                     stop();
+                } else if (Status.Companion.isSucceed(currentStatus)) {
+                    install();
                 } else {
                     start();
                 }
+            }
+        });
+    }
+
+    private void install() {
+        RxDownload.INSTANCE.getFile(url).subscribe(new Consumer<File>() {
+            @Override
+            public void accept(File file) throws Exception {
+                
             }
         });
     }
@@ -107,7 +120,7 @@ public class BasicDownloadActivity extends AppCompatActivity {
                         }
 
                         if (Status.Companion.isSucceed(status)) {
-                            binding.contentBasicDownload.action.setText("完成");
+                            binding.contentBasicDownload.action.setText("安装");
                         }
                     }
                 });

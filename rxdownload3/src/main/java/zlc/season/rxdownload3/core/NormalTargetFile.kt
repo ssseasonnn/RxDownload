@@ -29,11 +29,15 @@ class NormalTargetFile(val mission: RealMission) {
         return realFile.exists()
     }
 
+    fun realFile(): File {
+        return realFile
+    }
+
     fun getStatus(): Status {
         return if (ensureFinish()) {
-            Status(realFile.length(), realFile.length()).toSucceed()
+            Status(realFile.length(), realFile.length())
         } else {
-            Status().toSuspend()
+            Status()
         }
     }
 

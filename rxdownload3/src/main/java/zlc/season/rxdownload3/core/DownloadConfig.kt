@@ -5,7 +5,7 @@ import android.content.Context
 import android.os.Environment.DIRECTORY_DOWNLOADS
 import android.os.Environment.getExternalStoragePublicDirectory
 import zlc.season.rxdownload3.database.DbActor
-import zlc.season.rxdownload3.database.EmptyDbActor
+import zlc.season.rxdownload3.database.SQLiteActor
 import zlc.season.rxdownload3.http.OkHttpClientFactory
 import zlc.season.rxdownload3.http.OkHttpClientFactoryImpl
 import zlc.season.rxdownload3.notification.NotificationFactory
@@ -28,7 +28,10 @@ object DownloadConfig {
 
     internal var defaultSavePath = getExternalStoragePublicDirectory(DIRECTORY_DOWNLOADS).path
 
-    internal var dbActor: DbActor = EmptyDbActor()
+    internal lateinit var context: Context
+
+    internal var enableDb = false
+    internal lateinit var dbActor: DbActor
 
     internal var missionBox: MissionBox = LocalMissionBox()
 
@@ -38,13 +41,13 @@ object DownloadConfig {
 
     internal var okHttpClientFactory: OkHttpClientFactory = OkHttpClientFactoryImpl()
 
-    internal lateinit var context: Context
 
     fun init(builder: Builder) {
         this.context = builder.context
         this.maxRange = builder.maxRange
         this.defaultSavePath = builder.defaultSavePath
 
+        this.enableDb = builder.enableDb
         this.dbActor = builder.dbActor
 
         this.enableNotification = builder.enableNotification
@@ -61,8 +64,11 @@ object DownloadConfig {
     class Builder private constructor(val context: Context) {
         internal var maxRange = 3
         internal var defaultSavePath = getExternalStoragePublicDirectory(DIRECTORY_DOWNLOADS).path
+
+        internal var enableDb = false
+        internal var dbActor: DbActor = SQLiteActor(context)
+
         internal var enableService = false
-        internal var dbActor: DbActor = EmptyDbActor()
         internal var enableNotification = false
         internal var notificationFactory: NotificationFactory = NotificationFactoryImpl()
         internal var okHttpClientFactory: OkHttpClientFactory = OkHttpClientFactoryImpl()
@@ -95,6 +101,11 @@ object DownloadConfig {
 
         fun setDefaultPath(path: String): Builder {
             this.defaultSavePath = path
+            return this
+        }
+
+        fun enableDb(enable: Boolean): Builder {
+            this.enableDb = enableDb
             return this
         }
 

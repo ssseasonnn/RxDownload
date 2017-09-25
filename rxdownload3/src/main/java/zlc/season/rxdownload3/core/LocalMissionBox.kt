@@ -12,11 +12,11 @@ class LocalMissionBox : MissionBox {
         val realMission = SET.find { it.actual == mission }
 
         return if (realMission != null) {
-            realMission.getProcessor()
+            realMission.getFlowable()
         } else {
             val new = RealMission(mission)
             SET.add(new)
-            new.getProcessor()
+            new.getFlowable()
         }
     }
 

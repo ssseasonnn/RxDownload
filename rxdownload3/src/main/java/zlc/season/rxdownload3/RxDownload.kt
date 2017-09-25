@@ -43,7 +43,11 @@ object RxDownload {
         return downloadCore.stopAll()
     }
 
-    fun getFile(mission: Mission):Maybe<File>{
+    fun getFile(url: String): Maybe<File> {
+        return getFile(Mission(url))
+    }
+
+    fun getFile(mission: Mission): Maybe<File> {
         return downloadCore.getFile(mission)
     }
 }

@@ -55,6 +55,8 @@ class BasicDownloadActivity : AppCompatActivity() {
                 is ApkInstallExtension.Installed -> open()
             }
         }
+
+        contentBinding.finish.setOnClickListener { finish() }
     }
 
     private fun create() {

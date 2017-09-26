@@ -27,5 +27,9 @@
             android:name="zlc.season.rxdownload.kotlin_demo.BasicDownloadActivity"
             android:theme="@style/AppTheme.NoActionBar" />
 
+        <activity
+            android:name=".ListDownloadActivity"
+            android:theme="@style/AppTheme.NoActionBar" />
+
     </application>
 </manifest>

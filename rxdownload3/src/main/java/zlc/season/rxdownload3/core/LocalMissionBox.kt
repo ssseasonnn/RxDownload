@@ -61,10 +61,7 @@ class LocalMissionBox : MissionBox {
     }
 
     override fun extension(mission: Mission, type: Class<out Extension>): Maybe<Any> {
-        val realMission = SET.find { it.actual == mission }
-        if (realMission == null) {
-            return Maybe.empty()
-        }
+        val realMission = SET.find { it.actual == mission } ?: return Maybe.empty()
 
         return realMission.findExtension(type).action()
     }

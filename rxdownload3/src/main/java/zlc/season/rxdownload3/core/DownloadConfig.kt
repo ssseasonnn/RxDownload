@@ -42,7 +42,7 @@ object DownloadConfig {
 
     internal var okHttpClientFactory: OkHttpClientFactory = OkHttpClientFactoryImpl()
 
-    internal var extensions = mutableListOf<Extension>()
+    internal var extensions = mutableListOf<Class<out Extension>>()
 
     fun init(builder: Builder) {
         this.context = builder.context
@@ -79,7 +79,7 @@ object DownloadConfig {
 
         internal var okHttpClientFactory: OkHttpClientFactory = OkHttpClientFactoryImpl()
 
-        internal var extensions = mutableListOf<Extension>()
+        internal var extensions = mutableListOf<Class<out Extension>>()
 
         companion object {
             fun create(context: Context): Builder {
@@ -127,7 +127,7 @@ object DownloadConfig {
             return this
         }
 
-        fun addExtension(extension: Extension): Builder {
+        fun addExtension(extension: Class<out Extension>): Builder {
             this.extensions.add(extension)
             return this
         }

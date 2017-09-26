@@ -54,17 +54,27 @@ public class BasicDownloadActivity extends AppCompatActivity {
         binding.contentBasicDownload.action.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+                if (currentStatus instanceof Failed || currentStatus instanceof Suspend) {
+                    start();
+                }
+
                 if (currentStatus instanceof Downloading) {
                     stop();
-                } else if (currentStatus instanceof Succeed) {
-                    install();
-                } else if (currentStatus instanceof ApkInstallExtension.Installed) {
+                }
 
-                } else {
-                    start();
+                if (currentStatus instanceof Succeed) {
+                    install();
+                }
+
+                if (currentStatus instanceof ApkInstallExtension.Installed) {
+                    open();
                 }
             }
         });
+    }
+
+    private void open() {
+
     }
 
     private void install() {

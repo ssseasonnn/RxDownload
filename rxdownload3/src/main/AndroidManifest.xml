@@ -6,7 +6,7 @@
 
         <provider
             android:name="android.support.v4.content.FileProvider"
-            android:authorities="${applicationId}.zlc.season.rxdownload.provider"
+            android:authorities="${applicationId}.rxdownload.provider"
             android:exported="false"
             android:grantUriPermissions="true">
 

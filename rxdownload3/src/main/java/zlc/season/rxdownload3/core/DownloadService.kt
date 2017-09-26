@@ -83,8 +83,10 @@ class DownloadService : Service() {
             })
         }
 
-        fun extension(mission: Mission, type: Class<Extension>) {
-            missionBox.extension(mission, type)
+        fun extension(mission: Mission, type: Class<out Extension>, extensionCallback: ExtensionCallback) {
+            missionBox.extension(mission, type).subscribe({
+                extensionCallback.apply(it)
+            })
         }
     }
 
@@ -95,5 +97,9 @@ class DownloadService : Service() {
 
     interface FileCallback {
         fun apply(file: File)
+    }
+
+    interface ExtensionCallback {
+        fun apply(any: Any)
     }
 }

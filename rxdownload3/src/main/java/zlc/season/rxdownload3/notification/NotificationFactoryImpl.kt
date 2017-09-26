@@ -11,6 +11,7 @@ import android.os.Build.VERSION_CODES.O
 import android.support.v4.app.NotificationCompat
 import zlc.season.rxdownload3.R
 import zlc.season.rxdownload3.core.*
+import zlc.season.rxdownload3.extension.ApkInstallExtension
 
 
 class NotificationFactoryImpl : NotificationFactory {
@@ -18,6 +19,67 @@ class NotificationFactoryImpl : NotificationFactory {
         val channelId = "RxDownload"
         val channelName = "RxDownload"
 
+        createOreoChannel(context, channelId, channelName)
+
+        val builder = NotificationCompat.Builder(context, channelId)
+                .setSmallIcon(R.drawable.ic_download)
+                .setContentTitle(mission.saveName)
+
+        if (status is Waiting) {
+            builder.setContentText("等待中")
+            showIndeterminateProgress(builder)
+        }
+
+        if (status is Downloading) {
+            builder.setContentText("下载中")
+            if (status.chunkFlag) {
+                showIndeterminateProgress(builder)
+            } else {
+                showProgress(builder, status.totalSize.toInt(), status.downloadSize.toInt())
+            }
+        }
+
+        if (status is Failed) {
+            builder.setContentText("下载失败")
+            dismissProgress(builder)
+        }
+
+        if (status is Succeed) {
+            builder.setContentText("下载成功")
+            dismissProgress(builder)
+        }
+
+        if (status is Suspend) {
+            builder.setContentText("已暂停")
+            dismissProgress(builder)
+        }
+
+        if (status is ApkInstallExtension.Installing) {
+            builder.setContentText("安装中")
+            dismissProgress(builder)
+        }
+
+        if (status is ApkInstallExtension.Installed) {
+            builder.setContentText("安装完成")
+            dismissProgress(builder)
+        }
+
+        return builder.build()
+    }
+
+    private fun showProgress(builder: NotificationCompat.Builder, max: Int, progress: Int) {
+        builder.setProgress(max, progress, false)
+    }
+
+    private fun showIndeterminateProgress(builder: NotificationCompat.Builder) {
+        builder.setProgress(0, 0, true)
+    }
+
+    private fun dismissProgress(builder: NotificationCompat.Builder) {
+        builder.setProgress(0, 0, false)
+    }
+
+    private fun createOreoChannel(context: Context, channelId: String, channelName: String) {
         if (SDK_INT >= O) {
             val notificationManager = context.getSystemService(NOTIFICATION_SERVICE) as NotificationManager
             val channel = NotificationChannel(channelId, channelName, NotificationManager.IMPORTANCE_LOW)
@@ -28,40 +90,5 @@ class NotificationFactoryImpl : NotificationFactory {
 
             notificationManager.createNotificationChannel(channel)
         }
-
-        val builder = NotificationCompat.Builder(context, channelId)
-                .setSmallIcon(R.drawable.ic_download)
-                .setContentTitle(mission.saveName)
-
-        if (status is Waiting) {
-            builder.setContentText("等待中")
-                    .setProgress(0, 0, true)
-        }
-
-        if (status is Downloading) {
-            builder.setContentText("下载中")
-            if (status.chunkFlag) {
-                builder.setProgress(0, 0, true)
-            } else {
-                builder.setProgress(status.totalSize.toInt(), status.downloadSize.toInt(), false)
-            }
-        }
-
-        if (status is Failed) {
-            builder.setContentText("下载失败")
-                    .setProgress(0, 0, false)
-        }
-
-        if (status is Succeed) {
-            builder.setContentText("下载成功")
-                    .setProgress(0, 0, false)
-        }
-
-        if (status is Suspend) {
-            builder.setContentText("已暂停")
-                    .setProgress(0, 0, false)
-        }
-
-        return builder.build()
     }
 }

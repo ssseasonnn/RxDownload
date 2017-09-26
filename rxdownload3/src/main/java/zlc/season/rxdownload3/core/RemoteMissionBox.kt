@@ -16,7 +16,6 @@ import java.io.File
 
 
 class RemoteMissionBox : MissionBox {
-
     var context: Context = DownloadConfig.context
 
     override fun create(mission: Mission): Flowable<Status> {
@@ -81,11 +80,16 @@ class RemoteMissionBox : MissionBox {
         }.subscribeOn(newThread())
     }
 
-
-    override fun extension(mission: Mission, type: Class<Extension>): Maybe<Any> {
+    override fun extension(mission: Mission, type: Class<out Extension>): Maybe<Any> {
         return Maybe.create<Any> { emitter ->
             startBindServiceAndDo {
-                it.extension(mission, type)
+                val extensionCb = object : DownloadService.ExtensionCallback {
+                    override fun apply(any: Any) {
+                        emitter.onSuccess(any)
+                    }
+                }
+
+                it.extension(mission, type, extensionCb)
             }
         }
     }

@@ -11,7 +11,6 @@ import android.os.Build.VERSION.SDK_INT
 import android.os.Build.VERSION_CODES.N
 import android.support.v4.content.FileProvider.getUriForFile
 import io.reactivex.Maybe
-import zlc.season.rxdownload3.BuildConfig.APPLICATION_ID
 import zlc.season.rxdownload3.core.DownloadConfig
 import zlc.season.rxdownload3.core.RealMission
 import zlc.season.rxdownload3.core.Status
@@ -21,7 +20,6 @@ import java.io.File
 class ApkInstallExtension : BroadcastReceiver(), Extension {
     private val SCHEME = "package"
     private val APK_TYPE = "application/vnd.android.package-archive"
-    private val AUTHORITY = "$APPLICATION_ID.zlc.season.rxdownload.provider"
 
     lateinit var mission: RealMission
     lateinit var context: Context
@@ -30,11 +28,11 @@ class ApkInstallExtension : BroadcastReceiver(), Extension {
     override fun init(mission: RealMission) {
         this.mission = mission
         this.context = DownloadConfig.context
-        this.apkFile = mission.getFile()
     }
 
     override fun action(): Maybe<Any> {
         return Maybe.create {
+            this.apkFile = mission.getFile()
             if (apkFile == null) {
                 it.onError(RuntimeException("Apk file is null"))
                 return@create
@@ -57,9 +55,10 @@ class ApkInstallExtension : BroadcastReceiver(), Extension {
     }
 
     private fun installApk() {
+        val authority = "${context.packageName}.rxdownload.provider"
         val intent = Intent(ACTION_VIEW)
         val uri = if (SDK_INT > N) {
-            getUriForFile(context, AUTHORITY, apkFile)
+            getUriForFile(context, authority, apkFile)
         } else {
             fromFile(apkFile)
         }
@@ -93,6 +92,7 @@ class ApkInstallExtension : BroadcastReceiver(), Extension {
         if (installPackageName == receivePackageName) {
             if (action == ACTION_PACKAGE_ADDED) {
                 mission.emitStatusWithNotification(Installed(mission.getStatus()))
+                context.unregisterReceiver(this)
             }
         }
     }

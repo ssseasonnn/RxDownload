@@ -7,6 +7,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 
 import zlc.season.rxdownload3.core.DownloadConfig;
+import zlc.season.rxdownload3.extension.ApkInstallExtension;
 import zlc.season.rxdownloadproject.databinding.ActivityMainBinding;
 
 public class MainActivity extends AppCompatActivity {
@@ -27,7 +28,8 @@ public class MainActivity extends AppCompatActivity {
 
         DownloadConfig.Builder builder = DownloadConfig.Builder.Companion.create(this)
                 .enableService(true)
-                .enableNotification(true);
+                .enableNotification(true)
+                .addExtension(ApkInstallExtension.class);
 
         DownloadConfig.INSTANCE.init(builder);
     }

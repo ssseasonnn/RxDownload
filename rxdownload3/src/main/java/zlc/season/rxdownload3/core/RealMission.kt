@@ -39,7 +39,7 @@ class RealMission(val actual: Mission) {
     private val enableDb = DownloadConfig.enableDb
     private lateinit var dbActor: DbActor
 
-    private val extensions = DownloadConfig.extensions
+    private val extensions = mutableListOf<Extension>()
 
     init {
         if (enableNotification) {
@@ -53,10 +53,13 @@ class RealMission(val actual: Mission) {
 
         createMaybe()
         initStatus()
+        initExtension()
+    }
 
-        for (item in extensions) {
-            item.init(this)
-        }
+    private fun initExtension() {
+        val ext = DownloadConfig.extensions
+        ext.mapTo(extensions) { it.newInstance() }
+        extensions.forEach { it.init(this) }
     }
 
     private fun initStatus() {

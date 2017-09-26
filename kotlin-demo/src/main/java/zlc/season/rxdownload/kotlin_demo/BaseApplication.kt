@@ -11,6 +11,7 @@ class BaseApplication : Application() {
         super.onCreate()
 
         val builder = DownloadConfig.Builder.create(this)
+                .enableDb(true)
                 .enableService(true)
                 .enableNotification(true)
                 .addExtension(ApkInstallExtension::class.java)

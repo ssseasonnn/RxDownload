@@ -9,6 +9,7 @@ import com.tbruyelle.rxpermissions2.RxPermissions
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.Disposable
 import zlc.season.rxdownload.kotlin_demo.databinding.ActivityBasicDownloadBinding
+import zlc.season.rxdownload.kotlin_demo.databinding.ContentBasicDownloadBinding
 import zlc.season.rxdownload3.RxDownload
 import zlc.season.rxdownload3.core.*
 import zlc.season.rxdownload3.extension.ApkInstallExtension
@@ -16,15 +17,19 @@ import zlc.season.rxdownload3.helper.dispose
 
 class BasicDownloadActivity : AppCompatActivity() {
 
-    private lateinit var binding: ActivityBasicDownloadBinding
+    private lateinit var mainBinding: ActivityBasicDownloadBinding
+    private lateinit var contentBinding: ContentBasicDownloadBinding
+
     private var disposable: Disposable? = null
     private var currentStatus = Status()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         requestPermission(WRITE_EXTERNAL_STORAGE)
-        binding = DataBindingUtil.setContentView(this, R.layout.activity_basic_download)
-        setSupportActionBar(binding.toolbar)
+        mainBinding = DataBindingUtil.setContentView(this, R.layout.activity_basic_download)
+        contentBinding = mainBinding.contentBasicDownload!!
+
+        setSupportActionBar(mainBinding.toolbar)
 
         loadImg()
         setAction()
@@ -37,11 +42,11 @@ class BasicDownloadActivity : AppCompatActivity() {
     }
 
     private fun loadImg() {
-        Picasso.with(this).load(iconUrl).into(binding.contentBasicDownload.img)
+        Picasso.with(this).load(iconUrl).into(contentBinding.img)
     }
 
     private fun setAction() {
-        binding.contentBasicDownload.action.setOnClickListener {
+        contentBinding.action.setOnClickListener {
             when (currentStatus) {
                 is Suspend -> start()
                 is Failed -> start()
@@ -64,11 +69,11 @@ class BasicDownloadActivity : AppCompatActivity() {
     }
 
     private fun setProgress(status: Status) {
-        binding.contentBasicDownload.progress.max = status.totalSize.toInt()
-        binding.contentBasicDownload.progress.progress = status.downloadSize.toInt()
+        contentBinding.progress.max = status.totalSize.toInt()
+        contentBinding.progress.progress = status.downloadSize.toInt()
 
-        binding.contentBasicDownload.percent.text = status.percent()
-        binding.contentBasicDownload.size.text = status.formatString()
+        contentBinding.percent.text = status.percent()
+        contentBinding.size.text = status.formatString()
     }
 
     private fun setActionText(status: Status) {
@@ -82,7 +87,7 @@ class BasicDownloadActivity : AppCompatActivity() {
             is ApkInstallExtension.Installed -> "打开"
             else -> ""
         }
-        binding.contentBasicDownload.action.text = text
+        contentBinding.action.text = text
     }
 
     private fun start() {

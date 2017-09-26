@@ -12,6 +12,7 @@ public class BaseApplication extends Application {
         super.onCreate();
 
         DownloadConfig.Builder builder = DownloadConfig.Builder.Companion.create(this)
+                .enableDb(true)
                 .enableService(true)
                 .enableNotification(true)
                 .addExtension(ApkInstallExtension.class);

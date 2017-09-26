@@ -1,6 +1,9 @@
 package zlc.season.rxdownload3.helper
 
+import android.content.Context
+import android.content.pm.PackageManager
 import io.reactivex.disposables.Disposable
+import java.io.File
 import java.text.DecimalFormat
 
 fun dispose(disposable: Disposable?) {
@@ -24,4 +27,10 @@ fun formatSize(size: Long): String {
         k > 1 -> dec.format(k) + " KB"
         else -> dec.format(b) + " B"
     }
+}
+
+fun getPackageName(context: Context, apkFile: File): String {
+    val pm = context.packageManager
+    val apkInfo = pm.getPackageArchiveInfo(apkFile.path, PackageManager.GET_META_DATA)
+    return apkInfo.packageName
 }

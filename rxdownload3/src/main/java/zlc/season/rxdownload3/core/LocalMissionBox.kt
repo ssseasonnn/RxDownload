@@ -52,7 +52,7 @@ class LocalMissionBox : MissionBox {
                 .lastElement()
     }
 
-    override fun getFile(mission: Mission): Maybe<File> {
+    override fun file(mission: Mission): Maybe<File> {
         var realMission = SET.find { it.actual == mission }
         if (realMission == null) {
             realMission = RealMission(mission)
@@ -61,7 +61,8 @@ class LocalMissionBox : MissionBox {
     }
 
     override fun extension(mission: Mission, type: Class<out Extension>): Maybe<Any> {
-        val realMission = SET.find { it.actual == mission } ?: return Maybe.empty()
+        val realMission = SET.find { it.actual == mission } ?:
+                return Maybe.error(RuntimeException("Mission not create"))
 
         return realMission.findExtension(type).action()
     }

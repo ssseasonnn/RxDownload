@@ -67,7 +67,7 @@ class RemoteMissionBox : MissionBox {
         }.subscribeOn(newThread())
     }
 
-    override fun getFile(mission: Mission): Maybe<File> {
+    override fun file(mission: Mission): Maybe<File> {
         return Maybe.create<File> { emitter ->
             startBindServiceAndDo {
                 val fileCb = object : DownloadService.FileCallback {
@@ -75,7 +75,7 @@ class RemoteMissionBox : MissionBox {
                         emitter.onSuccess(file)
                     }
                 }
-                it.getFile(fileCb, mission)
+                it.file(fileCb, mission)
             }
         }.subscribeOn(newThread())
     }

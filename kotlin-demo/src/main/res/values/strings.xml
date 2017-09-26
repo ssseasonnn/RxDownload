@@ -1,0 +1,79 @@
+<resources>
+    <string name="app_name">RxDownload</string>
+    <string name="title_activity_main">DOWNLOAD DEMO</string>
+    <string name="title_activity_basic_download">BASIC DOWNLOAD</string>
+    <string name="title_activity_service_download">SERVICE DOWNLOAD</string>
+    <string name="title_activity_app_market">应用市场</string>
+    <string name="title_activity_download_manager">下载管理</string>
+    <string name="action_check_update">检查新版本</string>
+    <string name="action_download_manage">下载管理</string>
+
+    <string name="title">下载</string>
+    <string name="download_prepare">准备下载</string>
+    <string name="download_started">正在下载</string>
+    <string name="download_during">下载中</string>
+    <string name="download_failed">下载失败</string>
+    <string name="download_completed">下载完成,点击安装</string>
+    <string name="download_paused">下载已暂停</string>
+    <string name="re_download">重新下载</string>
+    <string name="cancel_download">取消</string>
+    <string name="pause_download">暂停</string>
+    <string name="continue_download">继续</string>
+
+    <string name="all_start">全部开始</string>
+    <string name="all_pause">全部暂停</string>
+    <string name="all_delete">全部删除</string>
+
+    <string-array name="save_name">
+        <item>qq.apk</item>
+        <item>CloudMusic.apk</item>
+        <item>NewsArticle.apk</item>
+        <item>zhihu.apk</item>
+        <item>zhihu_daily.apk</item>
+        <item>androidmarket.apk</item>
+    </string-array>
+
+    <string-array name="name">
+        <item>QQ</item>
+        <item>网易云音乐</item>
+        <item>今日头条</item>
+        <item>知乎</item>
+        <item>知乎日报</item>
+        <item>安卓市场</item>
+    </string-array>
+
+    <string-array name="info">
+        <item>QQ·乐在沟通-----√服务超过90%的移动互联网用户√多人视频、文件多端互传，不断创新满足沟通所需√致力于打造欢乐无限的沟通、娱乐与生活体验</item>
+        <item>网易云音乐，一亿乐迷为之狂热的音乐APP！2014年连续斩获【中国十佳移动互联网应用】、</item>
+        <item>今天，看今日头条今日头条，超过 5 亿用户选择的新闻资讯 APP单用户每日使用时长超过65分钟,每天社交平台分享量超过550万次 </item>
+        <item>知乎是一个真实的网络问答社区，各行各业的精英在这里分享彼此的专业知识、经验、见解，社区氛围友好、理性、认真。</item>
+        <item>【知乎日报——比新闻更多】：新闻事件的解读不再经过记者和编辑，亲历者、内行专家直接发声。法律人说朱令案、水处理工程师谈农夫山泉、法医分析周克华案、建筑设计师解读地震灾后重建……内行在身边，一直追求离现场更近一点。</item>
+        <item>安卓市场啦啦啦</item>
+    </string-array>
+
+    <string-array name="image">
+        <item>http://static.yingyonghui.com/icon/128/4189733.png</item>
+        <item>http://static.yingyonghui.com/icon/128/4143651.png</item>
+        <item>http://static.yingyonghui.com/icon/128/4256143.png</item>
+        <item>http://static.yingyonghui.com/icon/128/4248888.png</item>
+        <item>http://static.yingyonghui.com/icon/128/4200706.png</item>
+        <item>https://ss1.baidu.com/6ONXsjip0QIZ8tyhnq/it/u=2568262276,3402392886&amp;fm=58</item>
+    </string-array>
+
+    <string-array name="url">
+        <item>https://qd.myapp.com/myapp/qqteam/AndroidQQ/mobileqq_android.apk</item>
+        <item>http://s1.music.126.net/download/android/CloudMusic_official_3.7.3_153912.apk</item>
+        <item>http://dl.coolapkmarket.com/down/apk_file/2017/0301/com.ss.android.article.news–6.0.2–602–0301.apk</item>
+        <item>http://zhstatic.zhihu.com/pkg/store/zhihu/futureve-mobile-update-release-4.10.1(443).apk</item>
+        <item>http://zhstatic.zhihu.com/pkg/store/daily/zhihu-daily-zhihu-2.5.4(392).apk</item>
+        <item>http://gdown.baidu.com/data/wisegame/e2ec5ae15b93fdaa/anzhuoshichang_16793302.apk</item>
+    </string-array>
+
+    <string name="title_activity_multi_mission_download">MultiMissionDownloadActivity</string>
+    <string name="basic_download">BASIC DOWNLOAD</string>
+    <string name="service_download">Service download</string>
+    <string name="multi_mission_download">Multi Mission download</string>
+    <string name="app_market">APP MARKET</string>
+    <string name="basic_download_demo">Basic download demo. 基本的下载示例程序. 点击开始即开始下载. 取消订阅则暂停下载.</string>
+
+</resources>

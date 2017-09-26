@@ -46,46 +46,42 @@ class DownloadService : Service() {
         fun create(statusCallback: StatusCallback, mission: Mission) {
             missionBox.create(mission).subscribe({
                 statusCallback.apply(it)
-            }, {
-                loge("Create failed! ", it)
             })
         }
 
         fun start(mission: Mission) {
             missionBox.start(mission).subscribe(EMPTY_SUCCESS, {
-                loge("Start failed! ", it)
+                loge("Start error: ", it)
             })
         }
 
         fun stop(mission: Mission) {
             missionBox.stop(mission).subscribe(EMPTY_SUCCESS, {
-                loge("Stop failed! ", it)
+                loge("Stop error: ", it)
             })
         }
 
         fun startAll() {
-            missionBox.startAll().subscribe(EMPTY_SUCCESS, {
-                loge("Start all failed! ", it)
-            })
+            missionBox.startAll().subscribe()
         }
 
         fun stopAll() {
-            missionBox.stopAll().subscribe(EMPTY_SUCCESS, {
-                loge("Stop all failed! ", it)
-            })
+            missionBox.stopAll().subscribe()
         }
 
-        fun getFile(fileCallback: FileCallback, mission: Mission) {
-            missionBox.getFile(mission).subscribe({
+        fun file(fileCallback: FileCallback, mission: Mission) {
+            missionBox.file(mission).subscribe({
                 fileCallback.apply(it)
             }, {
-                loge("Get file failed! ", it)
+                loge("File error: ", it)
             })
         }
 
         fun extension(mission: Mission, type: Class<out Extension>, extensionCallback: ExtensionCallback) {
             missionBox.extension(mission, type).subscribe({
                 extensionCallback.apply(it)
+            }, {
+                loge("Extension error: ", it)
             })
         }
     }
@@ -101,5 +97,9 @@ class DownloadService : Service() {
 
     interface ExtensionCallback {
         fun apply(any: Any)
+    }
+
+    interface ErrorCallback {
+        fun apply(throwable: Throwable)
     }
 }

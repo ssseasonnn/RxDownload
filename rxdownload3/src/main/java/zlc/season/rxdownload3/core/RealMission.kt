@@ -14,7 +14,10 @@ import zlc.season.rxdownload3.core.DownloadConfig.ANY
 import zlc.season.rxdownload3.core.DownloadConfig.defaultSavePath
 import zlc.season.rxdownload3.database.DbActor
 import zlc.season.rxdownload3.extension.Extension
-import zlc.season.rxdownload3.helper.*
+import zlc.season.rxdownload3.helper.contentLength
+import zlc.season.rxdownload3.helper.dispose
+import zlc.season.rxdownload3.helper.fileName
+import zlc.season.rxdownload3.helper.isSupportRange
 import zlc.season.rxdownload3.http.HttpCore
 import zlc.season.rxdownload3.notification.NotificationFactory
 import java.io.File
@@ -96,9 +99,7 @@ class RealMission(val actual: Mission) {
                 return@create
             }
             emitStatusWithNotification(Waiting(status))
-            disposable = maybe.subscribe({}, {
-                loge("Start failed!", it)
-            })
+            disposable = maybe.subscribe()
 
             it.onSuccess(ANY)
         }.subscribeOn(Schedulers.newThread())
@@ -133,22 +134,12 @@ class RealMission(val actual: Mission) {
     fun file(): Maybe<File> {
         return Maybe.create<File> {
             readFromDb()
-            if (actual.saveName.isEmpty()) {
-                it.onError(RuntimeException("Save Name is empty!"))
-                return@create
-            }
-
-            var path = actual.savePath
-            if (path.isEmpty()) {
-                path = DownloadConfig.defaultSavePath
-            }
-            val file = File(path + File.separator + actual.saveName)
-            if (file.exists()) {
+            val file = getFile()
+            if (file == null) {
+                it.onError(RuntimeException("No such file"))
+            } else {
                 it.onSuccess(file)
-                return@create
             }
-
-            it.onError(RuntimeException("No such file"))
         }.subscribeOn(newThread())
     }
 

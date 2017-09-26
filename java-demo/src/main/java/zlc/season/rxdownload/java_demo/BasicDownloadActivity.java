@@ -1,4 +1,4 @@
-package zlc.season.rxdownloadproject;
+package zlc.season.rxdownload.java_demo;
 
 import android.databinding.DataBindingUtil;
 import android.os.Bundle;
@@ -29,8 +29,7 @@ public class BasicDownloadActivity extends AppCompatActivity {
     private static final String TAG = "BasicDownloadActivity";
 
     private static final String iconUrl = "http://pp.myapp.com/ma_icon/0/icon_6633_1505724536/256";
-    //        private static final String url = "https://qd.myapp.com/myapp/qqteam/AndroidQQ/mobileqq_android.apk";
-    private static final String url = "http://imtt.dd.qq.com/16891/76E3D055C6075BE342B562474F2B1AA3.apk?fsname=com.estrongs.android.pop_4.1.6.7.7_589.apk&csr=db5e";
+    private static final String url = "https://qd.myapp.com/myapp/qqteam/AndroidQQ/mobileqq_android.apk";
 
     private ActivityBasicDownloadBinding binding;
     private Disposable disposable;
@@ -48,6 +47,12 @@ public class BasicDownloadActivity extends AppCompatActivity {
         setAction();
 
         create();
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        dispose(disposable);
     }
 
     private void setAction() {
@@ -71,29 +76,6 @@ public class BasicDownloadActivity extends AppCompatActivity {
                 }
             }
         });
-    }
-
-    private void open() {
-
-    }
-
-    private void install() {
-        RxDownload.INSTANCE.extension(url, ApkInstallExtension.class).subscribe();
-    }
-
-
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        dispose(disposable);
-    }
-
-    private void start() {
-        RxDownload.INSTANCE.start(url).subscribe();
-    }
-
-    private void stop() {
-        RxDownload.INSTANCE.stop(url).subscribe();
     }
 
     private void create() {
@@ -139,6 +121,22 @@ public class BasicDownloadActivity extends AppCompatActivity {
                         }
                     }
                 });
+    }
+
+    private void start() {
+        RxDownload.INSTANCE.start(url).subscribe();
+    }
+
+    private void stop() {
+        RxDownload.INSTANCE.stop(url).subscribe();
+    }
+
+    private void install() {
+        RxDownload.INSTANCE.extension(url, ApkInstallExtension.class).subscribe();
+    }
+
+    private void open() {
+        //TODO: open app
     }
 
     private void requestPermission(String permission) {

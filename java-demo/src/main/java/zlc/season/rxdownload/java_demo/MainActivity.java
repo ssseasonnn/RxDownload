@@ -1,4 +1,4 @@
-package zlc.season.rxdownloadproject;
+package zlc.season.rxdownload.java_demo;
 
 import android.content.Intent;
 import android.databinding.DataBindingUtil;
@@ -26,12 +26,7 @@ public class MainActivity extends AppCompatActivity {
         });
 
 
-        DownloadConfig.Builder builder = DownloadConfig.Builder.Companion.create(this)
-                .enableService(true)
-                .enableNotification(true)
-                .addExtension(ApkInstallExtension.class);
 
-        DownloadConfig.INSTANCE.init(builder);
     }
 
 }

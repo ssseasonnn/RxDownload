@@ -24,6 +24,7 @@ class ApkInstallExtension : BroadcastReceiver(), Extension {
     lateinit var mission: RealMission
     lateinit var context: Context
     private var apkFile: File? = null
+    private var installApkPackageName = ""
 
     override fun init(mission: RealMission) {
         this.mission = mission
@@ -37,6 +38,11 @@ class ApkInstallExtension : BroadcastReceiver(), Extension {
                 it.onError(RuntimeException("Apk file is null"))
                 return@create
             }
+
+            val pm = context.packageManager
+            val apkInfo = pm.getPackageArchiveInfo(apkFile!!.path, PackageManager.GET_META_DATA)
+
+            installApkPackageName = apkInfo.packageName
 
             mission.emitStatusWithNotification(Installing(mission.getStatus()))
 
@@ -64,7 +70,6 @@ class ApkInstallExtension : BroadcastReceiver(), Extension {
         }
         intent.setDataAndType(uri, APK_TYPE)
         intent.addFlags(FLAG_GRANT_READ_URI_PERMISSION)
-        intent.addFlags(FLAG_GRANT_WRITE_URI_PERMISSION)
         context.startActivity(intent)
     }
 
@@ -79,17 +84,9 @@ class ApkInstallExtension : BroadcastReceiver(), Extension {
             return
         }
 
-        if (apkFile == null) {
-            return
-        }
-
-        val pm = context.packageManager
-        val apkInfo = pm.getPackageArchiveInfo(apkFile!!.path, PackageManager.GET_ACTIVITIES)
-
-        val installPackageName = apkInfo.packageName
         val receivePackageName = uri.encodedSchemeSpecificPart
 
-        if (installPackageName == receivePackageName) {
+        if (installApkPackageName == receivePackageName) {
             if (action == ACTION_PACKAGE_ADDED) {
                 mission.emitStatusWithNotification(Installed(mission.getStatus()))
                 context.unregisterReceiver(this)

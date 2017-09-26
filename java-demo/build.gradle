@@ -11,7 +11,7 @@ android {
     buildToolsVersion "26.0.1"
 
     defaultConfig {
-        applicationId "zlc.season.rxdownloadproject"
+        applicationId "zlc.season.rxdownload.java_demo"
         minSdkVersion 14
         targetSdkVersion 26
         versionCode 1

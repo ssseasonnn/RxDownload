@@ -44,16 +44,16 @@ object RxDownload {
         return downloadCore.stopAll()
     }
 
-    fun getFile(url: String): Maybe<File> {
-        return getFile(Mission(url))
+    fun file(url: String): Maybe<File> {
+        return file(Mission(url))
     }
 
-    fun getFile(mission: Mission): Maybe<File> {
-        return downloadCore.getFile(mission)
+    fun file(mission: Mission): Maybe<File> {
+        return downloadCore.file(mission)
     }
 
     fun extension(url: String, type: Class<out Extension>): Maybe<Any> {
-        return RxDownload.extension(Mission(url), type)
+        return extension(Mission(url), type)
     }
 
     fun extension(mission: Mission, type: Class<out Extension>): Maybe<Any> {

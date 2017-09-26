@@ -29,7 +29,7 @@ object DownloadConfig {
 
     internal var defaultSavePath = getExternalStoragePublicDirectory(DIRECTORY_DOWNLOADS).path
 
-    internal lateinit var context: Context
+    lateinit var context: Context
 
     internal var enableDb = false
     internal lateinit var dbActor: DbActor

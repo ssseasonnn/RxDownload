@@ -23,7 +23,6 @@ class DownloadCore {
                 is InterruptedException -> loge("InterruptedException", it)
                 is InterruptedIOException -> loge("InterruptedIOException", it)
                 is SocketException -> loge("SocketException", it)
-//                else -> loge("Unknown error", it)
             }
         }
     }
@@ -48,8 +47,8 @@ class DownloadCore {
         return missionBox.stop(mission)
     }
 
-    fun getFile(mission: Mission): Maybe<File> {
-        return missionBox.getFile(mission)
+    fun file(mission: Mission): Maybe<File> {
+        return missionBox.file(mission)
     }
 
     fun extension(mission: Mission, type: Class<out Extension>): Maybe<Any> {

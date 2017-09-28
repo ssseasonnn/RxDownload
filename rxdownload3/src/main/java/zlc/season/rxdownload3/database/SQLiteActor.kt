@@ -5,8 +5,8 @@ import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 import io.reactivex.Maybe
-import zlc.season.rxdownload3.core.Mission
-import zlc.season.rxdownload3.core.RealMission
+import zlc.season.rxdownload3.core.*
+import zlc.season.rxdownload3.extension.ApkInstallExtension
 
 
 class SQLiteActor(context: Context) : DbActor {
@@ -41,15 +41,17 @@ class SQLiteActor(context: Context) : DbActor {
         private val SAVE_PATH = "save_path"
         private val RANGE_FLAG = "range_flag"
         private val TOTAL_SIZE = "total_size"
+        private val STATUS = "status"
 
         private val CREATE = """
             CREATE TABLE $TABLE_NAME (
                 $TAG TEXT PRIMARY KEY NOT NULL,
                 $URL TEXT NOT NULL,
-                $SAVE_NAME TEXT  NOT NULL,
-                $SAVE_PATH TEXT  NOT NULL,
+                $SAVE_NAME TEXT,
+                $SAVE_PATH TEXT,
                 $RANGE_FLAG INTEGER,
-                $TOTAL_SIZE TEXT )
+                $TOTAL_SIZE TEXT,
+                $STATUS TEXT )
             """
     }
 
@@ -71,11 +73,24 @@ class SQLiteActor(context: Context) : DbActor {
         val actual = mission.actual
         val writableDatabase = sqLiteOpenHelper.writableDatabase
         val cv = ContentValues()
-        cv.put(URL, actual.url)
         cv.put(SAVE_NAME, actual.saveName)
         cv.put(SAVE_PATH, actual.savePath)
-        cv.put(RANGE_FLAG, actual.rangeFlag)
+        cv.put(TOTAL_SIZE, mission.totalSize)
+        cv.put(STATUS, convertStatus(mission.status))
         writableDatabase.update(TABLE_NAME, cv, "$TAG=?", arrayOf(actual.tag))
+    }
+
+    private fun convertStatus(status: Status): Int {
+        return when (status) {
+            is Suspend -> 1
+            is Waiting -> 2
+            is Downloading -> 3
+            is Failed -> 4
+            is Succeed -> 5
+            is ApkInstallExtension.Installing -> 6
+            is ApkInstallExtension.Installed -> 7
+            else -> -1
+        }
     }
 
     override fun create(mission: RealMission) {

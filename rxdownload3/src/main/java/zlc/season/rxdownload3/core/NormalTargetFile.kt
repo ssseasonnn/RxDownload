@@ -1,10 +1,10 @@
 package zlc.season.rxdownload3.core
 
-import io.reactivex.Maybe
+import io.reactivex.BackpressureStrategy
+import io.reactivex.Flowable
 import okhttp3.ResponseBody
 import okio.Okio
 import retrofit2.Response
-import zlc.season.rxdownload3.core.DownloadConfig.ANY
 import zlc.season.rxdownload3.core.DownloadConfig.DOWNLOADING_FILE_SUFFIX
 import zlc.season.rxdownload3.helper.isChunked
 import java.io.File
@@ -48,7 +48,7 @@ class NormalTargetFile(val mission: RealMission) {
         downloadFile.createNewFile()
     }
 
-    fun save(response: Response<ResponseBody>): Maybe<Any> {
+    fun save(response: Response<ResponseBody>): Flowable<Status> {
         val respBody = response.body() ?: throw RuntimeException("Response body is NULL")
 
         var downloadSize = 0L
@@ -57,25 +57,25 @@ class NormalTargetFile(val mission: RealMission) {
 
         val downloading = Downloading(Status(downloadSize, totalSize, isChunked(response)))
 
-        return Maybe.create {
+        return Flowable.create<Status>({
             respBody.source().use { source ->
                 Okio.buffer(Okio.sink(realFile)).use { sink ->
                     val buffer = sink.buffer()
                     var readLen = source.read(buffer, byteSize)
 
-                    while (readLen != -1L && !it.isDisposed) {
+                    while (readLen != -1L && !it.isCancelled) {
                         downloadSize += readLen
                         downloading.downloadSize = downloadSize
 
-                        mission.emitStatusWithNotification(downloading)
+                        it.onNext(downloading)
                         readLen = source.read(buffer, byteSize)
                     }
 
                     downloadFile.renameTo(realFile)
 
-                    it.onSuccess(ANY)
+                    it.onComplete()
                 }
             }
-        }
+        }, BackpressureStrategy.LATEST)
     }
 }

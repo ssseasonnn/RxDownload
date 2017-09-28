@@ -1,13 +1,7 @@
 package zlc.season.rxdownload3.notification
 
 import android.app.Notification
-import android.app.NotificationChannel
-import android.app.NotificationManager
 import android.content.Context
-import android.content.Context.NOTIFICATION_SERVICE
-import android.graphics.Color
-import android.os.Build.VERSION.SDK_INT
-import android.os.Build.VERSION_CODES.O
 import android.support.v4.app.NotificationCompat
 import zlc.season.rxdownload3.R
 import zlc.season.rxdownload3.core.*
@@ -15,15 +9,14 @@ import zlc.season.rxdownload3.extension.ApkInstallExtension
 
 
 class NotificationFactoryImpl : NotificationFactory {
-    override fun build(context: Context, mission: Mission, status: Status): Notification {
-        val channelId = "RxDownload"
-        val channelName = "RxDownload"
+    private val channelId = "RxDownload"
+    private val channelName = "RxDownload"
+    private val map = mutableMapOf<RealMission, NotificationCompat.Builder>()
 
-        createOreoChannel(context, channelId, channelName)
+    override fun build(context: Context, mission: RealMission, status: Status): Notification {
+        createChannelForOreo(context, channelId, channelName)
 
-        val builder = NotificationCompat.Builder(context, channelId)
-                .setSmallIcon(R.drawable.ic_download)
-                .setContentTitle(mission.saveName)
+        val builder = createNotificationBuilder(mission, context)
 
         if (status is Waiting) {
             builder.setContentText("等待中")
@@ -35,7 +28,8 @@ class NotificationFactoryImpl : NotificationFactory {
             if (status.chunkFlag) {
                 showIndeterminateProgress(builder)
             } else {
-                showProgress(builder, status.totalSize.toInt(), status.downloadSize.toInt())
+                val progress: Int = (status.downloadSize / status.totalSize * 100).toInt()
+                showProgress(builder, 100, progress)
             }
         }
 
@@ -47,6 +41,7 @@ class NotificationFactoryImpl : NotificationFactory {
         if (status is Succeed) {
             builder.setContentText("下载成功")
             dismissProgress(builder)
+            println("succeed")
         }
 
         if (status is Suspend) {
@@ -67,6 +62,17 @@ class NotificationFactoryImpl : NotificationFactory {
         return builder.build()
     }
 
+    private fun createNotificationBuilder(mission: RealMission, context: Context): NotificationCompat.Builder {
+        var builder = map[mission]
+        if (builder == null) {
+            builder = NotificationCompat.Builder(context)
+                    .setSmallIcon(R.drawable.ic_download)
+                    .setContentTitle(mission.actual.saveName)
+            map.put(mission, builder)
+        }
+        return builder!!
+    }
+
     private fun showProgress(builder: NotificationCompat.Builder, max: Int, progress: Int) {
         builder.setProgress(max, progress, false)
     }
@@ -79,16 +85,16 @@ class NotificationFactoryImpl : NotificationFactory {
         builder.setProgress(0, 0, false)
     }
 
-    private fun createOreoChannel(context: Context, channelId: String, channelName: String) {
-        if (SDK_INT >= O) {
-            val notificationManager = context.getSystemService(NOTIFICATION_SERVICE) as NotificationManager
-            val channel = NotificationChannel(channelId, channelName, NotificationManager.IMPORTANCE_LOW)
-            channel.enableLights(true)
-            channel.setShowBadge(true)
-            channel.lightColor = Color.GREEN
-            channel.lockscreenVisibility = Notification.VISIBILITY_PUBLIC
-
-            notificationManager.createNotificationChannel(channel)
-        }
+    private fun createChannelForOreo(context: Context, channelId: String, channelName: String) {
+//        if (SDK_INT >= O) {
+//            val notificationManager = context.getSystemService(NOTIFICATION_SERVICE) as NotificationManager
+//            val channel = NotificationChannel(channelId, channelName, NotificationManager.IMPORTANCE_LOW)
+//            channel.enableLights(true)
+//            channel.setShowBadge(true)
+//            channel.lightColor = Color.GREEN
+//            channel.lockscreenVisibility = Notification.VISIBILITY_PUBLIC
+//
+//            notificationManager.createNotificationChannel(channel)
+//        }
     }
 }

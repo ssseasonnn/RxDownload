@@ -14,26 +14,24 @@ import zlc.season.rxdownload3.core.DownloadConfig.ANY
 import zlc.season.rxdownload3.core.DownloadConfig.defaultSavePath
 import zlc.season.rxdownload3.database.DbActor
 import zlc.season.rxdownload3.extension.Extension
-import zlc.season.rxdownload3.helper.contentLength
-import zlc.season.rxdownload3.helper.dispose
-import zlc.season.rxdownload3.helper.fileName
-import zlc.season.rxdownload3.helper.isSupportRange
+import zlc.season.rxdownload3.helper.*
 import zlc.season.rxdownload3.http.HttpCore
 import zlc.season.rxdownload3.notification.NotificationFactory
 import java.io.File
-import java.util.concurrent.TimeUnit
+import java.util.concurrent.TimeUnit.MILLISECONDS
 
 
 class RealMission(val actual: Mission) {
-    private val processor = BehaviorProcessor.create<Status>().toSerialized()
-    private var status: Status = Suspend(Status())
+    var totalSize = 0L
+    var status: Status = Suspend(Status())
 
-    private lateinit var maybe: Maybe<Any>
-    private var downloadType: DownloadType? = null
+    private val processor = BehaviorProcessor.create<Status>().toSerialized()
 
     private var disposable: Disposable? = null
+    private var downloadType: DownloadType? = null
 
-    var totalSize = 0L
+    private lateinit var initMaybe: Maybe<Any>
+    private lateinit var downloadFlowable: Flowable<Status>
 
     private val enableNotification = DownloadConfig.enableNotification
     private lateinit var notificationManager: NotificationManager
@@ -45,6 +43,24 @@ class RealMission(val actual: Mission) {
     private val extensions = mutableListOf<Extension>()
 
     init {
+        init()
+    }
+
+    private fun init() {
+        initMaybe = Maybe.create<Any> {
+            loadConfig()
+            createFlowable()
+            initMission()
+            initExtension()
+            initStatus()
+
+            it.onSuccess(ANY)
+        }.subscribeOn(Schedulers.newThread())
+
+        initMaybe.subscribe()
+    }
+
+    private fun loadConfig() {
         if (enableNotification) {
             notificationManager = DownloadConfig.context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             notificationFactory = DownloadConfig.notificationFactory
@@ -53,11 +69,18 @@ class RealMission(val actual: Mission) {
         if (enableDb) {
             dbActor = DownloadConfig.dbActor
         }
-
-        createMaybe()
-        initStatus()
-        initExtension()
     }
+
+    private fun initMission() {
+        if (enableDb) {
+            if (dbActor.isExists(this)) {
+                dbActor.read(this)
+            } else {
+                dbActor.create(this)
+            }
+        }
+    }
+
 
     private fun initExtension() {
         val ext = DownloadConfig.extensions
@@ -66,20 +89,19 @@ class RealMission(val actual: Mission) {
     }
 
     private fun initStatus() {
-        readFromDb()
         downloadType = generateType()
         downloadType?.initStatus(true)
         emitStatus(status)
     }
 
-    private fun createMaybe() {
-        maybe = Maybe.just(ANY)
+    private fun createFlowable() {
+        downloadFlowable = Flowable.just(ANY)
                 .subscribeOn(io())
-                .flatMap { check() }
-                .flatMap { download() }
-                .doOnDispose { emitStatusWithNotification(Suspend(status)) }
+                .doOnSubscribe { emitStatusWithNotification(Waiting(status)) }
+                .flatMap { checkAndDownload() }
                 .doOnError { emitStatusWithNotification(Failed(status)) }
-                .doOnSuccess { emitStatusWithNotification(Succeed(status)) }
+                .doOnComplete { emitStatusWithNotification(Succeed(status)) }
+                .doOnCancel { emitStatusWithNotification(Suspend(status)) }
                 .doFinally { disposable = null }
     }
 
@@ -88,7 +110,7 @@ class RealMission(val actual: Mission) {
     }
 
     fun getFlowable(): Flowable<Status> {
-        return processor.sample(30, TimeUnit.MILLISECONDS)
+        return processor.sample(30, MILLISECONDS, true)
                 .onBackpressureLatest()
     }
 
@@ -98,8 +120,12 @@ class RealMission(val actual: Mission) {
                 it.onSuccess(ANY)
                 return@create
             }
-            emitStatusWithNotification(Waiting(status))
-            disposable = maybe.subscribe()
+
+            disposable = downloadFlowable.subscribe({
+                emitStatusWithNotification(it)
+            }, {
+                loge("Failed", it)
+            })
 
             it.onSuccess(ANY)
         }.subscribeOn(Schedulers.newThread())
@@ -149,10 +175,12 @@ class RealMission(val actual: Mission) {
         actual.rangeFlag = isSupportRange(resp)
         totalSize = contentLength(resp)
 
-        insertToDb()
-
         downloadType = generateType()
         downloadType?.initStatus(false)
+
+        if (enableDb) {
+            dbActor.update(this)
+        }
     }
 
     private fun readFromDb() {
@@ -163,37 +191,24 @@ class RealMission(val actual: Mission) {
         }
     }
 
-    private fun insertToDb() {
-        if (enableDb) {
-            if (!dbActor.isExists(this)) {
-                dbActor.create(this)
-            }
-        }
-    }
-
-    fun setStatus(status: Status) {
-        this.status = status
-    }
-
-    fun getStatus(): Status {
-        return status
-    }
 
     fun emitStatusWithNotification(status: Status) {
-        this.status = status
-        processor.onNext(status)
+        emitStatus(status)
         notifyNotification()
     }
 
     fun emitStatus(status: Status) {
         this.status = status
         processor.onNext(status)
+        if (enableDb) {
+            dbActor.update(this)
+        }
     }
 
     private fun notifyNotification() {
         if (enableNotification) {
             notificationManager.notify(hashCode(),
-                    notificationFactory.build(DownloadConfig.context, actual, status))
+                    notificationFactory.build(DownloadConfig.context, this, status))
         }
     }
 
@@ -205,6 +220,10 @@ class RealMission(val actual: Mission) {
         }
     }
 
+    private fun checkAndDownload(): Flowable<Status> {
+        return check().flatMapPublisher { download() }
+    }
+
     private fun check(): Maybe<Any> {
         return if (actual.rangeFlag == null) {
             HttpCore.checkUrl(this)
@@ -213,8 +232,12 @@ class RealMission(val actual: Mission) {
         }
     }
 
-    private fun download(): Maybe<Any> {
-        return downloadType!!.download()
+    private fun download(): Flowable<Status> {
+        return if (downloadType == null) {
+            Flowable.error(IllegalStateException("Illegal download type"))
+        } else {
+            downloadType!!.download()
+        }
     }
 
     override fun equals(other: Any?): Boolean {

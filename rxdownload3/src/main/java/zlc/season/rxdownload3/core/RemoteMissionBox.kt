@@ -43,8 +43,12 @@ class RemoteMissionBox : MissionBox {
     override fun stop(mission: Mission): Maybe<Any> {
         return Maybe.create<Any> { emitter ->
             startBindServiceAndDo {
-                it.stop(mission)
-                emitter.onSuccess(ANY)
+                val cb = object : DownloadService.SuccessCallback {
+                    override fun apply(any: Any) {
+                        emitter.onSuccess(any)
+                    }
+                }
+                it.stop(cb, mission)
             }
         }.subscribeOn(newThread())
     }

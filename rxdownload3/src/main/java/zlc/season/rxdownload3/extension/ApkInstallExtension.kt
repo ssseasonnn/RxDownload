@@ -49,7 +49,7 @@ class ApkInstallExtension : Extension {
 
             installApkPackageName = getPackageName(context, apkFile!!)
 
-            mission.emitStatusWithNotification(Installing(mission.getStatus()))
+            mission.emitStatusWithNotification(Installing(mission.status))
 
             registerReceiver()
             ApkInstallActivity.start(context, apkFile!!.path)
@@ -133,7 +133,7 @@ class ApkInstallExtension : Extension {
 
             if (installApkPackageName == receivePackageName) {
                 if (action == ACTION_PACKAGE_ADDED) {
-                    mission.emitStatusWithNotification(Installed(mission.getStatus()))
+                    mission.emitStatusWithNotification(Installed(mission.status))
                     getInstance(context).unregisterReceiver(this)
                 }
             }
@@ -149,7 +149,7 @@ class ApkInstallExtension : Extension {
 
             if (installApkPackageName == receivePackageName) {
                 if (action == ApkInstallActivity.ACTION_APK_INSTALL_CANCEL) {
-                    mission.emitStatusWithNotification(Succeed(mission.getStatus()))
+                    mission.emitStatusWithNotification(Succeed(mission.status))
                     getInstance(context).unregisterReceiver(this)
                 }
             }

@@ -55,8 +55,10 @@ class DownloadService : Service() {
             })
         }
 
-        fun stop(mission: Mission) {
-            missionBox.stop(mission).subscribe(EMPTY_SUCCESS, {
+        fun stop(callback: SuccessCallback, mission: Mission) {
+            missionBox.stop(mission).subscribe({
+                callback.apply(it)
+            }, {
                 loge("Stop error: ", it)
             })
         }
@@ -96,6 +98,10 @@ class DownloadService : Service() {
     }
 
     interface ExtensionCallback {
+        fun apply(any: Any)
+    }
+
+    interface SuccessCallback {
         fun apply(any: Any)
     }
 

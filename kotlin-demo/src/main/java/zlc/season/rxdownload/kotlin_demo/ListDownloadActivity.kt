@@ -9,8 +9,14 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import com.squareup.picasso.Picasso
+import io.reactivex.android.schedulers.AndroidSchedulers
+import io.reactivex.disposables.Disposable
 import zlc.season.rxdownload.kotlin_demo.databinding.ActivityListDownloadBinding
 import zlc.season.rxdownload.kotlin_demo.databinding.ViewHolderDownloadItemBinding
+import zlc.season.rxdownload3.RxDownload
+import zlc.season.rxdownload3.core.*
+import zlc.season.rxdownload3.extension.ApkInstallExtension
+import zlc.season.rxdownload3.helper.dispose
 
 
 class ListDownloadActivity : AppCompatActivity() {
@@ -37,7 +43,11 @@ class ListDownloadActivity : AppCompatActivity() {
         adapter.addData(data)
     }
 
-    data class Item(val introduce: String, val img: String, val url: String)
+    data class Item(val introduce: String, val img: String, val url: String) {
+        var disposable: Disposable? = null
+        var currentStatus: Status? = null
+    }
+
 
     class Adapter : RecyclerView.Adapter<ViewHolder>() {
         val data = mutableListOf<Item>()
@@ -61,19 +71,70 @@ class ListDownloadActivity : AppCompatActivity() {
         }
 
         override fun getItemCount(): Int {
-            println(data.size)
             return data.size
         }
     }
 
     class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
-        lateinit var item: Item
+        private var item: Item? = null
+
         private val itemBinding: ViewHolderDownloadItemBinding = DataBindingUtil.bind(itemView)
+
+        init {
+            itemBinding.action.setOnClickListener {
+                when (item!!.currentStatus) {
+                    is Suspend -> start()
+                    is Failed -> start()
+                    is Downloading -> stop()
+                    is Succeed -> install()
+                    is ApkInstallExtension.Installed -> open()
+                }
+            }
+        }
+
+        private fun start() {
+            RxDownload.start(item!!.url).subscribe()
+        }
+
+        private fun stop() {
+            RxDownload.stop(item!!.url).subscribe()
+        }
+
+        private fun install() {
+            RxDownload.extension(item!!.url, ApkInstallExtension::class.java).subscribe()
+        }
+
+        private fun open() {
+            //TODO: open app
+        }
 
         fun setData(item: Item) {
             this.item = item
+
             itemBinding.introduce.text = item.introduce
             Picasso.with(itemView.context).load(item.img).into(itemBinding.icon)
+
+            dispose(item.disposable)
+            item.disposable = RxDownload.create(item.url)
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .subscribe({
+                        item.currentStatus = it
+                        setActionText(it)
+                    })
+        }
+
+        private fun setActionText(status: Status) {
+            val text = when (status) {
+                is Suspend -> "开始"
+                is Waiting -> "等待中"
+                is Downloading -> "暂停"
+                is Failed -> "失败"
+                is Succeed -> "安装"
+                is ApkInstallExtension.Installing -> "安装中"
+                is ApkInstallExtension.Installed -> "打开"
+                else -> ""
+            }
+            itemBinding.action.text = text
         }
     }
 }

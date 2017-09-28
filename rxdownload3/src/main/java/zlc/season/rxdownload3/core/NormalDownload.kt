@@ -1,6 +1,7 @@
 package zlc.season.rxdownload3.core
 
 
+import io.reactivex.Flowable
 import io.reactivex.Maybe
 import zlc.season.rxdownload3.core.DownloadConfig.ANY
 import zlc.season.rxdownload3.http.HttpCore
@@ -16,21 +17,20 @@ class NormalDownload(mission: RealMission) : DownloadType(mission) {
                 else -> Suspend(status)
             }
         }
-        mission.setStatus(status)
+        mission.status = status
     }
 
-    override fun download(): Maybe<Any> {
+    override fun download(): Flowable<Status> {
         if (targetFile.ensureFinish()) {
-            return Maybe.just(ANY)
+            return Flowable.empty()
         }
 
         targetFile.checkFile()
 
         return Maybe.just(ANY)
                 .flatMap { HttpCore.download(mission) }
-                .flatMap {
+                .flatMapPublisher {
                     targetFile.save(it)
-                    Maybe.just(ANY)
                 }
     }
 }

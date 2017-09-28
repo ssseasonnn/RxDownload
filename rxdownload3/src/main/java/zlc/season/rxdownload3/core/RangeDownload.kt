@@ -2,9 +2,7 @@ package zlc.season.rxdownload3.core
 
 import io.reactivex.Flowable
 import io.reactivex.Maybe
-import io.reactivex.internal.operators.maybe.MaybeToPublisher.INSTANCE
 import io.reactivex.schedulers.Schedulers
-import zlc.season.rxdownload3.core.DownloadConfig.ANY
 import zlc.season.rxdownload3.core.DownloadConfig.maxRange
 import zlc.season.rxdownload3.core.RangeTmpFile.Segment
 import zlc.season.rxdownload3.helper.logd
@@ -25,24 +23,24 @@ class RangeDownload(mission: RealMission) : DownloadType(mission) {
             }
         }
 
-        mission.setStatus(status)
+        mission.status = status
     }
 
     private fun isFinish(): Boolean {
         return tmpFile.isFinish() && targetFile.isFinish()
     }
 
-    override fun download(): Maybe<Any> {
+    override fun download(): Flowable<Status> {
         if (isFinish()) {
-
-            return Maybe.just(ANY)
+            return Flowable.empty()
         }
 
-        val arrays = mutableListOf<Maybe<Any>>()
+        val arrays = mutableListOf<Flowable<Status>>()
 
         if (targetFile.isShadowExists()) {
             tmpFile.checkFile()
         } else {
+            targetFile.createShadowFile()
             tmpFile.reset()
         }
 
@@ -50,20 +48,18 @@ class RangeDownload(mission: RealMission) : DownloadType(mission) {
                 .filter { !it.isComplete() }
                 .forEach { arrays.add(rangeDownload(it)) }
 
-        return Flowable.fromIterable(arrays)
-                .flatMap(INSTANCE, true, maxRange)
-                .lastElement()
-                .doOnSuccess { targetFile.rename() }
+        return Flowable.mergeDelayError(arrays, maxRange)
+                .doOnComplete { targetFile.rename() }
     }
 
 
-    private fun rangeDownload(segment: Segment): Maybe<Any> {
+    private fun rangeDownload(segment: Segment): Flowable<Status> {
         return Maybe.just(segment)
                 .subscribeOn(Schedulers.io())
                 .map { "bytes=${it.current}-${it.end}" }
                 .doOnSuccess { logd("Range: $it") }
                 .flatMap { HttpCore.download(mission, it) }
-                .flatMap { targetFile.save(it, segment, tmpFile) }
+                .flatMapPublisher { targetFile.save(it, segment, tmpFile) }
     }
 }
 

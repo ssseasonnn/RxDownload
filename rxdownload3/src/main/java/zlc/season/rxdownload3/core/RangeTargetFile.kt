@@ -1,15 +1,16 @@
 package zlc.season.rxdownload3.core
 
-import io.reactivex.Maybe
+import io.reactivex.BackpressureStrategy
+import io.reactivex.Flowable
 import okhttp3.ResponseBody
 import retrofit2.Response
-import zlc.season.rxdownload3.core.DownloadConfig.ANY
 import zlc.season.rxdownload3.core.DownloadConfig.DOWNLOADING_FILE_SUFFIX
 import zlc.season.rxdownload3.core.RangeTmpFile.Segment
 import java.io.File
 import java.io.File.separator
 import java.io.RandomAccessFile
 import java.nio.channels.FileChannel.MapMode.READ_WRITE
+import java.util.concurrent.TimeUnit
 
 
 class RangeTargetFile(val mission: RealMission) {
@@ -39,14 +40,19 @@ class RangeTargetFile(val mission: RealMission) {
         return shadowFile.exists()
     }
 
+    fun createShadowFile() {
+        val file = RandomAccessFile(shadowFile, MODE)
+        file.setLength(mission.totalSize)
+    }
+
     fun rename() {
         shadowFile.renameTo(realFile)
     }
 
-    fun save(response: Response<ResponseBody>, segment: Segment, tmpFile: RangeTmpFile): Maybe<Any> {
+    fun save(response: Response<ResponseBody>, segment: Segment, tmpFile: RangeTmpFile): Flowable<Status> {
         val respBody = response.body() ?: throw RuntimeException("Response body is NULL")
 
-        return Maybe.create {
+        return Flowable.create<Status>({
             val buffer = ByteArray(BUFFER_SIZE)
 
             respBody.byteStream().use { source ->
@@ -54,12 +60,6 @@ class RangeTargetFile(val mission: RealMission) {
                     RandomAccessFile(tmpFile.getFile(), MODE).use { tmp ->
                         target.channel.use { targetChannel ->
                             tmp.channel.use { tmpChannel ->
-
-                                val targetBuffer = targetChannel.map(
-                                        READ_WRITE,
-                                        segment.current,
-                                        segment.size()
-                                )
 
                                 val segmentBuffer = tmpChannel.map(
                                         READ_WRITE,
@@ -69,25 +69,32 @@ class RangeTargetFile(val mission: RealMission) {
 
                                 var readLen = source.read(buffer)
 
-                                while (readLen != -1 && !it.isDisposed) {
+                                while (readLen != -1 && !it.isCancelled) {
+
+                                    val targetBuffer = targetChannel.map(
+                                            READ_WRITE,
+                                            segment.current,
+                                            readLen.toLong()
+                                    )
+
                                     segment.current += readLen
 
                                     targetBuffer.put(buffer, 0, readLen)
-                                    segmentBuffer.position(16)
-                                    segmentBuffer.putLong(segment.current)
+                                    segmentBuffer.putLong(16, segment.current)
 
-                                    mission.emitStatusWithNotification(Downloading(tmpFile.currentStatus()))
+                                    it.onNext(Downloading(tmpFile.currentStatus()))
                                     readLen = source.read(buffer)
                                 }
 
-                                it.onSuccess(ANY)
+                                it.onComplete()
                             }
                         }
                     }
                 }
             }
-        }
+        }, BackpressureStrategy.LATEST).sample(30,TimeUnit.MILLISECONDS,true)
     }
+
 }
 
 

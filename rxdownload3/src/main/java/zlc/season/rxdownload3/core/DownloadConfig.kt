@@ -113,7 +113,7 @@ object DownloadConfig {
         }
 
         fun enableDb(enable: Boolean): Builder {
-            this.enableDb = enableDb
+            this.enableDb = enable
             return this
         }
 

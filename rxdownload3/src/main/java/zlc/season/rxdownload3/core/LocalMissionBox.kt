@@ -53,10 +53,8 @@ class LocalMissionBox : MissionBox {
     }
 
     override fun file(mission: Mission): Maybe<File> {
-        var realMission = SET.find { it.actual == mission }
-        if (realMission == null) {
-            realMission = RealMission(mission)
-        }
+        val realMission = SET.find { it.actual == mission } ?:
+                return Maybe.error(RuntimeException("Mission not create"))
         return realMission.file()
     }
 

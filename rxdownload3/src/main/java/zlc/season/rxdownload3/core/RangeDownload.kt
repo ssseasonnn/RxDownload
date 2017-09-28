@@ -7,23 +7,28 @@ import zlc.season.rxdownload3.core.DownloadConfig.maxRange
 import zlc.season.rxdownload3.core.RangeTmpFile.Segment
 import zlc.season.rxdownload3.helper.logd
 import zlc.season.rxdownload3.http.HttpCore
+import java.io.File
 
 
 class RangeDownload(mission: RealMission) : DownloadType(mission) {
     private val targetFile = RangeTargetFile(mission)
+
     private val tmpFile = RangeTmpFile(mission)
 
-    override fun initStatus(withFlag: Boolean) {
+    override fun initStatus() {
         val status = tmpFile.currentStatus()
 
-        if (withFlag) {
-            when {
-                isFinish() -> Succeed(status)
-                else -> Suspend(status)
-            }
+        when {
+            isFinish() -> Succeed(status)
+            else -> Suspend(status)
         }
+    }
 
-        mission.status = status
+    override fun getFile(): File? {
+        if (isFinish()) {
+            return targetFile.realFile()
+        }
+        return null
     }
 
     private fun isFinish(): Boolean {

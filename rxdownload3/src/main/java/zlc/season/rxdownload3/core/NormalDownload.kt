@@ -5,23 +5,28 @@ import io.reactivex.Flowable
 import io.reactivex.Maybe
 import zlc.season.rxdownload3.core.DownloadConfig.ANY
 import zlc.season.rxdownload3.http.HttpCore
+import java.io.File
 
 class NormalDownload(mission: RealMission) : DownloadType(mission) {
     private val targetFile = NormalTargetFile(mission)
 
-    override fun initStatus(withFlag: Boolean) {
+    override fun initStatus() {
         val status = targetFile.getStatus()
-        if (withFlag) {
-            when {
-                targetFile.ensureFinish() -> Succeed(status)
-                else -> Suspend(status)
-            }
+        when {
+            targetFile.isFinish() -> Succeed(status)
+            else -> Suspend(status)
         }
-        mission.status = status
+    }
+
+    override fun getFile(): File? {
+        if (targetFile.isFinish()) {
+            return targetFile.realFile()
+        }
+        return null
     }
 
     override fun download(): Flowable<Status> {
-        if (targetFile.ensureFinish()) {
+        if (targetFile.isFinish()) {
             return Flowable.empty()
         }
 

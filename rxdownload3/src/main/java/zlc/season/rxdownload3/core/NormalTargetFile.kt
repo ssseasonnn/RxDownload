@@ -25,7 +25,7 @@ class NormalTargetFile(val mission: RealMission) {
         }
     }
 
-    fun ensureFinish(): Boolean {
+    fun isFinish(): Boolean {
         return realFile.exists()
     }
 
@@ -34,7 +34,7 @@ class NormalTargetFile(val mission: RealMission) {
     }
 
     fun getStatus(): Status {
-        return if (ensureFinish()) {
+        return if (isFinish()) {
             Status(realFile.length(), realFile.length())
         } else {
             Status()

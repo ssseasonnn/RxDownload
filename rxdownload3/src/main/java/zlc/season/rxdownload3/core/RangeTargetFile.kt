@@ -45,6 +45,10 @@ class RangeTargetFile(val mission: RealMission) {
         file.setLength(mission.totalSize)
     }
 
+    fun realFile(): File {
+        return realFile
+    }
+
     fun rename() {
         shadowFile.renameTo(realFile)
     }
@@ -92,7 +96,7 @@ class RangeTargetFile(val mission: RealMission) {
                     }
                 }
             }
-        }, BackpressureStrategy.LATEST).sample(30,TimeUnit.MILLISECONDS,true)
+        }, BackpressureStrategy.LATEST).sample(30, TimeUnit.MILLISECONDS, true)
     }
 
 }

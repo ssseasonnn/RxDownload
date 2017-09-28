@@ -6,7 +6,6 @@ import io.reactivex.Flowable
 import io.reactivex.Maybe
 import io.reactivex.disposables.Disposable
 import io.reactivex.processors.BehaviorProcessor
-import io.reactivex.schedulers.Schedulers
 import io.reactivex.schedulers.Schedulers.io
 import io.reactivex.schedulers.Schedulers.newThread
 import retrofit2.Response
@@ -14,7 +13,10 @@ import zlc.season.rxdownload3.core.DownloadConfig.ANY
 import zlc.season.rxdownload3.core.DownloadConfig.defaultSavePath
 import zlc.season.rxdownload3.database.DbActor
 import zlc.season.rxdownload3.extension.Extension
-import zlc.season.rxdownload3.helper.*
+import zlc.season.rxdownload3.helper.contentLength
+import zlc.season.rxdownload3.helper.dispose
+import zlc.season.rxdownload3.helper.fileName
+import zlc.season.rxdownload3.helper.isSupportRange
 import zlc.season.rxdownload3.http.HttpCore
 import zlc.season.rxdownload3.notification.NotificationFactory
 import java.io.File
@@ -55,9 +57,9 @@ class RealMission(val actual: Mission) {
             initStatus()
 
             it.onSuccess(ANY)
-        }.subscribeOn(Schedulers.newThread())
+        }.subscribeOn(newThread())
 
-        initMaybe.subscribe()
+        initMaybe.subscribe({ emitStatus(status) })
     }
 
     private fun loadConfig() {
@@ -81,7 +83,6 @@ class RealMission(val actual: Mission) {
         }
     }
 
-
     private fun initExtension() {
         val ext = DownloadConfig.extensions
         ext.mapTo(extensions) { it.newInstance() }
@@ -90,8 +91,7 @@ class RealMission(val actual: Mission) {
 
     private fun initStatus() {
         downloadType = generateType()
-        downloadType?.initStatus(true)
-        emitStatus(status)
+        downloadType?.initStatus()
     }
 
     private fun createFlowable() {
@@ -116,19 +116,11 @@ class RealMission(val actual: Mission) {
 
     fun start(): Maybe<Any> {
         return Maybe.create<Any> {
-            if (disposable != null) {
-                it.onSuccess(ANY)
-                return@create
+            if (disposable == null) {
+                disposable = downloadFlowable.subscribe({ emitStatusWithNotification(it) })
             }
-
-            disposable = downloadFlowable.subscribe({
-                emitStatusWithNotification(it)
-            }, {
-                loge("Failed", it)
-            })
-
             it.onSuccess(ANY)
-        }.subscribeOn(Schedulers.newThread())
+        }.subscribeOn(newThread())
     }
 
     fun stop(): Maybe<Any> {
@@ -137,29 +129,15 @@ class RealMission(val actual: Mission) {
             disposable = null
 
             it.onSuccess(ANY)
-        }
+        }.subscribeOn(newThread())
     }
 
     fun getFile(): File? {
-        if (actual.saveName.isEmpty()) {
-            return null
-        }
-
-        var path = actual.savePath
-        if (path.isEmpty()) {
-            path = DownloadConfig.defaultSavePath
-        }
-        val file = File(path + File.separator + actual.saveName)
-        if (file.exists()) {
-            return file
-        }
-
-        return null
+        return downloadType?.getFile()
     }
 
     fun file(): Maybe<File> {
         return Maybe.create<File> {
-            readFromDb()
             val file = getFile()
             if (file == null) {
                 it.onError(RuntimeException("No such file"))
@@ -176,21 +154,11 @@ class RealMission(val actual: Mission) {
         totalSize = contentLength(resp)
 
         downloadType = generateType()
-        downloadType?.initStatus(false)
 
         if (enableDb) {
             dbActor.update(this)
         }
     }
-
-    private fun readFromDb() {
-        if (enableDb) {
-            if (dbActor.isExists(this)) {
-                dbActor.read(this)
-            }
-        }
-    }
-
 
     fun emitStatusWithNotification(status: Status) {
         emitStatus(status)
@@ -233,11 +201,8 @@ class RealMission(val actual: Mission) {
     }
 
     private fun download(): Flowable<Status> {
-        return if (downloadType == null) {
-            Flowable.error(IllegalStateException("Illegal download type"))
-        } else {
-            downloadType!!.download()
-        }
+        return downloadType?.download() ?:
+                Flowable.error(IllegalStateException("Illegal download type"))
     }
 
     override fun equals(other: Any?): Boolean {

@@ -1,11 +1,9 @@
 package zlc.season.rxdownload.kotlin_demo
 
-import android.Manifest.permission.WRITE_EXTERNAL_STORAGE
 import android.databinding.DataBindingUtil
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
 import com.squareup.picasso.Picasso
-import com.tbruyelle.rxpermissions2.RxPermissions
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.Disposable
 import zlc.season.rxdownload.kotlin_demo.databinding.ActivityBasicDownloadBinding
@@ -25,7 +23,6 @@ class BasicDownloadActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        requestPermission(WRITE_EXTERNAL_STORAGE)
         mainBinding = DataBindingUtil.setContentView(this, R.layout.activity_basic_download)
         contentBinding = mainBinding.contentBasicDownload!!
 
@@ -64,7 +61,7 @@ class BasicDownloadActivity : AppCompatActivity() {
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe { status ->
                     currentStatus = status
-
+                    println(status)
                     setProgress(status)
                     setActionText(status)
                 }
@@ -108,15 +105,6 @@ class BasicDownloadActivity : AppCompatActivity() {
         //TODO: open app
     }
 
-    private fun requestPermission(permission: String) {
-        RxPermissions(this)
-                .request(permission)
-                .subscribe({
-                    if (!it) {
-                        finish()
-                    }
-                })
-    }
 
     companion object {
         private val TAG = "BasicDownloadActivity"

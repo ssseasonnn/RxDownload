@@ -13,10 +13,7 @@ import zlc.season.rxdownload3.core.DownloadConfig.ANY
 import zlc.season.rxdownload3.core.DownloadConfig.defaultSavePath
 import zlc.season.rxdownload3.database.DbActor
 import zlc.season.rxdownload3.extension.Extension
-import zlc.season.rxdownload3.helper.contentLength
-import zlc.season.rxdownload3.helper.dispose
-import zlc.season.rxdownload3.helper.fileName
-import zlc.season.rxdownload3.helper.isSupportRange
+import zlc.season.rxdownload3.helper.*
 import zlc.season.rxdownload3.http.HttpCore
 import zlc.season.rxdownload3.notification.NotificationFactory
 import java.io.File
@@ -117,7 +114,8 @@ class RealMission(val actual: Mission) {
     fun start(): Maybe<Any> {
         return Maybe.create<Any> {
             if (disposable == null) {
-                disposable = downloadFlowable.subscribe({ emitStatusWithNotification(it) })
+                disposable = downloadFlowable.subscribe({ emitStatusWithNotification(it) },
+                        { loge("Download failed", it) })
             }
             it.onSuccess(ANY)
         }.subscribeOn(newThread())

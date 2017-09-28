@@ -12,7 +12,7 @@ class NormalDownload(mission: RealMission) : DownloadType(mission) {
 
     override fun initStatus() {
         val status = targetFile.getStatus()
-        when {
+        mission.status = when {
             targetFile.isFinish() -> Succeed(status)
             else -> Suspend(status)
         }

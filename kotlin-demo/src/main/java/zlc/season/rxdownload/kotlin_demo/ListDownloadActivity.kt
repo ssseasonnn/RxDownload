@@ -43,10 +43,7 @@ class ListDownloadActivity : AppCompatActivity() {
         adapter.addData(data)
     }
 
-    data class Item(val introduce: String, val img: String, val url: String) {
-        var disposable: Disposable? = null
-        var currentStatus: Status? = null
-    }
+    data class Item(val introduce: String, val img: String, val url: String)
 
 
     class Adapter : RecyclerView.Adapter<ViewHolder>() {
@@ -73,16 +70,28 @@ class ListDownloadActivity : AppCompatActivity() {
         override fun getItemCount(): Int {
             return data.size
         }
+
+        override fun onViewDetachedFromWindow(holder: ViewHolder?) {
+            super.onViewDetachedFromWindow(holder)
+            holder?.dispose()
+        }
+
+        override fun onViewRecycled(holder: ViewHolder?) {
+            super.onViewRecycled(holder)
+            holder?.dispose()
+        }
     }
 
     class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         private var item: Item? = null
+        var disposable: Disposable? = null
+        var currentStatus: Status? = null
 
         private val itemBinding: ViewHolderDownloadItemBinding = DataBindingUtil.bind(itemView)
 
         init {
             itemBinding.action.setOnClickListener {
-                when (item!!.currentStatus) {
+                when (currentStatus) {
                     is Suspend -> start()
                     is Failed -> start()
                     is Downloading -> stop()
@@ -114,13 +123,19 @@ class ListDownloadActivity : AppCompatActivity() {
             itemBinding.introduce.text = item.introduce
             Picasso.with(itemView.context).load(item.img).into(itemBinding.icon)
 
-            dispose(item.disposable)
-            item.disposable = RxDownload.create(item.url)
+            dispose()
+            println("create - ${item.url}")
+            disposable = RxDownload.create(item.url)
                     .observeOn(AndroidSchedulers.mainThread())
                     .subscribe({
-                        item.currentStatus = it
+                        println(it)
+                        currentStatus = it
                         setActionText(it)
                     })
+        }
+
+        fun dispose() {
+            dispose(disposable)
         }
 
         private fun setActionText(status: Status) {
@@ -128,7 +143,10 @@ class ListDownloadActivity : AppCompatActivity() {
                 is Suspend -> "开始"
                 is Waiting -> "等待中"
                 is Downloading -> "暂停"
-                is Failed -> "失败"
+                is Failed -> {
+                    println("${item?.url} - failed")
+                    "失败"
+                }
                 is Succeed -> "安装"
                 is ApkInstallExtension.Installing -> "安装中"
                 is ApkInstallExtension.Installed -> "打开"

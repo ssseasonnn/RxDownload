@@ -1,9 +1,11 @@
 package zlc.season.rxdownload.kotlin_demo
 
+import android.Manifest
 import android.content.Intent
 import android.databinding.DataBindingUtil
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
+import com.tbruyelle.rxpermissions2.RxPermissions
 import zlc.season.rxdownload.kotlin_demo.databinding.ActivityMainBinding
 import zlc.season.rxdownload.kotlin_demo.databinding.ContentMainBinding
 
@@ -13,6 +15,8 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        requestPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+
         mainBinding = DataBindingUtil.setContentView(this, R.layout.activity_main)
         contentBinding = mainBinding.contentMain!!
 
@@ -25,6 +29,17 @@ class MainActivity : AppCompatActivity() {
         contentBinding.appMarket.setOnClickListener {
             startActivity(Intent(this@MainActivity, ListDownloadActivity::class.java))
         }
+    }
+
+
+    private fun requestPermission(permission: String) {
+        RxPermissions(this)
+                .request(permission)
+                .subscribe({
+                    if (!it) {
+                        finish()
+                    }
+                })
     }
 
 }

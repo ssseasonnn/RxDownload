@@ -8,7 +8,6 @@ import android.os.Binder
 import android.os.IBinder
 import zlc.season.rxdownload3.extension.Extension
 import zlc.season.rxdownload3.helper.logd
-import zlc.season.rxdownload3.helper.loge
 import java.io.File
 
 
@@ -41,50 +40,38 @@ class DownloadService : Service() {
     }
 
     inner class DownloadBinder : Binder() {
-        private val EMPTY_SUCCESS: (t: Any) -> Unit = {}
-
         fun create(statusCallback: StatusCallback, mission: Mission) {
-            missionBox.create(mission).subscribe({
-                statusCallback.apply(it)
-            })
+            missionBox.create(mission).subscribe(statusCallback::apply)
         }
 
-        fun start(mission: Mission) {
-            missionBox.start(mission).subscribe(EMPTY_SUCCESS, {
-                loge("Start error: ", it)
-            })
+        fun start(mission: Mission, successCb: SuccessCallback, errorCb: ErrorCallback) {
+            missionBox.start(mission).subscribe(successCb::apply, errorCb::apply)
         }
 
-        fun stop(callback: SuccessCallback, mission: Mission) {
-            missionBox.stop(mission).subscribe({
-                callback.apply(it)
-            }, {
-                loge("Stop error: ", it)
-            })
+        fun stop(mission: Mission, successCb: SuccessCallback, errorCb: ErrorCallback) {
+            missionBox.stop(mission).subscribe(successCb::apply, errorCb::apply)
         }
 
-        fun startAll() {
-            missionBox.startAll().subscribe()
+        fun delete(mission: Mission, successCb: SuccessCallback, errorCb: ErrorCallback) {
+            missionBox.delete(mission).subscribe(successCb::apply, errorCb::apply)
         }
 
-        fun stopAll() {
-            missionBox.stopAll().subscribe()
+        fun startAll(successCb: SuccessCallback, errorCb: ErrorCallback) {
+            missionBox.startAll().subscribe(successCb::apply, errorCb::apply)
         }
 
-        fun file(fileCallback: FileCallback, mission: Mission) {
-            missionBox.file(mission).subscribe({
-                fileCallback.apply(it)
-            }, {
-                loge("File error: ", it)
-            })
+        fun stopAll(successCb: SuccessCallback, errorCb: ErrorCallback) {
+            missionBox.stopAll().subscribe(successCb::apply, errorCb::apply)
         }
 
-        fun extension(mission: Mission, type: Class<out Extension>, extensionCallback: ExtensionCallback) {
-            missionBox.extension(mission, type).subscribe({
-                extensionCallback.apply(it)
-            }, {
-                loge("Extension error: ", it)
-            })
+        fun file(mission: Mission, fileCallback: FileCallback, errorCb: ErrorCallback) {
+            missionBox.file(mission).subscribe(fileCallback::apply, errorCb::apply)
+        }
+
+        fun extension(mission: Mission, type: Class<out Extension>,
+                      extensionCallback: ExtensionCallback, errorCb: ErrorCallback) {
+            missionBox.extension(mission, type)
+                    .subscribe(extensionCallback::apply, errorCb::apply)
         }
     }
 

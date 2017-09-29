@@ -9,7 +9,6 @@ import io.reactivex.processors.BehaviorProcessor
 import io.reactivex.schedulers.Schedulers.io
 import io.reactivex.schedulers.Schedulers.newThread
 import retrofit2.Response
-import zlc.season.rxdownload3.core.DownloadConfig.ANY
 import zlc.season.rxdownload3.core.DownloadConfig.defaultSavePath
 import zlc.season.rxdownload3.database.DbActor
 import zlc.season.rxdownload3.extension.Extension
@@ -56,7 +55,7 @@ class RealMission(val actual: Mission) {
             it.onSuccess(ANY)
         }.subscribeOn(newThread())
 
-        initMaybe.subscribe({ emitStatus(status) })
+        initMaybe.subscribe { emitStatus(status) }
     }
 
     private fun loadConfig() {
@@ -96,7 +95,7 @@ class RealMission(val actual: Mission) {
                 .subscribeOn(io())
                 .doOnSubscribe { emitStatusWithNotification(Waiting(status)) }
                 .flatMap { checkAndDownload() }
-                .doOnError { emitStatusWithNotification(Failed(status)) }
+                .doOnError { emitStatusWithNotification(Failed(status, it)) }
                 .doOnComplete { emitStatusWithNotification(Succeed(status)) }
                 .doOnCancel { emitStatusWithNotification(Suspend(status)) }
                 .doFinally { disposable = null }
@@ -114,8 +113,7 @@ class RealMission(val actual: Mission) {
     fun start(): Maybe<Any> {
         return Maybe.create<Any> {
             if (disposable == null) {
-                disposable = downloadFlowable.subscribe({ emitStatusWithNotification(it) },
-                        { loge("Download failed", it) })
+                disposable = downloadFlowable.subscribe(this::emitStatusWithNotification)
             }
             it.onSuccess(ANY)
         }.subscribeOn(newThread())
@@ -126,6 +124,15 @@ class RealMission(val actual: Mission) {
             dispose(disposable)
             disposable = null
 
+            it.onSuccess(ANY)
+        }.subscribeOn(newThread())
+    }
+
+    fun delete(): Maybe<Any> {
+        return Maybe.create<Any> {
+            if (enableDb) {
+                dbActor.delete(this)
+            }
             it.onSuccess(ANY)
         }.subscribeOn(newThread())
     }
@@ -173,9 +180,19 @@ class RealMission(val actual: Mission) {
 
     private fun notifyNotification() {
         if (enableNotification) {
-            notificationManager.notify(hashCode(),
-                    notificationFactory.build(DownloadConfig.context, this, status))
+            delayNotify()
         }
+    }
+
+    private fun delayNotify() {
+        //Delay 500 milliseconds to avoid notification not update!!
+        Maybe.just(ANY)
+                .delaySubscription(500, MILLISECONDS)
+                .subscribeOn(newThread())
+                .subscribe {
+                    notificationManager.notify(hashCode(),
+                            notificationFactory.build(DownloadConfig.context, this, status))
+                }
     }
 
     private fun generateType(): DownloadType? {
@@ -198,7 +215,7 @@ class RealMission(val actual: Mission) {
         }
     }
 
-    private fun download(): Flowable<Status> {
+    private fun download(): Flowable<out Status> {
         return downloadType?.download() ?:
                 Flowable.error(IllegalStateException("Illegal download type"))
     }

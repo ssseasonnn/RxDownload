@@ -42,7 +42,7 @@ class Waiting(status: Status) : Status(status)
 
 class Downloading(status: Status) : Status(status)
 
-class Failed(status: Status) : Status(status)
+class Failed(status: Status, val throwable: Throwable) : Status(status)
 
 class Succeed(status: Status) : Status(status)
 

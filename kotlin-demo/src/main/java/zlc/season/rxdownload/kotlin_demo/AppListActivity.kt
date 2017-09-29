@@ -1,5 +1,6 @@
 package zlc.season.rxdownload.kotlin_demo
 
+import android.content.Intent
 import android.databinding.DataBindingUtil
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
@@ -11,27 +12,31 @@ import android.view.ViewGroup
 import com.squareup.picasso.Picasso
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.Disposable
-import zlc.season.rxdownload.kotlin_demo.databinding.ActivityListDownloadBinding
-import zlc.season.rxdownload.kotlin_demo.databinding.ViewHolderDownloadItemBinding
+import zlc.season.rxdownload.kotlin_demo.databinding.ActivityAppListBinding
+import zlc.season.rxdownload.kotlin_demo.databinding.ViewHolderAppItemBinding
 import zlc.season.rxdownload3.RxDownload
 import zlc.season.rxdownload3.core.*
 import zlc.season.rxdownload3.extension.ApkInstallExtension
 import zlc.season.rxdownload3.helper.dispose
 
 
-class ListDownloadActivity : AppCompatActivity() {
-    lateinit var mainBinding: ActivityListDownloadBinding
+class AppListActivity : AppCompatActivity() {
+    lateinit var mainBinding: ActivityAppListBinding
     lateinit var adapter: Adapter
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        mainBinding = DataBindingUtil.setContentView(this, R.layout.activity_list_download)
+        mainBinding = DataBindingUtil.setContentView(this, R.layout.activity_app_list)
 
         adapter = Adapter()
         mainBinding.recyclerView.layoutManager = LinearLayoutManager(this)
         mainBinding.recyclerView.adapter = adapter
 
         addData()
+
+        mainBinding.fab.setOnClickListener {
+            startActivity(Intent(this@AppListActivity, DownloadListActivity::class.java))
+        }
     }
 
     private fun addData() {
@@ -58,8 +63,8 @@ class ListDownloadActivity : AppCompatActivity() {
         override fun onCreateViewHolder(parent: ViewGroup?, viewType: Int): ViewHolder {
             val inflater = LayoutInflater.from(parent!!.context)
 
-            val itemBinding: ViewHolderDownloadItemBinding = DataBindingUtil.inflate(inflater,
-                    R.layout.view_holder_download_item, parent, false)
+            val itemBinding: ViewHolderAppItemBinding = DataBindingUtil.inflate(inflater,
+                    R.layout.view_holder_app_item, parent, false)
             return ViewHolder(itemBinding.root)
         }
 
@@ -71,14 +76,14 @@ class ListDownloadActivity : AppCompatActivity() {
             return data.size
         }
 
-        override fun onViewDetachedFromWindow(holder: ViewHolder?) {
-            super.onViewDetachedFromWindow(holder)
-            holder?.dispose()
+        override fun onViewAttachedToWindow(holder: ViewHolder?) {
+            super.onViewAttachedToWindow(holder)
+            holder?.onAttach()
         }
 
-        override fun onViewRecycled(holder: ViewHolder?) {
-            super.onViewRecycled(holder)
-            holder?.dispose()
+        override fun onViewDetachedFromWindow(holder: ViewHolder?) {
+            super.onViewDetachedFromWindow(holder)
+            holder?.onDetach()
         }
     }
 
@@ -87,7 +92,7 @@ class ListDownloadActivity : AppCompatActivity() {
         var disposable: Disposable? = null
         var currentStatus: Status? = null
 
-        private val itemBinding: ViewHolderDownloadItemBinding = DataBindingUtil.bind(itemView)
+        private val itemBinding: ViewHolderAppItemBinding = DataBindingUtil.bind(itemView)
 
         init {
             itemBinding.action.setOnClickListener {
@@ -123,18 +128,18 @@ class ListDownloadActivity : AppCompatActivity() {
             itemBinding.introduce.text = item.introduce
             Picasso.with(itemView.context).load(item.img).into(itemBinding.icon)
 
-            dispose()
-            println("create - ${item.url}")
-            disposable = RxDownload.create(item.url)
+        }
+
+        fun onAttach() {
+            disposable = RxDownload.create(item!!.url)
                     .observeOn(AndroidSchedulers.mainThread())
                     .subscribe({
-                        println(it)
                         currentStatus = it
                         setActionText(it)
                     })
         }
 
-        fun dispose() {
+        fun onDetach() {
             dispose(disposable)
         }
 
@@ -143,10 +148,7 @@ class ListDownloadActivity : AppCompatActivity() {
                 is Suspend -> "开始"
                 is Waiting -> "等待中"
                 is Downloading -> "暂停"
-                is Failed -> {
-                    println("${item?.url} - failed")
-                    "失败"
-                }
+                is Failed -> "失败"
                 is Succeed -> "安装"
                 is ApkInstallExtension.Installing -> "安装中"
                 is ApkInstallExtension.Installed -> "打开"

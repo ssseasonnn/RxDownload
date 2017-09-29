@@ -7,7 +7,6 @@ import zlc.season.rxdownload3.extension.Extension
 import java.io.File
 
 class LocalMissionBox : MissionBox {
-
     private val SET = mutableSetOf<RealMission>()
 
     override fun create(mission: Mission): Flowable<Status> {
@@ -34,6 +33,12 @@ class LocalMissionBox : MissionBox {
                 return Maybe.error(RuntimeException("Mission not create"))
 
         return realMission.stop()
+    }
+
+    override fun delete(mission: Mission): Maybe<Any> {
+        val realMission = SET.find { it.actual == mission } ?:
+                return Maybe.error(RuntimeException("Mission not create"))
+        return realMission.delete()
     }
 
     override fun startAll(): Maybe<Any> {

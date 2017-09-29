@@ -35,12 +35,12 @@ class RangeDownload(mission: RealMission) : DownloadType(mission) {
         return tmpFile.isFinish() && targetFile.isFinish()
     }
 
-    override fun download(): Flowable<Status> {
+    override fun download(): Flowable<out Status> {
         if (isFinish()) {
             return Flowable.empty()
         }
 
-        val arrays = mutableListOf<Flowable<Status>>()
+        val arrays = mutableListOf<Flowable<Any>>()
 
         if (targetFile.isShadowExists()) {
             tmpFile.checkFile()
@@ -54,11 +54,12 @@ class RangeDownload(mission: RealMission) : DownloadType(mission) {
                 .forEach { arrays.add(rangeDownload(it)) }
 
         return Flowable.mergeDelayError(arrays, maxRange)
+                .map { Downloading(tmpFile.currentStatus()) }
                 .doOnComplete { targetFile.rename() }
     }
 
 
-    private fun rangeDownload(segment: Segment): Flowable<Status> {
+    private fun rangeDownload(segment: Segment): Flowable<Any> {
         return Maybe.just(segment)
                 .subscribeOn(Schedulers.io())
                 .map { "bytes=${it.current}-${it.end}" }

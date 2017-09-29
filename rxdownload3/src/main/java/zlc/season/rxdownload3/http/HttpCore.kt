@@ -3,8 +3,8 @@ package zlc.season.rxdownload3.http
 import io.reactivex.Maybe
 import okhttp3.ResponseBody
 import retrofit2.Response
-import zlc.season.rxdownload3.core.DownloadConfig.ANY
 import zlc.season.rxdownload3.core.RealMission
+import zlc.season.rxdownload3.helper.ANY
 
 
 object HttpCore {

@@ -13,6 +13,8 @@ interface MissionBox {
 
     fun stop(mission: Mission): Maybe<Any>
 
+    fun delete(mission: Mission): Maybe<Any>
+
     fun startAll(): Maybe<Any>
 
     fun stopAll(): Maybe<Any>

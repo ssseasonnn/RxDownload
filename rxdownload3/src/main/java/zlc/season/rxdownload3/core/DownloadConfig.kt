@@ -16,16 +16,13 @@ import zlc.season.rxdownload3.notification.NotificationFactoryImpl
 object DownloadConfig {
     internal val DEBUG = true
 
-    internal val ANY = Any()
-
     internal val DOWNLOADING_FILE_SUFFIX = ".download"
-
     internal val TMP_DIR_SUFFIX = ".TMP"
     internal val TMP_FILE_SUFFIX = ".tmp"
 
-    internal val RANGE_DOWNLOAD_SIZE: Long = 5 * 1024 * 1024  // 5M
+    internal val RANGE_DOWNLOAD_SIZE: Long = 4 * 1024 * 1024  //4M
 
-    internal var maxRange = 3
+    internal var maxRange = Runtime.getRuntime().availableProcessors() + 1
 
     internal var defaultSavePath = getExternalStoragePublicDirectory(DIRECTORY_DOWNLOADS).path
 
@@ -38,7 +35,7 @@ object DownloadConfig {
 
     internal var enableNotification = false
 
-    internal var notificationFactory: NotificationFactory = NotificationFactoryImpl()
+    internal lateinit var notificationFactory: NotificationFactory
 
     internal var okHttpClientFactory: OkHttpClientFactory = OkHttpClientFactoryImpl()
 
@@ -60,13 +57,16 @@ object DownloadConfig {
         this.extensions = builder.extensions
 
         val enableService = builder.enableService
-        if (enableService) {
-            missionBox = RemoteMissionBox()
+        this.missionBox = if (enableService) {
+            RemoteMissionBox()
+        } else {
+            LocalMissionBox()
         }
     }
 
     class Builder private constructor(val context: Context) {
-        internal var maxRange = 3
+        internal var maxRange = Runtime.getRuntime().availableProcessors() + 1
+
         internal var defaultSavePath = getExternalStoragePublicDirectory(DIRECTORY_DOWNLOADS).path
 
         internal var enableDb = false

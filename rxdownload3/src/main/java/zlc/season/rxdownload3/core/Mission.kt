@@ -1,10 +1,10 @@
 package zlc.season.rxdownload3.core
 
-class Mission(val url: String,
-              var saveName: String = "",
-              var savePath: String = "",
-              var rangeFlag: Boolean? = null,
-              var tag: String = url) {
+open class Mission(val url: String,
+                   var saveName: String = "",
+                   var savePath: String = "",
+                   var rangeFlag: Boolean? = null,
+                   var tag: String = url) {
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true

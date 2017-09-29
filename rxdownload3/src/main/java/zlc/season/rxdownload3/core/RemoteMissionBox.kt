@@ -10,7 +10,6 @@ import io.reactivex.BackpressureStrategy.LATEST
 import io.reactivex.Flowable
 import io.reactivex.Maybe
 import io.reactivex.schedulers.Schedulers.newThread
-import zlc.season.rxdownload3.core.DownloadConfig.ANY
 import zlc.season.rxdownload3.extension.Extension
 import java.io.File
 
@@ -21,12 +20,11 @@ class RemoteMissionBox : MissionBox {
     override fun create(mission: Mission): Flowable<Status> {
         return Flowable.create<Status>({ emitter ->
             startBindServiceAndDo {
-                val callback = object : DownloadService.StatusCallback {
+                it.create(object : DownloadService.StatusCallback {
                     override fun apply(status: Status) {
                         emitter.onNext(status)
                     }
-                }
-                it.create(callback, mission)
+                }, mission)
             }
         }, LATEST).subscribeOn(newThread())
     }
@@ -34,8 +32,15 @@ class RemoteMissionBox : MissionBox {
     override fun start(mission: Mission): Maybe<Any> {
         return Maybe.create<Any> { emitter ->
             startBindServiceAndDo {
-                it.start(mission)
-                emitter.onSuccess(ANY)
+                it.start(mission, object : DownloadService.SuccessCallback {
+                    override fun apply(any: Any) {
+                        emitter.onSuccess(any)
+                    }
+                }, object : DownloadService.ErrorCallback {
+                    override fun apply(throwable: Throwable) {
+                        emitter.onError(throwable)
+                    }
+                })
             }
         }.subscribeOn(newThread())
     }
@@ -43,12 +48,31 @@ class RemoteMissionBox : MissionBox {
     override fun stop(mission: Mission): Maybe<Any> {
         return Maybe.create<Any> { emitter ->
             startBindServiceAndDo {
-                val cb = object : DownloadService.SuccessCallback {
+                it.stop(mission, object : DownloadService.SuccessCallback {
                     override fun apply(any: Any) {
                         emitter.onSuccess(any)
                     }
-                }
-                it.stop(cb, mission)
+                }, object : DownloadService.ErrorCallback {
+                    override fun apply(throwable: Throwable) {
+                        emitter.onError(throwable)
+                    }
+                })
+            }
+        }.subscribeOn(newThread())
+    }
+
+    override fun delete(mission: Mission): Maybe<Any> {
+        return Maybe.create<Any> { emitter ->
+            startBindServiceAndDo {
+                it.delete(mission, object : DownloadService.SuccessCallback {
+                    override fun apply(any: Any) {
+                        emitter.onSuccess(any)
+                    }
+                }, object : DownloadService.ErrorCallback {
+                    override fun apply(throwable: Throwable) {
+                        emitter.onError(throwable)
+                    }
+                })
             }
         }.subscribeOn(newThread())
     }
@@ -56,8 +80,15 @@ class RemoteMissionBox : MissionBox {
     override fun startAll(): Maybe<Any> {
         return Maybe.create<Any> { emitter ->
             startBindServiceAndDo {
-                it.startAll()
-                emitter.onSuccess(ANY)
+                it.startAll(object : DownloadService.SuccessCallback {
+                    override fun apply(any: Any) {
+                        emitter.onSuccess(any)
+                    }
+                }, object : DownloadService.ErrorCallback {
+                    override fun apply(throwable: Throwable) {
+                        emitter.onError(throwable)
+                    }
+                })
             }
         }.subscribeOn(newThread())
     }
@@ -65,8 +96,15 @@ class RemoteMissionBox : MissionBox {
     override fun stopAll(): Maybe<Any> {
         return Maybe.create<Any> { emitter ->
             startBindServiceAndDo {
-                it.stopAll()
-                emitter.onSuccess(ANY)
+                it.stopAll(object : DownloadService.SuccessCallback {
+                    override fun apply(any: Any) {
+                        emitter.onSuccess(any)
+                    }
+                }, object : DownloadService.ErrorCallback {
+                    override fun apply(throwable: Throwable) {
+                        emitter.onError(throwable)
+                    }
+                })
             }
         }.subscribeOn(newThread())
     }
@@ -74,12 +112,15 @@ class RemoteMissionBox : MissionBox {
     override fun file(mission: Mission): Maybe<File> {
         return Maybe.create<File> { emitter ->
             startBindServiceAndDo {
-                val fileCb = object : DownloadService.FileCallback {
+                it.file(mission, object : DownloadService.FileCallback {
                     override fun apply(file: File) {
                         emitter.onSuccess(file)
                     }
-                }
-                it.file(fileCb, mission)
+                }, object : DownloadService.ErrorCallback {
+                    override fun apply(throwable: Throwable) {
+                        emitter.onError(throwable)
+                    }
+                })
             }
         }.subscribeOn(newThread())
     }
@@ -87,13 +128,17 @@ class RemoteMissionBox : MissionBox {
     override fun extension(mission: Mission, type: Class<out Extension>): Maybe<Any> {
         return Maybe.create<Any> { emitter ->
             startBindServiceAndDo {
-                val extensionCb = object : DownloadService.ExtensionCallback {
-                    override fun apply(any: Any) {
-                        emitter.onSuccess(any)
-                    }
-                }
-
-                it.extension(mission, type, extensionCb)
+                it.extension(mission, type,
+                        object : DownloadService.ExtensionCallback {
+                            override fun apply(any: Any) {
+                                emitter.onSuccess(any)
+                            }
+                        },
+                        object : DownloadService.ErrorCallback {
+                            override fun apply(throwable: Throwable) {
+                                emitter.onError(throwable)
+                            }
+                        })
             }
         }
     }

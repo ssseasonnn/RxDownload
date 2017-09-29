@@ -47,11 +47,25 @@ class DownloadCore {
         return missionBox.stop(mission)
     }
 
+    fun delete(mission: Mission): Maybe<Any> {
+        return missionBox.delete(mission)
+    }
+
     fun file(mission: Mission): Maybe<File> {
         return missionBox.file(mission)
     }
 
     fun extension(mission: Mission, type: Class<out Extension>): Maybe<Any> {
         return missionBox.extension(mission, type)
+    }
+
+    fun getAllMission(): Maybe<List<Mission>> {
+        val enableDb = DownloadConfig.enableDb
+        return if (enableDb) {
+            val dbActor = DownloadConfig.dbActor
+            dbActor.getAllMission()
+        } else {
+            Maybe.just(emptyList())
+        }
     }
 }

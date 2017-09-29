@@ -27,7 +27,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         contentBinding.appMarket.setOnClickListener {
-            startActivity(Intent(this@MainActivity, ListDownloadActivity::class.java))
+            startActivity(Intent(this@MainActivity, AppListActivity::class.java))
         }
     }
 

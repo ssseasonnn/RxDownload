@@ -6,6 +6,7 @@ import okhttp3.ResponseBody
 import retrofit2.Response
 import zlc.season.rxdownload3.core.DownloadConfig.DOWNLOADING_FILE_SUFFIX
 import zlc.season.rxdownload3.core.RangeTmpFile.Segment
+import zlc.season.rxdownload3.helper.ANY
 import java.io.File
 import java.io.File.separator
 import java.io.RandomAccessFile
@@ -53,10 +54,10 @@ class RangeTargetFile(val mission: RealMission) {
         shadowFile.renameTo(realFile)
     }
 
-    fun save(response: Response<ResponseBody>, segment: Segment, tmpFile: RangeTmpFile): Flowable<Status> {
+    fun save(response: Response<ResponseBody>, segment: Segment, tmpFile: RangeTmpFile): Flowable<Any> {
         val respBody = response.body() ?: throw RuntimeException("Response body is NULL")
 
-        return Flowable.create<Status>({
+        return Flowable.create<Any>({
             val buffer = ByteArray(BUFFER_SIZE)
 
             respBody.byteStream().use { source ->
@@ -86,7 +87,7 @@ class RangeTargetFile(val mission: RealMission) {
                                     targetBuffer.put(buffer, 0, readLen)
                                     segmentBuffer.putLong(16, segment.current)
 
-                                    it.onNext(Downloading(tmpFile.currentStatus()))
+                                    it.onNext(ANY)
                                     readLen = source.read(buffer)
                                 }
 
@@ -96,7 +97,7 @@ class RangeTargetFile(val mission: RealMission) {
                     }
                 }
             }
-        }, BackpressureStrategy.LATEST).sample(30, TimeUnit.MILLISECONDS, true)
+        }, BackpressureStrategy.BUFFER).sample(30, TimeUnit.MILLISECONDS, true)
     }
 
 }

@@ -3,7 +3,7 @@ package zlc.season.rxdownload3.core
 
 import io.reactivex.Flowable
 import io.reactivex.Maybe
-import zlc.season.rxdownload3.core.DownloadConfig.ANY
+import zlc.season.rxdownload3.helper.ANY
 import zlc.season.rxdownload3.http.HttpCore
 import java.io.File
 
@@ -25,7 +25,7 @@ class NormalDownload(mission: RealMission) : DownloadType(mission) {
         return null
     }
 
-    override fun download(): Flowable<Status> {
+    override fun download(): Flowable<out Status> {
         if (targetFile.isFinish()) {
             return Flowable.empty()
         }

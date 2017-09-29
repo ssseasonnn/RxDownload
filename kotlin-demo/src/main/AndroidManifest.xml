@@ -28,7 +28,11 @@
             android:theme="@style/AppTheme.NoActionBar" />
 
         <activity
-            android:name=".ListDownloadActivity"
+            android:name=".AppListActivity"
+            android:theme="@style/AppTheme.NoActionBar" />
+
+        <activity
+            android:name=".DownloadListActivity"
             android:theme="@style/AppTheme.NoActionBar" />
 
     </application>

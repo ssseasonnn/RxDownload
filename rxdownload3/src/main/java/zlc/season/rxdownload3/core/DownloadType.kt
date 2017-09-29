@@ -9,5 +9,5 @@ abstract class DownloadType(val mission: RealMission) {
 
     abstract fun getFile(): File?
 
-    abstract fun download(): Flowable<Status>
+    abstract fun download(): Flowable<out Status>
 }

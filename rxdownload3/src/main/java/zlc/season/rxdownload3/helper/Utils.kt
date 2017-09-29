@@ -6,6 +6,8 @@ import io.reactivex.disposables.Disposable
 import java.io.File
 import java.text.DecimalFormat
 
+internal val ANY = Any()
+
 fun dispose(disposable: Disposable?) {
     if (disposable != null && !disposable.isDisposed) {
         disposable.dispose()

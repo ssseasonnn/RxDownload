@@ -12,6 +12,7 @@ class BaseApplication : Application() {
 
         val builder = DownloadConfig.Builder.create(this)
                 .enableDb(true)
+                .setDbActor(CustomSqliteActor(this))
 //                .enableService(true)
                 .enableNotification(true)
                 .addExtension(ApkInstallExtension::class.java)

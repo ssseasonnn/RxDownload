@@ -28,7 +28,33 @@ open class SQLiteActor(context: Context) : DbActor {
     protected val RANGE_FLAG = "range_flag"
     protected val TOTAL_SIZE = "total_size"
 
-    protected open val CREATE = """
+    private val sqLiteOpenHelper = object : SQLiteOpenHelper(context, DATABASE_NAME, null, DATABASE_VERSION) {
+        override fun onCreate(db: SQLiteDatabase?) {
+            if (db == null) return
+            execSql(db, provideCreateSql())
+        }
+
+        override fun onUpgrade(db: SQLiteDatabase?, oldVersion: Int, newVersion: Int) {
+            if (db == null) return
+            if (newVersion > oldVersion) {
+                execSql(db, provideUpdateSql())
+            }
+        }
+
+        private fun execSql(db: SQLiteDatabase, sql: String) {
+            db.beginTransaction()
+            try {
+                db.execSQL(sql)
+                db.setTransactionSuccessful()
+            } finally {
+                db.endTransaction()
+            }
+        }
+    }
+
+
+    open fun provideCreateSql(): String {
+        return """
             CREATE TABLE $TABLE_NAME (
                 $TAG TEXT PRIMARY KEY NOT NULL,
                 $URL TEXT NOT NULL,
@@ -37,24 +63,10 @@ open class SQLiteActor(context: Context) : DbActor {
                 $RANGE_FLAG INTEGER,
                 $TOTAL_SIZE TEXT)
             """
+    }
 
-    private val sqLiteOpenHelper = object : SQLiteOpenHelper(context, DATABASE_NAME, null, DATABASE_VERSION) {
-        override fun onCreate(db: SQLiteDatabase?) {
-            if (db == null) {
-                return
-            }
-
-            db.beginTransaction()
-            try {
-                db.execSQL(CREATE)
-                db.setTransactionSuccessful()
-            } finally {
-                db.endTransaction()
-            }
-        }
-
-        override fun onUpgrade(db: SQLiteDatabase?, oldVersion: Int, newVersion: Int) {
-        }
+    open fun provideUpdateSql(): String {
+        return ""
     }
 
     override fun isExists(mission: RealMission): Boolean {

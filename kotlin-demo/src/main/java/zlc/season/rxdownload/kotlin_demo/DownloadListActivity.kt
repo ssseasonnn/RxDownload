@@ -8,6 +8,7 @@ import android.support.v7.widget.RecyclerView
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import com.squareup.picasso.Picasso
 import io.reactivex.android.schedulers.AndroidSchedulers.mainThread
 import io.reactivex.disposables.Disposable
 import zlc.season.rxdownload.kotlin_demo.databinding.ActivityDownloadListBinding
@@ -109,10 +110,13 @@ class DownloadListActivity : AppCompatActivity() {
 
         fun setData(mission: Mission) {
             this.mission = mission
-//            Picasso.with(itemView.context).load(mission.img).into(itemBinding.icon)
+
+            mission as CustomMission
+            Picasso.with(itemView.context).load(mission.img).into(itemBinding.icon)
         }
 
         fun onAttach() {
+            println(adapterPosition)
             disposable = RxDownload.create(mission!!.url)
                     .observeOn(mainThread())
                     .subscribe {

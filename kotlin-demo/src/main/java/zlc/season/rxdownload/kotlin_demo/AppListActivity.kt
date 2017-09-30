@@ -40,21 +40,19 @@ class AppListActivity : AppCompatActivity() {
     }
 
     private fun addData() {
-        val data = mutableListOf<Item>()
+        val data = mutableListOf<CustomMission>()
         val images = resources.getStringArray(R.array.image)
         val urls = resources.getStringArray(R.array.url)
         val introduces = resources.getStringArray(R.array.introduce)
-        (0 until images.size).mapTo(data) { Item(introduces[it], images[it], urls[it]) }
+        (0 until images.size).mapTo(data) { CustomMission(urls[it], introduces[it], images[it]) }
         adapter.addData(data)
     }
 
-    data class Item(val introduce: String, val img: String, val url: String)
-
 
     class Adapter : RecyclerView.Adapter<ViewHolder>() {
-        val data = mutableListOf<Item>()
+        val data = mutableListOf<CustomMission>()
 
-        fun addData(data: MutableList<Item>) {
+        fun addData(data: MutableList<CustomMission>) {
             this.data.clear()
             this.data.addAll(data)
             notifyDataSetChanged()
@@ -88,7 +86,7 @@ class AppListActivity : AppCompatActivity() {
     }
 
     class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
-        private var item: Item? = null
+        private var customMission: CustomMission? = null
         var disposable: Disposable? = null
         var currentStatus: Status? = null
 
@@ -107,31 +105,32 @@ class AppListActivity : AppCompatActivity() {
         }
 
         private fun start() {
-            RxDownload.start(item!!.url).subscribe()
+            RxDownload.start(customMission!!).subscribe()
         }
 
         private fun stop() {
-            RxDownload.stop(item!!.url).subscribe()
+            RxDownload.stop(customMission!!).subscribe()
         }
 
         private fun install() {
-            RxDownload.extension(item!!.url, ApkInstallExtension::class.java).subscribe()
+            RxDownload.extension(customMission!!, ApkInstallExtension::class.java).subscribe()
         }
 
         private fun open() {
             //TODO: open app
         }
 
-        fun setData(item: Item) {
-            this.item = item
+        fun setData(customMission: CustomMission) {
+            this.customMission = customMission
 
-            itemBinding.introduce.text = item.introduce
-            Picasso.with(itemView.context).load(item.img).into(itemBinding.icon)
+            itemBinding.introduce.text = customMission.introduce
+            Picasso.with(itemView.context).load(customMission.img).into(itemBinding.icon)
 
         }
 
         fun onAttach() {
-            disposable = RxDownload.create(item!!.url)
+            println(adapterPosition)
+            disposable = RxDownload.create(customMission!!)
                     .observeOn(AndroidSchedulers.mainThread())
                     .subscribe({
                         currentStatus = it

@@ -106,8 +106,7 @@ class RealMission(val actual: Mission) {
     }
 
     fun getFlowable(): Flowable<Status> {
-        return processor.sample(30, MILLISECONDS, true)
-                .onBackpressureLatest()
+        return processor
     }
 
     fun start(): Maybe<Any> {

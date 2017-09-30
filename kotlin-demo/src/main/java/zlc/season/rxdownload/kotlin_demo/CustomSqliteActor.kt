@@ -2,6 +2,8 @@ package zlc.season.rxdownload.kotlin_demo
 
 import android.content.ContentValues
 import android.content.Context
+import android.database.Cursor
+import zlc.season.rxdownload3.core.Mission
 import zlc.season.rxdownload3.core.RealMission
 import zlc.season.rxdownload3.database.SQLiteActor
 
@@ -9,7 +11,8 @@ import zlc.season.rxdownload3.database.SQLiteActor
 class CustomSqliteActor(context: Context) : SQLiteActor(context) {
     private val IMG = "img"
 
-    override val CREATE = """
+    override fun provideCreateSql(): String {
+        return """
             CREATE TABLE $TABLE_NAME (
                 $TAG TEXT PRIMARY KEY NOT NULL,
                 $URL TEXT NOT NULL,
@@ -19,12 +22,18 @@ class CustomSqliteActor(context: Context) : SQLiteActor(context) {
                 $TOTAL_SIZE TEXT,
                 $IMG TEXT)
             """
-
-    override fun create(mission: RealMission) {
-        super.create(mission)
     }
 
-    override fun onUpdate(mission: RealMission): ContentValues {
-        return super.onUpdate(mission)
+    override fun onCreate(mission: RealMission): ContentValues {
+        val cv = super.onCreate(mission)
+        val actualMission = mission.actual as CustomMission
+        cv.put(IMG, actualMission.img)
+        return cv
+    }
+
+    override fun onGetAllMission(cursor: Cursor): Mission {
+        val mission = super.onGetAllMission(cursor)
+        val img = cursor.getString(cursor.getColumnIndexOrThrow(IMG))
+        return CustomMission(mission, img)
     }
 }

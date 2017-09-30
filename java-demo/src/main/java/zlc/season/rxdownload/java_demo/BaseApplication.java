@@ -13,6 +13,7 @@ public class BaseApplication extends Application {
 
         DownloadConfig.Builder builder = DownloadConfig.Builder.Companion.create(this)
                 .enableDb(true)
+                .setDbActor(new CustomSqliteActor(this))
                 .enableService(true)
                 .enableNotification(true)
                 .addExtension(ApkInstallExtension.class);

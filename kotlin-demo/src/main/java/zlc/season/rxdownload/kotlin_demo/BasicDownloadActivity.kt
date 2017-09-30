@@ -61,7 +61,6 @@ class BasicDownloadActivity : AppCompatActivity() {
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe { status ->
                     currentStatus = status
-                    println(status)
                     setProgress(status)
                     setActionText(status)
                 }
@@ -109,8 +108,8 @@ class BasicDownloadActivity : AppCompatActivity() {
     companion object {
         private val TAG = "BasicDownloadActivity"
 
-        private val iconUrl = "http://pp.myapp.com/ma_icon/0/icon_6633_1505724536/256"
-        private val url = "https://qd.myapp.com/myapp/qqteam/AndroidQQ/mobileqq_android.apk"
+        private val iconUrl = "http://p5.qhimg.com/dr/72__/t01a362a049573708ae.png"
+        private val url = "http://shouji.360tpcdn.com/170922/9ffde35adefc28d3740d4e16612f078a/com.tencent.tmgp.sgame_22011304.apk"
     }
 
 }

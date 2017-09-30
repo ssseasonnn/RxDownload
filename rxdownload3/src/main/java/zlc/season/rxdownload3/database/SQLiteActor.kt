@@ -9,6 +9,7 @@ import io.reactivex.Maybe
 import io.reactivex.schedulers.Schedulers.newThread
 import zlc.season.rxdownload3.core.Mission
 import zlc.season.rxdownload3.core.RealMission
+import zlc.season.rxdownload3.helper.loge
 
 
 open class SQLiteActor(context: Context) : DbActor {
@@ -163,7 +164,7 @@ open class SQLiteActor(context: Context) : DbActor {
                 }
                 emitter.onSuccess(list)
             }
-        }.subscribeOn(newThread())
+        }.subscribeOn(newThread()).doOnError { loge("get all mission error", it) }
     }
 
     open fun onGetAllMission(cursor: Cursor): Mission {

@@ -26,14 +26,20 @@ class CustomSqliteActor(context: Context) : SQLiteActor(context) {
 
     override fun onCreate(mission: RealMission): ContentValues {
         val cv = super.onCreate(mission)
-        val actualMission = mission.actual as CustomMission
-        cv.put(IMG, actualMission.img)
+        if (mission.actual is CustomMission) {
+            val actualMission = mission.actual as CustomMission
+            cv.put(IMG, actualMission.img)
+        }
+
         return cv
     }
 
     override fun onGetAllMission(cursor: Cursor): Mission {
         val mission = super.onGetAllMission(cursor)
-        val img = cursor.getString(cursor.getColumnIndexOrThrow(IMG))
+        var img = cursor.getString(cursor.getColumnIndexOrThrow(IMG))
+        if (img.isNullOrEmpty()) {
+            img = "no img"
+        }
         return CustomMission(mission, img)
     }
 }

@@ -1,8 +1,6 @@
 package zlc.season.rxdownload3.core
 
-import android.app.NotificationManager
 import android.app.Service
-import android.content.Context
 import android.content.Intent
 import android.os.Binder
 import android.os.IBinder
@@ -15,11 +13,9 @@ class DownloadService : Service() {
     private val missionBox = LocalMissionBox()
     private val binder = DownloadBinder()
 
-    private lateinit var notificationManager: NotificationManager
 
     override fun onCreate() {
         super.onCreate()
-        notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         logd("create")
     }
 

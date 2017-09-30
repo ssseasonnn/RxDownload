@@ -55,7 +55,11 @@ class RealMission(val actual: Mission) {
             it.onSuccess(ANY)
         }.subscribeOn(newThread())
 
-        initMaybe.subscribe { emitStatus(status) }
+        initMaybe.doOnError {
+            loge("init error!", it)
+        }.subscribe {
+            emitStatus(status)
+        }
     }
 
     private fun loadConfig() {

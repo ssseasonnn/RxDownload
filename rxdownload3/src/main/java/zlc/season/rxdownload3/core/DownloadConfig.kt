@@ -14,7 +14,7 @@ import zlc.season.rxdownload3.notification.NotificationFactoryImpl
 
 @SuppressLint("StaticFieldLeak")
 object DownloadConfig {
-    internal val DEBUG = true
+    internal var DEBUG = false
 
     internal val DOWNLOADING_FILE_SUFFIX = ".download"
     internal val TMP_DIR_SUFFIX = ".TMP"
@@ -45,6 +45,8 @@ object DownloadConfig {
     fun init(builder: Builder) {
         this.context = builder.context
 
+        this.DEBUG = builder.debug
+
         this.fps = builder.fps
         this.maxRange = builder.maxRange
         this.defaultSavePath = builder.defaultSavePath
@@ -70,6 +72,8 @@ object DownloadConfig {
     class Builder private constructor(val context: Context) {
         internal var maxRange = Runtime.getRuntime().availableProcessors() + 1
 
+        internal var debug = true
+
         internal var fps = 30
         internal var defaultSavePath = getExternalStoragePublicDirectory(DIRECTORY_DOWNLOADS).path
 
@@ -89,6 +93,11 @@ object DownloadConfig {
             fun create(context: Context): Builder {
                 return Builder(context.applicationContext)
             }
+        }
+
+        fun setDebug(debug: Boolean): Builder {
+            this.debug = debug
+            return this
         }
 
         fun setMaxRange(max: Int): Builder {

@@ -12,17 +12,6 @@
         android:paddingRight="16dp"
         android:paddingTop="16dp">
 
-        <TextView
-            android:id="@+id/textView"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_alignParentLeft="true"
-            android:layout_alignParentStart="true"
-            android:layout_below="@+id/finish"
-            android:layout_marginTop="31dp"
-            android:gravity="start"
-            android:text="@string/basic_download_demo" />
-
         <Button
             android:id="@+id/finish"
             android:layout_width="wrap_content"

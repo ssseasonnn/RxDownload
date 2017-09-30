@@ -1,6 +1,6 @@
 package zlc.season.rxdownload3.core
 
-import io.reactivex.BackpressureStrategy
+import io.reactivex.BackpressureStrategy.BUFFER
 import io.reactivex.Flowable
 import okhttp3.ResponseBody
 import retrofit2.Response
@@ -11,7 +11,7 @@ import java.io.File
 import java.io.File.separator
 import java.io.RandomAccessFile
 import java.nio.channels.FileChannel.MapMode.READ_WRITE
-import java.util.concurrent.TimeUnit
+import java.util.concurrent.TimeUnit.MILLISECONDS
 
 
 class RangeTargetFile(val mission: RealMission) {
@@ -56,6 +56,7 @@ class RangeTargetFile(val mission: RealMission) {
 
     fun save(response: Response<ResponseBody>, segment: Segment, tmpFile: RangeTmpFile): Flowable<Any> {
         val respBody = response.body() ?: throw RuntimeException("Response body is NULL")
+        val period = (1000 / DownloadConfig.fps).toLong()
 
         return Flowable.create<Any>({
             val buffer = ByteArray(BUFFER_SIZE)
@@ -97,7 +98,7 @@ class RangeTargetFile(val mission: RealMission) {
                     }
                 }
             }
-        }, BackpressureStrategy.BUFFER).sample(30, TimeUnit.MILLISECONDS, true)
+        }, BUFFER).sample(period, MILLISECONDS, true)
     }
 
 }

@@ -116,7 +116,6 @@ class DownloadListActivity : AppCompatActivity() {
         }
 
         fun onAttach() {
-            println(adapterPosition)
             disposable = RxDownload.create(mission!!.url)
                     .observeOn(mainThread())
                     .subscribe {

@@ -13,10 +13,7 @@ import android.os.Bundle
 import android.support.v4.content.FileProvider.getUriForFile
 import android.support.v4.content.LocalBroadcastManager.getInstance
 import io.reactivex.Maybe
-import zlc.season.rxdownload3.core.DownloadConfig
-import zlc.season.rxdownload3.core.RealMission
-import zlc.season.rxdownload3.core.Status
-import zlc.season.rxdownload3.core.Succeed
+import zlc.season.rxdownload3.core.*
 import zlc.season.rxdownload3.extension.ApkInstallExtension.ApkInstallActivity.Companion.ACTION_APK_INSTALL_CANCEL
 import zlc.season.rxdownload3.helper.getPackageName
 import java.io.File
@@ -43,6 +40,7 @@ class ApkInstallExtension : Extension {
         return Maybe.create<Any> {
             this.apkFile = mission.getFile()
             if (apkFile == null) {
+                mission.emitStatusWithNotification(Suspend(Status()))
                 it.onError(RuntimeException("Apk file is null"))
                 return@create
             }

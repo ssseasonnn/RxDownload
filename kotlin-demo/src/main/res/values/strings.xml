@@ -2,7 +2,8 @@
     <string name="app_name">RxDownload</string>
     <string name="title_activity_main">DOWNLOAD DEMO</string>
     <string name="title_activity_basic_download">BASIC DOWNLOAD</string>
-    <string name="title_activity_service_download">SERVICE DOWNLOAD</string>
+    <string name="title_activity_app_market">APP MARKET</string>
+    <string name="title_activity_download_list">下载列表</string>
 
     <string-array name="introduce">
         <item>-----QQ•乐在沟通-----√服务超过90%的移动互联网用户
@@ -173,11 +174,7 @@
         <item>http://shouji.360tpcdn.com/170919/1a4d1a0ca1255ae315c36394dd2b0865/com.mt.mtxx.mtxx_6860.apk</item>
     </string-array>
 
-    <string name="title_activity_multi_mission_download">MultiMissionDownloadActivity</string>
     <string name="basic_download">BASIC DOWNLOAD</string>
-    <string name="service_download">Service download</string>
-    <string name="multi_mission_download">Multi Mission download</string>
     <string name="app_market">APP MARKET</string>
-    <string name="basic_download_demo">Basic download demo. 基本的下载示例程序. 点击开始即开始下载. 取消订阅则暂停下载.</string>
 
 </resources>

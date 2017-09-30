@@ -1,6 +1,6 @@
 package zlc.season.rxdownload3.core
 
-import io.reactivex.BackpressureStrategy
+import io.reactivex.BackpressureStrategy.BUFFER
 import io.reactivex.Flowable
 import okhttp3.ResponseBody
 import okio.Okio
@@ -9,6 +9,7 @@ import zlc.season.rxdownload3.core.DownloadConfig.DOWNLOADING_FILE_SUFFIX
 import zlc.season.rxdownload3.helper.isChunked
 import java.io.File
 import java.io.File.separator
+import java.util.concurrent.TimeUnit.MILLISECONDS
 
 
 class NormalTargetFile(val mission: RealMission) {
@@ -51,6 +52,8 @@ class NormalTargetFile(val mission: RealMission) {
     fun save(response: Response<ResponseBody>): Flowable<Status> {
         val respBody = response.body() ?: throw RuntimeException("Response body is NULL")
 
+        val period = (1000 / DownloadConfig.fps).toLong()
+
         var downloadSize = 0L
         val byteSize = 8192L
         val totalSize = respBody.contentLength()
@@ -76,6 +79,6 @@ class NormalTargetFile(val mission: RealMission) {
                     it.onComplete()
                 }
             }
-        }, BackpressureStrategy.LATEST)
+        }, BUFFER).sample(period, MILLISECONDS, true)
     }
 }

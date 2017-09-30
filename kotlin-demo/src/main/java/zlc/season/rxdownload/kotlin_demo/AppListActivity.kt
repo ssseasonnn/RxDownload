@@ -28,15 +28,18 @@ class AppListActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         mainBinding = DataBindingUtil.setContentView(this, R.layout.activity_app_list)
 
+        mainBinding.toolbar.inflateMenu(R.menu.menu_for_app_list)
+        mainBinding.toolbar.setOnMenuItemClickListener {
+            startActivity(Intent(this@AppListActivity, DownloadListActivity::class.java))
+            return@setOnMenuItemClickListener true
+        }
+
         adapter = Adapter()
         mainBinding.recyclerView.layoutManager = LinearLayoutManager(this)
         mainBinding.recyclerView.adapter = adapter
 
         addData()
 
-        mainBinding.fab.setOnClickListener {
-            startActivity(Intent(this@AppListActivity, DownloadListActivity::class.java))
-        }
     }
 
     private fun addData() {
@@ -129,7 +132,6 @@ class AppListActivity : AppCompatActivity() {
         }
 
         fun onAttach() {
-            println(adapterPosition)
             disposable = RxDownload.create(customMission!!)
                     .observeOn(AndroidSchedulers.mainThread())
                     .subscribe({

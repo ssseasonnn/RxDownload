@@ -27,6 +27,7 @@ object DownloadConfig {
     internal var defaultSavePath = getExternalStoragePublicDirectory(DIRECTORY_DOWNLOADS).path
 
     lateinit var context: Context
+    internal var fps = 30
 
     internal var enableDb = false
     internal lateinit var dbActor: DbActor
@@ -43,6 +44,8 @@ object DownloadConfig {
 
     fun init(builder: Builder) {
         this.context = builder.context
+
+        this.fps = builder.fps
         this.maxRange = builder.maxRange
         this.defaultSavePath = builder.defaultSavePath
 
@@ -67,6 +70,7 @@ object DownloadConfig {
     class Builder private constructor(val context: Context) {
         internal var maxRange = Runtime.getRuntime().availableProcessors() + 1
 
+        internal var fps = 30
         internal var defaultSavePath = getExternalStoragePublicDirectory(DIRECTORY_DOWNLOADS).path
 
         internal var enableDb = false
@@ -89,6 +93,16 @@ object DownloadConfig {
 
         fun setMaxRange(max: Int): Builder {
             this.maxRange = max
+            return this
+        }
+
+        /**
+         * Set fps. Default is 30.
+         *
+         * Note that this value is too large will cause the interface to stuck
+         */
+        fun setFps(fps: Int): Builder {
+            this.fps = fps
             return this
         }
 

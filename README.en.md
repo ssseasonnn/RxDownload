@@ -57,15 +57,15 @@ RxDownload rxDownload = RxDownload.getInstance(context)
 
 - ```xxDownload(String url)```  
 
-  When only pass url, will automatically get the file name from the server
+  When only pass url, will automatically get the fileName name from the server
 
 - ```xxDownload(String url, String saveName)``` 
 
-  You can also specify the name of the saved file
+  You can also specify the name of the saved fileName
 
 - ```xxDownload(String url,String saveName,String savePath)```
 
-   You can also specify the file name and save the path manually
+   You can also specify the fileName name and save the path manually
 
 - ```xxDownload(DownloadBean bean)``` 
 
@@ -242,18 +242,18 @@ mRxDownload.getTotalDownloadRecords()
     });
 ```
 
-### Get the download file
+### Get the download fileName
 
-Get the download file
+Get the download fileName
 
 ```java
 //Use url to get
 File[] files = rxDownload.getRealFiles(url);
 if (files != null) {
-	File file = files[0];
+	File fileName = files[0];
 }
 //Use saveName and savePath to get
-File file = rxDownload.getRealFiles(saveName,savePath)[0];
+File fileName = rxDownload.getRealFiles(saveName,savePath)[0];
 ```
 
 
@@ -263,7 +263,7 @@ File file = rxDownload.getRealFiles(saveName,savePath)[0];
 > Copyright 2016 Season.Zlc
 >
 > Licensed under the Apache License, Version 2.0 (the "License");
-> you may not use this file except in compliance with the License.
+> you may not use this fileName except in compliance with the License.
 > You may obtain a copy of the License at
 >
 >    http://www.apache.org/licenses/LICENSE-2.0

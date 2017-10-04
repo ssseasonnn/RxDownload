@@ -77,15 +77,15 @@ Have a wealth of configuration options to meet your needs:
 
 ```kotlin
 DownloadConfig.Builder.create(this)
-                .setFps(20)      									//Set the update frequency
-                .setDefaultPath("custom download path") 			//Set the default download address
-                .enableDb(true)										//Enable the database
-                .setDbActor(CustomSqliteActor(this))				//Customize the database
-                .enableService(true)								//Enable Service
-                .enableNotification(true)							//Enable Notification
-                .setNotificationFactory(NotificationFactoryImpl()) 	//Custom notification
-                .setOkHttpClientFacotry(OkHttpClientFactoryImpl()) 	//Custom OKHTTP
-                .addExtension(ApkInstallExtension::class.java)     	//Add extension
+                .setFps(20)     //Set the update frequency
+                .setDefaultPath("custom download path")     //Set the default download address
+                .enableDb(true)     //Enable the database
+                .setDbActor(CustomSqliteActor(this))    //Customize the database
+                .enableService(true)    //Enable Service
+                .enableNotification(true)   //Enable Notification
+                .setNotificationFactory(NotificationFactoryImpl())      //Custom notification
+                .setOkHttpClientFacotry(OkHttpClientFactoryImpl())      //Custom OKHTTP
+                .addExtension(ApkInstallExtension::class.java)    //Add extension
 ```
 
 ### Extension

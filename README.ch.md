@@ -77,15 +77,15 @@ class BaseApplication : Application() {
 
 ```kotlin
 DownloadConfig.Builder.create(this)
-                .setFps(20)      									//设置更新频率
-                .setDefaultPath("custom download path") 			//设置默认的下载地址
-                .enableDb(true)										//启用数据库
-                .setDbActor(CustomSqliteActor(this))				//自定义数据库
-                .enableService(true)								//启用Service
-                .enableNotification(true)							//启用Notification
-                .setNotificationFactory(NotificationFactoryImpl()) 	//自定义通知
-                .setOkHttpClientFacotry(OkHttpClientFactoryImpl()) 	//自定义OKHTTP
-                .addExtension(ApkInstallExtension::class.java)     	//添加扩展
+                .setFps(20)     //设置更新频率
+                .setDefaultPath("custom download path")     //设置默认的下载地址
+                .enableDb(true)     //启用数据库
+                .setDbActor(CustomSqliteActor(this))    //自定义数据库
+                .enableService(true)        //启用Service
+                .enableNotification(true)      //启用Notification
+                .setNotificationFactory(NotificationFactoryImpl()) 	    //自定义通知
+                .setOkHttpClientFacotry(OkHttpClientFactoryImpl()) 	    //自定义OKHTTP
+                .addExtension(ApkInstallExtension::class.java)      //添加扩展
 ```
 
 ### 扩展

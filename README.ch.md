@@ -1,14 +1,14 @@
 # RxDownload
 
-A multi-threaded download tool written with RxJava and Kotlin
+基于RxJava打造的下载工具, 支持多线程下载和断点续传,使用Kotlin编写
 
 *Read this in other languages: [中文](README.ch.md), [English](README.md)* 
 
-## How to Use
+## 使用方式
 
-### Preparation
+### 准备
 
-1.Add Gradle dependencies[ ![Download](https://api.bintray.com/packages/ssseasonnn/android/RxDownload3/images/download.svg) ](https://bintray.com/ssseasonnn/android/RxDownload3/_latestVersion)
+1.添加Gradle依赖[ ![Download](https://api.bintray.com/packages/ssseasonnn/android/RxDownload3/images/download.svg) ](https://bintray.com/ssseasonnn/android/RxDownload3/_latestVersion)
 
 ```groovy
 dependencies{
@@ -16,7 +16,7 @@ dependencies{
 }
 ```
 
-2.Configure the permissions
+2.配置权限
 
 ```xml
 <uses-permission android:name="android.permission.INTERNET"/>
@@ -24,11 +24,11 @@ dependencies{
 <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
 ```
 
-> **Please note that Android 6.0 and above must also apply run-time permissions, if you are unable to download, check permissions**
+> **注意: Android 6.0 以上还必须申请运行时权限, 如果遇到不能下载, 请先检查权限**
 
-### Download
+### 下载
 
-1.Create a mission
+1.创建任务
 
 ```kotlin
 val disposable = RxDownload.create(mission)
@@ -39,23 +39,23 @@ val disposable = RxDownload.create(mission)
                 }
 ```
 
-2.Start download
+2.开始下载
 
 ```kotlin
 RxDownload.start(mission).subscribe()
 ```
 
-3.Stop download
+3.停止下载
 
 ```kotlin
 RxDownload.stop(mission).subscribe()
 ```
 
-> Just three steps that is so simple !!
+> 只需三步, 就是这样简单!!
 
-### Configuration
+### 配置
 
-Add your configuration when APP starts up, like this:
+在APP启动时添加您的配置,就像这样:
 
 ```kotlin
 class BaseApplication : Application() {
@@ -73,24 +73,24 @@ class BaseApplication : Application() {
 }
 ```
 
-Have a wealth of configuration options to meet your needs:
+拥有丰富的配置选项满足您的需求:
 
 ```kotlin
 DownloadConfig.Builder.create(this)
-                .setFps(20)      									//Set the update frequency
-                .setDefaultPath("custom download path") 			//Set the default download address
-                .enableDb(true)										//Enable the database
-                .setDbActor(CustomSqliteActor(this))				//Customize the database
-                .enableService(true)								//Enable Service
-                .enableNotification(true)							//Enable Notification
-                .setNotificationFactory(NotificationFactoryImpl()) 	//Custom notification
-                .setOkHttpClientFacotry(OkHttpClientFactoryImpl()) 	//Custom OKHTTP
-                .addExtension(ApkInstallExtension::class.java)     	//Add extension
+                .setFps(20)      									//设置更新频率
+                .setDefaultPath("custom download path") 			//设置默认的下载地址
+                .enableDb(true)										//启用数据库
+                .setDbActor(CustomSqliteActor(this))				//自定义数据库
+                .enableService(true)								//启用Service
+                .enableNotification(true)							//启用Notification
+                .setNotificationFactory(NotificationFactoryImpl()) 	//自定义通知
+                .setOkHttpClientFacotry(OkHttpClientFactoryImpl()) 	//自定义OKHTTP
+                .addExtension(ApkInstallExtension::class.java)     	//添加扩展
 ```
 
-### Extension
+### 扩展
 
-Customize your exclusive operation
+定制您的专属操作
 
 ```kotlin
 class CustomExtension:Extension {
@@ -104,11 +104,11 @@ class CustomExtension:Extension {
 }
 ```
 
-> Refer to the ApkInstallExtension code
+> 可参考ApkInstallExtension代码
 
-### Proguard
+### 混淆
 
-No special proguard, just add Retrofit and OKHTTP can be proguard
+无特殊混淆, 只需添加Retrofit及OKHTTP的混淆即可
 
 ```groovy
 -dontnote retrofit2.Platform

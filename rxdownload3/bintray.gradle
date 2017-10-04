@@ -42,17 +42,19 @@ install {
 }
 
 task sourcesJar(type: Jar) {
-    from android.sourceSets.main.java.srcDirs
     classifier = 'sources'
+    from android.sourceSets.main.java.srcDirs
 }
-task javadoc(type: Javadoc) {
-    source = android.sourceSets.main.java.srcDirs
-    classpath += project.files(android.getBootClasspath().join(File.pathSeparator))
+
+task javadoc(type: Javadoc, dependsOn: dokka) {
+
 }
+
 task javadocJar(type: Jar, dependsOn: javadoc) {
     classifier = 'javadoc'
     from javadoc.destinationDir
 }
+
 artifacts {
     archives javadocJar
     archives sourcesJar
@@ -72,12 +74,5 @@ bintray {
         vcsUrl = gitUrl
         licenses = ["Apache-2.0"]
         publish = true
-    }
-}
-
-javadoc { //jav doc采用utf-8编码否则会报“GBK的不可映射字符”错误
-    options {
-        encoding "UTF-8"
-        charSet 'UTF-8'
     }
 }

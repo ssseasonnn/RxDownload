@@ -1,7 +1,13 @@
 package zlc.season.rxdownload3.notification
 
 import android.app.Notification
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.content.Context
+import android.content.Context.NOTIFICATION_SERVICE
+import android.graphics.Color
+import android.os.Build.VERSION.SDK_INT
+import android.os.Build.VERSION_CODES.O
 import android.support.v4.app.NotificationCompat.Builder
 import zlc.season.rxdownload3.R
 import zlc.season.rxdownload3.core.*
@@ -95,21 +101,21 @@ class NotificationFactoryImpl : NotificationFactory {
     }
 
     private fun createNotificationBuilder(mission: RealMission, context: Context): Builder {
-        return Builder(context)
+        return Builder(context, channelId)
                 .setSmallIcon(R.drawable.ic_download)
                 .setContentTitle(mission.actual.saveName)
     }
 
     private fun createChannelForOreo(context: Context, channelId: String, channelName: String) {
-//        if (SDK_INT >= O) {
-//            val notificationManager = context.getSystemService(NOTIFICATION_SERVICE) as NotificationManager
-//            val channel = NotificationChannel(channelId, channelName, NotificationManager.IMPORTANCE_LOW)
-//            channel.enableLights(true)
-//            channel.setShowBadge(true)
-//            channel.lightColor = Color.GREEN
-//            channel.lockscreenVisibility = Notification.VISIBILITY_PUBLIC
-//
-//            notificationManager.createNotificationChannel(channel)
-//        }
+        if (SDK_INT >= O) {
+            val notificationManager = context.getSystemService(NOTIFICATION_SERVICE) as NotificationManager
+            val channel = NotificationChannel(channelId, channelName, NotificationManager.IMPORTANCE_LOW)
+            channel.enableLights(true)
+            channel.setShowBadge(true)
+            channel.lightColor = Color.GREEN
+            channel.lockscreenVisibility = Notification.VISIBILITY_PUBLIC
+
+            notificationManager.createNotificationChannel(channel)
+        }
     }
 }

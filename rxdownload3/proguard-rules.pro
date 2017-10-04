@@ -23,3 +23,4 @@
 # If you keep the line number information, uncomment this to
 # hide the original source fileName name.
 #-renamesourcefileattribute SourceFile
+# Platform calls Class.forName on types which do not exist on Android to determine platform.

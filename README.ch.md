@@ -12,7 +12,7 @@
 
 ```groovy
 dependencies{
-    compile 'zlc.season:rxdownload3:1.0.1'
+    compile 'zlc.season:rxdownload3:1.0.3'
 }
 ```
 

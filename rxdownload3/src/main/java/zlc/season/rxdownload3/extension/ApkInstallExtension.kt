@@ -40,8 +40,8 @@ class ApkInstallExtension : Extension {
         return Maybe.create<Any> {
             this.apkFile = mission.getFile()
             if (apkFile == null) {
-                mission.emitStatusWithNotification(Suspend(Status()))
-                it.onError(RuntimeException("Apk file is null"))
+                mission.emitStatusWithNotification(Failed(Status(), ApkFileNotExistsException()))
+                it.onError(ApkFileNotExistsException())
                 return@create
             }
 
@@ -64,6 +64,40 @@ class ApkInstallExtension : Extension {
 
         val cancel = IntentFilter(ACTION_APK_INSTALL_CANCEL)
         getInstance(context).registerReceiver(cancelReceiver, cancel)
+    }
+
+    inner class ApkInstallSuccessReceiver : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            if (context == null || intent == null) return
+            val action = intent.action
+            val data = intent.data
+            if (action == null || data == null) return
+
+            val receivePackageName = data.encodedSchemeSpecificPart
+
+            if (installApkPackageName == receivePackageName) {
+                if (action == ACTION_PACKAGE_ADDED) {
+                    mission.emitStatusWithNotification(Installed(mission.status))
+                    getInstance(context).unregisterReceiver(this)
+                }
+            }
+        }
+    }
+
+    inner class ApkInstallCancelReceiver : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            if (context == null || intent == null) return
+
+            val action = intent.action ?: return
+            val receivePackageName = intent.getStringExtra(ApkInstallActivity.ARGS_OUT_PACKAGE_NAME)
+
+            if (installApkPackageName == receivePackageName) {
+                if (action == ApkInstallActivity.ACTION_APK_INSTALL_CANCEL) {
+                    mission.emitStatusWithNotification(Succeed(mission.status))
+                    getInstance(context).unregisterReceiver(this)
+                }
+            }
+        }
     }
 
     class ApkInstallActivity : Activity() {
@@ -120,41 +154,9 @@ class ApkInstallExtension : Extension {
         }
     }
 
-    inner class ApkInstallSuccessReceiver : BroadcastReceiver() {
-        override fun onReceive(context: Context?, intent: Intent?) {
-            if (context == null || intent == null) return
-            val action = intent.action
-            val data = intent.data
-            if (action == null || data == null) return
-
-            val receivePackageName = data.encodedSchemeSpecificPart
-
-            if (installApkPackageName == receivePackageName) {
-                if (action == ACTION_PACKAGE_ADDED) {
-                    mission.emitStatusWithNotification(Installed(mission.status))
-                    getInstance(context).unregisterReceiver(this)
-                }
-            }
-        }
-    }
-
-    inner class ApkInstallCancelReceiver : BroadcastReceiver() {
-        override fun onReceive(context: Context?, intent: Intent?) {
-            if (context == null || intent == null) return
-
-            val action = intent.action ?: return
-            val receivePackageName = intent.getStringExtra(ApkInstallActivity.ARGS_OUT_PACKAGE_NAME)
-
-            if (installApkPackageName == receivePackageName) {
-                if (action == ApkInstallActivity.ACTION_APK_INSTALL_CANCEL) {
-                    mission.emitStatusWithNotification(Succeed(mission.status))
-                    getInstance(context).unregisterReceiver(this)
-                }
-            }
-        }
-    }
-
     class Installing(status: Status) : Status(status)
 
     class Installed(status: Status) : Status(status)
+
+    class ApkFileNotExistsException : RuntimeException("Apk file not exists")
 }

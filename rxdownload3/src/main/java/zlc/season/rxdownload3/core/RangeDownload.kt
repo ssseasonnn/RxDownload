@@ -20,7 +20,7 @@ class RangeDownload(mission: RealMission) : DownloadType(mission) {
 
         mission.status = when {
             isFinish() -> Succeed(status)
-            else -> Suspend(status)
+            else -> Normal(status)
         }
     }
 

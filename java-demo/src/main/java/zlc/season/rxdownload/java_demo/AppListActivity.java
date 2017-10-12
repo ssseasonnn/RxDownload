@@ -27,6 +27,7 @@ import zlc.season.rxdownload.java_demo.databinding.ViewHolderAppItemBinding;
 import zlc.season.rxdownload3.RxDownload;
 import zlc.season.rxdownload3.core.Downloading;
 import zlc.season.rxdownload3.core.Failed;
+import zlc.season.rxdownload3.core.Normal;
 import zlc.season.rxdownload3.core.Status;
 import zlc.season.rxdownload3.core.Succeed;
 import zlc.season.rxdownload3.core.Suspend;
@@ -129,7 +130,9 @@ public class AppListActivity extends AppCompatActivity {
         }
 
         private void dispatchClick() {
-            if (currentStatus instanceof Suspend) {
+            if (currentStatus instanceof Normal) {
+                start();
+            } else if (currentStatus instanceof Suspend) {
                 start();
             } else if (currentStatus instanceof Failed) {
                 start();
@@ -163,8 +166,10 @@ public class AppListActivity extends AppCompatActivity {
 
         private void setActionText(Status status) {
             String text = "";
-            if (status instanceof Suspend) {
+            if (status instanceof Normal) {
                 text = "开始";
+            } else if (status instanceof Suspend) {
+                text = "已暂停";
             } else if (status instanceof Waiting) {
                 text = "等待中";
             } else if (status instanceof Downloading) {

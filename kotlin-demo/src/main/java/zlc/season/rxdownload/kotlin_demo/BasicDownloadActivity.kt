@@ -45,6 +45,7 @@ class BasicDownloadActivity : AppCompatActivity() {
     private fun setAction() {
         contentBinding.action.setOnClickListener {
             when (currentStatus) {
+                is Normal -> start()
                 is Suspend -> start()
                 is Failed -> start()
                 is Downloading -> stop()
@@ -76,7 +77,8 @@ class BasicDownloadActivity : AppCompatActivity() {
 
     private fun setActionText(status: Status) {
         val text = when (status) {
-            is Suspend -> "开始"
+            is Normal -> "开始"
+            is Suspend -> "已暂停"
             is Waiting -> "等待中"
             is Downloading -> "暂停"
             is Failed -> "失败"

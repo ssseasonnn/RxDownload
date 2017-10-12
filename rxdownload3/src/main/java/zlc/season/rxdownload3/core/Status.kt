@@ -36,6 +36,8 @@ open class Status(var downloadSize: Long = 0L,
     }
 }
 
+class Normal(status: Status) : Status(status)
+
 class Suspend(status: Status) : Status(status)
 
 class Waiting(status: Status) : Status(status)

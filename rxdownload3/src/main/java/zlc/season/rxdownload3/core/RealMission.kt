@@ -21,7 +21,7 @@ import java.util.concurrent.TimeUnit.MILLISECONDS
 
 class RealMission(val actual: Mission) {
     var totalSize = 0L
-    var status: Status = Suspend(Status())
+    var status: Status = Normal(Status())
 
     private val processor = BehaviorProcessor.create<Status>().toSerialized()
 

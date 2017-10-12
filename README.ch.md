@@ -12,7 +12,7 @@
 
 ```groovy
 dependencies{
-    compile 'zlc.season:rxdownload3:1.0.4'
+    compile 'zlc.season:rxdownload3:1.0.5'
 }
 ```
 
@@ -30,7 +30,7 @@ dependencies{
 
 1.创建任务
 
-```kotlin
+```java
 val disposable = RxDownload.create(mission)
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe { status ->
@@ -41,13 +41,13 @@ val disposable = RxDownload.create(mission)
 
 2.开始下载
 
-```kotlin
+```java
 RxDownload.start(mission).subscribe()
 ```
 
 3.停止下载
 
-```kotlin
+```java
 RxDownload.stop(mission).subscribe()
 ```
 
@@ -57,7 +57,7 @@ RxDownload.stop(mission).subscribe()
 
 在APP启动时添加您的配置,就像这样:
 
-```kotlin
+```java
 class BaseApplication : Application() {
 
     override fun onCreate() {
@@ -75,7 +75,7 @@ class BaseApplication : Application() {
 
 拥有丰富的配置选项满足您的需求:
 
-```kotlin
+```java
 DownloadConfig.Builder.create(this)
                 .setFps(20)     //设置更新频率
                 .setDefaultPath("custom download path")     //设置默认的下载地址
@@ -92,7 +92,7 @@ DownloadConfig.Builder.create(this)
 
 定制您的专属操作
 
-```kotlin
+```java
 class CustomExtension:Extension {
     override fun init(mission: RealMission) {
         //Init

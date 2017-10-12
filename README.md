@@ -12,7 +12,7 @@ A multi-threaded download tool written with RxJava and Kotlin
 
 ```groovy
 dependencies{
-    compile 'zlc.season:rxdownload3:1.0.4'
+    compile 'zlc.season:rxdownload3:1.0.5'
 }
 ```
 
@@ -30,7 +30,7 @@ dependencies{
 
 1.Create a mission
 
-```kotlin
+```java
 val disposable = RxDownload.create(mission)
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe { status ->
@@ -41,13 +41,13 @@ val disposable = RxDownload.create(mission)
 
 2.Start download
 
-```kotlin
+```java
 RxDownload.start(mission).subscribe()
 ```
 
 3.Stop download
 
-```kotlin
+```java
 RxDownload.stop(mission).subscribe()
 ```
 
@@ -57,7 +57,7 @@ RxDownload.stop(mission).subscribe()
 
 Add your configuration when APP starts up, like this:
 
-```kotlin
+```java
 class BaseApplication : Application() {
 
     override fun onCreate() {
@@ -75,7 +75,7 @@ class BaseApplication : Application() {
 
 Have a wealth of configuration options to meet your needs:
 
-```kotlin
+```java
 DownloadConfig.Builder.create(this)
                 .setFps(20)     //Set the update frequency
                 .setDefaultPath("custom download path")     //Set the default download address
@@ -92,7 +92,7 @@ DownloadConfig.Builder.create(this)
 
 Customize your exclusive operation
 
-```kotlin
+```java
 class CustomExtension:Extension {
     override fun init(mission: RealMission) {
         //Init

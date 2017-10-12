@@ -16,10 +16,11 @@ import zlc.season.rxdownload3.helper.*
 import zlc.season.rxdownload3.http.HttpCore
 import zlc.season.rxdownload3.notification.NotificationFactory
 import java.io.File
+import java.util.concurrent.Semaphore
 import java.util.concurrent.TimeUnit.MILLISECONDS
 
 
-class RealMission(val actual: Mission) {
+class RealMission(val actual: Mission, val semaphore: Semaphore) {
     var totalSize = 0L
     var status: Status = Normal(Status())
 
@@ -97,12 +98,18 @@ class RealMission(val actual: Mission) {
     private fun createFlowable() {
         downloadFlowable = Flowable.just(ANY)
                 .subscribeOn(io())
-                .doOnSubscribe { emitStatusWithNotification(Waiting(status)) }
+                .doOnSubscribe {
+                    emitStatusWithNotification(Waiting(status))
+                    semaphore.acquire()
+                }
                 .flatMap { checkAndDownload() }
                 .doOnError { emitStatusWithNotification(Failed(status, it)) }
                 .doOnComplete { emitStatusWithNotification(Succeed(status)) }
                 .doOnCancel { emitStatusWithNotification(Suspend(status)) }
-                .doFinally { disposable = null }
+                .doFinally {
+                    disposable = null
+                    semaphore.release()
+                }
     }
 
     fun findExtension(extension: Class<out Extension>): Extension {

@@ -22,6 +22,7 @@ object DownloadConfig {
 
     internal val RANGE_DOWNLOAD_SIZE: Long = 4 * 1024 * 1024  //4M
 
+    internal var maxMission = 3
     internal var maxRange = Runtime.getRuntime().availableProcessors() + 1
 
     internal var defaultSavePath = getExternalStoragePublicDirectory(DIRECTORY_DOWNLOADS).path
@@ -48,6 +49,7 @@ object DownloadConfig {
         this.DEBUG = builder.debug
 
         this.fps = builder.fps
+        this.maxMission = builder.maxMission
         this.maxRange = builder.maxRange
         this.defaultSavePath = builder.defaultSavePath
 
@@ -70,6 +72,7 @@ object DownloadConfig {
     }
 
     class Builder private constructor(val context: Context) {
+        internal var maxMission = 3
         internal var maxRange = Runtime.getRuntime().availableProcessors() + 1
 
         internal var debug = true
@@ -97,6 +100,11 @@ object DownloadConfig {
 
         fun setDebug(debug: Boolean): Builder {
             this.debug = debug
+            return this
+        }
+
+        fun setMaxMission(max: Int): Builder {
+            this.maxMission = max
             return this
         }
 

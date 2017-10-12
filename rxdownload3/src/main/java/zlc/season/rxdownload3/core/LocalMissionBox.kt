@@ -5,8 +5,11 @@ import io.reactivex.Maybe
 import io.reactivex.internal.operators.maybe.MaybeToPublisher.INSTANCE
 import zlc.season.rxdownload3.extension.Extension
 import java.io.File
+import java.util.concurrent.Semaphore
 
 class LocalMissionBox : MissionBox {
+    private val maxMission = DownloadConfig.maxMission
+    private val semaphore = Semaphore(maxMission, true)
     private val SET = mutableSetOf<RealMission>()
 
     override fun create(mission: Mission): Flowable<Status> {
@@ -15,7 +18,7 @@ class LocalMissionBox : MissionBox {
         return if (realMission != null) {
             realMission.getFlowable()
         } else {
-            val new = RealMission(mission)
+            val new = RealMission(mission, semaphore)
             SET.add(new)
             new.getFlowable()
         }

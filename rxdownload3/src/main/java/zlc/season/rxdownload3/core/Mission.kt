@@ -6,6 +6,11 @@ open class Mission(var url: String) {
     var rangeFlag: Boolean? = null
     var tag: String = url
 
+    constructor(url: String, saveName: String, savePath: String) : this(url) {
+        this.saveName = saveName
+        this.savePath = savePath
+    }
+
     constructor(url: String, saveName: String, savePath: String, rangeFlag: Boolean?, tag: String) : this(url) {
         this.saveName = saveName
         this.savePath = savePath

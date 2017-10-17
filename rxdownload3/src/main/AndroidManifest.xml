@@ -1,11 +1,13 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="zlc.season.rxdownload3">
 
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+
     <application>
         <service android:name=".core.DownloadService" />
 
         <provider
-            android:name="android.support.v4.content.FileProvider"
+            android:name=".helper.RxDownloadFileProvider"
             android:authorities="${applicationId}.rxdownload.provider"
             android:exported="false"
             android:grantUriPermissions="true">

@@ -66,6 +66,10 @@ class RangeTmpFile(val mission: RealMission) {
         }
     }
 
+    fun delete() {
+        if (file.exists()) file.delete()
+    }
+
     fun getFile(): File {
         return file
     }

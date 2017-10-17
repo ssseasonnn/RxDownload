@@ -14,10 +14,10 @@ import java.util.concurrent.TimeUnit.MILLISECONDS
 
 class NormalTargetFile(val mission: RealMission) {
     private val realFilePath = mission.actual.savePath + separator + mission.actual.saveName
-    private val downloadFilePath = realFilePath + DOWNLOADING_FILE_SUFFIX
+    private val shadowFilePath = realFilePath + DOWNLOADING_FILE_SUFFIX
 
     private val realFile = File(realFilePath)
-    private val downloadFile = File(downloadFilePath)
+    private val shadowFile = File(shadowFilePath)
 
     init {
         val dir = File(mission.actual.savePath)
@@ -43,10 +43,10 @@ class NormalTargetFile(val mission: RealMission) {
     }
 
     fun checkFile() {
-        if (downloadFile.exists()) {
-            downloadFile.delete()
+        if (shadowFile.exists()) {
+            shadowFile.delete()
         }
-        downloadFile.createNewFile()
+        shadowFile.createNewFile()
     }
 
     fun save(response: Response<ResponseBody>): Flowable<Status> {
@@ -74,11 +74,16 @@ class NormalTargetFile(val mission: RealMission) {
                         readLen = source.read(buffer, byteSize)
                     }
 
-                    downloadFile.renameTo(realFile)
+                    shadowFile.renameTo(realFile)
 
                     it.onComplete()
                 }
             }
         }, BUFFER).sample(period, MILLISECONDS, true)
+    }
+
+    fun delete() {
+        if (realFile.exists()) realFile.delete()
+        if (shadowFile.exists()) shadowFile.delete()
     }
 }

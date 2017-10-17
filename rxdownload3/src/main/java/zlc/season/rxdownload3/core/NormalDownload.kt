@@ -25,6 +25,10 @@ class NormalDownload(mission: RealMission) : DownloadType(mission) {
         return null
     }
 
+    override fun delete() {
+        targetFile.delete()
+    }
+
     override fun download(): Flowable<out Status> {
         if (targetFile.isFinish()) {
             return Flowable.empty()

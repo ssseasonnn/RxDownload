@@ -101,6 +101,11 @@ class RangeTargetFile(val mission: RealMission) {
         }, BUFFER).sample(period, MILLISECONDS, true)
     }
 
+    fun delete() {
+        if (shadowFile.exists()) shadowFile.delete()
+        if (realFile.exists()) realFile.delete()
+    }
+
 }
 
 

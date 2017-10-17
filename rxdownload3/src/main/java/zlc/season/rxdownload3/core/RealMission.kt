@@ -140,9 +140,15 @@ class RealMission(val actual: Mission, val semaphore: Semaphore) {
 
     fun delete(): Maybe<Any> {
         return Maybe.create<Any> {
+            if (downloadType == null) {
+                it.onError(RuntimeException("Illegal download type"))
+                return@create
+            }
+            downloadType?.delete()
             if (enableDb) {
                 dbActor.delete(this)
             }
+            emitStatusWithNotification(Normal(Status()))
             it.onSuccess(ANY)
         }.subscribeOn(newThread())
     }

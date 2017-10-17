@@ -31,6 +31,11 @@ class RangeDownload(mission: RealMission) : DownloadType(mission) {
         return null
     }
 
+    override fun delete() {
+        targetFile.delete()
+        tmpFile.delete()
+    }
+
     private fun isFinish(): Boolean {
         return tmpFile.isFinish() && targetFile.isFinish()
     }

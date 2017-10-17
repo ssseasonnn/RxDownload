@@ -12,7 +12,7 @@ A multi-threaded download tool written with RxJava and Kotlin
 
 ```groovy
 dependencies{
-    compile 'zlc.season:rxdownload3:1.0.7'
+    compile 'zlc.season:rxdownload3:1.0.8'
 }
 ```
 
@@ -52,6 +52,8 @@ RxDownload.stop(mission).subscribe()
 ```
 
 > Just three steps that is so simple !!
+
+For more APIs please move RxDownload.kt
 
 ### Configuration
 

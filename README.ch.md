@@ -12,7 +12,7 @@
 
 ```groovy
 dependencies{
-    compile 'zlc.season:rxdownload3:1.0.7'
+    compile 'zlc.season:rxdownload3:1.0.8'
 }
 ```
 
@@ -52,6 +52,8 @@ RxDownload.stop(mission).subscribe()
 ```
 
 > 只需三步, 就是这样简单!!
+
+更多API请移步RxDownload.kt
 
 ### 配置
 

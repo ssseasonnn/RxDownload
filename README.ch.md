@@ -12,7 +12,7 @@
 
 ```groovy
 dependencies{
-    compile 'zlc.season:rxdownload3:1.0.8'
+    compile 'zlc.season:rxdownload3:1.0.9'
 }
 ```
 
@@ -52,6 +52,19 @@ RxDownload.stop(mission).subscribe()
 ```
 
 > 只需三步, 就是这样简单!!
+
+**提示: 创建任务是一个异步操作, 因此如果需要创建成功立即开始下载需要这么做**
+
+```Java
+val disposable = RxDownload.create(mission)
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe { status ->
+                    //开始下载
+                    RxDownload.start(mission).subscribe()
+                    setProgress(status)
+                    setActionText(status)
+                }
+```
 
 更多API请移步RxDownload.kt
 

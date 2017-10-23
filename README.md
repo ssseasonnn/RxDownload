@@ -12,7 +12,7 @@ A multi-threaded download tool written with RxJava and Kotlin
 
 ```groovy
 dependencies{
-    compile 'zlc.season:rxdownload3:1.0.8'
+    compile 'zlc.season:rxdownload3:1.0.9'
 }
 ```
 
@@ -52,6 +52,19 @@ RxDownload.stop(mission).subscribe()
 ```
 
 > Just three steps that is so simple !!
+
+**Tip: Create a mission is an asynchronous operation, so if you need to start downloading immediately..**
+
+```Java
+val disposable = RxDownload.create(mission)
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe { status ->
+                    //开始下载
+                    RxDownload.start(mission).subscribe()
+                    setProgress(status)
+                    setActionText(status)
+                }
+```
 
 For more APIs please move RxDownload.kt
 

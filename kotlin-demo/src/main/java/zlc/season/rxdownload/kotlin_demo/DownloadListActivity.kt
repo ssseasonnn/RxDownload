@@ -17,6 +17,7 @@ import zlc.season.rxdownload3.RxDownload
 import zlc.season.rxdownload3.core.*
 import zlc.season.rxdownload3.extension.ApkInstallExtension
 import zlc.season.rxdownload3.helper.dispose
+import zlc.season.rxdownload3.helper.loge
 
 
 class DownloadListActivity : AppCompatActivity() {
@@ -31,6 +32,17 @@ class DownloadListActivity : AppCompatActivity() {
         mainBinding.recyclerView.layoutManager = LinearLayoutManager(this)
         mainBinding.recyclerView.adapter = adapter
 
+        mainBinding.startAll.setOnClickListener {
+            RxDownload.startAll().subscribe()
+        }
+
+        mainBinding.stopAll.setOnClickListener {
+            RxDownload.stopAll().subscribe()
+        }
+
+        mainBinding.deleteAll.setOnClickListener {
+            RxDownload.deleteAll().subscribe()
+        }
     }
 
 
@@ -94,7 +106,7 @@ class DownloadListActivity : AppCompatActivity() {
         }
 
         private fun start() {
-            RxDownload.start(mission!!.url).subscribe()
+            RxDownload.start(mission!!.url).subscribe({}, { println(it) })
         }
 
         private fun stop() {
@@ -120,6 +132,10 @@ class DownloadListActivity : AppCompatActivity() {
             disposable = RxDownload.create(mission!!.url)
                     .observeOn(mainThread())
                     .subscribe {
+                        if (currentStatus is Failed) {
+//                            println((currentStatus as Failed).throwable.stackTrace)
+                            loge("test", (currentStatus as Failed).throwable)
+                        }
                         currentStatus = it
                         setProgress(it)
                         setActionText(it)

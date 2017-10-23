@@ -176,5 +176,8 @@
 
     <string name="basic_download">BASIC DOWNLOAD</string>
     <string name="app_market">APP MARKET</string>
+    <string name="menu_item_stop_all">STOP ALL</string>
+    <string name="menu_item_start_all">START ALL</string>
+    <string name="menu_item_delete_all">DELETE ALL</string>
 
 </resources>

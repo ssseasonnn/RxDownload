@@ -31,12 +31,20 @@ class DownloadCore {
         return missionBox.create(mission)
     }
 
+    fun createAll(missions: List<Mission>): Maybe<Any> {
+        return missionBox.createAll(missions)
+    }
+
     fun startAll(): Maybe<Any> {
         return missionBox.startAll()
     }
 
     fun stopAll(): Maybe<Any> {
         return missionBox.stopAll()
+    }
+
+    fun deleteAll(deleteFile: Boolean): Maybe<Any> {
+        return missionBox.deleteAll(deleteFile)
     }
 
     fun start(mission: Mission): Maybe<Any> {
@@ -47,8 +55,8 @@ class DownloadCore {
         return missionBox.stop(mission)
     }
 
-    fun delete(mission: Mission): Maybe<Any> {
-        return missionBox.delete(mission)
+    fun delete(mission: Mission, deleteFile: Boolean): Maybe<Any> {
+        return missionBox.delete(mission, deleteFile)
     }
 
     fun file(mission: Mission): Maybe<File> {

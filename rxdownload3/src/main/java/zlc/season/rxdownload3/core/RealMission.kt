@@ -24,6 +24,8 @@ class RealMission(val actual: Mission, val semaphore: Semaphore) {
     var totalSize = 0L
     var status: Status = Normal(Status())
 
+    private var semaphoreFlag = false
+
     private val processor = BehaviorProcessor.create<Status>().toSerialized()
 
     private var disposable: Disposable? = null
@@ -95,22 +97,39 @@ class RealMission(val actual: Mission, val semaphore: Semaphore) {
         downloadType?.initStatus()
     }
 
+
     private fun createFlowable() {
         downloadFlowable = Flowable.just(ANY)
                 .subscribeOn(io())
                 .doOnSubscribe {
                     emitStatusWithNotification(Waiting(status))
+                    semaphoreFlag = false
                     semaphore.acquire()
+                    semaphoreFlag = true
                 }
+                .subscribeOn(newThread())
                 .flatMap { checkAndDownload() }
-                .doOnError { emitStatusWithNotification(Failed(status, it)) }
-                .doOnComplete { emitStatusWithNotification(Succeed(status)) }
-                .doOnCancel { emitStatusWithNotification(Suspend(status)) }
+                .doOnError {
+                    loge("Mission error! ${it.message}", it)
+                    emitStatusWithNotification(Failed(status, it))
+                }
+                .doOnComplete {
+                    logd("Mission complete!")
+                    emitStatusWithNotification(Succeed(status))
+                }
+                .doOnCancel {
+                    logd("Mission cancel!")
+                    emitStatusWithNotification(Suspend(status))
+                }
                 .doFinally {
+                    logd("Mission finally!")
                     disposable = null
-                    semaphore.release()
+                    if (semaphoreFlag) {
+                        semaphore.release()
+                    }
                 }
     }
+
 
     fun findExtension(extension: Class<out Extension>): Extension {
         return extensions.first { extension.isInstance(it) }
@@ -133,18 +152,16 @@ class RealMission(val actual: Mission, val semaphore: Semaphore) {
         return Maybe.create<Any> {
             dispose(disposable)
             disposable = null
-
             it.onSuccess(ANY)
         }.subscribeOn(newThread())
     }
 
-    fun delete(): Maybe<Any> {
+    fun delete(deleteFile: Boolean): Maybe<Any> {
         return Maybe.create<Any> {
-            if (downloadType == null) {
-                it.onError(RuntimeException("Illegal download type"))
-                return@create
+            if (deleteFile) {
+                downloadType?.delete()
             }
-            downloadType?.delete()
+
             if (enableDb) {
                 dbActor.delete(this)
             }

@@ -13,11 +13,15 @@ interface MissionBox {
 
     fun stop(mission: Mission): Maybe<Any>
 
-    fun delete(mission: Mission): Maybe<Any>
+    fun delete(mission: Mission, deleteFile: Boolean): Maybe<Any>
+
+    fun createAll(missions: List<Mission>): Maybe<Any>
 
     fun startAll(): Maybe<Any>
 
     fun stopAll(): Maybe<Any>
+
+    fun deleteAll(deleteFile: Boolean): Maybe<Any>
 
     fun file(mission: Mission): Maybe<File>
 

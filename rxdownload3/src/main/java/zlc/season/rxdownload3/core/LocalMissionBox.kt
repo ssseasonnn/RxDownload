@@ -3,13 +3,17 @@ package zlc.season.rxdownload3.core
 import io.reactivex.Flowable
 import io.reactivex.Maybe
 import io.reactivex.internal.operators.maybe.MaybeToPublisher.INSTANCE
+import io.reactivex.schedulers.Schedulers
+import io.reactivex.schedulers.Schedulers.*
 import zlc.season.rxdownload3.extension.Extension
+import zlc.season.rxdownload3.helper.ANY
 import java.io.File
 import java.util.concurrent.Semaphore
 
 class LocalMissionBox : MissionBox {
     private val maxMission = DownloadConfig.maxMission
     private val semaphore = Semaphore(maxMission, true)
+
     private val SET = mutableSetOf<RealMission>()
 
     override fun create(mission: Mission): Flowable<Status> {
@@ -38,10 +42,23 @@ class LocalMissionBox : MissionBox {
         return realMission.stop()
     }
 
-    override fun delete(mission: Mission): Maybe<Any> {
+    override fun delete(mission: Mission, deleteFile: Boolean): Maybe<Any> {
         val realMission = SET.find { it.actual == mission } ?:
                 return Maybe.error(RuntimeException("Mission not create"))
-        return realMission.delete()
+        return realMission.delete(deleteFile)
+    }
+
+    override fun createAll(missions: List<Mission>): Maybe<Any> {
+        return Maybe.create<Any> {
+            missions.forEach { mission ->
+                val realMission = SET.find { it.actual == mission }
+                if (realMission == null) {
+                    val new = RealMission(mission, semaphore)
+                    SET.add(new)
+                }
+            }
+            it.onSuccess(ANY)
+        }.subscribeOn(newThread())
     }
 
     override fun startAll(): Maybe<Any> {
@@ -55,6 +72,14 @@ class LocalMissionBox : MissionBox {
     override fun stopAll(): Maybe<Any> {
         val arrays = mutableListOf<Maybe<Any>>()
         SET.forEach { arrays.add(it.stop()) }
+        return Flowable.fromIterable(arrays)
+                .flatMap(INSTANCE)
+                .lastElement()
+    }
+
+    override fun deleteAll(deleteFile: Boolean): Maybe<Any> {
+        val arrays = mutableListOf<Maybe<Any>>()
+        SET.forEach { arrays.add(it.delete(deleteFile)) }
         return Flowable.fromIterable(arrays)
                 .flatMap(INSTANCE)
                 .lastElement()

@@ -49,6 +49,12 @@ class AppListActivity : AppCompatActivity() {
         val introduces = resources.getStringArray(R.array.introduce)
         (0 until images.size).mapTo(data) { CustomMission(urls[it], introduces[it], images[it]) }
         adapter.addData(data)
+
+        createAllMissionOnStart(data)
+    }
+
+    private fun createAllMissionOnStart(data: MutableList<CustomMission>) {
+        RxDownload.createAll(data).subscribe()
     }
 
 

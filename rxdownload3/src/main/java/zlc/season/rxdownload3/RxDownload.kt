@@ -36,24 +36,32 @@ object RxDownload {
         return downloadCore.stop(mission)
     }
 
-    fun delete(url: String): Maybe<Any> {
-        return delete(Mission(url))
+    fun delete(url: String, deleteFile: Boolean = false): Maybe<Any> {
+        return delete(Mission(url), deleteFile)
     }
 
-    fun delete(mission: Mission): Maybe<Any> {
-        return downloadCore.delete(mission)
+    fun delete(mission: Mission, deleteFile: Boolean = false): Maybe<Any> {
+        return downloadCore.delete(mission, deleteFile)
     }
 
     fun getAllMission(): Maybe<List<Mission>> {
         return downloadCore.getAllMission()
     }
 
-    fun startALl(): Maybe<Any> {
+    fun createAll(missions: List<Mission>): Maybe<Any> {
+        return downloadCore.createAll(missions)
+    }
+
+    fun startAll(): Maybe<Any> {
         return downloadCore.startAll()
     }
 
     fun stopAll(): Maybe<Any> {
         return downloadCore.stopAll()
+    }
+
+    fun deleteAll(deleteFile: Boolean = false): Maybe<Any> {
+        return downloadCore.deleteAll(deleteFile)
     }
 
     fun file(url: String): Maybe<File> {

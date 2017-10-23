@@ -11,6 +11,7 @@ class BaseApplication : Application() {
         super.onCreate()
 
         val builder = DownloadConfig.Builder.create(this)
+                .setDebug(true)
                 .enableDb(true)
                 .setDbActor(CustomSqliteActor(this))
 //                .enableService(true)

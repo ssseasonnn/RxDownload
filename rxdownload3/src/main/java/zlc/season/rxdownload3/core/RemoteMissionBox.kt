@@ -9,7 +9,10 @@ import android.os.IBinder
 import io.reactivex.BackpressureStrategy.LATEST
 import io.reactivex.Flowable
 import io.reactivex.Maybe
+import io.reactivex.MaybeEmitter
 import io.reactivex.schedulers.Schedulers.newThread
+import zlc.season.rxdownload3.core.DownloadService.ErrorCallback
+import zlc.season.rxdownload3.core.DownloadService.SuccessCallback
 import zlc.season.rxdownload3.extension.Extension
 import java.io.File
 
@@ -20,11 +23,11 @@ class RemoteMissionBox : MissionBox {
     override fun create(mission: Mission): Flowable<Status> {
         return Flowable.create<Status>({ emitter ->
             startBindServiceAndDo {
-                it.create(object : DownloadService.StatusCallback {
+                it.create(mission, object : DownloadService.StatusCallback {
                     override fun apply(status: Status) {
                         emitter.onNext(status)
                     }
-                }, mission)
+                })
             }
         }, LATEST).subscribeOn(newThread())
     }
@@ -32,15 +35,7 @@ class RemoteMissionBox : MissionBox {
     override fun start(mission: Mission): Maybe<Any> {
         return Maybe.create<Any> { emitter ->
             startBindServiceAndDo {
-                it.start(mission, object : DownloadService.SuccessCallback {
-                    override fun apply(any: Any) {
-                        emitter.onSuccess(any)
-                    }
-                }, object : DownloadService.ErrorCallback {
-                    override fun apply(throwable: Throwable) {
-                        emitter.onError(throwable)
-                    }
-                })
+                it.start(mission, SuccessCallbackImpl(emitter), ErrorCallbackImpl(emitter))
             }
         }.subscribeOn(newThread())
     }
@@ -48,31 +43,23 @@ class RemoteMissionBox : MissionBox {
     override fun stop(mission: Mission): Maybe<Any> {
         return Maybe.create<Any> { emitter ->
             startBindServiceAndDo {
-                it.stop(mission, object : DownloadService.SuccessCallback {
-                    override fun apply(any: Any) {
-                        emitter.onSuccess(any)
-                    }
-                }, object : DownloadService.ErrorCallback {
-                    override fun apply(throwable: Throwable) {
-                        emitter.onError(throwable)
-                    }
-                })
+                it.stop(mission, SuccessCallbackImpl(emitter), ErrorCallbackImpl(emitter))
             }
         }.subscribeOn(newThread())
     }
 
-    override fun delete(mission: Mission): Maybe<Any> {
+    override fun delete(mission: Mission, deleteFile: Boolean): Maybe<Any> {
         return Maybe.create<Any> { emitter ->
             startBindServiceAndDo {
-                it.delete(mission, object : DownloadService.SuccessCallback {
-                    override fun apply(any: Any) {
-                        emitter.onSuccess(any)
-                    }
-                }, object : DownloadService.ErrorCallback {
-                    override fun apply(throwable: Throwable) {
-                        emitter.onError(throwable)
-                    }
-                })
+                it.delete(mission, deleteFile, SuccessCallbackImpl(emitter), ErrorCallbackImpl(emitter))
+            }
+        }.subscribeOn(newThread())
+    }
+
+    override fun createAll(missions: List<Mission>): Maybe<Any> {
+        return Maybe.create<Any> { emitter ->
+            startBindServiceAndDo {
+                it.createAll(missions, SuccessCallbackImpl(emitter), ErrorCallbackImpl(emitter))
             }
         }.subscribeOn(newThread())
     }
@@ -80,15 +67,7 @@ class RemoteMissionBox : MissionBox {
     override fun startAll(): Maybe<Any> {
         return Maybe.create<Any> { emitter ->
             startBindServiceAndDo {
-                it.startAll(object : DownloadService.SuccessCallback {
-                    override fun apply(any: Any) {
-                        emitter.onSuccess(any)
-                    }
-                }, object : DownloadService.ErrorCallback {
-                    override fun apply(throwable: Throwable) {
-                        emitter.onError(throwable)
-                    }
-                })
+                it.startAll(SuccessCallbackImpl(emitter), ErrorCallbackImpl(emitter))
             }
         }.subscribeOn(newThread())
     }
@@ -96,15 +75,15 @@ class RemoteMissionBox : MissionBox {
     override fun stopAll(): Maybe<Any> {
         return Maybe.create<Any> { emitter ->
             startBindServiceAndDo {
-                it.stopAll(object : DownloadService.SuccessCallback {
-                    override fun apply(any: Any) {
-                        emitter.onSuccess(any)
-                    }
-                }, object : DownloadService.ErrorCallback {
-                    override fun apply(throwable: Throwable) {
-                        emitter.onError(throwable)
-                    }
-                })
+                it.stopAll(SuccessCallbackImpl(emitter), ErrorCallbackImpl(emitter))
+            }
+        }.subscribeOn(newThread())
+    }
+
+    override fun deleteAll(deleteFile: Boolean): Maybe<Any> {
+        return Maybe.create<Any> { emitter ->
+            startBindServiceAndDo {
+                it.deleteAll(deleteFile, SuccessCallbackImpl(emitter), ErrorCallbackImpl(emitter))
             }
         }.subscribeOn(newThread())
     }
@@ -116,11 +95,7 @@ class RemoteMissionBox : MissionBox {
                     override fun apply(file: File) {
                         emitter.onSuccess(file)
                     }
-                }, object : DownloadService.ErrorCallback {
-                    override fun apply(throwable: Throwable) {
-                        emitter.onError(throwable)
-                    }
-                })
+                }, ErrorCallbackImpl(emitter))
             }
         }.subscribeOn(newThread())
     }
@@ -128,17 +103,7 @@ class RemoteMissionBox : MissionBox {
     override fun extension(mission: Mission, type: Class<out Extension>): Maybe<Any> {
         return Maybe.create<Any> { emitter ->
             startBindServiceAndDo {
-                it.extension(mission, type,
-                        object : DownloadService.ExtensionCallback {
-                            override fun apply(any: Any) {
-                                emitter.onSuccess(any)
-                            }
-                        },
-                        object : DownloadService.ErrorCallback {
-                            override fun apply(throwable: Throwable) {
-                                emitter.onError(throwable)
-                            }
-                        })
+                it.extension(mission, type, SuccessCallbackImpl(emitter), ErrorCallbackImpl(emitter))
             }
         }
     }
@@ -163,5 +128,17 @@ class RemoteMissionBox : MissionBox {
                 downloadBinder = null
             }
         }, BIND_AUTO_CREATE)
+    }
+
+    private class SuccessCallbackImpl(val emitter: MaybeEmitter<Any>) : SuccessCallback {
+        override fun apply(any: Any) {
+            emitter.onSuccess(any)
+        }
+    }
+
+    private class ErrorCallbackImpl(val emitter: MaybeEmitter<out Any>) : ErrorCallback {
+        override fun apply(throwable: Throwable) {
+            emitter.onError(throwable)
+        }
     }
 }

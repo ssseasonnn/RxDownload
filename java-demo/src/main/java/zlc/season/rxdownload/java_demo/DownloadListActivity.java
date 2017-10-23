@@ -44,6 +44,27 @@ public class DownloadListActivity extends AppCompatActivity {
         adapter = new Adapter();
         mainBinding.recyclerView.setLayoutManager(new LinearLayoutManager(this));
         mainBinding.recyclerView.setAdapter(adapter);
+
+        mainBinding.startAll.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                RxDownload.INSTANCE.startAll().subscribe();
+            }
+        });
+
+        mainBinding.stopAll.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                RxDownload.INSTANCE.stopAll().subscribe();
+            }
+        });
+
+        mainBinding.deleteAll.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                RxDownload.INSTANCE.deleteAll(false).subscribe();
+            }
+        });
     }
 
     static class Adapter extends RecyclerView.Adapter<ViewHolder> {

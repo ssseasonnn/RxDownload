@@ -69,6 +69,12 @@ public class AppListActivity extends AppCompatActivity {
             data.add(new CustomMission(urls[i], introduces[i], images[i]));
         }
         adapter.addData(data);
+
+        createAllMissionOnStart(data);
+    }
+
+    private void createAllMissionOnStart(List<CustomMission> data) {
+        RxDownload.INSTANCE.createAll(data).subscribe();
     }
 
     static class Adapter extends RecyclerView.Adapter<ViewHolder> {

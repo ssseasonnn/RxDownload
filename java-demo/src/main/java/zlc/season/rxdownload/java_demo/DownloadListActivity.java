@@ -31,6 +31,7 @@ import zlc.season.rxdownload3.core.Succeed;
 import zlc.season.rxdownload3.core.Suspend;
 import zlc.season.rxdownload3.core.Waiting;
 import zlc.season.rxdownload3.extension.ApkInstallExtension;
+import zlc.season.rxdownload3.extension.ApkOpenExtension;
 import zlc.season.rxdownload3.helper.UtilsKt;
 
 public class DownloadListActivity extends AppCompatActivity {
@@ -214,7 +215,7 @@ public class DownloadListActivity extends AppCompatActivity {
         }
 
         private void open() {
-            //open app
+            RxDownload.INSTANCE.extension(customMission, ApkOpenExtension.class).subscribe();
         }
     }
 }

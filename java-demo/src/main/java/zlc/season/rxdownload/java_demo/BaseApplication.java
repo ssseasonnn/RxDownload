@@ -5,6 +5,7 @@ import android.app.Application;
 
 import zlc.season.rxdownload3.core.DownloadConfig;
 import zlc.season.rxdownload3.extension.ApkInstallExtension;
+import zlc.season.rxdownload3.extension.ApkOpenExtension;
 
 public class BaseApplication extends Application {
     @Override
@@ -16,7 +17,8 @@ public class BaseApplication extends Application {
                 .setDbActor(new CustomSqliteActor(this))
                 .enableService(true)
                 .enableNotification(true)
-                .addExtension(ApkInstallExtension.class);
+                .addExtension(ApkInstallExtension.class)
+                .addExtension(ApkOpenExtension.class);
 
         DownloadConfig.INSTANCE.init(builder);
     }

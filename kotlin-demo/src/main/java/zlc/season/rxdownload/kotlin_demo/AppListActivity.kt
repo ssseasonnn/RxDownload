@@ -17,6 +17,7 @@ import zlc.season.rxdownload.kotlin_demo.databinding.ViewHolderAppItemBinding
 import zlc.season.rxdownload3.RxDownload
 import zlc.season.rxdownload3.core.*
 import zlc.season.rxdownload3.extension.ApkInstallExtension
+import zlc.season.rxdownload3.extension.ApkOpenExtension
 import zlc.season.rxdownload3.helper.dispose
 
 
@@ -127,7 +128,7 @@ class AppListActivity : AppCompatActivity() {
         }
 
         private fun open() {
-            //TODO: open app
+            RxDownload.extension(customMission!!, ApkOpenExtension::class.java).subscribe()
         }
 
         fun setData(customMission: CustomMission) {

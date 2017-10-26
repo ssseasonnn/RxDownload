@@ -1,35 +1,30 @@
 package zlc.season.rxdownload3.extension
 
 import android.app.Activity
-import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import android.content.Intent.*
-import android.content.IntentFilter
+import android.content.Intent.ACTION_VIEW
+import android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION
+import android.content.pm.PackageManager
 import android.net.Uri.fromFile
 import android.os.Build.VERSION.SDK_INT
 import android.os.Build.VERSION_CODES.N
 import android.os.Bundle
 import android.support.v4.content.FileProvider.getUriForFile
-import android.support.v4.content.LocalBroadcastManager.getInstance
 import io.reactivex.Maybe
+import io.reactivex.processors.FlowableProcessor
+import io.reactivex.processors.PublishProcessor
 import zlc.season.rxdownload3.core.*
-import zlc.season.rxdownload3.extension.ApkInstallExtension.ApkInstallActivity.Companion.ACTION_APK_INSTALL_CANCEL
 import zlc.season.rxdownload3.helper.getPackageName
 import java.io.File
 
 
 class ApkInstallExtension : Extension {
-    private val SCHEME = "package"
-
     lateinit var mission: RealMission
     lateinit var context: Context
 
     private var apkFile: File? = null
-    private var installApkPackageName = ""
-
-    private var successReceiver = ApkInstallSuccessReceiver()
-    private var cancelReceiver = ApkInstallCancelReceiver()
+    private var apkPackageName = ""
 
     override fun init(mission: RealMission) {
         this.mission = mission
@@ -45,58 +40,39 @@ class ApkInstallExtension : Extension {
                 return@create
             }
 
-            installApkPackageName = getPackageName(context, apkFile!!)
+            apkPackageName = getPackageName(context, apkFile!!)
 
             mission.emitStatusWithNotification(Installing(mission.status))
 
-            registerReceiver()
+            registerService()
             ApkInstallActivity.start(context, apkFile!!.path)
 
             it.onSuccess(1)
         }
     }
 
-    private fun registerReceiver() {
-        val success = IntentFilter()
-        success.addAction(ACTION_PACKAGE_ADDED)
-        success.addDataScheme(SCHEME)
-        getInstance(context).registerReceiver(successReceiver, success)
-
-        val cancel = IntentFilter(ACTION_APK_INSTALL_CANCEL)
-        getInstance(context).registerReceiver(cancelReceiver, cancel)
-    }
-
-    inner class ApkInstallSuccessReceiver : BroadcastReceiver() {
-        override fun onReceive(context: Context?, intent: Intent?) {
-            if (context == null || intent == null) return
-            val action = intent.action
-            val data = intent.data
-            if (action == null || data == null) return
-
-            val receivePackageName = data.encodedSchemeSpecificPart
-
-            if (installApkPackageName == receivePackageName) {
-                if (action == ACTION_PACKAGE_ADDED) {
+    private fun registerService() {
+        ApkInstallService.get().subscribe {
+            val packageName = it.second
+            if (packageName == apkPackageName) {
+                if (it.first) {
                     mission.emitStatusWithNotification(Installed(mission.status))
-                    getInstance(context).unregisterReceiver(this)
+                } else {
+                    mission.emitStatusWithNotification(Succeed(mission.status))
                 }
             }
         }
     }
 
-    inner class ApkInstallCancelReceiver : BroadcastReceiver() {
-        override fun onReceive(context: Context?, intent: Intent?) {
-            if (context == null || intent == null) return
+    object ApkInstallService {
+        private val processor: FlowableProcessor<Pair<Boolean, String>> = PublishProcessor.create()
 
-            val action = intent.action ?: return
-            val receivePackageName = intent.getStringExtra(ApkInstallActivity.ARGS_OUT_PACKAGE_NAME)
+        fun dispatch(flag: Boolean, packageName: String) {
+            processor.onNext(Pair(flag, packageName))
+        }
 
-            if (installApkPackageName == receivePackageName) {
-                if (action == ApkInstallActivity.ACTION_APK_INSTALL_CANCEL) {
-                    mission.emitStatusWithNotification(Succeed(mission.status))
-                    getInstance(context).unregisterReceiver(this)
-                }
-            }
+        fun get(): FlowableProcessor<Pair<Boolean, String>> {
+            return processor
         }
     }
 
@@ -107,9 +83,6 @@ class ApkInstallExtension : Extension {
             private val ARGS_IN_PATH = "argsInPath"
             private val RC_INSTALL_APK = 100
 
-            val ARGS_OUT_PACKAGE_NAME = "argsOutPackageName"
-            val ACTION_APK_INSTALL_CANCEL = "actionApkInstallCancel"
-
             fun start(context: Context, apkPath: String) {
                 val intent = Intent(context, ApkInstallActivity::class.java)
                 intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
@@ -118,12 +91,17 @@ class ApkInstallExtension : Extension {
             }
         }
 
-        lateinit var apkFile: File
+        private lateinit var apkFile: File
+
+        var installTime = 0L
+        var installPackageName = ""
 
         override fun onCreate(savedInstanceState: Bundle?) {
             super.onCreate(savedInstanceState)
             val apkPath = intent.getStringExtra(ARGS_IN_PATH)
             apkFile = File(apkPath)
+            installPackageName = getPackageName(this, apkFile)
+            installTime = System.currentTimeMillis()
 
             startActivityForResult(createApkInstallIntent(), RC_INSTALL_APK)
         }
@@ -144,13 +122,25 @@ class ApkInstallExtension : Extension {
         override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
             super.onActivityResult(requestCode, resultCode, data)
             if (requestCode == RC_INSTALL_APK) {
-                if (resultCode == RESULT_CANCELED) {
-                    val intent = Intent(ACTION_APK_INSTALL_CANCEL)
-                    intent.putExtra(ARGS_OUT_PACKAGE_NAME, getPackageName(this, apkFile))
-                    getInstance(this).sendBroadcast(intent)
-                }
+                check()
             }
             finish()
+        }
+
+        private fun check() {
+            try {
+                val pm = packageManager
+                val appInfo = pm.getApplicationInfo(installPackageName, 0)
+                val appFile = appInfo.sourceDir
+                val installedTime = File(appFile).lastModified()
+                if (installedTime > installTime) {
+                    ApkInstallService.dispatch(true, installPackageName)
+                } else {
+                    ApkInstallService.dispatch(false, installPackageName)
+                }
+            } catch (e: PackageManager.NameNotFoundException) {
+                ApkInstallService.dispatch(false, installPackageName)
+            }
         }
     }
 

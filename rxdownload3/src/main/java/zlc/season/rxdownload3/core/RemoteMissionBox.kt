@@ -18,7 +18,7 @@ import java.io.File
 
 
 class RemoteMissionBox : MissionBox {
-    var context: Context = DownloadConfig.context
+    var context: Context = DownloadConfig.context!!
 
     override fun create(mission: Mission): Flowable<Status> {
         return Flowable.create<Status>({ emitter ->

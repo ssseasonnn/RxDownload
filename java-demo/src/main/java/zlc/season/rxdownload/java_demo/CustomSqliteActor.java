@@ -29,9 +29,20 @@ public class CustomSqliteActor extends SQLiteActor {
                         "%s TEXT,\n" +
                         "%s INTEGER,\n" +
                         "%s TEXT,\n" +
+                        "%s TEXT,\n" +
+                        "%s INTEGER,\n" +
                         "%s TEXT)";
-        return String.format(formatStr, getTABLE_NAME(), getTAG(), getURL(),
-                getSAVE_NAME(), getSAVE_PATH(), getRANGE_FLAG(), getTOTAL_SIZE(), IMG);
+
+        return String.format(formatStr, getTABLE_NAME(),
+                getTAG(),
+                getURL(),
+                getSAVE_NAME(),
+                getSAVE_PATH(),
+                getRANGE_FLAG(),
+                getCURRENT_SIZE(),
+                getTOTAL_SIZE(),
+                getSTATUS_FLAG(),
+                IMG);
     }
 
     @NotNull

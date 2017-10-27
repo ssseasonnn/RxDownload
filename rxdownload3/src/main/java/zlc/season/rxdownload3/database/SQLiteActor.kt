@@ -7,8 +7,8 @@ import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 import io.reactivex.Maybe
 import io.reactivex.schedulers.Schedulers.newThread
-import zlc.season.rxdownload3.core.Mission
-import zlc.season.rxdownload3.core.RealMission
+import zlc.season.rxdownload3.core.*
+import zlc.season.rxdownload3.extension.ApkInstallExtension
 import zlc.season.rxdownload3.helper.loge
 
 
@@ -27,7 +27,9 @@ open class SQLiteActor(context: Context) : DbActor {
     protected val SAVE_NAME = "save_name"
     protected val SAVE_PATH = "save_path"
     protected val RANGE_FLAG = "range_flag"
+    protected val CURRENT_SIZE = "current_size"
     protected val TOTAL_SIZE = "total_size"
+    protected val STATUS_FLAG = "status_flag"
 
     private val sqLiteOpenHelper = object : SQLiteOpenHelper(context, DATABASE_NAME, null, DATABASE_VERSION) {
         override fun onCreate(db: SQLiteDatabase?) {
@@ -53,7 +55,6 @@ open class SQLiteActor(context: Context) : DbActor {
         }
     }
 
-
     open fun provideCreateSql(): String {
         return """
             CREATE TABLE $TABLE_NAME (
@@ -62,7 +63,9 @@ open class SQLiteActor(context: Context) : DbActor {
                 $SAVE_NAME TEXT,
                 $SAVE_PATH TEXT,
                 $RANGE_FLAG INTEGER,
-                $TOTAL_SIZE TEXT)
+                $CURRENT_SIZE TEXT,
+                $TOTAL_SIZE TEXT,
+                $STATUS_FLAG INTEGER)
             """
     }
 
@@ -118,6 +121,32 @@ open class SQLiteActor(context: Context) : DbActor {
         return cv
     }
 
+    override fun updateStatus(mission: RealMission) {
+        val writableDatabase = sqLiteOpenHelper.writableDatabase
+        val cv = onUpdateStatus(mission)
+        if (cv.size() > 0) {
+            writableDatabase.update(TABLE_NAME, cv, "$TAG=?", arrayOf(mission.actual.tag))
+        }
+    }
+
+    open fun onUpdateStatus(mission: RealMission): ContentValues {
+        val cv = ContentValues()
+        cv.put(CURRENT_SIZE, mission.status.downloadSize)
+        cv.put(STATUS_FLAG, onTransformStatus(mission.status))
+        return cv
+    }
+
+    open fun onTransformStatus(status: Status): Int {
+        return when (status) {
+            is Normal -> 1
+            is Suspend -> 2
+            is Failed -> 3
+            is Succeed -> 4
+            is ApkInstallExtension.Installed -> 5
+            else -> 1
+        }
+    }
+
     override fun read(mission: RealMission) {
         val readableDatabase = sqLiteOpenHelper.readableDatabase
         val cursor = readableDatabase.rawQuery("SELECT * FROM $TABLE_NAME where $TAG = ?",
@@ -137,13 +166,29 @@ open class SQLiteActor(context: Context) : DbActor {
         val saveName = cursor.getString(cursor.getColumnIndexOrThrow(SAVE_NAME))
         val savePath = cursor.getString(cursor.getColumnIndexOrThrow(SAVE_PATH))
         val rangeFlag = cursor.getInt(cursor.getColumnIndexOrThrow(RANGE_FLAG))
+        val currentSize = cursor.getLong(cursor.getColumnIndexOrThrow(CURRENT_SIZE))
         val totalSize = cursor.getLong(cursor.getColumnIndexOrThrow(TOTAL_SIZE))
+        val statusFlag = cursor.getInt(cursor.getColumnIndexOrThrow(STATUS_FLAG))
 
         val actual = mission.actual
         actual.saveName = saveName
         actual.savePath = savePath
         actual.rangeFlag = transformFlagToBool(rangeFlag)
+
+        val status = Status(currentSize, totalSize, false)
         mission.totalSize = totalSize
+        mission.status = onRestoreStatus(statusFlag, status)
+    }
+
+    open fun onRestoreStatus(flag: Int, status: Status): Status {
+        return when (flag) {
+            1 -> Normal(status)
+            2 -> Suspend(status)
+            3 -> Failed(status, Exception())
+            4 -> Succeed(status)
+            5 -> ApkInstallExtension.Installed(status)
+            else -> Normal(status)
+        }
     }
 
     override fun delete(mission: RealMission) {

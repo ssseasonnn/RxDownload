@@ -14,6 +14,8 @@ interface DbActor {
 
     fun update(mission: RealMission)
 
+    fun updateStatus(mission: RealMission)
+
     fun delete(mission: RealMission)
 
     fun getAllMission(): Maybe<List<Mission>>

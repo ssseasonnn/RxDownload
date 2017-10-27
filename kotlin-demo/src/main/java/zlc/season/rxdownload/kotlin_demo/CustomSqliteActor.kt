@@ -5,6 +5,7 @@ import android.content.Context
 import android.database.Cursor
 import zlc.season.rxdownload3.core.Mission
 import zlc.season.rxdownload3.core.RealMission
+import zlc.season.rxdownload3.core.Status
 import zlc.season.rxdownload3.database.SQLiteActor
 
 
@@ -19,7 +20,9 @@ class CustomSqliteActor(context: Context) : SQLiteActor(context) {
                 $SAVE_NAME TEXT,
                 $SAVE_PATH TEXT,
                 $RANGE_FLAG INTEGER,
+                $CURRENT_SIZE TEXT,
                 $TOTAL_SIZE TEXT,
+                $STATUS_FLAG INTEGER,
                 $IMG TEXT)
             """
     }

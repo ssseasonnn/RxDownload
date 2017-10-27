@@ -27,7 +27,8 @@ object DownloadConfig {
 
     internal var defaultSavePath = getExternalStoragePublicDirectory(DIRECTORY_DOWNLOADS).path
 
-    lateinit var context: Context
+    var context: Context? = null
+
     internal var fps = 30
 
     internal var enableDb = false

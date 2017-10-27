@@ -1,7 +1,7 @@
 package zlc.season.rxdownload3.core
 
 import android.app.NotificationManager
-import android.content.Context
+import android.content.Context.NOTIFICATION_SERVICE
 import io.reactivex.Flowable
 import io.reactivex.Maybe
 import io.reactivex.disposables.Disposable
@@ -67,7 +67,7 @@ class RealMission(val actual: Mission, val semaphore: Semaphore) {
 
     private fun loadConfig() {
         if (enableNotification) {
-            notificationManager = DownloadConfig.context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            notificationManager = DownloadConfig.context!!.getSystemService(NOTIFICATION_SERVICE) as NotificationManager
             notificationFactory = DownloadConfig.notificationFactory
         }
 
@@ -94,7 +94,9 @@ class RealMission(val actual: Mission, val semaphore: Semaphore) {
 
     private fun initStatus() {
         downloadType = generateType()
-        downloadType?.initStatus()
+        if (!enableDb) {
+            downloadType?.initStatus()
+        }
     }
 
 
@@ -207,7 +209,7 @@ class RealMission(val actual: Mission, val semaphore: Semaphore) {
         this.status = status
         processor.onNext(status)
         if (enableDb) {
-            dbActor.update(this)
+            dbActor.updateStatus(this)
         }
     }
 
@@ -224,7 +226,7 @@ class RealMission(val actual: Mission, val semaphore: Semaphore) {
                 .subscribeOn(newThread())
                 .subscribe {
                     notificationManager.notify(hashCode(),
-                            notificationFactory.build(DownloadConfig.context, this, status))
+                            notificationFactory.build(DownloadConfig.context!!, this, status))
                 }
     }
 

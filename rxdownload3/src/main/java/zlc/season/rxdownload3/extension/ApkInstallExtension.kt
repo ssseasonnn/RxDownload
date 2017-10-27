@@ -16,6 +16,7 @@ import io.reactivex.processors.FlowableProcessor
 import io.reactivex.processors.PublishProcessor
 import zlc.season.rxdownload3.core.*
 import zlc.season.rxdownload3.helper.getPackageName
+import zlc.season.rxdownload3.helper.logd
 import java.io.File
 
 
@@ -28,7 +29,11 @@ class ApkInstallExtension : Extension {
 
     override fun init(mission: RealMission) {
         this.mission = mission
-        this.context = DownloadConfig.context
+        if (DownloadConfig.context == null) {
+            logd("No context, you should set context first")
+        } else {
+            this.context = DownloadConfig.context!!
+        }
     }
 
     override fun action(): Maybe<Any> {

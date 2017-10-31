@@ -14,7 +14,6 @@ import zlc.season.rxdownload3.database.DbActor
 import zlc.season.rxdownload3.extension.Extension
 import zlc.season.rxdownload3.helper.*
 import zlc.season.rxdownload3.http.HttpCore
-import zlc.season.rxdownload3.http.HttpCore.download
 import zlc.season.rxdownload3.notification.NotificationFactory
 import java.io.File
 import java.util.concurrent.Semaphore

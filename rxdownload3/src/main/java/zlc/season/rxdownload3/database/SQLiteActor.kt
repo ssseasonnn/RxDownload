@@ -39,8 +39,8 @@ open class SQLiteActor(context: Context) : DbActor {
 
         override fun onUpgrade(db: SQLiteDatabase?, oldVersion: Int, newVersion: Int) {
             if (db == null) return
-            if (newVersion > oldVersion) {
-                provideUpdateSql().forEach {
+            if (oldVersion < 2) {
+                provideUpdateV2Sql().forEach {
                     execSql(db, it)
                 }
             }
@@ -57,6 +57,11 @@ open class SQLiteActor(context: Context) : DbActor {
         }
     }
 
+    init {
+        //trigger update.
+        sqLiteOpenHelper.readableDatabase
+    }
+
     open fun provideCreateSql(): String {
         return """
             CREATE TABLE $TABLE_NAME (
@@ -71,7 +76,7 @@ open class SQLiteActor(context: Context) : DbActor {
             """
     }
 
-    open fun provideUpdateSql(): List<String> {
+    open fun provideUpdateV2Sql(): List<String> {
         val addCurrentSize = "ALTER TABLE $TABLE_NAME ADD $CURRENT_SIZE TEXT"
         val addStatusFlag = "ALTER TABLE $TABLE_NAME ADD $STATUS_FLAG INTEGER"
         return mutableListOf(addCurrentSize, addStatusFlag)

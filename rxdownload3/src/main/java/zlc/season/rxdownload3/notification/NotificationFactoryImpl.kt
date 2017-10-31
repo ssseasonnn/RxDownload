@@ -12,6 +12,7 @@ import android.os.Build.VERSION_CODES.O
 import android.support.v4.app.NotificationCompat.Builder
 import zlc.season.rxdownload3.R
 import zlc.season.rxdownload3.core.*
+import zlc.season.rxdownload3.core.DownloadConfig.context
 import zlc.season.rxdownload3.extension.ApkInstallExtension
 
 
@@ -21,7 +22,7 @@ class NotificationFactoryImpl : NotificationFactory {
 
     private val map = mutableMapOf<RealMission, Builder>()
 
-    override fun build(context: Context, mission: RealMission, status: Status): Notification {
+    override fun build(context: Context, mission: RealMission, status: Status): Notification? {
         createChannelForOreo(context, channelId, channelName)
 
         val builder = get(mission, context)
@@ -34,10 +35,17 @@ class NotificationFactoryImpl : NotificationFactory {
             is Succeed -> succeed(builder)
             is ApkInstallExtension.Installing -> installing(builder)
             is ApkInstallExtension.Installed -> installed(builder)
+            is Deleted -> deleted(context, mission)
             else -> {
                 Notification()
             }
         }
+    }
+
+    private fun deleted(context: Context, mission: RealMission): Notification? {
+        val notificationManager = context.getSystemService(NOTIFICATION_SERVICE) as NotificationManager
+        notificationManager.cancel(mission.hashCode())
+        return null
     }
 
     private fun installed(builder: Builder): Notification {

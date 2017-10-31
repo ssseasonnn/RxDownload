@@ -98,8 +98,8 @@ class ApkInstallExtension : Extension {
 
         private lateinit var apkFile: File
 
-        var installTime = 0L
-        var installPackageName = ""
+        private var installTime = 0L
+        private var installPackageName = ""
 
         override fun onCreate(savedInstanceState: Bundle?) {
             super.onCreate(savedInstanceState)

@@ -7,6 +7,6 @@ import zlc.season.rxdownload3.core.Status
 
 
 interface NotificationFactory {
-    fun build(context: Context, mission: RealMission, status: Status): Notification
+    fun build(context: Context, mission: RealMission, status: Status): Notification?
 }
 

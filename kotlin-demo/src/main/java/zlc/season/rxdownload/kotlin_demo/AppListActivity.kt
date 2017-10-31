@@ -108,6 +108,7 @@ class AppListActivity : AppCompatActivity() {
                     is Normal -> start()
                     is Suspend -> start()
                     is Failed -> start()
+                    is Deleted -> start()
                     is Downloading -> stop()
                     is Succeed -> install()
                     is ApkInstallExtension.Installed -> open()
@@ -162,6 +163,7 @@ class AppListActivity : AppCompatActivity() {
                 is Succeed -> "安装"
                 is ApkInstallExtension.Installing -> "安装中"
                 is ApkInstallExtension.Installed -> "打开"
+                is Deleted -> "开始"
                 else -> ""
             }
             itemBinding.action.text = text

@@ -14,6 +14,7 @@ import zlc.season.rxdownload3.database.DbActor
 import zlc.season.rxdownload3.extension.Extension
 import zlc.season.rxdownload3.helper.*
 import zlc.season.rxdownload3.http.HttpCore
+import zlc.season.rxdownload3.http.HttpCore.download
 import zlc.season.rxdownload3.notification.NotificationFactory
 import java.io.File
 import java.util.concurrent.Semaphore
@@ -80,8 +81,6 @@ class RealMission(val actual: Mission, val semaphore: Semaphore) {
         if (enableDb) {
             if (dbActor.isExists(this)) {
                 dbActor.read(this)
-            } else {
-                dbActor.create(this)
             }
         }
     }
@@ -143,6 +142,12 @@ class RealMission(val actual: Mission, val semaphore: Semaphore) {
 
     fun start(): Maybe<Any> {
         return Maybe.create<Any> {
+            if (enableDb) {
+                if (!dbActor.isExists(this)) {
+                    dbActor.create(this)
+                }
+            }
+
             if (disposable == null) {
                 disposable = downloadFlowable.subscribe(this::emitStatusWithNotification)
             }
@@ -167,7 +172,7 @@ class RealMission(val actual: Mission, val semaphore: Semaphore) {
             if (enableDb) {
                 dbActor.delete(this)
             }
-            emitStatusWithNotification(Normal(Status()))
+            emitStatusWithNotification(Deleted(Status()))
             it.onSuccess(ANY)
         }.subscribeOn(newThread())
     }
@@ -202,7 +207,7 @@ class RealMission(val actual: Mission, val semaphore: Semaphore) {
 
     fun emitStatusWithNotification(status: Status) {
         emitStatus(status)
-        notifyNotification()
+        notifyNotification(status)
     }
 
     fun emitStatus(status: Status) {
@@ -213,20 +218,22 @@ class RealMission(val actual: Mission, val semaphore: Semaphore) {
         }
     }
 
-    private fun notifyNotification() {
+    private fun notifyNotification(status: Status) {
         if (enableNotification) {
-            delayNotify()
+            delayNotify(status)
         }
     }
 
-    private fun delayNotify() {
+    private fun delayNotify(status: Status) {
         //Delay 500 milliseconds to avoid notification not update!!
-        Maybe.just(ANY)
+        Maybe.just(status)
                 .delaySubscription(500, MILLISECONDS)
                 .subscribeOn(newThread())
                 .subscribe {
-                    notificationManager.notify(hashCode(),
-                            notificationFactory.build(DownloadConfig.context!!, this, status))
+                    val notification = notificationFactory.build(DownloadConfig.context!!, this, it)
+                    if (notification != null) {
+                        notificationManager.notify(hashCode(), notification)
+                    }
                 }
     }
 

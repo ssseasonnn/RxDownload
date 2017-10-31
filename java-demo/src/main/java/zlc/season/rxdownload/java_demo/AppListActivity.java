@@ -25,6 +25,7 @@ import io.reactivex.functions.Consumer;
 import zlc.season.rxdownload.java_demo.databinding.ActivityAppListBinding;
 import zlc.season.rxdownload.java_demo.databinding.ViewHolderAppItemBinding;
 import zlc.season.rxdownload3.RxDownload;
+import zlc.season.rxdownload3.core.Deleted;
 import zlc.season.rxdownload3.core.Downloading;
 import zlc.season.rxdownload3.core.Failed;
 import zlc.season.rxdownload3.core.Normal;
@@ -149,6 +150,8 @@ public class AppListActivity extends AppCompatActivity {
                 install();
             } else if (currentStatus instanceof ApkInstallExtension.Installed) {
                 open();
+            } else if (currentStatus instanceof Deleted) {
+                start();
             }
         }
 
@@ -189,6 +192,8 @@ public class AppListActivity extends AppCompatActivity {
                 text = "安装中";
             } else if (status instanceof ApkInstallExtension.Installed) {
                 text = "打开";
+            } else if (status instanceof Deleted) {
+                text = "开始";
             }
             binding.action.setText(text);
         }

@@ -42,21 +42,30 @@ class DownloadListActivity : AppCompatActivity() {
         }
 
         mainBinding.deleteAll.setOnClickListener {
-            RxDownload.deleteAll().subscribe()
+            RxDownload.deleteAll().subscribe {
+                loadData()
+            }
         }
+
+        loadData()
+    }
+
+    private fun loadData() {
+        RxDownload.getAllMission()
+                .observeOn(mainThread())
+                .subscribe {
+                    adapter.addData(it)
+                }
     }
 
 
     class Adapter : RecyclerView.Adapter<ViewHolder>() {
         val data = mutableListOf<Mission>()
 
-        init {
-            RxDownload.getAllMission()
-                    .observeOn(mainThread())
-                    .subscribe {
-                        data.addAll(it)
-                        notifyDataSetChanged()
-                    }
+        fun addData(data: List<Mission>) {
+            this.data.clear()
+            this.data.addAll(data)
+            notifyDataSetChanged()
         }
 
         override fun onCreateViewHolder(parent: ViewGroup?, viewType: Int): ViewHolder {
@@ -88,8 +97,8 @@ class DownloadListActivity : AppCompatActivity() {
 
     class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         private var mission: Mission? = null
-        var disposable: Disposable? = null
-        var currentStatus: Status? = null
+        private var disposable: Disposable? = null
+        private var currentStatus: Status? = null
 
         private val itemBinding: ViewHolderDownloadItemBinding = DataBindingUtil.bind(itemView)
 
@@ -134,8 +143,7 @@ class DownloadListActivity : AppCompatActivity() {
                     .observeOn(mainThread())
                     .subscribe {
                         if (currentStatus is Failed) {
-//                            println((currentStatus as Failed).throwable.stackTrace)
-                            loge("test", (currentStatus as Failed).throwable)
+                            loge("Failed", (currentStatus as Failed).throwable)
                         }
                         currentStatus = it
                         setProgress(it)

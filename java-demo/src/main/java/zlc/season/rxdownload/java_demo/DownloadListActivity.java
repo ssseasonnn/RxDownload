@@ -63,25 +63,38 @@ public class DownloadListActivity extends AppCompatActivity {
         mainBinding.deleteAll.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                RxDownload.INSTANCE.deleteAll(false).subscribe();
+                RxDownload.INSTANCE.deleteAll(false)
+                        .subscribe(new Consumer<Object>() {
+                            @Override
+                            public void accept(Object o) throws Exception {
+                                loadData();
+                            }
+                        });
             }
         });
+
+        loadData();
+    }
+
+    private void loadData() {
+        RxDownload.INSTANCE.getAllMission()
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(new Consumer<List<Mission>>() {
+                    @Override
+                    public void accept(List<Mission> missions) throws Exception {
+                        adapter.addData(missions);
+                    }
+                });
     }
 
     static class Adapter extends RecyclerView.Adapter<ViewHolder> {
 
         private List<Mission> data = new ArrayList<>();
 
-        public Adapter() {
-            RxDownload.INSTANCE.getAllMission()
-                    .observeOn(AndroidSchedulers.mainThread())
-                    .subscribe(new Consumer<List<Mission>>() {
-                        @Override
-                        public void accept(List<Mission> missions) throws Exception {
-                            data.addAll(missions);
-                            notifyDataSetChanged();
-                        }
-                    });
+        public void addData(List<Mission> data) {
+            this.data.clear();
+            this.data.addAll(data);
+            notifyDataSetChanged();
         }
 
         @Override

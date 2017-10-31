@@ -106,6 +106,9 @@ class RangeTargetFile(val mission: RealMission) {
         if (realFile.exists()) realFile.delete()
     }
 
+    fun isExists(): Boolean {
+        return realFile.exists()
+    }
 }
 
 

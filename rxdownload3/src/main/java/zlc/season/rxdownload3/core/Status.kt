@@ -48,5 +48,7 @@ class Failed(status: Status, val throwable: Throwable) : Status(status)
 
 class Succeed(status: Status) : Status(status)
 
+class Deleted(status: Status) : Status(status)
+
 
 

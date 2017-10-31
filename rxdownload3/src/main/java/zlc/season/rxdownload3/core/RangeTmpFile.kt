@@ -203,4 +203,8 @@ class RangeTmpFile(val mission: RealMission) {
             return end - current + 1
         }
     }
+
+    fun isExists(): Boolean {
+        return file.exists()
+    }
 }

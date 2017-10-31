@@ -14,7 +14,6 @@ import zlc.season.rxdownload3.database.DbActor
 import zlc.season.rxdownload3.extension.Extension
 import zlc.season.rxdownload3.helper.*
 import zlc.season.rxdownload3.http.HttpCore
-import zlc.season.rxdownload3.http.HttpCore.download
 import zlc.season.rxdownload3.notification.NotificationFactory
 import java.io.File
 import java.util.concurrent.Semaphore
@@ -198,11 +197,31 @@ class RealMission(val actual: Mission, val semaphore: Semaphore) {
         actual.rangeFlag = isSupportRange(resp)
         totalSize = contentLength(resp)
 
-        downloadType = generateType()
+        downloadType = checkDownloadFileExists(generateType())
 
         if (enableDb) {
             dbActor.update(this)
         }
+    }
+
+    private fun checkDownloadFileExists(downloadType: DownloadType?): DownloadType? {
+        if (downloadType!!.isExists() && enableDb && !dbActor.isExistsBySaveLocation(this)) {
+            val saveName = actual.saveName;
+            val lastDot = saveName.indexOfLast { it == '.' }
+
+            val time = System.currentTimeMillis()
+            if (lastDot > 0) {
+                val name = saveName.substring(0, lastDot)
+                val end = saveName.substring(lastDot)
+                actual.saveName = "$name-$time$end"
+            } else {
+                actual.saveName = "$saveName-$time"
+            }
+
+            return generateType()
+        }
+
+        return downloadType
     }
 
     fun emitStatusWithNotification(status: Status) {

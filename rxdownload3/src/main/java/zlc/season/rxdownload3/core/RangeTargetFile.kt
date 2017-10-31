@@ -107,7 +107,7 @@ class RangeTargetFile(val mission: RealMission) {
     }
 
     fun isExists(): Boolean {
-        return realFile.exists()
+        return realFile.exists() || shadowFile.exists()
     }
 }
 

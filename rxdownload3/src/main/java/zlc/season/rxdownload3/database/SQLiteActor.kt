@@ -86,6 +86,19 @@ open class SQLiteActor(context: Context) : DbActor {
         }
     }
 
+    override fun isExistsBySaveLocation(mission: RealMission): Boolean {
+        val actual = mission.actual
+        val readableDatabase = sqLiteOpenHelper.readableDatabase
+        val cursor = readableDatabase.rawQuery(
+                "SELECT $TAG FROM $TABLE_NAME where $TAG = ? AND $SAVE_PATH = ? AND $SAVE_NAME = ?",
+                arrayOf(actual.tag, actual.savePath, actual.saveName)
+        )
+        cursor.use {
+            cursor.moveToFirst()
+            return cursor.count != 0
+        }
+    }
+
     override fun create(mission: RealMission) {
         val writableDatabase = sqLiteOpenHelper.writableDatabase
         val cv = onCreate(mission)

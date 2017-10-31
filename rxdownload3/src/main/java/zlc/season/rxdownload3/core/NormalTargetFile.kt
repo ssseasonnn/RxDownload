@@ -30,6 +30,10 @@ class NormalTargetFile(val mission: RealMission) {
         return realFile.exists()
     }
 
+    fun isExists(): Boolean {
+        return realFile.exists() || shadowFile.exists();
+    }
+
     fun realFile(): File {
         return realFile
     }
@@ -75,6 +79,7 @@ class NormalTargetFile(val mission: RealMission) {
                     }
 
                     shadowFile.renameTo(realFile)
+                    shadowFile.delete()
 
                     it.onComplete()
                 }

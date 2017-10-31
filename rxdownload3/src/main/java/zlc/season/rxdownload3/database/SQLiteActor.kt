@@ -14,7 +14,7 @@ import zlc.season.rxdownload3.helper.loge
 
 open class SQLiteActor(context: Context) : DbActor {
     private val DATABASE_NAME = "RxDownload.db"
-    private val DATABASE_VERSION = 1
+    private val DATABASE_VERSION = 2
 
     private val RANGE_FLAG_NULL = 0
     private val RANGE_FLAG_FALSE = 1
@@ -39,8 +39,9 @@ open class SQLiteActor(context: Context) : DbActor {
 
         override fun onUpgrade(db: SQLiteDatabase?, oldVersion: Int, newVersion: Int) {
             if (db == null) return
-            if (newVersion > oldVersion) {
-                execSql(db, provideUpdateSql())
+
+            if (oldVersion <= 2) {
+                dbUpgradeToV2Sql(db)
             }
         }
 
@@ -53,6 +54,12 @@ open class SQLiteActor(context: Context) : DbActor {
                 db.endTransaction()
             }
         }
+
+        private fun dbUpgradeToV2Sql(db: SQLiteDatabase) {
+            execSql(db, "ALTER TABLE $TABLE_NAME ADD COLUMN $CURRENT_SIZE TEXT")
+            execSql(db, "ALTER TABLE $TABLE_NAME ADD COLUMN $STATUS_FLAG INTEGER")
+        }
+
     }
 
     open fun provideCreateSql(): String {
@@ -67,10 +74,6 @@ open class SQLiteActor(context: Context) : DbActor {
                 $TOTAL_SIZE TEXT,
                 $STATUS_FLAG INTEGER)
             """
-    }
-
-    open fun provideUpdateSql(): String {
-        return ""
     }
 
     override fun isExists(mission: RealMission): Boolean {

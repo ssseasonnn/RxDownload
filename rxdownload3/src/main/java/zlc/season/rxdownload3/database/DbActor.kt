@@ -8,6 +8,8 @@ import zlc.season.rxdownload3.core.RealMission
 interface DbActor {
     fun isExists(mission: RealMission): Boolean
 
+    fun isExistsBySaveLocation(mission: RealMission): Boolean
+
     fun create(mission: RealMission)
 
     fun read(mission: RealMission)

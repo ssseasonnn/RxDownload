@@ -18,6 +18,10 @@ class NormalDownload(mission: RealMission) : DownloadType(mission) {
         }
     }
 
+    override fun isExists(): Boolean {
+        return targetFile.isExists();
+    }
+
     override fun getFile(): File? {
         if (targetFile.isFinish()) {
             return targetFile.realFile()

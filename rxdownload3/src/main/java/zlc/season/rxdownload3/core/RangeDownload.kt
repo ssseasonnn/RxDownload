@@ -40,6 +40,10 @@ class RangeDownload(mission: RealMission) : DownloadType(mission) {
         return tmpFile.isFinish() && targetFile.isFinish()
     }
 
+    override fun isExists(): Boolean {
+        return tmpFile.isExists() || targetFile.isExists()
+    }
+
     override fun download(): Flowable<out Status> {
         if (isFinish()) {
             return Flowable.empty()
@@ -60,7 +64,10 @@ class RangeDownload(mission: RealMission) : DownloadType(mission) {
 
         return Flowable.mergeDelayError(arrays, maxRange)
                 .map { Downloading(tmpFile.currentStatus()) }
-                .doOnComplete { targetFile.rename() }
+                .doOnComplete {
+                    targetFile.rename()
+                    tmpFile.delete()
+                }
     }
 
 

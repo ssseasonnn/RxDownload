@@ -12,7 +12,7 @@ A multi-threaded download tool written with RxJava and Kotlin
 
 ```groovy
 dependencies{
-    compile 'zlc.season:rxdownload3:1.1.4'
+    compile 'zlc.season:rxdownload3:1.1.5'
 }
 ```
 

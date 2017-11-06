@@ -40,7 +40,7 @@ dependencies {
     implementation 'com.squareup.picasso:picasso:2.5.2'
     implementation 'com.tbruyelle.rxpermissions2:rxpermissions:0.9.4@aar'
 
-    kapt "com.android.databinding:compiler:3.0.0-rc2"
+    kapt "com.android.databinding:compiler:3.0.0"
 
     implementation project(':rxdownload3')
 

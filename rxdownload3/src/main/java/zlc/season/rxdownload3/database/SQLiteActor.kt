@@ -17,6 +17,8 @@ open class SQLiteActor(context: Context) : DbActor {
     private val DATABASE_VERSION = 2
 
     private val RANGE_FLAG_NULL = 0
+    private val i = 1
+
     private val RANGE_FLAG_FALSE = 1
     private val RANGE_FLAG_TRUE = 2
 
@@ -57,8 +59,8 @@ open class SQLiteActor(context: Context) : DbActor {
         }
     }
 
-    init {
-        //trigger update.
+    override fun init() {
+        //trigger create or update.
         sqLiteOpenHelper.readableDatabase
     }
 

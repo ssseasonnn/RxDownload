@@ -57,6 +57,10 @@ object DownloadConfig {
         this.enableDb = builder.enableDb
         this.dbActor = builder.dbActor
 
+        if (enableDb) {
+            dbActor.init()
+        }
+
         this.enableNotification = builder.enableNotification
         this.notificationFactory = builder.notificationFactory
 

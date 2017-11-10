@@ -31,7 +31,6 @@ class RealMission(val actual: Mission, val semaphore: Semaphore) {
     private var disposable: Disposable? = null
     private var downloadType: DownloadType? = null
 
-    private lateinit var initMaybe: Maybe<Any>
     private lateinit var downloadFlowable: Flowable<Status>
 
     private val enableNotification = DownloadConfig.enableNotification
@@ -41,6 +40,8 @@ class RealMission(val actual: Mission, val semaphore: Semaphore) {
     private val enableDb = DownloadConfig.enableDb
     private lateinit var dbActor: DbActor
 
+    private val autoStart = DownloadConfig.autoStart
+
     private val extensions = mutableListOf<Extension>()
 
     init {
@@ -48,7 +49,7 @@ class RealMission(val actual: Mission, val semaphore: Semaphore) {
     }
 
     private fun init() {
-        initMaybe = Maybe.create<Any> {
+        Maybe.create<Any> {
             loadConfig()
             createFlowable()
             initMission()
@@ -56,12 +57,13 @@ class RealMission(val actual: Mission, val semaphore: Semaphore) {
             initStatus()
 
             it.onSuccess(ANY)
-        }.subscribeOn(newThread())
-
-        initMaybe.doOnError {
+        }.subscribeOn(newThread()).doOnError {
             loge("init error!", it)
         }.subscribe {
             emitStatus(status)
+            if (autoStart) {
+                realStart()
+            }
         }
     }
 
@@ -141,17 +143,21 @@ class RealMission(val actual: Mission, val semaphore: Semaphore) {
 
     fun start(): Maybe<Any> {
         return Maybe.create<Any> {
-            if (enableDb) {
-                if (!dbActor.isExists(this)) {
-                    dbActor.create(this)
-                }
-            }
-
-            if (disposable == null) {
-                disposable = downloadFlowable.subscribe(this::emitStatusWithNotification)
-            }
+            realStart()
             it.onSuccess(ANY)
         }.subscribeOn(newThread())
+    }
+
+    private fun realStart() {
+        if (enableDb) {
+            if (!dbActor.isExists(this)) {
+                dbActor.create(this)
+            }
+        }
+
+        if (disposable == null) {
+            disposable = downloadFlowable.subscribe(this::emitStatusWithNotification)
+        }
     }
 
     fun stop(): Maybe<Any> {

@@ -20,7 +20,7 @@ import java.util.concurrent.Semaphore
 import java.util.concurrent.TimeUnit.MILLISECONDS
 
 
-class RealMission(val actual: Mission, val semaphore: Semaphore) {
+class RealMission(val actual: Mission, val semaphore: Semaphore, initFlag: Boolean = true) {
     var totalSize = 0L
     var status: Status = Normal(Status())
 
@@ -45,7 +45,9 @@ class RealMission(val actual: Mission, val semaphore: Semaphore) {
     private val extensions = mutableListOf<Extension>()
 
     init {
-        init()
+        if (initFlag) {
+            init()
+        }
     }
 
     private fun init() {

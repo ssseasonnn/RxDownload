@@ -5,6 +5,7 @@ import io.reactivex.Maybe
 import io.reactivex.internal.operators.maybe.MaybeToPublisher.INSTANCE
 import io.reactivex.schedulers.Schedulers
 import io.reactivex.schedulers.Schedulers.*
+import zlc.season.rxdownload3.database.DbActor
 import zlc.season.rxdownload3.extension.Extension
 import zlc.season.rxdownload3.helper.ANY
 import java.io.File
@@ -18,11 +19,17 @@ class LocalMissionBox : MissionBox {
 
     override fun isExists(mission: Mission): Maybe<Boolean> {
         return Maybe.create<Boolean> {
-            val realMission = SET.find { it.actual == mission }
-            if (realMission != null) {
+            val result = SET.find { it.actual == mission }
+            if (result != null) {
                 it.onSuccess(true)
             } else {
-                it.onSuccess(false)
+                val tmpMission = RealMission(mission, semaphore, false)
+                if (DownloadConfig.enableDb) {
+                    val isExists = DownloadConfig.dbActor.isExists(tmpMission)
+                    it.onSuccess(isExists)
+                } else {
+                    it.onSuccess(false)
+                }
             }
         }
     }

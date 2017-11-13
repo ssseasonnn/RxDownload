@@ -7,6 +7,8 @@ import java.io.File
 
 
 interface MissionBox {
+    fun isExists(mission: Mission): Maybe<Boolean>
+
     fun create(mission: Mission): Flowable<Status>
 
     fun start(mission: Mission): Maybe<Any>

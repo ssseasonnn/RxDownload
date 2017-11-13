@@ -36,6 +36,11 @@ class DownloadService : Service() {
     }
 
     inner class DownloadBinder : Binder() {
+        fun isExists(mission: Mission, boolCallback: BoolCallback, errorCb: ErrorCallback) {
+            missionBox.isExists(mission)
+                    .subscribe(boolCallback::apply, errorCb::apply)
+        }
+
         fun create(mission: Mission, statusCallback: StatusCallback) {
             missionBox.create(mission).subscribe(statusCallback::apply)
         }
@@ -89,6 +94,9 @@ class DownloadService : Service() {
         }
     }
 
+    interface BoolCallback {
+        fun apply(value: Boolean)
+    }
 
     interface StatusCallback {
         fun apply(status: Status)

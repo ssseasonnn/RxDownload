@@ -27,6 +27,10 @@ class DownloadCore {
         }
     }
 
+    fun isExists(mission: Mission): Maybe<Boolean> {
+        return missionBox.isExists(mission)
+    }
+
     fun create(mission: Mission): Flowable<Status> {
         return missionBox.create(mission)
     }

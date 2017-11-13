@@ -16,6 +16,17 @@ class LocalMissionBox : MissionBox {
 
     private val SET = mutableSetOf<RealMission>()
 
+    override fun isExists(mission: Mission): Maybe<Boolean> {
+        return Maybe.create<Boolean> {
+            val realMission = SET.find { it.actual == mission }
+            if (realMission != null) {
+                it.onSuccess(true)
+            } else {
+                it.onSuccess(false)
+            }
+        }
+    }
+
     override fun create(mission: Mission): Flowable<Status> {
         val realMission = SET.find { it.actual == mission }
 

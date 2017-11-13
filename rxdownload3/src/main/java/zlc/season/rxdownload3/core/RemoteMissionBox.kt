@@ -21,6 +21,18 @@ import java.io.File
 class RemoteMissionBox : MissionBox {
     var context: Context = DownloadConfig.context!!
 
+    override fun isExists(mission: Mission): Maybe<Boolean> {
+        return Maybe.create<Boolean> { emitter ->
+            startBindServiceAndDo {
+                it.isExists(mission, object : DownloadService.BoolCallback {
+                    override fun apply(value: Boolean) {
+                        emitter.onSuccess(value)
+                    }
+                }, ErrorCallbackImpl(emitter))
+            }
+        }.subscribeOn(newThread())
+    }
+
     override fun create(mission: Mission): Flowable<Status> {
         return Flowable.create<Status>({ emitter ->
             startBindServiceAndDo {

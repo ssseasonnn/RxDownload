@@ -12,6 +12,14 @@ import java.io.File
 object RxDownload {
     private val downloadCore = DownloadCore()
 
+    fun isExists(url: String): Maybe<Boolean> {
+        return isExists(Mission(url))
+    }
+
+    fun isExists(mission: Mission): Maybe<Boolean> {
+        return downloadCore.isExists(mission)
+    }
+
     fun create(url: String): Flowable<Status> {
         return create(Mission(url))
     }

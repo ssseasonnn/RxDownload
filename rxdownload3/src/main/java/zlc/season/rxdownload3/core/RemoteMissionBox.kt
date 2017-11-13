@@ -14,6 +14,7 @@ import io.reactivex.schedulers.Schedulers.newThread
 import zlc.season.rxdownload3.core.DownloadService.ErrorCallback
 import zlc.season.rxdownload3.core.DownloadService.SuccessCallback
 import zlc.season.rxdownload3.extension.Extension
+import zlc.season.rxdownload3.helper.ANY
 import java.io.File
 
 
@@ -104,6 +105,22 @@ class RemoteMissionBox : MissionBox {
         return Maybe.create<Any> { emitter ->
             startBindServiceAndDo {
                 it.extension(mission, type, SuccessCallbackImpl(emitter), ErrorCallbackImpl(emitter))
+            }
+        }
+    }
+
+    override fun clear(mission: Mission): Maybe<Any> {
+        return Maybe.create<Any> { emitter ->
+            startBindServiceAndDo {
+                it.clear(mission, SuccessCallbackImpl(emitter), ErrorCallbackImpl(emitter))
+            }
+        }
+    }
+
+    override fun clearAll(): Maybe<Any> {
+        return Maybe.create<Any> { emitter ->
+            startBindServiceAndDo {
+                it.clearAll(SuccessCallbackImpl(emitter), ErrorCallbackImpl(emitter))
             }
         }
     }

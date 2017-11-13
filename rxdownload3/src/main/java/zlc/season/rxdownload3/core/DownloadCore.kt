@@ -76,4 +76,12 @@ class DownloadCore {
             Maybe.just(emptyList())
         }
     }
+
+    fun clear(mission: Mission): Maybe<Any> {
+        return missionBox.clear(mission)
+    }
+
+    fun clearAll(): Maybe<Any> {
+        return missionBox.clearAll()
+    }
 }

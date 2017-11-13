@@ -162,14 +162,21 @@ class RealMission(val actual: Mission, val semaphore: Semaphore) {
 
     fun stop(): Maybe<Any> {
         return Maybe.create<Any> {
-            dispose(disposable)
-            disposable = null
+            realStop()
             it.onSuccess(ANY)
         }.subscribeOn(newThread())
     }
 
+    internal fun realStop() {
+        dispose(disposable)
+        disposable = null
+    }
+
     fun delete(deleteFile: Boolean): Maybe<Any> {
         return Maybe.create<Any> {
+            //stop first.
+            realStop()
+
             if (deleteFile) {
                 downloadType?.delete()
             }

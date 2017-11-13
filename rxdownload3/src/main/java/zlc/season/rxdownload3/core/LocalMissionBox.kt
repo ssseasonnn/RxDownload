@@ -97,4 +97,23 @@ class LocalMissionBox : MissionBox {
 
         return realMission.findExtension(type).action()
     }
+
+    override fun clear(mission: Mission): Maybe<Any> {
+        val realMission = SET.find { it.actual == mission } ?:
+                return Maybe.error(RuntimeException("Mission not create"))
+
+        return Maybe.create<Any> {
+            //stop first.
+            realMission.realStop()
+            SET.remove(realMission)
+            it.onSuccess(ANY)
+        }
+    }
+
+    override fun clearAll(): Maybe<Any> {
+        return Maybe.create<Any> {
+            SET.forEach { it.realStop() }
+            SET.clear()
+        }
+    }
 }

@@ -26,4 +26,8 @@ interface MissionBox {
     fun file(mission: Mission): Maybe<File>
 
     fun extension(mission: Mission, type: Class<out Extension>): Maybe<Any>
+
+    fun clear(mission: Mission): Maybe<Any>
+
+    fun clearAll(): Maybe<Any>
 }

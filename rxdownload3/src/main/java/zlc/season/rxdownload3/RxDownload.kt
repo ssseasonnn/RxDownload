@@ -44,6 +44,14 @@ object RxDownload {
         return downloadCore.delete(mission, deleteFile)
     }
 
+    fun clear(url: String): Maybe<Any> {
+        return clear(Mission(url))
+    }
+
+    fun clear(mission: Mission): Maybe<Any> {
+        return downloadCore.clear(mission)
+    }
+
     fun getAllMission(): Maybe<List<Mission>> {
         return downloadCore.getAllMission()
     }
@@ -62,6 +70,10 @@ object RxDownload {
 
     fun deleteAll(deleteFile: Boolean = false): Maybe<Any> {
         return downloadCore.deleteAll(deleteFile)
+    }
+
+    fun clearAll(): Maybe<Any> {
+        return downloadCore.clearAll()
     }
 
     fun file(url: String): Maybe<File> {

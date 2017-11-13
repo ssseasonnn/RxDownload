@@ -77,6 +77,16 @@ class DownloadService : Service() {
             missionBox.extension(mission, type)
                     .subscribe(successCallback::apply, errorCb::apply)
         }
+
+        fun clear(mission: Mission, successCb: SuccessCallback, errorCb: ErrorCallback) {
+            missionBox.clear(mission)
+                    .subscribe(successCb::apply, errorCb::apply)
+        }
+
+        fun clearAll(successCb: SuccessCallback, errorCb: ErrorCallback) {
+            missionBox.clearAll()
+                    .subscribe(successCb::apply, errorCb::apply)
+        }
     }
 
 

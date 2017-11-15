@@ -45,6 +45,14 @@ class RemoteMissionBox : MissionBox {
         }, LATEST).subscribeOn(newThread())
     }
 
+    override fun update(newMission: Mission): Maybe<Any> {
+        return Maybe.create<Any> { emitter ->
+            startBindServiceAndDo {
+                it.update(newMission, SuccessCallbackImpl(emitter), ErrorCallbackImpl(emitter))
+            }
+        }.subscribeOn(newThread())
+    }
+
     override fun start(mission: Mission): Maybe<Any> {
         return Maybe.create<Any> { emitter ->
             startBindServiceAndDo {
@@ -118,7 +126,7 @@ class RemoteMissionBox : MissionBox {
             startBindServiceAndDo {
                 it.extension(mission, type, SuccessCallbackImpl(emitter), ErrorCallbackImpl(emitter))
             }
-        }
+        }.subscribeOn(newThread())
     }
 
     override fun clear(mission: Mission): Maybe<Any> {
@@ -126,7 +134,7 @@ class RemoteMissionBox : MissionBox {
             startBindServiceAndDo {
                 it.clear(mission, SuccessCallbackImpl(emitter), ErrorCallbackImpl(emitter))
             }
-        }
+        }.subscribeOn(newThread())
     }
 
     override fun clearAll(): Maybe<Any> {
@@ -134,7 +142,7 @@ class RemoteMissionBox : MissionBox {
             startBindServiceAndDo {
                 it.clearAll(SuccessCallbackImpl(emitter), ErrorCallbackImpl(emitter))
             }
-        }
+        }.subscribeOn(newThread())
     }
 
     var downloadBinder: DownloadService.DownloadBinder? = null

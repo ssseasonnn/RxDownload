@@ -88,4 +88,8 @@ class DownloadCore {
     fun clearAll(): Maybe<Any> {
         return missionBox.clearAll()
     }
+
+    fun update(newMission: Mission): Maybe<Any> {
+        return missionBox.update(newMission)
+    }
 }

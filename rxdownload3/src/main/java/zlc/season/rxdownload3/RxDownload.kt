@@ -28,6 +28,10 @@ object RxDownload {
         return downloadCore.create(mission)
     }
 
+    fun update(newMission: Mission): Maybe<Any> {
+        return downloadCore.update(newMission)
+    }
+
     fun start(url: String): Maybe<Any> {
         return start(Mission(url))
     }

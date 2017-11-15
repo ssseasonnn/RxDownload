@@ -32,4 +32,6 @@ interface MissionBox {
     fun clear(mission: Mission): Maybe<Any>
 
     fun clearAll(): Maybe<Any>
+
+    fun update(newMission: Mission): Maybe<Any>
 }

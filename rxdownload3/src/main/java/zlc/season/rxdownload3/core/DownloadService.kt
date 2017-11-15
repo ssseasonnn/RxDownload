@@ -92,6 +92,11 @@ class DownloadService : Service() {
             missionBox.clearAll()
                     .subscribe(successCb::apply, errorCb::apply)
         }
+
+        fun update(newMission: Mission, successCb: SuccessCallback, errorCb: ErrorCallback) {
+            missionBox.update(newMission)
+                    .subscribe(successCb::apply, errorCb::apply)
+        }
     }
 
     interface BoolCallback {

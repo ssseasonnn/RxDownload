@@ -3,9 +3,7 @@ package zlc.season.rxdownload3.core
 import io.reactivex.Flowable
 import io.reactivex.Maybe
 import io.reactivex.internal.operators.maybe.MaybeToPublisher.INSTANCE
-import io.reactivex.schedulers.Schedulers
 import io.reactivex.schedulers.Schedulers.*
-import zlc.season.rxdownload3.database.DbActor
 import zlc.season.rxdownload3.extension.Extension
 import zlc.season.rxdownload3.helper.ANY
 import java.io.File
@@ -45,6 +43,19 @@ class LocalMissionBox : MissionBox {
             new.getFlowable()
         }
     }
+
+    override fun update(newMission: Mission): Maybe<Any> {
+        return Maybe.create<Any> {
+            val tmpMission = RealMission(newMission, semaphore, false)
+            if (DownloadConfig.enableDb) {
+                if (DownloadConfig.dbActor.isExists(tmpMission)) {
+                    DownloadConfig.dbActor.update(tmpMission)
+                }
+            }
+            it.onSuccess(ANY)
+        }
+    }
+
 
     override fun start(mission: Mission): Maybe<Any> {
         val realMission = SET.find { it.actual == mission } ?:

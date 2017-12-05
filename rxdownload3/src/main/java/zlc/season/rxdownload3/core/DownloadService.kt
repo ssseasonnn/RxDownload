@@ -36,6 +36,11 @@ class DownloadService : Service() {
     }
 
     inner class DownloadBinder : Binder() {
+        fun isExists(mission: Mission, boolCallback: BoolCallback, errorCb: ErrorCallback) {
+            missionBox.isExists(mission)
+                    .subscribe(boolCallback::apply, errorCb::apply)
+        }
+
         fun create(mission: Mission, statusCallback: StatusCallback) {
             missionBox.create(mission).subscribe(statusCallback::apply)
         }
@@ -77,8 +82,26 @@ class DownloadService : Service() {
             missionBox.extension(mission, type)
                     .subscribe(successCallback::apply, errorCb::apply)
         }
+
+        fun clear(mission: Mission, successCb: SuccessCallback, errorCb: ErrorCallback) {
+            missionBox.clear(mission)
+                    .subscribe(successCb::apply, errorCb::apply)
+        }
+
+        fun clearAll(successCb: SuccessCallback, errorCb: ErrorCallback) {
+            missionBox.clearAll()
+                    .subscribe(successCb::apply, errorCb::apply)
+        }
+
+        fun update(newMission: Mission, successCb: SuccessCallback, errorCb: ErrorCallback) {
+            missionBox.update(newMission)
+                    .subscribe(successCb::apply, errorCb::apply)
+        }
     }
 
+    interface BoolCallback {
+        fun apply(value: Boolean)
+    }
 
     interface StatusCallback {
         fun apply(status: Status)

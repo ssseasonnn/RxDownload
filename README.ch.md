@@ -12,7 +12,7 @@
 
 ```groovy
 dependencies{
-    compile 'zlc.season:rxdownload3:1.1.4'
+    compile 'zlc.season:rxdownload3:1.1.9'
 }
 ```
 
@@ -30,6 +30,8 @@ dependencies{
 
 1.创建任务
 
+创建一个任务，并且接收下载的状态
+
 ```java
 val disposable = RxDownload.create(mission)
                 .observeOn(AndroidSchedulers.mainThread())
@@ -38,6 +40,9 @@ val disposable = RxDownload.create(mission)
                     setActionText(status)
                 }
 ```
+
+> 注意：下载状态的接收也是在这里进行，接收到的status会根据不同的下载状态自动更新。
+> 重复调用**不会**导致任务多次创建，因此可以在任何想要接收状态的地方调用该方法来接收下载的状态。
 
 2.开始下载
 
@@ -53,7 +58,9 @@ RxDownload.stop(mission).subscribe()
 
 > 只需三步, 就是这样简单!!
 
-**提示: 创建任务是一个异步操作, 因此如果需要创建成功立即开始下载需要这么做**
+**提示: 创建任务是一个异步操作, 因此如果需要创建成功后立即开始下载有以下方式：**
+
+- 在create()完成的回调中进行，如下
 
 ```Java
 val disposable = RxDownload.create(mission)
@@ -64,6 +71,17 @@ val disposable = RxDownload.create(mission)
                     setProgress(status)
                     setActionText(status)
                 }
+```
+
+- 或者启用autoStart配置，当autoStart处于开启状态时，create任务完成以后就会自动start开始下载
+
+```java
+DownloadConfig.Builder.create(context)
+                  .enableAutoStart(true)
+                  ...
+                  
+                  
+DownloadConfig.init(builder)
 ```
 
 更多API请移步RxDownload.kt
@@ -92,15 +110,16 @@ class BaseApplication : Application() {
 
 ```java
 DownloadConfig.Builder.create(this)
-                .setFps(20)     //设置更新频率
+                .setFps(20)                         //设置更新频率
+                .enableAutoStart(true)              //自动开始下载
                 .setDefaultPath("custom download path")     //设置默认的下载地址
-                .enableDb(true)     //启用数据库
-                .setDbActor(CustomSqliteActor(this))    //自定义数据库
-                .enableService(true)        //启用Service
-                .enableNotification(true)      //启用Notification
+                .enableDb(true)                             //启用数据库
+                .setDbActor(CustomSqliteActor(this))        //自定义数据库
+                .enableService(true)                        //启用Service
+                .enableNotification(true)                   //启用Notification
                 .setNotificationFactory(NotificationFactoryImpl()) 	    //自定义通知
                 .setOkHttpClientFacotry(OkHttpClientFactoryImpl()) 	    //自定义OKHTTP
-                .addExtension(ApkInstallExtension::class.java)      //添加扩展
+                .addExtension(ApkInstallExtension::class.java)          //添加扩展
 ```
 
 ### 扩展

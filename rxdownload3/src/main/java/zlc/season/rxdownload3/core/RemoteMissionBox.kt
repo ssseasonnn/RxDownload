@@ -14,11 +14,24 @@ import io.reactivex.schedulers.Schedulers.newThread
 import zlc.season.rxdownload3.core.DownloadService.ErrorCallback
 import zlc.season.rxdownload3.core.DownloadService.SuccessCallback
 import zlc.season.rxdownload3.extension.Extension
+import zlc.season.rxdownload3.helper.ANY
 import java.io.File
 
 
 class RemoteMissionBox : MissionBox {
     var context: Context = DownloadConfig.context!!
+
+    override fun isExists(mission: Mission): Maybe<Boolean> {
+        return Maybe.create<Boolean> { emitter ->
+            startBindServiceAndDo {
+                it.isExists(mission, object : DownloadService.BoolCallback {
+                    override fun apply(value: Boolean) {
+                        emitter.onSuccess(value)
+                    }
+                }, ErrorCallbackImpl(emitter))
+            }
+        }.subscribeOn(newThread())
+    }
 
     override fun create(mission: Mission): Flowable<Status> {
         return Flowable.create<Status>({ emitter ->
@@ -30,6 +43,14 @@ class RemoteMissionBox : MissionBox {
                 })
             }
         }, LATEST).subscribeOn(newThread())
+    }
+
+    override fun update(newMission: Mission): Maybe<Any> {
+        return Maybe.create<Any> { emitter ->
+            startBindServiceAndDo {
+                it.update(newMission, SuccessCallbackImpl(emitter), ErrorCallbackImpl(emitter))
+            }
+        }.subscribeOn(newThread())
     }
 
     override fun start(mission: Mission): Maybe<Any> {
@@ -105,7 +126,23 @@ class RemoteMissionBox : MissionBox {
             startBindServiceAndDo {
                 it.extension(mission, type, SuccessCallbackImpl(emitter), ErrorCallbackImpl(emitter))
             }
-        }
+        }.subscribeOn(newThread())
+    }
+
+    override fun clear(mission: Mission): Maybe<Any> {
+        return Maybe.create<Any> { emitter ->
+            startBindServiceAndDo {
+                it.clear(mission, SuccessCallbackImpl(emitter), ErrorCallbackImpl(emitter))
+            }
+        }.subscribeOn(newThread())
+    }
+
+    override fun clearAll(): Maybe<Any> {
+        return Maybe.create<Any> { emitter ->
+            startBindServiceAndDo {
+                it.clearAll(SuccessCallbackImpl(emitter), ErrorCallbackImpl(emitter))
+            }
+        }.subscribeOn(newThread())
     }
 
     var downloadBinder: DownloadService.DownloadBinder? = null

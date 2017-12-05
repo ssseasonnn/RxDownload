@@ -12,7 +12,7 @@ A multi-threaded download tool written with RxJava and Kotlin
 
 ```groovy
 dependencies{
-    compile 'zlc.season:rxdownload3:1.1.4'
+    compile 'zlc.season:rxdownload3:1.1.9'
 }
 ```
 
@@ -30,6 +30,8 @@ dependencies{
 
 1.Create a mission
 
+Create a mission and receive the status of the download
+
 ```java
 val disposable = RxDownload.create(mission)
                 .observeOn(AndroidSchedulers.mainThread())
@@ -38,6 +40,9 @@ val disposable = RxDownload.create(mission)
                     setActionText(status)
                 }
 ```
+
+> Note: The download status is also received here, the received status will be automatically updated according to the different download status.
+> Repeated calls **DO NOT** cause the task to be created more than once, so you can call this method wherever you want to receive the state to receive the downloaded state.
 
 2.Start download
 
@@ -53,17 +58,30 @@ RxDownload.stop(mission).subscribe()
 
 > Just three steps that is so simple !!
 
-**Tip: Create a mission is an asynchronous operation, so if you need to start downloading immediately..**
+**Tip: Creating a mission is an asynchronous operation, so if you need to start the mission immediately after it is created, you have the following options:**
+
+- In the create () completed callback, as follows
 
 ```Java
 val disposable = RxDownload.create(mission)
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe { status ->
-                    //开始下载
+                    //call start()
                     RxDownload.start(mission).subscribe()
                     setProgress(status)
                     setActionText(status)
                 }
+```
+
+- Or enable autoStart configuration, when autoStart is turned on, the mission will automatically start after created
+
+```java
+DownloadConfig.Builder.create(context)
+                  .enableAutoStart(true)
+                  ...
+                  
+                  
+DownloadConfig.init(builder)
 ```
 
 For more APIs please move RxDownload.kt

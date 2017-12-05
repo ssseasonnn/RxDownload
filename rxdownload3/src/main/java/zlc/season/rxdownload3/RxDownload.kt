@@ -12,12 +12,24 @@ import java.io.File
 object RxDownload {
     private val downloadCore = DownloadCore()
 
+    fun isExists(url: String): Maybe<Boolean> {
+        return isExists(Mission(url))
+    }
+
+    fun isExists(mission: Mission): Maybe<Boolean> {
+        return downloadCore.isExists(mission)
+    }
+
     fun create(url: String): Flowable<Status> {
         return create(Mission(url))
     }
 
     fun create(mission: Mission): Flowable<Status> {
         return downloadCore.create(mission)
+    }
+
+    fun update(newMission: Mission): Maybe<Any> {
+        return downloadCore.update(newMission)
     }
 
     fun start(url: String): Maybe<Any> {
@@ -44,6 +56,14 @@ object RxDownload {
         return downloadCore.delete(mission, deleteFile)
     }
 
+    fun clear(url: String): Maybe<Any> {
+        return clear(Mission(url))
+    }
+
+    fun clear(mission: Mission): Maybe<Any> {
+        return downloadCore.clear(mission)
+    }
+
     fun getAllMission(): Maybe<List<Mission>> {
         return downloadCore.getAllMission()
     }
@@ -62,6 +82,10 @@ object RxDownload {
 
     fun deleteAll(deleteFile: Boolean = false): Maybe<Any> {
         return downloadCore.deleteAll(deleteFile)
+    }
+
+    fun clearAll(): Maybe<Any> {
+        return downloadCore.clearAll()
     }
 
     fun file(url: String): Maybe<File> {

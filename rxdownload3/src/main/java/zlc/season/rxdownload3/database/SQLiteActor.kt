@@ -57,8 +57,8 @@ open class SQLiteActor(context: Context) : DbActor {
         }
     }
 
-    init {
-        //trigger update.
+    override fun init() {
+        //trigger create or update.
         sqLiteOpenHelper.readableDatabase
     }
 

@@ -3,7 +3,6 @@ package zlc.season.rxdownload3.core
 import io.reactivex.Flowable
 import io.reactivex.Maybe
 import io.reactivex.internal.operators.maybe.MaybeToPublisher.INSTANCE
-import io.reactivex.schedulers.Schedulers
 import io.reactivex.schedulers.Schedulers.*
 import zlc.season.rxdownload3.extension.Extension
 import zlc.season.rxdownload3.helper.ANY
@@ -16,6 +15,23 @@ class LocalMissionBox : MissionBox {
 
     private val SET = mutableSetOf<RealMission>()
 
+    override fun isExists(mission: Mission): Maybe<Boolean> {
+        return Maybe.create<Boolean> {
+            val result = SET.find { it.actual == mission }
+            if (result != null) {
+                it.onSuccess(true)
+            } else {
+                val tmpMission = RealMission(mission, semaphore, false)
+                if (DownloadConfig.enableDb) {
+                    val isExists = DownloadConfig.dbActor.isExists(tmpMission)
+                    it.onSuccess(isExists)
+                } else {
+                    it.onSuccess(false)
+                }
+            }
+        }
+    }
+
     override fun create(mission: Mission): Flowable<Status> {
         val realMission = SET.find { it.actual == mission }
 
@@ -27,6 +43,19 @@ class LocalMissionBox : MissionBox {
             new.getFlowable()
         }
     }
+
+    override fun update(newMission: Mission): Maybe<Any> {
+        return Maybe.create<Any> {
+            val tmpMission = RealMission(newMission, semaphore, false)
+            if (DownloadConfig.enableDb) {
+                if (DownloadConfig.dbActor.isExists(tmpMission)) {
+                    DownloadConfig.dbActor.update(tmpMission)
+                }
+            }
+            it.onSuccess(ANY)
+        }
+    }
+
 
     override fun start(mission: Mission): Maybe<Any> {
         val realMission = SET.find { it.actual == mission } ?:
@@ -96,5 +125,24 @@ class LocalMissionBox : MissionBox {
                 return Maybe.error(RuntimeException("Mission not create"))
 
         return realMission.findExtension(type).action()
+    }
+
+    override fun clear(mission: Mission): Maybe<Any> {
+        val realMission = SET.find { it.actual == mission } ?:
+                return Maybe.error(RuntimeException("Mission not create"))
+
+        return Maybe.create<Any> {
+            //stop first.
+            realMission.realStop()
+            SET.remove(realMission)
+            it.onSuccess(ANY)
+        }
+    }
+
+    override fun clearAll(): Maybe<Any> {
+        return Maybe.create<Any> {
+            SET.forEach { it.realStop() }
+            SET.clear()
+        }
     }
 }

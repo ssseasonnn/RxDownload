@@ -27,6 +27,10 @@ class DownloadCore {
         }
     }
 
+    fun isExists(mission: Mission): Maybe<Boolean> {
+        return missionBox.isExists(mission)
+    }
+
     fun create(mission: Mission): Flowable<Status> {
         return missionBox.create(mission)
     }
@@ -75,5 +79,17 @@ class DownloadCore {
         } else {
             Maybe.just(emptyList())
         }
+    }
+
+    fun clear(mission: Mission): Maybe<Any> {
+        return missionBox.clear(mission)
+    }
+
+    fun clearAll(): Maybe<Any> {
+        return missionBox.clearAll()
+    }
+
+    fun update(newMission: Mission): Maybe<Any> {
+        return missionBox.update(newMission)
     }
 }

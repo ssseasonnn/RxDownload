@@ -31,6 +31,8 @@ object DownloadConfig {
 
     internal var fps = 30
 
+    internal var autoStart = false
+
     internal var enableDb = false
     internal lateinit var dbActor: DbActor
 
@@ -54,8 +56,14 @@ object DownloadConfig {
         this.maxRange = builder.maxRange
         this.defaultSavePath = builder.defaultSavePath
 
+        this.autoStart = builder.autoStart
+
         this.enableDb = builder.enableDb
         this.dbActor = builder.dbActor
+
+        if (enableDb) {
+            dbActor.init()
+        }
 
         this.enableNotification = builder.enableNotification
         this.notificationFactory = builder.notificationFactory
@@ -77,6 +85,8 @@ object DownloadConfig {
         internal var maxRange = Runtime.getRuntime().availableProcessors() + 1
 
         internal var debug = true
+
+        internal var autoStart = false
 
         internal var fps = 30
         internal var defaultSavePath = getExternalStoragePublicDirectory(DIRECTORY_DOWNLOADS).path
@@ -121,6 +131,11 @@ object DownloadConfig {
          */
         fun setFps(fps: Int): Builder {
             this.fps = fps
+            return this
+        }
+
+        fun enableAutoStart(enable: Boolean): Builder {
+            this.autoStart = enable
             return this
         }
 

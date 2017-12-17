@@ -1,6 +1,6 @@
 package zlc.season.rxdownload3.core
 
-import io.reactivex.BackpressureStrategy.BUFFER
+import io.reactivex.BackpressureStrategy.LATEST
 import io.reactivex.Flowable
 import okhttp3.ResponseBody
 import retrofit2.Response
@@ -11,7 +11,6 @@ import java.io.File
 import java.io.File.separator
 import java.io.RandomAccessFile
 import java.nio.channels.FileChannel.MapMode.READ_WRITE
-import java.util.concurrent.TimeUnit.MILLISECONDS
 
 
 class RangeTargetFile(val mission: RealMission) {
@@ -25,6 +24,7 @@ class RangeTargetFile(val mission: RealMission) {
 
     private val MODE = "rw"
     private val BUFFER_SIZE = 8192
+    private val TRIGGER_SIZE = BUFFER_SIZE * 20
 
     init {
         val dir = File(realFileDirPath)
@@ -56,7 +56,6 @@ class RangeTargetFile(val mission: RealMission) {
 
     fun save(response: Response<ResponseBody>, segment: Segment, tmpFile: RangeTmpFile): Flowable<Any> {
         val respBody = response.body() ?: throw RuntimeException("Response body is NULL")
-        val period = (1000 / DownloadConfig.fps).toLong()
 
         return Flowable.create<Any>({
             val buffer = ByteArray(BUFFER_SIZE)
@@ -72,8 +71,8 @@ class RangeTargetFile(val mission: RealMission) {
                                         tmpFile.getPosition(segment),
                                         Segment.SEGMENT_SIZE
                                 )
-
                                 var readLen = source.read(buffer)
+                                var trigger = readLen
 
                                 while (readLen != -1 && !it.isCancelled) {
 
@@ -88,17 +87,23 @@ class RangeTargetFile(val mission: RealMission) {
                                     targetBuffer.put(buffer, 0, readLen)
                                     segmentBuffer.putLong(16, segment.current)
 
-                                    it.onNext(ANY)
                                     readLen = source.read(buffer)
+                                    trigger += readLen
+
+                                    if (trigger >= TRIGGER_SIZE) {
+                                        it.onNext(ANY)
+                                        trigger = 0
+                                    }
                                 }
 
+                                it.onNext(ANY)
                                 it.onComplete()
                             }
                         }
                     }
                 }
             }
-        }, BUFFER).sample(period, MILLISECONDS, true)
+        }, LATEST)
     }
 
     fun delete() {

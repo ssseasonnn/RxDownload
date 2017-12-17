@@ -8,6 +8,7 @@ import zlc.season.rxdownload3.core.RangeTmpFile.Segment
 import zlc.season.rxdownload3.helper.logd
 import zlc.season.rxdownload3.http.HttpCore
 import java.io.File
+import java.util.concurrent.TimeUnit
 
 
 class RangeDownload(mission: RealMission) : DownloadType(mission) {

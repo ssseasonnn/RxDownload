@@ -20,6 +20,8 @@ class RangeTmpFile(val mission: RealMission) {
 
     private val fileStructure = FileStructure()
 
+    private val status = Status()
+
     init {
         val dir = File(tmpDirPath)
         if (!dir.exists() || !dir.isDirectory) {
@@ -91,7 +93,10 @@ class RangeTmpFile(val mission: RealMission) {
             downloadSize += (it.current - it.start)
         }
 
-        return Status(downloadSize, totalSize)
+        status.downloadSize = downloadSize
+        status.totalSize = totalSize
+
+        return status
     }
 
     inner class FileStructure {

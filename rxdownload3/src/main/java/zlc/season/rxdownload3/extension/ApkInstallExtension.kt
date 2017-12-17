@@ -114,7 +114,7 @@ class ApkInstallExtension : Extension {
         private fun createApkInstallIntent(): Intent {
             val intent = Intent(ACTION_VIEW)
             val authority = "$packageName.rxdownload.provider"
-            val uri = if (SDK_INT > N) {
+            val uri = if (SDK_INT >= N) {
                 getUriForFile(this, authority, apkFile)
             } else {
                 fromFile(apkFile)

@@ -56,6 +56,9 @@ fun contentDisposition(response: Response<*>): String {
     if (result.endsWith("\"")) {
         result = result.substring(0, result.length - 1)
     }
+
+    result = result.replace("/", "_", false)
+
     return result
 }
 

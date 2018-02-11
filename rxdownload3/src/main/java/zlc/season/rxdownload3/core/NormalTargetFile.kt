@@ -74,9 +74,11 @@ class NormalTargetFile(val mission: RealMission) {
                         readLen = source.read(buffer, byteSize)
                     }
 
-                    shadowFile.renameTo(realFile)
+                    if (!it.isCancelled) {
+                        shadowFile.renameTo(realFile)
 
-                    it.onComplete()
+                        it.onComplete()
+                    }
                 }
             }
         }, BUFFER).sample(period, MILLISECONDS, true)

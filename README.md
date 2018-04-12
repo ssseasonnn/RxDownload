@@ -1,5 +1,7 @@
 # RxDownload
 
+![](https://img.shields.io/badge/language-kotlin-brightgreen.svg) ![](https://img.shields.io/badge/RxJava-2.0-blue.svg)
+
 A multi-threaded download tool written with RxJava and Kotlin
 
 *Read this in other languages: [中文](README.ch.md), [English](README.md)* 
@@ -12,7 +14,7 @@ A multi-threaded download tool written with RxJava and Kotlin
 
 ```groovy
 dependencies{
-    compile 'zlc.season:rxdownload3:1.2.2'
+    compile 'zlc.season:rxdownload3:x.y.z'
 }
 ```
 

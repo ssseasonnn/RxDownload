@@ -5,9 +5,9 @@ import okio.BufferedSink
 import okio.BufferedSource
 import okio.ByteString.decodeHex
 import okio.Okio
-import zlc.season.rxdownload3.core.DownloadConfig.RANGE_DOWNLOAD_SIZE
 import zlc.season.rxdownload3.core.DownloadConfig.TMP_DIR_SUFFIX
 import zlc.season.rxdownload3.core.DownloadConfig.TMP_FILE_SUFFIX
+import zlc.season.rxdownload3.core.DownloadConfig.rangeDownloadSize
 import zlc.season.rxdownload3.core.RangeTmpFile.Segment.Companion.SEGMENT_SIZE
 import java.io.File
 import java.io.File.separator
@@ -136,12 +136,12 @@ class RangeTmpFile(val mission: RealMission) {
                 val end = if (i == totalSegments - 1) {
                     mission.totalSize - 1
                 } else {
-                    start + RANGE_DOWNLOAD_SIZE - 1
+                    start + rangeDownloadSize - 1
                 }
 
                 segments.add(Segment(i, start, start, end).write(sink))
 
-                start += RANGE_DOWNLOAD_SIZE
+                start += rangeDownloadSize
             }
         }
 
@@ -177,11 +177,11 @@ class RangeTmpFile(val mission: RealMission) {
         }
 
         private fun calculateSegments(): Long {
-            val remainder = mission.totalSize % RANGE_DOWNLOAD_SIZE
+            val remainder = mission.totalSize % rangeDownloadSize
             return if (remainder == 0L) {
-                mission.totalSize / RANGE_DOWNLOAD_SIZE
+                mission.totalSize / rangeDownloadSize
             } else {
-                mission.totalSize / RANGE_DOWNLOAD_SIZE + 1
+                mission.totalSize / rangeDownloadSize + 1
             }
         }
     }

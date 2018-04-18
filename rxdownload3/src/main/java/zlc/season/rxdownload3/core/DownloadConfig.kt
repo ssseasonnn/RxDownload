@@ -2,7 +2,6 @@ package zlc.season.rxdownload3.core
 
 import android.annotation.SuppressLint
 import android.content.Context
-import android.os.Build
 import android.os.Environment.DIRECTORY_DOWNLOADS
 import android.os.Environment.getExternalStoragePublicDirectory
 import zlc.season.rxdownload3.database.DbActor
@@ -21,7 +20,7 @@ object DownloadConfig {
     internal val TMP_DIR_SUFFIX = ".TMP"
     internal val TMP_FILE_SUFFIX = ".tmp"
 
-    internal val RANGE_DOWNLOAD_SIZE: Long = 4 * 1024 * 1024  //4M
+    internal var rangeDownloadSize: Long = 4 * 1024 * 1024  //4M
 
     internal var maxMission = 3
     internal var maxRange = Runtime.getRuntime().availableProcessors() + 1
@@ -55,6 +54,7 @@ object DownloadConfig {
         this.fps = builder.fps
         this.maxMission = builder.maxMission
         this.maxRange = builder.maxRange
+        this.rangeDownloadSize = builder.rangeDownloadSize
         this.defaultSavePath = builder.defaultSavePath
 
         this.autoStart = builder.autoStart
@@ -85,6 +85,7 @@ object DownloadConfig {
     class Builder private constructor(val context: Context) {
         internal var maxMission = 3
         internal var maxRange = Runtime.getRuntime().availableProcessors() + 1
+        internal var rangeDownloadSize: Long = 4 * 1024 * 1024  //4M
 
         internal var debug = true
 

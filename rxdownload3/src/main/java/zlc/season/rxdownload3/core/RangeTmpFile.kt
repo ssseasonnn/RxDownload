@@ -189,7 +189,7 @@ class RangeTmpFile(val mission: RealMission) {
     class Segment(val index: Long, val start: Long, var current: Long, val end: Long) {
 
         companion object {
-            val SEGMENT_SIZE = 32L //each Long is 8 bytes
+            const val SEGMENT_SIZE = 32L //each Long is 8 bytes
         }
 
         fun isComplete(): Boolean {

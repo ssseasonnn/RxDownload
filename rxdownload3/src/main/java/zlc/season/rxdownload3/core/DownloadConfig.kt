@@ -16,9 +16,9 @@ import zlc.season.rxdownload3.notification.NotificationFactoryImpl
 object DownloadConfig {
     internal var DEBUG = false
 
-    internal val DOWNLOADING_FILE_SUFFIX = ".download"
-    internal val TMP_DIR_SUFFIX = ".TMP"
-    internal val TMP_FILE_SUFFIX = ".tmp"
+    internal const val DOWNLOADING_FILE_SUFFIX = ".download"
+    internal const val TMP_DIR_SUFFIX = ".TMP"
+    internal const val TMP_FILE_SUFFIX = ".tmp"
 
     internal var rangeDownloadSize: Long = 4 * 1024 * 1024  //4M
 
@@ -130,11 +130,17 @@ object DownloadConfig {
             return this
         }
 
+        fun setRangeDownloadSize(size: Long): Builder {
+            this.rangeDownloadSize = size
+            return this
+        }
+
         /**
          * Set fps. Default is 30.
          *
          * Note that this value is too large will cause the interface to stuck
          */
+        @Deprecated("This method already deprecated")
         fun setFps(fps: Int): Builder {
             this.fps = fps
             return this

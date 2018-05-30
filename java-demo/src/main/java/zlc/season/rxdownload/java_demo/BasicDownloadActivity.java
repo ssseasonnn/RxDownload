@@ -85,7 +85,7 @@ public class BasicDownloadActivity extends AppCompatActivity {
     }
 
     private void create() {
-        disposable = RxDownload.INSTANCE.create(url)
+        disposable = RxDownload.INSTANCE.create(url, true)
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(new Consumer<Status>() {
                     @Override

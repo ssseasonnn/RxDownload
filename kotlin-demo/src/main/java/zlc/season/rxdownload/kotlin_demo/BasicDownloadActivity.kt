@@ -1,13 +1,12 @@
 package zlc.season.rxdownload.kotlin_demo
 
-import android.databinding.DataBindingUtil
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
 import com.squareup.picasso.Picasso
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.Disposable
-import zlc.season.rxdownload.kotlin_demo.databinding.ActivityBasicDownloadBinding
-import zlc.season.rxdownload.kotlin_demo.databinding.ContentBasicDownloadBinding
+import kotlinx.android.synthetic.main.activity_basic_download.*
+import kotlinx.android.synthetic.main.content_basic_download.*
 import zlc.season.rxdownload3.RxDownload
 import zlc.season.rxdownload3.core.*
 import zlc.season.rxdownload3.extension.ApkInstallExtension
@@ -15,18 +14,13 @@ import zlc.season.rxdownload3.helper.dispose
 
 class BasicDownloadActivity : AppCompatActivity() {
 
-    private lateinit var mainBinding: ActivityBasicDownloadBinding
-    private lateinit var contentBinding: ContentBasicDownloadBinding
-
     private var disposable: Disposable? = null
     private var currentStatus = Status()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        mainBinding = DataBindingUtil.setContentView(this, R.layout.activity_basic_download)
-        contentBinding = mainBinding.contentBasicDownload!!
-
-        setSupportActionBar(mainBinding.toolbar)
+        setContentView(R.layout.activity_basic_download)
+        setSupportActionBar(toolbar)
 
         loadImg()
         setAction()
@@ -39,11 +33,11 @@ class BasicDownloadActivity : AppCompatActivity() {
     }
 
     private fun loadImg() {
-        Picasso.with(this).load(iconUrl).into(contentBinding.img)
+        Picasso.with(this).load(iconUrl).into(img)
     }
 
     private fun setAction() {
-        contentBinding.action.setOnClickListener {
+        action.setOnClickListener {
             when (currentStatus) {
                 is Normal -> start()
                 is Suspend -> start()
@@ -54,11 +48,11 @@ class BasicDownloadActivity : AppCompatActivity() {
             }
         }
 
-        contentBinding.finish.setOnClickListener { finish() }
+        finish.setOnClickListener { finish() }
     }
 
     private fun create() {
-        disposable = RxDownload.create(url)
+        disposable = RxDownload.create(url, autoStart = true)
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe { status ->
                     currentStatus = status
@@ -68,11 +62,11 @@ class BasicDownloadActivity : AppCompatActivity() {
     }
 
     private fun setProgress(status: Status) {
-        contentBinding.progress.max = status.totalSize.toInt()
-        contentBinding.progress.progress = status.downloadSize.toInt()
+        progress.max = status.totalSize.toInt()
+        progress.progress = status.downloadSize.toInt()
 
-        contentBinding.percent.text = status.percent()
-        contentBinding.size.text = status.formatString()
+        percent.text = status.percent()
+        size.text = status.formatString()
     }
 
     private fun setActionText(status: Status) {
@@ -87,7 +81,7 @@ class BasicDownloadActivity : AppCompatActivity() {
             is ApkInstallExtension.Installed -> "打开"
             else -> ""
         }
-        contentBinding.action.text = text
+        action.text = text
     }
 
     private fun start() {

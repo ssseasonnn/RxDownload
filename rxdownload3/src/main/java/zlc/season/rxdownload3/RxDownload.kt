@@ -20,12 +20,12 @@ object RxDownload : RxDownloadI {
         return downloadCore.isExists(mission)
     }
 
-    override fun create(url: String): Flowable<Status> {
-        return create(Mission(url))
+    override fun create(url: String, autoStart: Boolean): Flowable<Status> {
+        return create(Mission(url), autoStart)
     }
 
-    override fun create(mission: Mission): Flowable<Status> {
-        return downloadCore.create(mission)
+    override fun create(mission: Mission, autoStart: Boolean): Flowable<Status> {
+        return downloadCore.create(mission, autoStart)
     }
 
     override fun update(newMission: Mission): Maybe<Any> {
@@ -68,8 +68,8 @@ object RxDownload : RxDownloadI {
         return downloadCore.getAllMission()
     }
 
-    override fun createAll(missions: List<Mission>): Maybe<Any> {
-        return downloadCore.createAll(missions)
+    override fun createAll(missions: List<Mission>, autoStart: Boolean): Maybe<Any> {
+        return downloadCore.createAll(missions, autoStart)
     }
 
     override fun startAll(): Maybe<Any> {

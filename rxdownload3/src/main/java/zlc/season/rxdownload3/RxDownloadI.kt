@@ -13,9 +13,9 @@ interface RxDownloadI {
 
     fun isExists(mission: Mission): Maybe<Boolean>
 
-    fun create(url: String): Flowable<Status>
+    fun create(url: String, autoStart: Boolean = false): Flowable<Status>
 
-    fun create(mission: Mission): Flowable<Status>
+    fun create(mission: Mission, autoStart: Boolean = false): Flowable<Status>
 
     fun update(newMission: Mission): Maybe<Any>
 
@@ -37,7 +37,7 @@ interface RxDownloadI {
 
     fun getAllMission(): Maybe<List<Mission>>
 
-    fun createAll(missions: List<Mission>): Maybe<Any>
+    fun createAll(missions: List<Mission>, autoStart: Boolean = false): Maybe<Any>
 
     fun startAll(): Maybe<Any>
 

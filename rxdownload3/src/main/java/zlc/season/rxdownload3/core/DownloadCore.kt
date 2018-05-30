@@ -31,12 +31,12 @@ class DownloadCore {
         return missionBox.isExists(mission)
     }
 
-    fun create(mission: Mission): Flowable<Status> {
-        return missionBox.create(mission)
+    fun create(mission: Mission, autoStart: Boolean): Flowable<Status> {
+        return missionBox.create(mission, autoStart)
     }
 
-    fun createAll(missions: List<Mission>): Maybe<Any> {
-        return missionBox.createAll(missions)
+    fun createAll(missions: List<Mission>, autoStart: Boolean): Maybe<Any> {
+        return missionBox.createAll(missions, autoStart)
     }
 
     fun startAll(): Maybe<Any> {

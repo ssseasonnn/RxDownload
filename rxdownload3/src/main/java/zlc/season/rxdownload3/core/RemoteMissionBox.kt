@@ -33,10 +33,10 @@ class RemoteMissionBox : MissionBox {
         }.subscribeOn(newThread())
     }
 
-    override fun create(mission: Mission): Flowable<Status> {
+    override fun create(mission: Mission, autoStart: Boolean): Flowable<Status> {
         return Flowable.create<Status>({ emitter ->
             startBindServiceAndDo {
-                it.create(mission, object : DownloadService.StatusCallback {
+                it.create(mission, autoStart, object : DownloadService.StatusCallback {
                     override fun apply(status: Status) {
                         emitter.onNext(status)
                     }
@@ -77,10 +77,10 @@ class RemoteMissionBox : MissionBox {
         }.subscribeOn(newThread())
     }
 
-    override fun createAll(missions: List<Mission>): Maybe<Any> {
+    override fun createAll(missions: List<Mission>, autoStart: Boolean): Maybe<Any> {
         return Maybe.create<Any> { emitter ->
             startBindServiceAndDo {
-                it.createAll(missions, SuccessCallbackImpl(emitter), ErrorCallbackImpl(emitter))
+                it.createAll(missions, autoStart, SuccessCallbackImpl(emitter), ErrorCallbackImpl(emitter))
             }
         }.subscribeOn(newThread())
     }

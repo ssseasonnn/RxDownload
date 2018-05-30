@@ -169,7 +169,7 @@ public class DownloadListActivity extends AppCompatActivity {
         }
 
         public void onAttach() {
-            disposable = RxDownload.INSTANCE.create(customMission)
+            disposable = RxDownload.INSTANCE.create(customMission, false)
                     .observeOn(AndroidSchedulers.mainThread())
                     .subscribe(new Consumer<Status>() {
                         @Override

@@ -1,6 +1,5 @@
 package zlc.season.rxdownload.kotlin_demo
 
-import android.databinding.DataBindingUtil
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
 import android.support.v7.widget.LinearLayoutManager
@@ -11,8 +10,8 @@ import android.view.ViewGroup
 import com.squareup.picasso.Picasso
 import io.reactivex.android.schedulers.AndroidSchedulers.mainThread
 import io.reactivex.disposables.Disposable
-import zlc.season.rxdownload.kotlin_demo.databinding.ActivityDownloadListBinding
-import zlc.season.rxdownload.kotlin_demo.databinding.ViewHolderDownloadItemBinding
+import kotlinx.android.synthetic.main.activity_download_list.*
+import kotlinx.android.synthetic.main.view_holder_download_item.view.*
 import zlc.season.rxdownload3.RxDownload
 import zlc.season.rxdownload3.core.*
 import zlc.season.rxdownload3.extension.ApkInstallExtension
@@ -22,26 +21,25 @@ import zlc.season.rxdownload3.helper.loge
 
 
 class DownloadListActivity : AppCompatActivity() {
-    lateinit var mainBinding: ActivityDownloadListBinding
     lateinit var adapter: Adapter
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        mainBinding = DataBindingUtil.setContentView(this, R.layout.activity_download_list)
+        setContentView(R.layout.activity_download_list)
 
         adapter = Adapter()
-        mainBinding.recyclerView.layoutManager = LinearLayoutManager(this)
-        mainBinding.recyclerView.adapter = adapter
+        recycler_view.layoutManager = LinearLayoutManager(this)
+        recycler_view.adapter = adapter
 
-        mainBinding.startAll.setOnClickListener {
+        startAll.setOnClickListener {
             RxDownload.startAll().subscribe()
         }
 
-        mainBinding.stopAll.setOnClickListener {
+        stopAll.setOnClickListener {
             RxDownload.stopAll().subscribe()
         }
 
-        mainBinding.deleteAll.setOnClickListener {
+        deleteAll.setOnClickListener {
             RxDownload.deleteAll().subscribe {
                 loadData()
             }
@@ -71,9 +69,7 @@ class DownloadListActivity : AppCompatActivity() {
         override fun onCreateViewHolder(parent: ViewGroup?, viewType: Int): ViewHolder {
             val inflater = LayoutInflater.from(parent!!.context)
 
-            val itemBinding: ViewHolderDownloadItemBinding = DataBindingUtil.inflate(inflater,
-                    R.layout.view_holder_download_item, parent, false)
-            return ViewHolder(itemBinding.root)
+            return ViewHolder(inflater.inflate(R.layout.view_holder_download_item, parent, false))
         }
 
         override fun onBindViewHolder(holder: ViewHolder?, position: Int) {
@@ -100,10 +96,9 @@ class DownloadListActivity : AppCompatActivity() {
         private var disposable: Disposable? = null
         private var currentStatus: Status? = null
 
-        private val itemBinding: ViewHolderDownloadItemBinding = DataBindingUtil.bind(itemView)
 
         init {
-            itemBinding.action.setOnClickListener {
+            itemView.action.setOnClickListener {
                 when (currentStatus) {
                     is Normal -> start()
                     is Suspend -> start()
@@ -135,7 +130,7 @@ class DownloadListActivity : AppCompatActivity() {
             this.mission = mission
 
             mission as CustomMission
-            Picasso.with(itemView.context).load(mission.img).into(itemBinding.icon)
+            Picasso.with(itemView.context).load(mission.img).into(itemView.icon)
         }
 
         fun onAttach() {
@@ -156,11 +151,11 @@ class DownloadListActivity : AppCompatActivity() {
         }
 
         private fun setProgress(it: Status) {
-            itemBinding.progressBar.max = it.totalSize.toInt()
-            itemBinding.progressBar.progress = it.downloadSize.toInt()
+            itemView.progressBar.max = it.totalSize.toInt()
+            itemView.progressBar.progress = it.downloadSize.toInt()
 
-            itemBinding.percent.text = it.percent()
-            itemBinding.size.text = it.formatString()
+            itemView.percent.text = it.percent()
+            itemView.size.text = it.formatString()
         }
 
         private fun setActionText(status: Status) {
@@ -175,7 +170,7 @@ class DownloadListActivity : AppCompatActivity() {
                 is ApkInstallExtension.Installed -> "打开"
                 else -> ""
             }
-            itemBinding.action.text = text
+            itemView.action.text = text
         }
     }
 }

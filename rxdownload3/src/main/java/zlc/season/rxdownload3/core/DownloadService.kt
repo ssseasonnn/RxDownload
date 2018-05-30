@@ -41,8 +41,8 @@ class DownloadService : Service() {
                     .subscribe(boolCallback::apply, errorCb::apply)
         }
 
-        fun create(mission: Mission, statusCallback: StatusCallback) {
-            missionBox.create(mission).subscribe(statusCallback::apply)
+        fun create(mission: Mission, autoStart: Boolean, statusCallback: StatusCallback) {
+            missionBox.create(mission, autoStart).subscribe(statusCallback::apply)
         }
 
         fun start(mission: Mission, successCb: SuccessCallback, errorCb: ErrorCallback) {
@@ -57,8 +57,8 @@ class DownloadService : Service() {
             missionBox.delete(mission, deleteFile).subscribe(successCb::apply, errorCb::apply)
         }
 
-        fun createAll(missions: List<Mission>, successCb: SuccessCallback, errorCb: ErrorCallback) {
-            missionBox.createAll(missions).subscribe(successCb::apply, errorCb::apply)
+        fun createAll(missions: List<Mission>, autoStart: Boolean, successCb: SuccessCallback, errorCb: ErrorCallback) {
+            missionBox.createAll(missions, autoStart).subscribe(successCb::apply, errorCb::apply)
         }
 
         fun startAll(successCb: SuccessCallback, errorCb: ErrorCallback) {

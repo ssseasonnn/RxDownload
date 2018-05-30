@@ -1,7 +1,6 @@
 package zlc.season.rxdownload.kotlin_demo
 
 import android.content.Intent
-import android.databinding.DataBindingUtil
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
 import android.support.v7.widget.LinearLayoutManager
@@ -12,8 +11,8 @@ import android.view.ViewGroup
 import com.squareup.picasso.Picasso
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.Disposable
-import zlc.season.rxdownload.kotlin_demo.databinding.ActivityAppListBinding
-import zlc.season.rxdownload.kotlin_demo.databinding.ViewHolderAppItemBinding
+import kotlinx.android.synthetic.main.activity_app_list.*
+import kotlinx.android.synthetic.main.view_holder_app_item.view.*
 import zlc.season.rxdownload3.RxDownload
 import zlc.season.rxdownload3.core.*
 import zlc.season.rxdownload3.extension.ApkInstallExtension
@@ -22,22 +21,21 @@ import zlc.season.rxdownload3.helper.dispose
 
 
 class AppListActivity : AppCompatActivity() {
-    lateinit var mainBinding: ActivityAppListBinding
     lateinit var adapter: Adapter
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        mainBinding = DataBindingUtil.setContentView(this, R.layout.activity_app_list)
+        setContentView(R.layout.activity_app_list)
 
-        mainBinding.toolbar.inflateMenu(R.menu.menu_for_app_list)
-        mainBinding.toolbar.setOnMenuItemClickListener {
+        toolbar.inflateMenu(R.menu.menu_for_app_list)
+        toolbar.setOnMenuItemClickListener {
             startActivity(Intent(this@AppListActivity, DownloadListActivity::class.java))
             return@setOnMenuItemClickListener true
         }
 
         adapter = Adapter()
-        mainBinding.recyclerView.layoutManager = LinearLayoutManager(this)
-        mainBinding.recyclerView.adapter = adapter
+        recycler_view.layoutManager = LinearLayoutManager(this)
+        recycler_view.adapter = adapter
 
         addData()
 
@@ -70,10 +68,7 @@ class AppListActivity : AppCompatActivity() {
 
         override fun onCreateViewHolder(parent: ViewGroup?, viewType: Int): ViewHolder {
             val inflater = LayoutInflater.from(parent!!.context)
-
-            val itemBinding: ViewHolderAppItemBinding = DataBindingUtil.inflate(inflater,
-                    R.layout.view_holder_app_item, parent, false)
-            return ViewHolder(itemBinding.root)
+            return ViewHolder(inflater.inflate(R.layout.view_holder_app_item, parent, false))
         }
 
         override fun onBindViewHolder(holder: ViewHolder?, position: Int) {
@@ -100,10 +95,9 @@ class AppListActivity : AppCompatActivity() {
         var disposable: Disposable? = null
         var currentStatus: Status? = null
 
-        private val itemBinding: ViewHolderAppItemBinding = DataBindingUtil.bind(itemView)
 
         init {
-            itemBinding.action.setOnClickListener {
+            itemView.action.setOnClickListener {
                 when (currentStatus) {
                     is Normal -> start()
                     is Suspend -> start()
@@ -135,8 +129,8 @@ class AppListActivity : AppCompatActivity() {
         fun setData(customMission: CustomMission) {
             this.customMission = customMission
 
-            itemBinding.introduce.text = customMission.introduce
-            Picasso.with(itemView.context).load(customMission.img).into(itemBinding.icon)
+            itemView.introduce.text = customMission.introduce
+            Picasso.with(itemView.context).load(customMission.img).into(itemView.icon)
 
         }
 
@@ -166,7 +160,7 @@ class AppListActivity : AppCompatActivity() {
                 is Deleted -> "开始"
                 else -> ""
             }
-            itemBinding.action.text = text
+            itemView.action.text = text
         }
     }
 }

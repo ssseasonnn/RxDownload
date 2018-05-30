@@ -20,8 +20,10 @@ import java.util.concurrent.Semaphore
 import java.util.concurrent.TimeUnit.SECONDS
 
 
-class RealMission(val actual: Mission, val semaphore: Semaphore, initFlag: Boolean = true) {
+class RealMission(val actual: Mission, private val semaphore: Semaphore,
+                  private val autoStart: Boolean = false, initFlag: Boolean = true) {
     var totalSize = 0L
+
     var status: Status = Normal(Status())
 
     private var semaphoreFlag = false
@@ -40,8 +42,6 @@ class RealMission(val actual: Mission, val semaphore: Semaphore, initFlag: Boole
 
     private val enableDb = DownloadConfig.enableDb
     private lateinit var dbActor: DbActor
-
-    private val autoStart = DownloadConfig.autoStart
 
     private val extensions = mutableListOf<Extension>()
 
@@ -66,7 +66,7 @@ class RealMission(val actual: Mission, val semaphore: Semaphore, initFlag: Boole
             loge("init error!", it)
         }.subscribe {
             emitStatus(status)
-            if (autoStart) {
+            if (autoStart || DownloadConfig.autoStart) {
                 realStart()
             }
         }
@@ -159,9 +159,20 @@ class RealMission(val actual: Mission, val semaphore: Semaphore, initFlag: Boole
 
     fun start(): Maybe<Any> {
         return Maybe.create<Any> {
+            if (alreadyStarted()) {
+                it.onSuccess(ANY)
+                return@create
+            }
             realStart()
             it.onSuccess(ANY)
         }.subscribeOn(newThread())
+    }
+
+    private fun alreadyStarted(): Boolean {
+        if (status is Waiting || status is Downloading) {
+            return true
+        }
+        return false
     }
 
     private fun realStart() {
@@ -266,8 +277,8 @@ class RealMission(val actual: Mission, val semaphore: Semaphore, initFlag: Boole
     }
 
     private fun download(): Flowable<out Status> {
-        return downloadType?.download() ?:
-                Flowable.error(IllegalStateException("Illegal download type"))
+        return downloadType?.download()
+                ?: Flowable.error(IllegalStateException("Illegal download type"))
     }
 
     override fun equals(other: Any?): Boolean {

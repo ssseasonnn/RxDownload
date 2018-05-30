@@ -76,7 +76,7 @@ public class AppListActivity extends AppCompatActivity {
     }
 
     private void createAllMissionOnStart(List<CustomMission> data) {
-        RxDownload.INSTANCE.createAll(data).subscribe();
+        RxDownload.INSTANCE.createAll(data, false).subscribe();
     }
 
     static class Adapter extends RecyclerView.Adapter<ViewHolder> {
@@ -163,7 +163,7 @@ public class AppListActivity extends AppCompatActivity {
         }
 
         public void onAttach() {
-            disposable = RxDownload.INSTANCE.create(customMission)
+            disposable = RxDownload.INSTANCE.create(customMission, false)
                     .observeOn(AndroidSchedulers.mainThread())
                     .subscribe(new Consumer<Status>() {
                         @Override

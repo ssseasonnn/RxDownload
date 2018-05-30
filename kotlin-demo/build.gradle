@@ -4,9 +4,11 @@ apply plugin: 'kotlin-android'
 
 apply plugin: 'kotlin-kapt'
 
+apply plugin: 'kotlin-android-extensions'
+
 android {
     compileSdkVersion 26
-    buildToolsVersion '26.0.2'
+    buildToolsVersion '27.0.3'
     defaultConfig {
         applicationId "zlc.season.rxdownload.kotlin_demo"
         minSdkVersion 14
@@ -21,9 +23,6 @@ android {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
-    }
-    dataBinding {
-        enabled = true
     }
 
     lintOptions {
@@ -42,7 +41,6 @@ dependencies {
     implementation 'com.squareup.picasso:picasso:2.5.2'
     implementation 'com.tbruyelle.rxpermissions2:rxpermissions:0.9.4@aar'
 
-    kapt "com.android.databinding:compiler:3.0.0"
 
     implementation project(':rxdownload3')
 

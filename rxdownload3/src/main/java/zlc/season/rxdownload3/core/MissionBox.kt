@@ -9,7 +9,7 @@ import java.io.File
 interface MissionBox {
     fun isExists(mission: Mission): Maybe<Boolean>
 
-    fun create(mission: Mission): Flowable<Status>
+    fun create(mission: Mission, autoStart: Boolean): Flowable<Status>
 
     fun start(mission: Mission): Maybe<Any>
 
@@ -17,7 +17,7 @@ interface MissionBox {
 
     fun delete(mission: Mission, deleteFile: Boolean): Maybe<Any>
 
-    fun createAll(missions: List<Mission>): Maybe<Any>
+    fun createAll(missions: List<Mission>, autoStart: Boolean): Maybe<Any>
 
     fun startAll(): Maybe<Any>
 

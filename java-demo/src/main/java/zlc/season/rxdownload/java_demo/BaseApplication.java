@@ -14,6 +14,7 @@ public class BaseApplication extends Application {
 
         DownloadConfig.Builder builder = DownloadConfig.Builder.Companion.create(this)
                 .enableDb(true)
+                .setDebug(true)
                 .setDbActor(new CustomSqliteActor(this))
                 .enableService(true)
                 .enableNotification(true)

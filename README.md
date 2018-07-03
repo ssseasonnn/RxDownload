@@ -60,23 +60,21 @@ RxDownload.stop(mission).subscribe()
 
 > Just three steps that is so simple !!
 
-**Tip: Creating a mission is an asynchronous operation, so if you need to start the mission immediately after it is created, you have the following options:**
 
-- In the create () completed callback, as follows
+### AutoStart
 
-```Java
-val disposable = RxDownload.create(mission)
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe { status ->
-                    //call start()
-                    RxDownload.start(mission).subscribe()
-                    setProgress(status)
-                    setActionText(status)
-                }
+There are two simple ways:
+
+- Add the autoStart parameter to the **create** method，this only take effect for the current mission.
+
+```kotlin
+RxDownload.create(mission,autoStart)
+       .subscribe{
+           ...
+       }
 ```
 
-- Or enable autoStart configuration, when autoStart is turned on, the mission will automatically start after created
-
+- Enable AutoStart config, this will take effect for all missions.
 ```java
 DownloadConfig.Builder.create(context)
                   .enableAutoStart(true)
@@ -112,11 +110,14 @@ Have a wealth of configuration options to meet your needs:
 
 ```java
 DownloadConfig.Builder.create(this)
-                .setFps(20)     //Set the update frequency
                 .setDefaultPath("custom download path")     //Set the default download address
                 .enableDb(true)     //Enable the database
                 .setDbActor(CustomSqliteActor(this))    //Customize the database
                 .enableService(true)    //Enable Service
+                .useHeadMethod(true)    //Use http HEAD method.
+                .setMaxRange(10)       // Maximum concurrency for each mission.
+                .setRangeDownloadSize(4*1000*1000) //The size of each Range，unit byte
+                .setMaxMission(3)      // The number of mission downloaded at the same time
                 .enableNotification(true)   //Enable Notification
                 .setNotificationFactory(NotificationFactoryImpl())      //Custom notification
                 .setOkHttpClientFacotry(OkHttpClientFactoryImpl())      //Custom OKHTTP

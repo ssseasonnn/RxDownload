@@ -60,23 +60,20 @@ RxDownload.stop(mission).subscribe()
 
 > 只需三步, 就是这样简单!!
 
-**提示: 创建任务是一个异步操作, 因此如果需要创建成功后立即开始下载有以下方式：**
+### AutoStart
 
-- 在create()完成的回调中进行，如下
+两种方式:
 
-```Java
-val disposable = RxDownload.create(mission)
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe { status ->
-                    //开始下载
-                    RxDownload.start(mission).subscribe()
-                    setProgress(status)
-                    setActionText(status)
-                }
+- 传入autoStart参数，只对当前任务生效
+
+```kotlin
+RxDownload.create(mission,autoStart)
+       .subscribe{
+           ...
+       }
 ```
 
-- 或者启用autoStart配置，当autoStart处于开启状态时，create任务完成以后就会自动start开始下载
-
+- 启用autoStart配置，对所有任务生效
 ```java
 DownloadConfig.Builder.create(context)
                   .enableAutoStart(true)
@@ -112,9 +109,12 @@ class BaseApplication : Application() {
 
 ```java
 DownloadConfig.Builder.create(this)
-                .setFps(20)                         //设置更新频率
                 .enableAutoStart(true)              //自动开始下载
                 .setDefaultPath("custom download path")     //设置默认的下载地址
+                .useHeadMethod(true)    //使用http HEAD方法进行检查
+                .setMaxRange(10)       // 每个任务并发的线程数量
+                .setRangeDownloadSize(4*1000*1000) //每个线程下载的大小，单位字节
+                .setMaxMission(3)      // 同时下载的任务数量
                 .enableDb(true)                             //启用数据库
                 .setDbActor(CustomSqliteActor(this))        //自定义数据库
                 .enableService(true)                        //启用Service

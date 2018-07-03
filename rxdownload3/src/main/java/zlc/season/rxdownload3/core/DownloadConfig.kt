@@ -33,6 +33,11 @@ object DownloadConfig {
 
     internal var autoStart = false
 
+    /**
+     * Use http HEAD method to check.
+     */
+    internal var useHeadMethod = true
+
     internal var enableDb = false
     internal lateinit var dbActor: DbActor
 
@@ -58,6 +63,7 @@ object DownloadConfig {
         this.defaultSavePath = builder.defaultSavePath
 
         this.autoStart = builder.autoStart
+        this.useHeadMethod = builder.useHeadMethod
 
         this.enableDb = builder.enableDb
         this.dbActor = builder.dbActor
@@ -90,6 +96,8 @@ object DownloadConfig {
         internal var debug = true
 
         internal var autoStart = false
+
+        internal var useHeadMethod = true
 
         internal var fps = 30
 
@@ -153,6 +161,11 @@ object DownloadConfig {
 
         fun enableAutoStart(enable: Boolean): Builder {
             this.autoStart = enable
+            return this
+        }
+
+        fun useHeadMethod(enable: Boolean): Builder {
+            this.useHeadMethod = enable
             return this
         }
 

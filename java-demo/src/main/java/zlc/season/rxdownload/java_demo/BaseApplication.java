@@ -16,7 +16,6 @@ public class BaseApplication extends Application {
                 .enableDb(true)
                 .setDebug(true)
                 .setDbActor(new CustomSqliteActor(this))
-                .enableService(true)
                 .enableNotification(true)
                 .addExtension(ApkInstallExtension.class)
                 .addExtension(ApkOpenExtension.class);

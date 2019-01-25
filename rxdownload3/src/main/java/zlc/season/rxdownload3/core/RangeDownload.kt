@@ -16,6 +16,13 @@ class RangeDownload(mission: RealMission) : DownloadType(mission) {
 
     private val tmpFile = RangeTmpFile(mission)
 
+    init {
+        if (mission.actual.overwrite){
+            targetFile.delete()
+            tmpFile.reset()
+        }
+    }
+
     override fun initStatus() {
         val status = tmpFile.currentStatus()
 
@@ -48,16 +55,11 @@ class RangeDownload(mission: RealMission) : DownloadType(mission) {
 
         val arrays = mutableListOf<Flowable<Any>>()
 
-        if (mission.actual.overwrite) {
-            targetFile.delete()
-            tmpFile.reset()
+        if (targetFile.isShadowExists()) {
+            tmpFile.checkFile()
         } else {
-            if (targetFile.isShadowExists()) {
-                tmpFile.checkFile()
-            } else {
-                targetFile.createShadowFile()
-                tmpFile.reset()
-            }
+            targetFile.createShadowFile()
+            tmpFile.reset()
         }
 
         tmpFile.getSegments()

@@ -265,6 +265,9 @@ class RealMission(val actual: Mission, private val semaphore: Semaphore,
     }
 
     private fun checkAndDownload(): Flowable<Status> {
+        if (actual.overwrite){
+            return delete(true).flatMapPublisher { download() }
+        }
         return check().flatMapPublisher { download() }
     }
 

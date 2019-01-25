@@ -16,13 +16,6 @@ class RangeDownload(mission: RealMission) : DownloadType(mission) {
 
     private val tmpFile = RangeTmpFile(mission)
 
-    init {
-        if (mission.actual.overwrite){
-            targetFile.delete()
-            tmpFile.reset()
-        }
-    }
-
     override fun initStatus() {
         val status = tmpFile.currentStatus()
 

@@ -5,17 +5,20 @@ open class Mission(var url: String) {
     var savePath: String = ""
     var rangeFlag: Boolean? = null
     var tag: String = url
+    var overwrite: Boolean = false
 
-    constructor(url: String, saveName: String, savePath: String) : this(url) {
+    constructor(url: String, saveName: String, savePath: String, overwrite: Boolean = false) : this(url) {
         this.saveName = saveName
         this.savePath = savePath
+        this.overwrite = overwrite
     }
 
-    constructor(url: String, saveName: String, savePath: String, rangeFlag: Boolean?, tag: String) : this(url) {
+    constructor(url: String, saveName: String, savePath: String, rangeFlag: Boolean?, tag: String, overwrite: Boolean = false) : this(url) {
         this.saveName = saveName
         this.savePath = savePath
         this.rangeFlag = rangeFlag
         this.tag = tag
+        this.overwrite = overwrite
     }
 
     constructor(mission: Mission) : this(mission.url) {
@@ -23,6 +26,7 @@ open class Mission(var url: String) {
         this.savePath = mission.savePath
         this.rangeFlag = mission.rangeFlag
         this.tag = mission.tag
+        this.overwrite = mission.overwrite
     }
 
     override fun equals(other: Any?): Boolean {

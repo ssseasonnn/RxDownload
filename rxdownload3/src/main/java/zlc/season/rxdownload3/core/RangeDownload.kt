@@ -48,11 +48,16 @@ class RangeDownload(mission: RealMission) : DownloadType(mission) {
 
         val arrays = mutableListOf<Flowable<Any>>()
 
-        if (targetFile.isShadowExists()) {
-            tmpFile.checkFile()
-        } else {
-            targetFile.createShadowFile()
+        if (mission.actual.overwrite) {
+            targetFile.delete()
             tmpFile.reset()
+        } else {
+            if (targetFile.isShadowExists()) {
+                tmpFile.checkFile()
+            } else {
+                targetFile.createShadowFile()
+                tmpFile.reset()
+            }
         }
 
         tmpFile.getSegments()

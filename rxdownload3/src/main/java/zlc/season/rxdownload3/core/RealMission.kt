@@ -2,6 +2,7 @@ package zlc.season.rxdownload3.core
 
 import android.app.NotificationManager
 import android.content.Context.NOTIFICATION_SERVICE
+import android.util.Log
 import io.reactivex.Flowable
 import io.reactivex.Maybe
 import io.reactivex.disposables.Disposable
@@ -265,7 +266,9 @@ class RealMission(val actual: Mission, private val semaphore: Semaphore,
     }
 
     private fun checkAndDownload(): Flowable<Status> {
-        return check().flatMapPublisher { download() }
+        return check().flatMapPublisher {
+            download()
+        }
     }
 
     private fun check(): Maybe<Any> {

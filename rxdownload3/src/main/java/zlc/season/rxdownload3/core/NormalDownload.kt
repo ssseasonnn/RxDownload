@@ -30,8 +30,10 @@ class NormalDownload(mission: RealMission) : DownloadType(mission) {
     }
 
     override fun download(): Flowable<out Status> {
-        if (targetFile.isFinish()) {
-            return Flowable.empty()
+        if (!mission.actual.overwrite){
+            if (targetFile.isFinish()) {
+                return Flowable.empty()
+            }
         }
 
         targetFile.checkFile()

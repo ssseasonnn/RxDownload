@@ -42,8 +42,10 @@ class RangeDownload(mission: RealMission) : DownloadType(mission) {
     }
 
     override fun download(): Flowable<out Status> {
-        if (isFinish()) {
-            return Flowable.empty()
+        if (!mission.actual.overwrite){
+            if (isFinish()) {
+                return Flowable.empty()
+            }
         }
 
         val arrays = mutableListOf<Flowable<Any>>()

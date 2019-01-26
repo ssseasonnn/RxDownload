@@ -162,3 +162,8 @@ Add Retrofit and OKHTTP can be proguard
 -dontwarn okio.**
 -dontwarn javax.annotation.**
 ```
+
+### Credit
+A huge thanks to [ssseasonnn/RxDownload](https://github.com/ssseasonnn/RxDownload) who is the original author of this awesome library.
+I did some modification to the library, that can satisfy my special use case.
+> Show your support to the original library :)

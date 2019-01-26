@@ -2,7 +2,6 @@ package zlc.season.rxdownload3.core
 
 import android.app.NotificationManager
 import android.content.Context.NOTIFICATION_SERVICE
-import android.util.Log
 import io.reactivex.Flowable
 import io.reactivex.Maybe
 import io.reactivex.disposables.Disposable

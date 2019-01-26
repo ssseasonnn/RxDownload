@@ -1,9 +1,7 @@
 package zlc.season.rxdownload.kotlin_demo
 
 import android.os.Bundle
-import android.os.Environment
 import android.support.v7.app.AppCompatActivity
-import android.util.Log
 import com.squareup.picasso.Picasso
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.Disposable
@@ -16,12 +14,8 @@ import zlc.season.rxdownload3.helper.dispose
 
 class BasicDownloadActivity : AppCompatActivity() {
 
-    val TAG = "BasicDownloadActivity"
-
     private var disposable: Disposable? = null
     private var currentStatus = Status()
-
-    val mission = Mission(url, "PANO.JPG", Environment.getExternalStorageDirectory().toString() + "/Huawei" + "/Themes", true)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -49,7 +43,7 @@ class BasicDownloadActivity : AppCompatActivity() {
                 is Suspend -> start()
                 is Failed -> start()
                 is Downloading -> stop()
-                is Succeed -> start()
+                is Succeed -> install()
                 is ApkInstallExtension.Installed -> open()
             }
         }
@@ -58,14 +52,12 @@ class BasicDownloadActivity : AppCompatActivity() {
     }
 
     private fun create() {
-        disposable = RxDownload.create(mission, autoStart = false)
+        disposable = RxDownload.create(url, autoStart = true)
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe { status ->
                     currentStatus = status
                     setProgress(status)
                     setActionText(status)
-                    Log.i(TAG, "status $status")
-
                 }
     }
 
@@ -79,30 +71,29 @@ class BasicDownloadActivity : AppCompatActivity() {
 
     private fun setActionText(status: Status) {
         val text = when (status) {
-            is Normal -> "Normal"
-            is Suspend -> "Suspend"
-            is Waiting -> "Waiting"
-            is Downloading -> "Downloading"
-            is Failed -> "Failed ${status.throwable}"
-            is Deleted -> "Deleted"
-            is Succeed -> "Succeed"
-            is ApkInstallExtension.Installing -> "Installing"
-            is ApkInstallExtension.Installed -> "Installed"
+            is Normal -> "开始"
+            is Suspend -> "已暂停"
+            is Waiting -> "等待中"
+            is Downloading -> "暂停"
+            is Failed -> "失败"
+            is Succeed -> "安装"
+            is ApkInstallExtension.Installing -> "安装中"
+            is ApkInstallExtension.Installed -> "打开"
             else -> ""
         }
         action.text = text
     }
 
     private fun start() {
-        RxDownload.start(mission).subscribe()
+        RxDownload.start(url).subscribe()
     }
 
     private fun stop() {
-        RxDownload.stop(mission).subscribe()
+        RxDownload.stop(url).subscribe()
     }
 
     private fun install() {
-        RxDownload.extension(mission, ApkInstallExtension::class.java).subscribe()
+        RxDownload.extension(url, ApkInstallExtension::class.java).subscribe()
     }
 
     private fun open() {

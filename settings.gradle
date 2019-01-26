@@ -1,1 +1,1 @@
-include ':rxdownload3'
+include ':java-demo', ':kotlin-demo' ,':rxdownload3'

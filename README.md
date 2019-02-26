@@ -4,7 +4,7 @@
 
 A multi-threaded download tool written with RxJava and Kotlin
 
-*Read this in other languages: [中文](README.ch.md), [English](README.md)* 
+*Read this in other languages: [中文](README.ch.md), [English](README.md)*
 
 ## How to Use
 
@@ -78,8 +78,8 @@ RxDownload.create(mission,autoStart)
 DownloadConfig.Builder.create(context)
                   .enableAutoStart(true)
                   ...
-                  
-                  
+
+
 DownloadConfig.init(builder)
 ```
 

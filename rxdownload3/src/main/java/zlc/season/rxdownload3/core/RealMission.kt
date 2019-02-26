@@ -265,7 +265,9 @@ class RealMission(val actual: Mission, private val semaphore: Semaphore,
     }
 
     private fun checkAndDownload(): Flowable<Status> {
-        return check().flatMapPublisher { download() }
+        return check().flatMapPublisher {
+            download()
+        }
     }
 
     private fun check(): Maybe<Any> {

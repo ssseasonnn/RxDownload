@@ -10,57 +10,59 @@ A multi-threaded download tool written with RxJava and Kotlin
 
 ### Preparation
 
-1.Add Gradle dependencies[ ![Download](https://api.bintray.com/packages/ssseasonnn/android/RxDownload3/images/download.svg) ](https://bintray.com/ssseasonnn/android/RxDownload3/_latestVersion)
+Step 1. Add the dependency[ ![Download](https://api.bintray.com/packages/ssseasonnn/android/RxDownload3/images/download.svg) ](https://bintray.com/ssseasonnn/android/RxDownload3/_latestVersion)
 
 ```groovy
 dependencies{
-    compile 'zlc.season:rxdownload3:x.y.z'
+    implementation 'zlc.season:rxdownload3:x.y.z'
 }
 ```
 
-2.Configure the permissions
+Step 2. Add permissions
 
 ```xml
 <uses-permission android:name="android.permission.INTERNET"/>
 <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
 ```
 
-> **Please note that Android 6.0 and above must also apply run-time permissions, if you are unable to download, check permissions**
+### Usage
 
-### Download
+Step 1. Create a mission
 
-1.Create a mission
+```kotlin
+val mission = Mission(URL, FILE_NAME, SAVE_PATH, IS_OVERRIDE)
+```
 
-Create a mission and receive the status of the download
 
-```java
-val disposable = RxDownload.create(mission)
+Step 2. Subscribe to the mission updates
+
+```kotlin
+val disposable = RxDownload.create(mission, autoStart = false)
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe { status ->
-                    setProgress(status)
-                    setActionText(status)
+
                 }
 ```
 
-> Note: The download status is also received here, the received status will be automatically updated according to the different download status.
-> Repeated calls **DO NOT** cause the task to be created more than once, so you can call this method wherever you want to receive the state to receive the downloaded state.
+> Note: The mission status is received here
+> Repeated calls **DO NOT** cause the task to be created more than once
+> Don't forget to dispose `disposable` in `onDestroy()` or similar method (To dispose call `dispose(disposable)` )
 
-2.Start download
 
-```java
+Step 3. Start download
+
+```kotlin
 RxDownload.start(mission).subscribe()
 ```
 
-3.Stop download
+Stop download
 
-```java
+```kotlin
 RxDownload.stop(mission).subscribe()
 ```
 
-> Just three steps that is so simple !!
 
-
-### AutoStart
+### AutoStart Download
 
 There are two simple ways:
 
@@ -74,22 +76,31 @@ RxDownload.create(mission,autoStart)
 ```
 
 - Enable AutoStart config, this will take effect for all missions.
-```java
+```kotlin
 DownloadConfig.Builder.create(context)
                   .enableAutoStart(true)
-                  ...
-
 
 DownloadConfig.init(builder)
 ```
 
-For more APIs please move RxDownload.kt
+For more APIs please see RxDownload.kt
 
-### Configuration
+
+### Override
+You can configure `Mission` so that if file exists it will be re-downloaded.
+If not specified - false
+
+```kotlin
+val mission = Mission(...)
+mission.overwrite = Boolen (true/false)
+```
+
+
+### Configuration (optional)
 
 Add your configuration when APP starts up, like this:
 
-```java
+```kotlin
 class BaseApplication : Application() {
 
     override fun onCreate() {
@@ -105,9 +116,9 @@ class BaseApplication : Application() {
 }
 ```
 
-Have a wealth of configuration options to meet your needs:
+or
 
-```java
+```kotlin
 DownloadConfig.Builder.create(this)
                 .setDefaultPath("custom download path")     //Set the default download address
                 .enableDb(true)     //Enable the database
@@ -127,7 +138,7 @@ DownloadConfig.Builder.create(this)
 
 Customize your exclusive operation
 
-```java
+```kotlin
 class CustomExtension:Extension {
     override fun init(mission: RealMission) {
         //Init
@@ -143,9 +154,9 @@ class CustomExtension:Extension {
 
 ### Proguard
 
-No special proguard, just add Retrofit and OKHTTP can be proguard
+Add Retrofit and OKHTTP can be proguard
 
-```groovy
+```gradle
 -dontnote retrofit2.Platform
 -dontwarn retrofit2.Platform$Java8
 -keepattributes Signature

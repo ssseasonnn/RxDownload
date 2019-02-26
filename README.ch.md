@@ -10,54 +10,55 @@
 
 ### 准备
 
-1.添加Gradle依赖[ ![Download](https://api.bintray.com/packages/ssseasonnn/android/RxDownload3/images/download.svg) ](https://bintray.com/ssseasonnn/android/RxDownload3/_latestVersion)
+Step 1. 添加Gradle依赖[ ![Download](https://api.bintray.com/packages/ssseasonnn/android/RxDownload3/images/download.svg) ](https://bintray.com/ssseasonnn/android/RxDownload3/_latestVersion)
 
 ```groovy
 dependencies{
-    compile 'zlc.season:rxdownload3:x.y.z'
+    implementation 'zlc.season:rxdownload3:x.y.z'
 }
 ```
 
-2.配置权限
+Step 2. 配置权限
 
 ```xml
 <uses-permission android:name="android.permission.INTERNET"/>
 <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
 ```
 
-> **注意: Android 6.0 以上还必须申请运行时权限, 如果遇到不能下载, 请先检查权限**
+### Usage
 
-### 下载
+Step 1. 创建任务
 
-1.创建任务
+```kotlin
+val mission = Mission(URL, FILE_NAME, SAVE_PATH, IS_OVERRIDE)
+```
 
-创建一个任务，并且接收下载的状态
 
-```java
-val disposable = RxDownload.create(mission)
+Step 2. 订阅接受下载状态
+
+```kotlin
+val disposable = RxDownload.create(mission, autoStart = false)
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe { status ->
-                    setProgress(status)
-                    setActionText(status)
+
                 }
 ```
 
-> 注意：下载状态的接收也是在这里进行，接收到的status会根据不同的下载状态自动更新。
 > 重复调用**不会**导致任务多次创建，因此可以在任何想要接收状态的地方调用该方法来接收下载的状态。
 
-2.开始下载
 
-```java
+Step 3. 开始下载
+
+```kotlin
 RxDownload.start(mission).subscribe()
 ```
 
-3.停止下载
+停止下载
 
-```java
+```kotlin
 RxDownload.stop(mission).subscribe()
 ```
 
-> 只需三步, 就是这样简单!!
 
 ### AutoStart
 
@@ -84,11 +85,22 @@ DownloadConfig.init(builder)
 
 更多API请移步RxDownload.kt
 
-### 配置
+
+### 覆盖已经下载的文件
+
+可以在创建任务时指定overwrite参数, 用来表明是否覆盖已经下载的文件, 默认为false
+
+```kotlin
+val mission = Mission(...)
+mission.overwrite = Boolen (true/false)
+```
+
+
+### 额外的可选配置
 
 在APP启动时添加您的配置,就像这样:
 
-```java
+```kotlin
 class BaseApplication : Application() {
 
     override fun onCreate() {
@@ -104,9 +116,9 @@ class BaseApplication : Application() {
 }
 ```
 
-拥有丰富的配置选项满足您的需求:
+or
 
-```java
+```kotlin
 DownloadConfig.Builder.create(this)
                 .enableAutoStart(true)              //自动开始下载
                 .setDefaultPath("custom download path")     //设置默认的下载地址

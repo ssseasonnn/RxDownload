@@ -8,15 +8,13 @@ import zlc.season.rxdownload3.core.RealMission
 import zlc.season.rxdownload3.helper.ANY
 
 object HttpCore {
-    private const val TEST_RANGE_SUPPORT = "bytes=0-"
-
     private val api: RetrofitApi = RetrofitClient.get().create(RetrofitApi::class.java)
 
     fun checkUrl(mission: RealMission): Maybe<Any> {
         return if (DownloadConfig.useHeadMethod) {
-            api.checkByHead(TEST_RANGE_SUPPORT, mission.actual.url)
+            api.checkByHead(mapOf(Pair("Range", "bytes=0-")), mission.actual.url)
         } else {
-            api.checkByGet(TEST_RANGE_SUPPORT, mission.actual.url)
+            api.checkByGet(mapOf(Pair("Range", "bytes=0-")), mission.actual.url)
         }.flatMap {
             if (!it.isSuccessful) {
                 throw RuntimeException(it.message())
@@ -27,7 +25,12 @@ object HttpCore {
     }
 
     fun download(mission: RealMission, range: String = ""): Maybe<Response<ResponseBody>> {
-        return api.download(range, mission.actual.url)
+        val header = if (range.isEmpty()) {
+            emptyMap()
+        } else {
+            mapOf(Pair("Range", range))
+        }
+        return api.download(header, mission.actual.url)
                 .doOnSuccess {
                     if (!it.isSuccessful) {
                         throw RuntimeException(it.message())

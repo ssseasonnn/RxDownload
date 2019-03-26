@@ -9,15 +9,15 @@ import retrofit2.http.*
 interface RetrofitApi {
 
     @HEAD
-    fun checkByHead(@Header("Range") range: String,
-              @Url url: String): Maybe<Response<Void>>
+    fun checkByHead(@HeaderMap headers: Map<String, String>,
+                    @Url url: String): Maybe<Response<Void>>
 
     @GET
-    fun checkByGet(@Header("Range") range: String,
+    fun checkByGet(@HeaderMap headers: Map<String, String>,
                    @Url url: String): Maybe<Response<Void>>
 
     @GET
     @Streaming
-    fun download(@Header("Range") range: String?,
+    fun download(@HeaderMap headers: Map<String, String>,
                  @Url url: String): Maybe<Response<ResponseBody>>
 }

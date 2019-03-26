@@ -16,11 +16,15 @@ class RangeDownload(mission: RealMission) : DownloadType(mission) {
     private val tmpFile = RangeTmpFile(mission)
 
     override fun initStatus() {
-        val status = tmpFile.currentStatus()
+        if (mission.actual.overwrite) {
+            mission.status = Normal(Status())
+        } else {
+            val status = tmpFile.currentStatus()
 
-        mission.status = when {
-            isFinish() -> Succeed(status)
-            else -> Normal(status)
+            mission.status = when {
+                isFinish() -> Succeed(status)
+                else -> Normal(status)
+            }
         }
     }
 

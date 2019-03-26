@@ -11,10 +11,14 @@ class NormalDownload(mission: RealMission) : DownloadType(mission) {
     private val targetFile = NormalTargetFile(mission)
 
     override fun initStatus() {
-        val status = targetFile.getStatus()
-        mission.status = when {
-            targetFile.isFinish() -> Succeed(status)
-            else -> Normal(status)
+        if (mission.actual.overwrite) {
+            mission.status = Normal(Status())
+        } else {
+            val status = targetFile.getStatus()
+            mission.status = when {
+                targetFile.isFinish() -> Succeed(status)
+                else -> Normal(status)
+            }
         }
     }
 
@@ -30,7 +34,7 @@ class NormalDownload(mission: RealMission) : DownloadType(mission) {
     }
 
     override fun download(): Flowable<out Status> {
-        if (!mission.actual.overwrite){
+        if (!mission.actual.overwrite) {
             if (targetFile.isFinish()) {
                 return Flowable.empty()
             }

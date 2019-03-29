@@ -17,7 +17,6 @@ import zlc.season.rxdownload3.http.HttpCore
 import zlc.season.rxdownload3.notification.NotificationFactory
 import java.io.File
 import java.util.concurrent.Semaphore
-import java.util.concurrent.TimeUnit.SECONDS
 
 
 class RealMission(val actual: Mission, private val semaphore: Semaphore,
@@ -105,12 +104,29 @@ class RealMission(val actual: Mission, private val semaphore: Semaphore,
     }
 
     private fun initNotification() {
-        processor.sample(notificationPeriod, SECONDS, true).subscribe {
-            if (enableNotification) {
-                val notification = notificationFactory.build(DownloadConfig.context!!, this, it)
-                if (notification != null) {
-                    notificationManager.notify(hashCode(), notification)
+        var notificationStatus = Status()
+        var count = 0
+        processor.filter {
+            if (!enableNotification) return@filter false
+
+            if (notificationStatus.toString() != it.toString()) {
+                count = 0
+                notificationStatus = it
+                return@filter true
+            } else {
+                if (count >= notificationPeriod) {
+                    count = 0
+                    return@filter true
                 }
+                count++
+                return@filter false
+            }
+        }.subscribe {
+            if (!enableNotification) return@subscribe
+
+            val notification = notificationFactory.build(DownloadConfig.context!!, this, it)
+            if (notification != null) {
+                notificationManager.notify(hashCode(), notification)
             }
         }
     }

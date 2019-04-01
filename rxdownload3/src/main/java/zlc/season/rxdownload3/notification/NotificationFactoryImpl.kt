@@ -6,13 +6,11 @@ import android.app.NotificationManager
 import android.content.Context
 import android.content.Context.NOTIFICATION_SERVICE
 import android.graphics.Color
-import android.os.Build
 import android.os.Build.VERSION.SDK_INT
 import android.os.Build.VERSION_CODES.O
 import android.support.v4.app.NotificationCompat.Builder
 import zlc.season.rxdownload3.R
 import zlc.season.rxdownload3.core.*
-import zlc.season.rxdownload3.core.DownloadConfig.context
 import zlc.season.rxdownload3.extension.ApkInstallExtension
 
 
@@ -22,9 +20,11 @@ class NotificationFactoryImpl : NotificationFactory {
 
     private val map = mutableMapOf<RealMission, Builder>()
 
-    override fun build(context: Context, mission: RealMission, status: Status): Notification? {
+    override fun init(context: Context) {
         createChannelForOreo(context, channelId, channelName)
+    }
 
+    override fun build(context: Context, mission: RealMission, status: Status): Notification? {
         val builder = get(mission, context)
 
         return when (status) {
@@ -36,9 +36,7 @@ class NotificationFactoryImpl : NotificationFactory {
             is ApkInstallExtension.Installing -> installing(builder)
             is ApkInstallExtension.Installed -> installed(builder)
             is Deleted -> deleted(context, mission)
-            else -> {
-                Notification()
-            }
+            else -> return null
         }
     }
 
@@ -103,7 +101,7 @@ class NotificationFactoryImpl : NotificationFactory {
         var builder = map[mission]
         if (builder == null) {
             builder = createNotificationBuilder(mission, context)
-            map.put(mission, builder)
+            map[mission] = builder
         }
 
         return builder.setContentTitle(mission.actual.saveName)

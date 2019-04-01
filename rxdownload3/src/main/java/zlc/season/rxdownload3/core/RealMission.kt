@@ -1,5 +1,6 @@
 package zlc.season.rxdownload3.core
 
+import android.annotation.SuppressLint
 import android.app.NotificationManager
 import android.content.Context.NOTIFICATION_SERVICE
 import io.reactivex.Flowable
@@ -51,6 +52,7 @@ class RealMission(val actual: Mission, private val semaphore: Semaphore,
         }
     }
 
+    @SuppressLint("CheckResult")
     private fun init() {
         Maybe.create<Any> {
             loadConfig()
@@ -103,31 +105,31 @@ class RealMission(val actual: Mission, private val semaphore: Semaphore,
         }
     }
 
+    @SuppressLint("CheckResult")
     private fun initNotification() {
-        var notificationStatus = Status()
+        notificationFactory.init(DownloadConfig.context!!)
+
         var count = 0
         processor.filter {
             if (!enableNotification) return@filter false
 
-            if (notificationStatus.toString() != it.toString()) {
+            if (it.isImportant() || count >= notificationPeriod * 10) {
                 count = 0
-                notificationStatus = it
                 return@filter true
-            } else {
-                if (count >= notificationPeriod) {
-                    count = 0
-                    return@filter true
-                }
-                count++
-                return@filter false
             }
+            count++
+            return@filter false
+
         }.subscribe {
             if (!enableNotification) return@subscribe
+            showNotification(it)
+        }
+    }
 
-            val notification = notificationFactory.build(DownloadConfig.context!!, this, it)
-            if (notification != null) {
-                notificationManager.notify(hashCode(), notification)
-            }
+    private fun showNotification(it: Status) {
+        val notification = notificationFactory.build(DownloadConfig.context!!, this, it)
+        if (notification != null) {
+            notificationManager.notify(hashCode(), notification)
         }
     }
 

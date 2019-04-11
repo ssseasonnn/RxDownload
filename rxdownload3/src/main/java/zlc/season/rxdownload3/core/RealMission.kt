@@ -107,7 +107,9 @@ class RealMission(val actual: Mission, private val semaphore: Semaphore,
 
     @SuppressLint("CheckResult")
     private fun initNotification() {
-        notificationFactory.init(DownloadConfig.context!!)
+        if (enableNotification) {
+            notificationFactory.init(DownloadConfig.context!!)
+        }
 
         var count = 0
         processor.filter {

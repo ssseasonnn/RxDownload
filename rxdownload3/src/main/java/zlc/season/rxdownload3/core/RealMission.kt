@@ -74,7 +74,7 @@ class RealMission(val actual: Mission, private val semaphore: Semaphore,
     }
 
     private fun loadConfig() {
-        if (enableNotification) {
+        if (enableNotification && actual.enableNotification) {
             notificationManager = DownloadConfig.context!!.getSystemService(NOTIFICATION_SERVICE) as NotificationManager
             notificationFactory = DownloadConfig.notificationFactory
         }
@@ -107,24 +107,26 @@ class RealMission(val actual: Mission, private val semaphore: Semaphore,
 
     @SuppressLint("CheckResult")
     private fun initNotification() {
-        if (enableNotification) {
+        if (enableNotification && actual.enableNotification) {
             notificationFactory.init(DownloadConfig.context!!)
         }
 
         var count = 0
         processor.filter {
-            if (!enableNotification) return@filter false
-
-            if (it.isImportant() || count >= notificationPeriod * 10) {
-                count = 0
-                return@filter true
+            if (enableNotification && actual.enableNotification) {
+                if (it.isImportant() || count >= notificationPeriod * 10) {
+                    count = 0
+                    return@filter true
+                }
+                count++
+                return@filter false
+            } else {
+                return@filter false
             }
-            count++
-            return@filter false
-
         }.subscribe {
-            if (!enableNotification) return@subscribe
-            showNotification(it)
+            if (enableNotification && actual.enableNotification) {
+                showNotification(it)
+            }
         }
     }
 

@@ -19,10 +19,10 @@ public class ExampleUnitTest {
 
     @Test
     public void testMissionConstructor() throws Exception {
-        Mission mission = new Mission("url", "saveName", "savePath", false);
+        Mission mission = new Mission("url", "saveName", "savePath", false, true);
         System.out.println(mission.getTag());
 
-        Mission mission1 = new Mission("url", "saveName", "savePath", null, "tag", false);
+        Mission mission1 = new Mission("url", "saveName", "savePath", null, "tag", false, true);
         System.out.println(mission1.getTag());
 
         Mission mission2 = new Mission("url");

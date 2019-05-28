@@ -150,10 +150,12 @@ class RealMission(val actual: Mission, private val semaphore: Semaphore,
                 .doOnError {
                     loge("Mission error! ${it.message}", it)
                     emitStatusWithNotification(Failed(status, it))
+                    processor.onError(it)
                 }
                 .doOnComplete {
                     logd("Mission complete!")
                     emitStatusWithNotification(Succeed(status))
+                    processor.onComplete()
                 }
                 .doOnCancel {
                     logd("Mission cancel!")

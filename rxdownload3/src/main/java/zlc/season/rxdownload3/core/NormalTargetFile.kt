@@ -61,6 +61,7 @@ class NormalTargetFile(val mission: RealMission) {
         val downloading = Downloading(Status(downloadSize, totalSize, isChunked(response)))
 
         return Flowable.create<Status>({
+            it.requested()
             respBody.source().use { source ->
                 Okio.buffer(Okio.sink(shadowFile)).use { sink ->
                     val buffer = sink.buffer()

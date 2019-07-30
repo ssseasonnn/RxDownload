@@ -35,6 +35,7 @@ dependencies {
     api 'com.squareup.retrofit2:adapter-rxjava2:2.6.0'
     api 'io.reactivex.rxjava2:rxjava:2.2.6'
     api 'io.reactivex.rxjava2:rxandroid:2.1.1'
+    api "io.reactivex.rxjava2:rxkotlin:2.4.0"
 
     testImplementation 'junit:junit:4.12'
     androidTestImplementation 'com.android.support.test:runner:1.0.2'

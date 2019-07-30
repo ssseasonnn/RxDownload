@@ -32,4 +32,8 @@ class Status(var downloadSize: Long = 0L,
         percent = nf.format(result)
         return percent
     }
+
+    override fun toString(): String {
+        return "[$downloadSize/$totalSize]"
+    }
 }

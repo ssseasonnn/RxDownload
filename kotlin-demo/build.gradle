@@ -10,7 +10,7 @@ android {
     compileSdkVersion 28
     defaultConfig {
         applicationId "zlc.season.rxdownload.kotlin_demo"
-        minSdkVersion 14
+        minSdkVersion 15
         targetSdkVersion 28
         versionCode 1
         versionName "1.0"
@@ -42,6 +42,7 @@ dependencies {
 
 
     implementation project(':rxdownload3')
+    implementation project(':rxdownload4')
 
     testImplementation 'junit:junit:4.12'
 

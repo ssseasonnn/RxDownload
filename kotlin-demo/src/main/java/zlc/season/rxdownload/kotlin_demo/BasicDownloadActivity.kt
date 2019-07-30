@@ -2,15 +2,18 @@ package zlc.season.rxdownload.kotlin_demo
 
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
+import android.util.Log
 import com.squareup.picasso.Picasso
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.Disposable
+import io.reactivex.schedulers.Schedulers
 import kotlinx.android.synthetic.main.activity_basic_download.*
 import kotlinx.android.synthetic.main.content_basic_download.*
 import zlc.season.rxdownload3.RxDownload
 import zlc.season.rxdownload3.core.*
 import zlc.season.rxdownload3.extension.ApkInstallExtension
 import zlc.season.rxdownload3.helper.dispose
+import zlc.season.rxdownload4.download
 
 class BasicDownloadActivity : AppCompatActivity() {
 
@@ -52,13 +55,25 @@ class BasicDownloadActivity : AppCompatActivity() {
     }
 
     private fun create() {
-        disposable = RxDownload.create(url, autoStart = true)
+//        disposable = RxDownload.create(url, autoStart = true)
+//                .observeOn(AndroidSchedulers.mainThread())
+//                .subscribe { status ->
+//                    currentStatus = status
+//                    setProgress(status)
+//                    setActionText(status)
+//                }
+        disposable = url.download()
+                .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
-                .subscribe { status ->
-                    currentStatus = status
-                    setProgress(status)
-                    setActionText(status)
-                }
+                .subscribe({
+                    progress.max = it.totalSize.toInt()
+                    progress.progress = it.downloadSize.toInt()
+
+                    percent.text = it.percent()
+//                    size.text = status.formatString()
+                }, {
+                    Log.w("Tag", it)
+                })
     }
 
     private fun setProgress(status: Status) {

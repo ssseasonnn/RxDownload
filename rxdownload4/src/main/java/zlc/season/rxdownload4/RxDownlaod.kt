@@ -4,8 +4,11 @@ import io.reactivex.Flowable
 
 
 fun String.download(): Flowable<Status> {
-    return Requests.get().download(this, emptyMap())
+    val api = api<DownloadApi>()
+    val flowable = api.download(this)
             .flatMap {
-
+                return@flatMap it.map().download(it)
             }
+
+    return flowable
 }

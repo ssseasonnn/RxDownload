@@ -58,6 +58,7 @@ class DownloadListActivity : AppCompatActivity() {
 
 
     class Adapter : RecyclerView.Adapter<ViewHolder>() {
+
         val data = mutableListOf<Mission>()
 
         fun addData(data: List<Mission>) {
@@ -66,13 +67,13 @@ class DownloadListActivity : AppCompatActivity() {
             notifyDataSetChanged()
         }
 
-        override fun onCreateViewHolder(parent: ViewGroup?, viewType: Int): ViewHolder {
+        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
             val inflater = LayoutInflater.from(parent!!.context)
 
             return ViewHolder(inflater.inflate(R.layout.view_holder_download_item, parent, false))
         }
 
-        override fun onBindViewHolder(holder: ViewHolder?, position: Int) {
+        override fun onBindViewHolder(holder: ViewHolder, position: Int) {
             holder?.setData(data[position])
         }
 
@@ -80,12 +81,12 @@ class DownloadListActivity : AppCompatActivity() {
             return data.size
         }
 
-        override fun onViewAttachedToWindow(holder: ViewHolder?) {
+        override fun onViewAttachedToWindow(holder: ViewHolder) {
             super.onViewAttachedToWindow(holder)
             holder?.onAttach()
         }
 
-        override fun onViewDetachedFromWindow(holder: ViewHolder?) {
+        override fun onViewDetachedFromWindow(holder: ViewHolder) {
             super.onViewDetachedFromWindow(holder)
             holder?.onDetach()
         }

@@ -9,4 +9,18 @@ object TaskPool {
             map[task.url] = task
         }
     }
+
+//    @Synchronized
+//    fun get(task: Task): Task {
+//    }
+
+    @Synchronized
+    fun isContain(task: Task): Boolean {
+        return map[task.url] != null
+    }
+
+    @Synchronized
+    fun remove(task: Task) {
+        map.remove(task.url)
+    }
 }

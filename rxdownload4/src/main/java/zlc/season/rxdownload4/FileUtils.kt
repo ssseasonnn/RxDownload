@@ -10,19 +10,19 @@ fun checkFile(file: File): Boolean {
     }
 }
 
-fun createDir(file: File) {
-    file.mkdirs()
+fun File.createDir() {
+    mkdirs()
 }
 
-fun File.shadowFile(): File {
+fun File.shadow(): File {
     val path = canonicalPath
     val shadowPath = "$path.download"
     return File(shadowPath)
 }
 
-fun recreateFile(path: String) {
-    val file = File(path)
-    if (file.exists()) {
-        file.deleteRecursively()
+fun File.recreate() {
+    if (exists()) {
+        delete()
     }
+    createNewFile()
 }

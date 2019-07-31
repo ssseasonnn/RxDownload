@@ -69,6 +69,19 @@ class RangeTmpFile(private val file: File) {
 
         var segments = mutableListOf<Segment>()
 
+        fun print() {
+
+            "---------------------------".log()
+            "|          ${file.name}   |".log()
+            "|-------------------------|".log()
+            "|%-60s|".format(FILE_HEADER_MAGIC_NUMBER).log()
+            "|%-30d|%-30d|".format(totalSize, totalSegments).log()
+            segments.forEach {
+                "|%-15d|%-15d|%-15d|%-15d|".format(it.index, it.start, it.current, it.end).log()
+            }
+            "|-------------------------|".log()
+        }
+
         fun size(): Long {
             return FILE_HEADER_MAGIC_NUMBER_HEX.size() + 16L
         }
@@ -79,12 +92,6 @@ class RangeTmpFile(private val file: File) {
             sink.write(FILE_HEADER_MAGIC_NUMBER_HEX)
             sink.writeLong(totalSize)
             sink.writeLong(totalSegments)
-        }
-
-        fun readHeader(source: BufferedSource) {
-            checkFileHeader(source)
-            totalSize = source.readLong()
-            totalSegments = source.readLong()
         }
 
         fun writeSegments(sink: BufferedSink, totalSize: Long) {
@@ -103,6 +110,12 @@ class RangeTmpFile(private val file: File) {
 
                 start += DEFAULT_RANGE_SIZE
             }
+        }
+
+        fun readHeader(source: BufferedSource) {
+            checkFileHeader(source)
+            totalSize = source.readLong()
+            totalSegments = source.readLong()
         }
 
         fun readSegments(source: BufferedSource) {

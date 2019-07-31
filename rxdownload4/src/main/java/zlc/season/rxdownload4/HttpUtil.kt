@@ -6,8 +6,8 @@ import java.io.File
 import java.util.regex.Pattern
 
 
-fun contentLength(response: Response<*>): Long {
-    return HttpHeaders.contentLength(response.headers())
+fun Response<*>.contentLength(): Long {
+    return HttpHeaders.contentLength(headers())
 }
 
 fun Response<*>.isChunked(): Boolean {
@@ -39,7 +39,9 @@ fun Response<*>.map(): DownloadType {
 
 fun Response<*>.file(): File {
     val fileName = fileName()
-    val fullFilePath = DEFAULT_SAVE_PATH + File.pathSeparator + fileName
+    fileName.log()
+    val fullFilePath = DEFAULT_SAVE_PATH + File.separator + fileName
+    fullFilePath.log()
     return File(fullFilePath)
 }
 

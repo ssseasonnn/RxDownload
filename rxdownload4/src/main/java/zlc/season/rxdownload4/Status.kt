@@ -34,6 +34,6 @@ class Status(var downloadSize: Long = 0L,
     }
 
     override fun toString(): String {
-        return "[$downloadSize/$totalSize]"
+        return "[$downloadSize/$totalSize] - ${percent()}"
     }
 }

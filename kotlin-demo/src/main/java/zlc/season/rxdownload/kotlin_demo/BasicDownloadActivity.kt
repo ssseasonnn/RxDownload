@@ -2,12 +2,13 @@ package zlc.season.rxdownload.kotlin_demo
 
 import android.annotation.SuppressLint
 import android.os.Bundle
+import android.os.Looper
 import android.support.v7.app.AppCompatActivity
 import com.squareup.picasso.Picasso
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.Disposable
+import io.reactivex.rxkotlin.subscribeBy
 import io.reactivex.schedulers.Schedulers
-import io.reactivex.subscribers.DisposableSubscriber
 import kotlinx.android.synthetic.main.activity_basic_download.*
 import kotlinx.android.synthetic.main.content_basic_download.*
 import zlc.season.rxdownload3.RxDownload
@@ -58,48 +59,34 @@ class BasicDownloadActivity : AppCompatActivity() {
 
     @SuppressLint("CheckResult")
     private fun create() {
-//        disposable = RxDownload.create(url, autoStart = true)
+
+//        val mission = Mission(url, "test.apk", DEFAULT_SAVE_PATH, false, url, true)
+//        disposable = RxDownload.create(mission, autoStart = true)
 //                .observeOn(AndroidSchedulers.mainThread())
 //                .subscribe { status ->
 //                    currentStatus = status
 //                    setProgress(status)
 //                    setActionText(status)
 //                }
-        url.download()
+
+        url1.download()
                 .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(object : DisposableSubscriber<zlc.season.rxdownload4.Status>() {
-//                    override fun onStart() {
-//                        request(1)
-//                    }
+                .observeOn(AndroidSchedulers.from(Looper.getMainLooper(), true))
+                .subscribeBy(
+                        onNext = {
+                            progress_new.max = it.totalSize.toInt()
+                            progress_new.progress = it.downloadSize.toInt()
 
-                    override fun onComplete() {
-
-                    }
-
-                    override fun onNext(t: zlc.season.rxdownload4.Status) {
-//                        request(5)
-//                        t.log()
-                        "onnext".log()
-                    }
-
-                    override fun onError(t: Throwable?) {
-                        t?.log()
-                    }
-                })
-
-
-//                subscribe({
-//
-//                    Log.d("TAG",it.toString())
-//                    progress.max = it.totalSize.toInt()
-//                    progress.progress = it.downloadSize.toInt()
-//
-//                    percent.text = it.percent()
-////                    size.text = status.formatString()
-//                }, {
-//                    Log.w("TAG", it)
-//                })
+                            percent_new.text = it.percent()
+                            it.log()
+                        },
+                        onError = {
+                            it.log()
+                        },
+                        onComplete = {
+                            "complete".log()
+                        }
+                )
     }
 
     private fun setProgress(status: Status) {
@@ -147,6 +134,7 @@ class BasicDownloadActivity : AppCompatActivity() {
 
         private val iconUrl = "http://pp.myapp.com/ma_icon/0/icon_10910_1564113626/256"
         private val url = "https://dldir1.qq.com/weixin/android/weixin706android1460.apk"
+        private val url1 = "http://113.137.62.148/imtt.dd.qq.com/16891/C5801BF68962B59C75CCD573F01AFED1.apk"
     }
 
 }

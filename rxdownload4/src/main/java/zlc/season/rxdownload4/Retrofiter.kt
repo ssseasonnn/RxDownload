@@ -12,10 +12,10 @@ import java.util.concurrent.TimeUnit
 const val FAKE_BASE_URL = "http://www.example.com"
 
 val okHttpClient: OkHttpClient = OkHttpClient().newBuilder()
-        .connectTimeout(20, TimeUnit.SECONDS)
-        .callTimeout(20, TimeUnit.SECONDS)
-        .readTimeout(20, TimeUnit.SECONDS)
-        .writeTimeout(20, TimeUnit.SECONDS)
+        .connectTimeout(0, TimeUnit.MILLISECONDS)
+        .callTimeout(0, TimeUnit.MILLISECONDS)
+        .readTimeout(0, TimeUnit.MILLISECONDS)
+        .writeTimeout(0, TimeUnit.MILLISECONDS)
         .build()
 
 

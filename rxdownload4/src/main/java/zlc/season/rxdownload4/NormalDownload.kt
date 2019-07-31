@@ -1,71 +1,72 @@
 package zlc.season.rxdownload4
 
-import io.reactivex.BackpressureStrategy
+import io.reactivex.Emitter
 import io.reactivex.Flowable
+import io.reactivex.functions.BiFunction
+import io.reactivex.functions.Consumer
 import okhttp3.ResponseBody
+import okio.BufferedSink
+import okio.BufferedSource
 import okio.Okio
 import retrofit2.Response
+import java.io.Closeable
 import java.io.File
+import java.util.concurrent.Callable
 
 class NormalDownload(private val file: File) : DownloadType {
     private val shadowFile = file.shadow()
 
-    var waitCount = 0
+    class InternalState(
+            val source: BufferedSource,
+            val sink: BufferedSink,
+            var status: Status = Status()
+    )
 
     override fun download(response: Response<ResponseBody>): Flowable<Status> {
         val body = response.body() ?: throw RuntimeException("Response body is NULL")
 
         val byteSize = 8192L
 
-        var downloadSize = 0L
-        val totalSize = body.contentLength()
+        val status = Status(totalSize = body.contentLength())
 
-        val status = Status(totalSize = totalSize)
+        return Flowable.generate(
+                Callable {
+                    val source = body.source()
+                    val sink = Okio.buffer(Okio.sink(shadowFile))
 
-        return Flowable.create({ emitter ->
-            try {
-                emitter.requested().log()
+                    return@Callable InternalState(source, sink, status)
+                },
+                BiFunction<InternalState, Emitter<Status>, InternalState> { internalState, emitter ->
+                    val source = internalState.source
+                    val sink = internalState.sink
 
-                body.source().use { source ->
-                    Okio.buffer(Okio.sink(shadowFile)).use { sink ->
-                        val buffer = sink.buffer()
-                        var readLen = source.read(buffer, byteSize)
+                    val readLen = source.read(sink.buffer(), byteSize)
+                    sink.emit()
 
-                        readLen.log()
-
-                        while (readLen != -1L && !emitter.isCancelled) {
-                            downloadSize += readLen
-
-                            status.downloadSize = downloadSize
-                            "download onnext".log()
-                            emitter.onNext(status)
-
-                            readLen = source.read(buffer, byteSize)
-//                            downloadSize.log()
-
-//                            Thread.sleep(500)
-                            while (emitter.requested() == 0L) {
-                                emitter.requested().log()
-                                waitCount++
-                                "wait: $waitCount".log()
-                                Thread.sleep(5000)
-                                if (emitter.isCancelled) {
-                                    break
-                                }
-                            }
-                        }
-
-                        if (!emitter.isCancelled) {
-                            shadowFile.renameTo(file)
-                            emitter.onComplete()
-                        }
+                    if (readLen == -1L) {
+                        sink.flush()
+                        shadowFile.renameTo(file)
+                        emitter.onComplete()
+                    } else {
+                        val last = internalState.status.downloadSize
+                        val new = last + readLen
+                        internalState.status.downloadSize = new
+                        emitter.onNext(internalState.status)
                     }
-                }
-            } catch (t: Throwable) {
-                if (!emitter.isCancelled) {
-                    emitter.onError(t)
-                }
-            }
-        }, BackpressureStrategy.BUFFER)
+
+                    return@BiFunction internalState
+                },
+                Consumer {
+                    it.sink.safeClose()
+                    it.source.safeClose()
+                })
+    }
+
+    fun Closeable.safeClose() {
+        try {
+            close()
+        } catch (ignore: Throwable) {
+
+        }
     }
 }

@@ -10,9 +10,12 @@
         android:name=".BaseApplication"
         android:allowBackup="true"
         android:label="@string/app_name"
+        android:networkSecurityConfig="@xml/network_config"
         android:supportsRtl="true"
         android:theme="@style/AppTheme"
-        tools:ignore="GoogleAppIndexingWarning">
+        android:usesCleartextTraffic="true"
+        tools:ignore="GoogleAppIndexingWarning"
+        tools:targetApi="n">
 
         <activity
             android:name="zlc.season.rxdownload.kotlin_demo.MainActivity"

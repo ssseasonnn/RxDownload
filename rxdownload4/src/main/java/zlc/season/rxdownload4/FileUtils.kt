@@ -15,9 +15,13 @@ fun File.createDir() {
 }
 
 fun File.shadow(): File {
-    val path = canonicalPath
-    val shadowPath = "$path.download"
+    val shadowPath = "$canonicalPath.download"
     return File(shadowPath)
+}
+
+fun File.tmp(): File {
+    val tmpPath = "$canonicalPath.tmp"
+    return File(tmpPath)
 }
 
 fun File.recreate() {

@@ -16,7 +16,7 @@ import zlc.season.rxdownload3.core.*
 import zlc.season.rxdownload3.extension.ApkInstallExtension
 import zlc.season.rxdownload3.helper.dispose
 import zlc.season.rxdownload4.download
-import zlc.season.rxdownload4.log
+import zlc.season.rxdownload4.utils.log
 
 class BasicDownloadActivity : AppCompatActivity() {
 

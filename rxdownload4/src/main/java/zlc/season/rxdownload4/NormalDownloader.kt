@@ -9,12 +9,13 @@ import okio.BufferedSink
 import okio.BufferedSource
 import okio.Okio
 import retrofit2.Response
+import zlc.season.rxdownload4.utils.file
+import zlc.season.rxdownload4.utils.shadow
 import java.io.Closeable
-import java.io.File
 import java.util.concurrent.Callable
 
-class NormalDownload(private val file: File) : DownloadType {
-    private val shadowFile = file.shadow()
+class NormalDownloader : Downloader {
+
 
     class InternalState(
             val source: BufferedSource,
@@ -23,6 +24,8 @@ class NormalDownload(private val file: File) : DownloadType {
     )
 
     override fun download(response: Response<ResponseBody>): Flowable<Status> {
+        val file = response.file()
+        val shadowFile = file.shadow()
         val body = response.body() ?: throw RuntimeException("Response body is NULL")
 
         val byteSize = 8192L

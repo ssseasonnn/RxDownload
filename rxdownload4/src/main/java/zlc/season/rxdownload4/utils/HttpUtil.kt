@@ -1,7 +1,11 @@
-package zlc.season.rxdownload4
+package zlc.season.rxdownload4.utils
 
 import okhttp3.internal.http.HttpHeaders
 import retrofit2.Response
+import zlc.season.rxdownload4.DEFAULT_SAVE_PATH
+import zlc.season.rxdownload4.Downloader
+import zlc.season.rxdownload4.NormalDownloader
+import zlc.season.rxdownload4.RangeDownloader
 import java.io.File
 import java.util.regex.Pattern
 
@@ -21,27 +25,24 @@ fun Response<*>.isSupportRange(): Boolean {
 
     if (code() == 206
             || header("Content-Range").isNotEmpty()
-            || header("Accept-Ranges").isNotEmpty()) {
+            || header("Accept-Ranges") == "bytes") {
         return true
     }
 
     return false
 }
 
-fun Response<*>.map(): DownloadType {
-    val file = file()
+fun Response<*>.map(): Downloader {
     return if (isSupportRange()) {
-        NormalDownload(file)
+        RangeDownloader()
     } else {
-        NormalDownload(file)
+        NormalDownloader()
     }
 }
 
 fun Response<*>.file(): File {
     val fileName = fileName()
-    fileName.log()
     val fullFilePath = DEFAULT_SAVE_PATH + File.separator + fileName
-    fullFilePath.log()
     return File(fullFilePath)
 }
 

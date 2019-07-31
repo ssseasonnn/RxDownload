@@ -5,125 +5,109 @@ import okio.BufferedSink
 import okio.BufferedSource
 import okio.ByteString.decodeHex
 import okio.Okio
-import zlc.season.rxdownload3.core.DownloadConfig.TMP_DIR_SUFFIX
-import zlc.season.rxdownload3.core.DownloadConfig.TMP_FILE_SUFFIX
-import zlc.season.rxdownload3.core.DownloadConfig.rangeDownloadSize
-import zlc.season.rxdownload3.core.RangeTmpFile.Segment.Companion.SEGMENT_SIZE
-import zlc.season.rxdownload4.RangeTmpFile.Segment.Companion.SEGMENT_SIZE
 import java.io.File
 
-class RangeTmpFile(private val file: File) {
-    private val tmpFile = file.tmp()
+class RangeTmpFile(private val file: File, private val totalSize: Long) {
+    val header = FileHeader()
+    val content = FileContent()
 
-    private val fileStructure = FileStructure()
+    fun write() {
+        val totalSegments = calculateTotalSegments(totalSize)
+        header.totalSize = totalSize
+        header.totalSegments = totalSegments
 
-    private val status = Status()
+        content.slice(totalSize, totalSegments)
 
-    fun isFinish(): Boolean {
-        return fileStructure.isFinish()
-    }
-
-    private fun readStructure() {
-        Okio.buffer(Okio.source(tmpFile)).use {
-            fileStructure.readHeader(it)
-            fileStructure.readSegments(it)
+        Okio.buffer(Okio.sink(file)).use {
+            header.write(it)
+            content.write(it)
         }
     }
 
-    private fun writeStructure() {
-        Okio.buffer(Okio.sink(tmpFile)).use {
-            fileStructure.writeHeader(it)
-            fileStructure.writeSegments(it)
+    fun read() {
+        Okio.buffer(Okio.source(file)).use {
+            header.read(it)
+            content.read(it, header.totalSegments)
         }
     }
 
-    fun getSegments(): List<Segment> {
-        return fileStructure.segments
+    private fun calculateTotalSegments(totalSize: Long): Long {
+        val remainder = totalSize % DEFAULT_RANGE_SIZE
+        return if (remainder == 0L) {
+            totalSize / DEFAULT_RANGE_SIZE
+        } else {
+            totalSize / DEFAULT_RANGE_SIZE + 1
+        }
     }
 
-    fun getPosition(segment: Segment): Long {
-        return fileStructure.size() + SEGMENT_SIZE * segment.index
-    }
 
-    fun currentStatus(): Status {
-        var downloadSize = 0L
-        val totalSize = fileStructure.totalSize
+//    fun getSegments(): List<Segment> {
+//        return fileStructure.segments
+//    }
 
-        val segments = getSegments()
-        segments.forEach {
-            downloadSize += (it.current - it.start)
+//    fun getPosition(segment: Segment): Long {
+//        return fileStructure.size() + SEGMENT_SIZE * segment.index
+//    }
+//
+//    fun currentStatus(): Status {
+//        var downloadSize = 0L
+//        val totalSize = fileStructure.totalSize
+//
+//        val segments = getSegments()
+//        segments.forEach {
+//            downloadSize += (it.current - it.start)
+//        }
+//
+//        status.downloadSize = downloadSize
+//        status.totalSize = totalSize
+//
+//        return status
+//    }
+
+    class FileHeader(
+            var totalSize: Long = 0L,
+            var totalSegments: Long = 0L
+    ) {
+
+        companion object {
+            const val FILE_HEADER_MAGIC_NUMBER: String = "a1b2c3d4e5f6g7"
         }
 
-        status.downloadSize = downloadSize
-        status.totalSize = totalSize
+        private val hex = decodeHex(FILE_HEADER_MAGIC_NUMBER)
 
-        return status
-    }
+        fun sizeOf() = hex.size() + 16L
 
-    inner class FileStructure {
-        private val FILE_HEADER_MAGIC_NUMBER = "a1b2c3d4e5f6g7"
-        private val FILE_HEADER_MAGIC_NUMBER_HEX = decodeHex(FILE_HEADER_MAGIC_NUMBER)
-
-        var totalSize: Long = 0L
-        var totalSegments: Long = 0L
-
-        var segments = mutableListOf<Segment>()
-
-        fun print() {
-
-            "---------------------------".log()
-            "|          ${file.name}   |".log()
-            "|-------------------------|".log()
-            "|%-60s|".format(FILE_HEADER_MAGIC_NUMBER).log()
-            "|%-30d|%-30d|".format(totalSize, totalSegments).log()
-            segments.forEach {
-                "|%-15d|%-15d|%-15d|%-15d|".format(it.index, it.start, it.current, it.end).log()
-            }
-            "|-------------------------|".log()
-        }
-
-        fun size(): Long {
-            return FILE_HEADER_MAGIC_NUMBER_HEX.size() + 16L
-        }
-
-        fun writeHeader(sink: BufferedSink, totalSize: Long) {
-            totalSegments = calculateTotalSegments(totalSize)
-
-            sink.write(FILE_HEADER_MAGIC_NUMBER_HEX)
+        fun write(sink: BufferedSink) {
+            sink.write(hex)
             sink.writeLong(totalSize)
             sink.writeLong(totalSegments)
         }
 
-        fun writeSegments(sink: BufferedSink, totalSize: Long) {
-            segments.clear()
-
-            var start = 0L
-
-            for (i in 0 until totalSegments) {
-                val end = if (i == totalSegments - 1) {
-                    totalSize - 1
-                } else {
-                    start + DEFAULT_RANGE_SIZE - 1
-                }
-
-                segments.add(Segment(i, start, start, end).write(sink))
-
-                start += DEFAULT_RANGE_SIZE
+        fun read(source: BufferedSource) {
+            val header = source.readByteString(hex.size().toLong()).hex()
+            if (header != FILE_HEADER_MAGIC_NUMBER) {
+                throw RuntimeException("not a tmp file")
             }
-        }
-
-        fun readHeader(source: BufferedSource) {
-            checkFileHeader(source)
             totalSize = source.readLong()
             totalSegments = source.readLong()
         }
+    }
 
-        fun readSegments(source: BufferedSource) {
+    class FileContent {
+        var segments = mutableListOf<Segment>()
+
+        fun write(sink: BufferedSink) {
+            segments.forEach {
+                it.write(sink)
+            }
+        }
+
+        fun read(source: BufferedSource, totalSegments: Long) {
             segments.clear()
 
             for (i in 0 until totalSegments) {
                 val buffer = Buffer()
-                source.readFully(buffer, SEGMENT_SIZE)
+                source.readFully(buffer, Segment.SEGMENT_SIZE)
 
                 val index = buffer.readLong()
                 val start = buffer.readLong()
@@ -142,24 +126,31 @@ class RangeTmpFile(private val file: File) {
             return segments.any { it.isComplete() }
         }
 
-        private fun checkFileHeader(source: BufferedSource) {
-            val header = source.readByteString(FILE_HEADER_MAGIC_NUMBER_HEX.size().toLong()).hex()
-            if (header != FILE_HEADER_MAGIC_NUMBER) {
-                throw RuntimeException("$file not a tmp file")
-            }
-        }
+        fun slice(totalSize: Long, totalSegments: Long) {
+            segments.clear()
 
-        private fun calculateTotalSegments(totalSize: Long): Long {
-            val remainder = totalSize % DEFAULT_RANGE_SIZE
-            return if (remainder == 0L) {
-                totalSize / DEFAULT_RANGE_SIZE
-            } else {
-                totalSize / DEFAULT_RANGE_SIZE + 1
+            var start = 0L
+
+            for (i in 0 until totalSegments) {
+                val end = if (i == totalSegments - 1) {
+                    totalSize - 1
+                } else {
+                    start + DEFAULT_RANGE_SIZE - 1
+                }
+
+                segments.add(Segment(i, start, start, end))
+
+                start += DEFAULT_RANGE_SIZE
             }
         }
     }
 
-    class Segment(val index: Long, val start: Long, var current: Long, val end: Long) {
+    class Segment(
+            private val index: Long,
+            private val start: Long,
+            var current: Long,
+            private val end: Long
+    ) {
 
         companion object {
             const val SEGMENT_SIZE = 32L //each Long is 8 bytes
@@ -177,9 +168,8 @@ class RangeTmpFile(private val file: File) {
             return this
         }
 
-        fun size(): Long {
+        fun sizeOf(): Long {
             return end - current + 1
         }
     }
-
 }

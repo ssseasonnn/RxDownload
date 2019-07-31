@@ -19,7 +19,7 @@ val okHttpClient: OkHttpClient = OkHttpClient().newBuilder()
         .build()
 
 
-inline fun <reified T> api(
+inline fun <reified T> request(
         baseUrl: String = FAKE_BASE_URL,
         client: OkHttpClient = okHttpClient,
         callAdapterFactory: CallAdapter.Factory = RxJava2CallAdapterFactory.create(),

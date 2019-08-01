@@ -7,8 +7,10 @@ import zlc.season.rxdownload4.utils.contentLength
 import zlc.season.rxdownload4.utils.file
 import zlc.season.rxdownload4.utils.shadow
 import zlc.season.rxdownload4.utils.tmp
+import java.io.File
 
 class RangeDownloader : Downloader {
+    lateinit var rangeTmpFile: RangeTmpFile
 
     override fun download(response: Response<ResponseBody>): Flowable<Status> {
         val totalSize = response.contentLength()
@@ -22,28 +24,40 @@ class RangeDownloader : Downloader {
         val shadowFile = file.shadow()
         val tmpFile = file.tmp()
 
-        if (file.exists() && file.isFile) {
-            if (shadowFile.exists() || tmpFile.exists()) {
-                shadowFile.deleteOnExit()
-                tmpFile.deleteOnExit()
-            }
+        if (file.exists()) {
 
         } else {
-            //both necessary file exits
+            val totalSize = response.contentLength()
+
             if (shadowFile.exists() && tmpFile.exists()) {
-                //check tmp file valid
-                //continue
-            } else {
-                tmpFile.deleteOnExit()
-                shadowFile.deleteOnExit()
+                rangeTmpFile = RangeTmpFile(tmpFile, totalSize)
+                rangeTmpFile.read()
+                if (rangeTmpFile.check()) {
 
-                val tmpCreated = tmpFile.createNewFile()
-                val shadowCreated = shadowFile.createNewFile()
-
-                if (tmpCreated && shadowCreated) {
-                    //begin
+                } else {
+                    recreate(tmpFile, shadowFile, totalSize)
                 }
+            } else {
+                recreate(tmpFile, shadowFile, totalSize)
             }
+        }
+    }
+
+    private fun recreate(
+            tmpFile: File,
+            shadowFile: File,
+            totalSize: Long
+    ) {
+        tmpFile.deleteOnExit()
+        shadowFile.deleteOnExit()
+
+        val tmpCreated = tmpFile.createNewFile()
+        val shadowCreated = shadowFile.createNewFile()
+
+        if (tmpCreated && shadowCreated) {
+            //begin
+            rangeTmpFile = RangeTmpFile(tmpFile, totalSize)
+            rangeTmpFile.write()
         }
     }
 }

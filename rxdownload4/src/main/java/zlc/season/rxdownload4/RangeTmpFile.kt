@@ -31,12 +31,18 @@ class RangeTmpFile(private val file: File, private val totalSize: Long) {
         }
     }
 
+    fun check(): Boolean {
+        return header.totalSize == totalSize
+    }
+
     private fun calculateTotalSegments(totalSize: Long): Long {
         val remainder = totalSize % DEFAULT_RANGE_SIZE
+        val result = totalSize / DEFAULT_RANGE_SIZE
+
         return if (remainder == 0L) {
-            totalSize / DEFAULT_RANGE_SIZE
+            result
         } else {
-            totalSize / DEFAULT_RANGE_SIZE + 1
+            result + 1
         }
     }
 

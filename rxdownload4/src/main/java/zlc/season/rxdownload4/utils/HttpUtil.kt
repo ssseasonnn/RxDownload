@@ -53,7 +53,14 @@ fun Response<*>.fileName(): String {
     if (fileName.isEmpty()) {
         fileName = getFileNameFromUrl(url)
     }
-    return fileName
+
+    val dotIndex = fileName.indexOf('.')
+
+    if (dotIndex > 0 && dotIndex < fileName.lastIndex) {
+        return fileName
+    } else {
+        throw IllegalStateException("Invalid filename: $fileName")
+    }
 }
 
 private fun Response<*>.contentDisposition(): String {

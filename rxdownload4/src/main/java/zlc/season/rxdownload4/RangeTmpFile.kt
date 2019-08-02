@@ -69,7 +69,7 @@ class RangeTmpFile(private val file: File, response: Response<*>) {
     ) {
 
         companion object {
-            const val FILE_HEADER_MAGIC_NUMBER: String = "A1B2C3D4E5F6A1"
+            const val FILE_HEADER_MAGIC_NUMBER: String = "a1b2c3d4e5f6a1"
         }
 
         private val hex = decodeHex(FILE_HEADER_MAGIC_NUMBER)

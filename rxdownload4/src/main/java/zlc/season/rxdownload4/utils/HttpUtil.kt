@@ -2,10 +2,7 @@ package zlc.season.rxdownload4.utils
 
 import okhttp3.internal.http.HttpHeaders
 import retrofit2.Response
-import zlc.season.rxdownload4.DEFAULT_SAVE_PATH
-import zlc.season.rxdownload4.Downloader
-import zlc.season.rxdownload4.NormalDownloader
-import zlc.season.rxdownload4.RangeDownloader
+import zlc.season.rxdownload4.*
 import java.io.File
 import java.util.regex.Pattern
 
@@ -60,6 +57,18 @@ fun Response<*>.fileName(): String {
         return fileName
     } else {
         throw IllegalStateException("Invalid filename: $fileName")
+    }
+}
+
+fun Response<*>.sliceCount(): Long {
+    val totalSize = contentLength()
+    val remainder = totalSize % DEFAULT_RANGE_SIZE
+    val result = totalSize / DEFAULT_RANGE_SIZE
+
+    return if (remainder == 0L) {
+        result
+    } else {
+        result + 1
     }
 }
 

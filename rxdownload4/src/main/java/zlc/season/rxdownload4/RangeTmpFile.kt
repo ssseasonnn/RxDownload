@@ -5,45 +5,35 @@ import okio.BufferedSink
 import okio.BufferedSource
 import okio.ByteString.decodeHex
 import okio.Okio
+import retrofit2.Response
+import zlc.season.rxdownload4.RangeTmpFile.Segment.Companion.SEGMENT_SIZE
+import zlc.season.rxdownload4.utils.contentLength
+import zlc.season.rxdownload4.utils.sliceCount
 import java.io.File
 
-class RangeTmpFile(private val file: File, private val totalSize: Long) {
+class RangeTmpFile(private val file: File, response: Response<*>) {
+    private val totalSize = response.contentLength()
+    private val totalSegments = response.sliceCount()
+
     val header = FileHeader()
     val content = FileContent()
 
     fun write() {
-        val totalSegments = calculateTotalSegments(totalSize)
-        header.totalSize = totalSize
-        header.totalSegments = totalSegments
-
-        content.slice(totalSize, totalSegments)
-
         Okio.buffer(Okio.sink(file)).use {
-            header.write(it)
-            content.write(it)
+            header.write(it, totalSize, totalSegments)
+            content.write(it, totalSize, totalSegments)
         }
     }
 
     fun read() {
         Okio.buffer(Okio.source(file)).use {
             header.read(it)
-            content.read(it, header.totalSegments)
+            content.read(it, totalSegments)
         }
     }
 
     fun check(): Boolean {
-        return header.totalSize == totalSize
-    }
-
-    private fun calculateTotalSegments(totalSize: Long): Long {
-        val remainder = totalSize % DEFAULT_RANGE_SIZE
-        val result = totalSize / DEFAULT_RANGE_SIZE
-
-        return if (remainder == 0L) {
-            result
-        } else {
-            result + 1
-        }
+        return header.check(totalSize)
     }
 
 
@@ -51,10 +41,13 @@ class RangeTmpFile(private val file: File, private val totalSize: Long) {
 //        return fileStructure.segments
 //    }
 
-//    fun getPosition(segment: Segment): Long {
-//        return fileStructure.size() + SEGMENT_SIZE * segment.index
-//    }
-//
+    /**
+     * return segment start byte index
+     */
+    fun indexOf(segment: Segment): Long {
+        return header.sizeOf() + SEGMENT_SIZE * segment.index
+    }
+
 //    fun currentStatus(): Status {
 //        var downloadSize = 0L
 //        val totalSize = fileStructure.totalSize
@@ -71,19 +64,22 @@ class RangeTmpFile(private val file: File, private val totalSize: Long) {
 //    }
 
     class FileHeader(
-            var totalSize: Long = 0L,
-            var totalSegments: Long = 0L
+            private var totalSize: Long = 0L,
+            private var totalSegments: Long = 0L
     ) {
 
         companion object {
-            const val FILE_HEADER_MAGIC_NUMBER: String = "a1b2c3d4e5f6g7"
+            const val FILE_HEADER_MAGIC_NUMBER: String = "A1B2C3D4E5F6A1"
         }
 
         private val hex = decodeHex(FILE_HEADER_MAGIC_NUMBER)
 
         fun sizeOf() = hex.size() + 16L
 
-        fun write(sink: BufferedSink) {
+        fun write(sink: BufferedSink, totalSize: Long, totalSegments: Long) {
+            this.totalSize = totalSize
+            this.totalSegments = totalSegments
+
             sink.write(hex)
             sink.writeLong(totalSize)
             sink.writeLong(totalSegments)
@@ -97,12 +93,18 @@ class RangeTmpFile(private val file: File, private val totalSize: Long) {
             totalSize = source.readLong()
             totalSegments = source.readLong()
         }
+
+        fun check(totalSize: Long): Boolean {
+            return this.totalSize == totalSize
+        }
     }
 
     class FileContent {
-        var segments = mutableListOf<Segment>()
+        val segments = mutableListOf<Segment>()
 
-        fun write(sink: BufferedSink) {
+        fun write(sink: BufferedSink, totalSize: Long, totalSegments: Long) {
+            sliceSegments(totalSize, totalSegments)
+
             segments.forEach {
                 it.write(sink)
             }
@@ -110,17 +112,8 @@ class RangeTmpFile(private val file: File, private val totalSize: Long) {
 
         fun read(source: BufferedSource, totalSegments: Long) {
             segments.clear()
-
             for (i in 0 until totalSegments) {
-                val buffer = Buffer()
-                source.readFully(buffer, Segment.SEGMENT_SIZE)
-
-                val index = buffer.readLong()
-                val start = buffer.readLong()
-                val current = buffer.readLong()
-                val end = buffer.readLong()
-
-                segments.add(Segment(index, start, current, end))
+                segments.add(Segment().read(source))
             }
         }
 
@@ -132,7 +125,7 @@ class RangeTmpFile(private val file: File, private val totalSize: Long) {
             return segments.any { it.isComplete() }
         }
 
-        fun slice(totalSize: Long, totalSegments: Long) {
+        private fun sliceSegments(totalSize: Long, totalSegments: Long) {
             segments.clear()
 
             var start = 0L
@@ -152,10 +145,10 @@ class RangeTmpFile(private val file: File, private val totalSize: Long) {
     }
 
     class Segment(
-            private val index: Long,
-            private val start: Long,
-            var current: Long,
-            private val end: Long
+            var index: Long = 0L,
+            var start: Long = 0L,
+            var current: Long = 0L,
+            var end: Long = 0L
     ) {
 
         companion object {
@@ -171,6 +164,18 @@ class RangeTmpFile(private val file: File, private val totalSize: Long) {
             sink.writeLong(start)
             sink.writeLong(current)
             sink.writeLong(end)
+            return this
+        }
+
+        fun read(source: BufferedSource): Segment {
+            val buffer = Buffer()
+            source.readFully(buffer, SEGMENT_SIZE)
+
+            index = buffer.readLong()
+            start = buffer.readLong()
+            current = buffer.readLong()
+            end = buffer.readLong()
+
             return this
         }
 

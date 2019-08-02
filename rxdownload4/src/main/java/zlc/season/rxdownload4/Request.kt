@@ -25,6 +25,14 @@ interface Request {
     @Streaming
     fun get(
             @Url url: String,
-            @HeaderMap headers: Map<String, String> = emptyMap()
+            @HeaderMap headers: Map<String, String> = RANGE_CHECK_HEADER
     ): Flowable<Response<ResponseBody>>
+
+    companion object {
+        private val request = request<Request>()
+
+        operator fun invoke(): Request {
+            return request
+        }
+    }
 }

@@ -36,9 +36,12 @@ class RangeDownloader : Downloader {
 
             val arrays = mutableListOf<Flowable<Long>>()
 
-            rangeTmpFile.content.segments
-                    .filter { !it.isComplete() }
-                    .forEach { arrays.add(rangeDownload(url, it)) }
+            rangeTmpFile.unfinishedSegments()
+                    .forEach {
+                        arrays.add(
+                                InnerRangerDownloader(url, it, shadowFile, tmpFile).download()
+                        )
+                    }
 
             return Flowable.mergeDelayError(arrays, DEFAULT_MAX_CONCURRENCY)
                     .map {
@@ -52,14 +55,6 @@ class RangeDownloader : Downloader {
         }
     }
 
-    private fun rangeDownload(url: String, segment: RangeTmpFile.Segment): Flowable<Long> {
-        return Flowable.just(segment)
-                .subscribeOn(Schedulers.io())
-                .map { mapOf("Range" to "bytes=${it.current}-${it.end}").log() }
-                .flatMap { Request().get(url, it) }
-                .flatMap { rangeSave(segment, it) }
-    }
-
     private fun prepare(response: Response<ResponseBody>) {
         file = response.file()
         shadowFile = file.shadow()
@@ -67,9 +62,8 @@ class RangeDownloader : Downloader {
 
         if (file.exists()) {
             if (tmpFile.exists()) {
-                rangeTmpFile = RangeTmpFile(tmpFile, response)
-                rangeTmpFile.read()
-                if (rangeTmpFile.check()) {
+                rangeTmpFile = RangeTmpFile(tmpFile)
+                if (rangeTmpFile.read(response)) {
                     //file is valid
                     alreadyDownloaded = true
                 } else {
@@ -82,9 +76,9 @@ class RangeDownloader : Downloader {
             }
         } else {
             if (shadowFile.exists() && tmpFile.exists()) {
-                rangeTmpFile = RangeTmpFile(tmpFile, response)
-                rangeTmpFile.read()
-                if (rangeTmpFile.check()) {
+                rangeTmpFile = RangeTmpFile(tmpFile)
+
+                if (rangeTmpFile.read(response)) {
 
                 } else {
                     recreate(tmpFile, shadowFile, response)
@@ -94,6 +88,7 @@ class RangeDownloader : Downloader {
             }
         }
     }
+
 
     private fun recreate(
             tmpFile: File,
@@ -108,8 +103,8 @@ class RangeDownloader : Downloader {
 
         if (tmpCreated && shadowCreated) {
             //begin
-            rangeTmpFile = RangeTmpFile(tmpFile, response)
-            rangeTmpFile.write()
+            rangeTmpFile = RangeTmpFile(tmpFile)
+            rangeTmpFile.write(response)
         }
     }
 
@@ -121,54 +116,75 @@ class RangeDownloader : Downloader {
             var downloadSize: Long = 0
     )
 
-    private fun rangeSave(segment: RangeTmpFile.Segment, response: Response<ResponseBody>): Flowable<Long> {
-        val body = response.body() ?: throw RuntimeException("Response body is NULL")
+    class InnerRangerDownloader(
+            private val url: String,
+            private val segment: RangeTmpFile.Segment,
+            private val shadowFile: File,
+            private val tmpFile: File
+    ) {
+        fun download(): Flowable<Long> {
+            return Flowable.just(segment)
+                    .subscribeOn(Schedulers.io())
+                    .map { mapOf("Range" to "bytes=${it.current}-${it.end}").log() }
+                    .flatMap { Request().get(url, it) }
+                    .flatMap { rangeSave(segment, it) }
+        }
 
-        return Flowable.generate(
-                Callable {
-                    initialState(body, segment)
-                },
-                BiFunction<InternalState, Emitter<Long>, InternalState> { internalState, emitter ->
-                    internalState.apply {
-                        val readLen = source.read(buffer)
+        private fun rangeSave(
+                segment: RangeTmpFile.Segment,
+                response: Response<ResponseBody>
+        ): Flowable<Long> {
+            val body = response.body() ?: throw RuntimeException("Response body is NULL")
 
-                        if (readLen == -1) {
-                            emitter.onComplete()
-                        } else {
-                            shadowFileBuffer.put(buffer, 0, readLen)
-                            tmpFileBuffer.putLong(16, downloadSize)
+            return Flowable.generate(
+                    Callable {
+                        initialState(body, segment)
+                    },
+                    BiFunction<InternalState, Emitter<Long>, InternalState> { internalState, emitter ->
+                        internalState.apply {
+                            val readLen = source.read(buffer)
 
-                            downloadSize += readLen
-                            emitter.onNext(readLen.toLong())
+                            if (readLen == -1) {
+                                emitter.onComplete()
+                            } else {
+                                shadowFileBuffer.put(buffer, 0, readLen)
+                                tmpFileBuffer.putLong(16, downloadSize)
+
+                                downloadSize += readLen
+                                emitter.onNext(readLen.toLong())
+                            }
                         }
-                    }
-                },
-                Consumer {
+                    },
+                    Consumer {
 
-                })
-    }
+                    })
+        }
 
-    private fun initialState(body: ResponseBody, segment: RangeTmpFile.Segment): InternalState {
-        val source = body.byteStream()
-        val shadowFileChannel = RandomAccessFile(shadowFile, "rw").channel
-        val tmpFileChannel = RandomAccessFile(tmpFile, "rw").channel
+        private fun initialState(
+                body: ResponseBody,
+                segment: RangeTmpFile.Segment
+        ): InternalState {
+            val source = body.byteStream()
+            val shadowFileChannel = RandomAccessFile(shadowFile, "rw").channel
+            val tmpFileChannel = RandomAccessFile(tmpFile, "rw").channel
 
-        val tmpFileBuffer = tmpFileChannel.map(
-                FileChannel.MapMode.READ_WRITE,
-                rangeTmpFile.indexOf(segment),
-                RangeTmpFile.Segment.SEGMENT_SIZE
-        )
+            val tmpFileBuffer = tmpFileChannel.map(
+                    FileChannel.MapMode.READ_WRITE,
+                    segment.startByte(),
+                    RangeTmpFile.Segment.SEGMENT_SIZE
+            )
 
 
-        val shadowFileBuffer = shadowFileChannel.map(
-                FileChannel.MapMode.READ_WRITE,
-                segment.current,
-                segment.sizeOf()
-        )
+            val shadowFileBuffer = shadowFileChannel.map(
+                    FileChannel.MapMode.READ_WRITE,
+                    segment.current,
+                    segment.remainSize()
+            )
 
-        shadowFileChannel.close()
-        tmpFileChannel.close()
+            shadowFileChannel.close()
+            tmpFileChannel.close()
 
-        return InternalState(source, shadowFileBuffer, tmpFileBuffer, downloadSize = segment.current)
+            return InternalState(source, shadowFileBuffer, tmpFileBuffer, downloadSize = segment.current)
+        }
     }
 }

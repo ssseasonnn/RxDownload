@@ -30,17 +30,21 @@ class RangeDownloader : Downloader {
         if (alreadyDownloaded) {
             return Flowable.just(Status(response.contentLength(), response.contentLength()))
         } else {
-            val url = response.raw().request().url().toString()
+            val url = response.url()
 
-            val arrays = mutableListOf<Flowable<Any>>()
+            val status = rangeTmpFile.lastStatus()
+
+            val arrays = mutableListOf<Flowable<Long>>()
 
             rangeTmpFile.content.segments
                     .filter { !it.isComplete() }
                     .forEach { arrays.add(rangeDownload(url, it)) }
 
-            return Flowable.mergeDelayError(arrays, 3)
+            return Flowable.mergeDelayError(arrays, DEFAULT_MAX_CONCURRENCY)
                     .map {
-                        Status()
+                        status.apply {
+                            downloadSize += it
+                        }
                     }
                     .doOnComplete {
                         shadowFile.renameTo(file)
@@ -48,12 +52,12 @@ class RangeDownloader : Downloader {
         }
     }
 
-    private fun rangeDownload(url: String, segment: RangeTmpFile.Segment): Flowable<Any> {
+    private fun rangeDownload(url: String, segment: RangeTmpFile.Segment): Flowable<Long> {
         return Flowable.just(segment)
                 .subscribeOn(Schedulers.io())
                 .map { mapOf("Range" to "bytes=${it.current}-${it.end}").log() }
                 .flatMap { Request().get(url, it) }
-                .flatMap { save(segment, it) }
+                .flatMap { rangeSave(segment, it) }
     }
 
     private fun prepare(response: Response<ResponseBody>) {
@@ -117,7 +121,7 @@ class RangeDownloader : Downloader {
             var downloadSize: Long = 0
     )
 
-    fun save(segment: RangeTmpFile.Segment, response: Response<ResponseBody>): Flowable<Long> {
+    private fun rangeSave(segment: RangeTmpFile.Segment, response: Response<ResponseBody>): Flowable<Long> {
         val body = response.body() ?: throw RuntimeException("Response body is NULL")
 
         return Flowable.generate(
@@ -135,7 +139,7 @@ class RangeDownloader : Downloader {
                             tmpFileBuffer.putLong(16, downloadSize)
 
                             downloadSize += readLen
-                            emitter.onNext(downloadSize)
+                            emitter.onNext(readLen.toLong())
                         }
                     }
                 },
@@ -166,9 +170,5 @@ class RangeDownloader : Downloader {
         tmpFileChannel.close()
 
         return InternalState(source, shadowFileBuffer, tmpFileBuffer, downloadSize = segment.current)
-    }
-
-    class ShadowRangeFile() {
-
     }
 }

@@ -5,12 +5,12 @@ import android.util.Log
 const val LOG_ENABLE = true
 const val LOG_TAG = "RxDownload"
 
-fun <T> T.log(): T {
+fun <T> T.log(prefix: String = ""): T {
     if (LOG_ENABLE) {
         if (this is Throwable) {
-            Log.w(LOG_TAG, this.message, this)
+            Log.w(LOG_TAG, prefix + this.message, this)
         } else {
-            Log.d(LOG_TAG, toString())
+            Log.d(LOG_TAG, prefix + toString())
         }
     }
     return this

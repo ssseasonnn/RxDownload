@@ -2,74 +2,63 @@ package zlc.season.rxdownload4
 
 import io.reactivex.Emitter
 import io.reactivex.Flowable
+import io.reactivex.Flowable.generate
 import io.reactivex.functions.BiFunction
 import io.reactivex.functions.Consumer
 import okhttp3.ResponseBody
 import okio.BufferedSink
 import okio.BufferedSource
-import okio.Okio
+import okio.Okio.buffer
+import okio.Okio.sink
 import retrofit2.Response
-import zlc.season.rxdownload4.utils.file
-import zlc.season.rxdownload4.utils.shadow
-import java.io.Closeable
+import zlc.season.rxdownload4.utils.*
 import java.util.concurrent.Callable
 
 class NormalDownloader : Downloader {
 
+    private val byteSize = 8192L
 
     class InternalState(
             val source: BufferedSource,
-            val sink: BufferedSink,
-            var status: Status = Status()
+            val sink: BufferedSink
     )
 
     override fun download(response: Response<ResponseBody>): Flowable<Status> {
-        val file = response.file()
-        val shadowFile = file.shadow()
         val body = response.body() ?: throw RuntimeException("Response body is NULL")
 
-        val byteSize = 8192L
+        val file = response.file()
+        val shadowFile = file.shadow()
 
-        val status = Status(totalSize = body.contentLength())
+        val status = Status(
+                totalSize = response.contentLength(),
+                isChunked = response.isChunked()
+        )
 
-        return Flowable.generate(
+        return generate(
                 Callable {
-                    val source = body.source()
-                    val sink = Okio.buffer(Okio.sink(shadowFile))
-
-                    return@Callable InternalState(source, sink, status)
+                    InternalState(body.source(), buffer(sink(shadowFile)))
                 },
                 BiFunction<InternalState, Emitter<Status>, InternalState> { internalState, emitter ->
-                    val source = internalState.source
-                    val sink = internalState.sink
+                    internalState.apply {
+                        val readLen = source.read(sink.buffer(), byteSize)
 
-                    val readLen = source.read(sink.buffer(), byteSize)
-                    sink.emit()
-
-                    if (readLen == -1L) {
-                        sink.flush()
-                        shadowFile.renameTo(file)
-                        emitter.onComplete()
-                    } else {
-                        val last = internalState.status.downloadSize
-                        val new = last + readLen
-                        internalState.status.downloadSize = new
-                        emitter.onNext(internalState.status)
+                        if (readLen == -1L) {
+                            sink.flush()
+                            shadowFile.renameTo(file)
+                            emitter.onComplete()
+                        } else {
+                            sink.emit()
+                            emitter.onNext(status.apply {
+                                downloadSize += readLen
+                            })
+                        }
                     }
-
-                    return@BiFunction internalState
                 },
                 Consumer {
-                    it.sink.safeClose()
-                    it.source.safeClose()
+                    it.apply {
+                        sink.safeClose()
+                        source.safeClose()
+                    }
                 })
-    }
-
-    fun Closeable.safeClose() {
-        try {
-            close()
-        } catch (ignore: Throwable) {
-
-        }
     }
 }

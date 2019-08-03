@@ -3,16 +3,28 @@ package zlc.season.rxdownload4.utils
 import okhttp3.internal.http.HttpHeaders
 import retrofit2.Response
 import zlc.season.rxdownload4.*
+import java.io.Closeable
 import java.io.File
 import java.util.regex.Pattern
 
+fun Closeable.safeClose() {
+    try {
+        close()
+    } catch (ignore: Throwable) {
+
+    }
+}
+
+fun Response<*>.url(): String {
+    return raw().request().url().toString()
+}
 
 fun Response<*>.contentLength(): Long {
     return HttpHeaders.contentLength(headers())
 }
 
 fun Response<*>.isChunked(): Boolean {
-    return "chunked" == header("Transfer-Encoding")
+    return header("Transfer-Encoding") == "chunked"
 }
 
 fun Response<*>.isSupportRange(): Boolean {

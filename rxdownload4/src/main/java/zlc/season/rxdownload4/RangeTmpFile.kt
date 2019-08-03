@@ -48,24 +48,21 @@ class RangeTmpFile(private val file: File, response: Response<*>) {
         return header.sizeOf() + SEGMENT_SIZE * segment.index
     }
 
-//    fun currentStatus(): Status {
-//        var downloadSize = 0L
-//        val totalSize = fileStructure.totalSize
-//
-//        val segments = getSegments()
-//        segments.forEach {
-//            downloadSize += (it.current - it.start)
-//        }
-//
-//        status.downloadSize = downloadSize
-//        status.totalSize = totalSize
-//
-//        return status
-//    }
+    fun lastStatus(): Status {
+        var downloadSize = 0L
+        val totalSize = header.totalSize
+
+        val segments = content.segments
+        segments.forEach {
+            downloadSize += it.completeSize()
+        }
+
+        return Status(downloadSize, totalSize)
+    }
 
     class FileHeader(
-            private var totalSize: Long = 0L,
-            private var totalSegments: Long = 0L
+            var totalSize: Long = 0L,
+            var totalSegments: Long = 0L
     ) {
 
         companion object {
@@ -181,6 +178,10 @@ class RangeTmpFile(private val file: File, response: Response<*>) {
 
         fun sizeOf(): Long {
             return end - current + 1
+        }
+
+        fun completeSize(): Long {
+            return current - start
         }
     }
 }

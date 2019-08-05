@@ -1,4 +1,4 @@
-package zlc.season.rxdownload4
+package zlc.season.rxdownload4.downloader
 
 import io.reactivex.Emitter
 import io.reactivex.Flowable
@@ -7,6 +7,10 @@ import io.reactivex.functions.Consumer
 import io.reactivex.schedulers.Schedulers
 import okhttp3.ResponseBody
 import retrofit2.Response
+import zlc.season.rxdownload4.DEFAULT_MAX_CONCURRENCY
+import zlc.season.rxdownload4.DEFAULT_VALIDATOR
+import zlc.season.rxdownload4.Request
+import zlc.season.rxdownload4.Status
 import zlc.season.rxdownload4.utils.*
 import java.io.File
 import java.io.InputStream
@@ -16,85 +20,49 @@ import java.nio.channels.FileChannel
 import java.util.concurrent.Callable
 
 class RangeDownloader : Downloader {
-    private lateinit var rangeTmpFile: RangeTmpFile
     private var alreadyDownloaded = false
 
-
-    lateinit var file: File
-    lateinit var shadowFile: File
-    lateinit var tmpFile: File
+    private lateinit var file: File
+    private lateinit var shadowFile: File
+    private lateinit var tmpFile: File
+    private lateinit var rangeTmpFile: RangeTmpFile
 
     override fun download(response: Response<ResponseBody>): Flowable<Status> {
-        prepare(response)
-
-        if (alreadyDownloaded) {
-            return Flowable.just(Status(response.contentLength(), response.contentLength()))
-        } else {
-            val url = response.url()
-
-            val status = rangeTmpFile.lastStatus()
-
-            val arrays = mutableListOf<Flowable<Long>>()
-
-            rangeTmpFile.unfinishedSegments()
-                    .forEach {
-                        arrays.add(
-                                InnerRangerDownloader(url, it, shadowFile, tmpFile).download()
-                        )
-                    }
-
-            return Flowable.mergeDelayError(arrays, DEFAULT_MAX_CONCURRENCY)
-                    .map {
-                        status.apply {
-                            downloadSize += it
-                        }
-                    }
-                    .doOnComplete {
-                        shadowFile.renameTo(file)
-                    }
-        }
-    }
-
-    private fun prepare(response: Response<ResponseBody>) {
         file = response.file()
         shadowFile = file.shadow()
         tmpFile = file.tmp()
 
+        beforeDownload(response)
+
+        return if (alreadyDownloaded) {
+            val totalSize = response.contentLength()
+            Flowable.just(Status(totalSize, totalSize))
+        } else {
+            startDownload(response)
+        }
+    }
+
+    private fun beforeDownload(response: Response<ResponseBody>) {
         if (file.exists()) {
-            if (tmpFile.exists()) {
-                rangeTmpFile = RangeTmpFile(tmpFile)
-                if (rangeTmpFile.read(response)) {
-                    //file is valid
-                    alreadyDownloaded = true
-                } else {
-                    file.deleteOnExit()
-                    recreate(tmpFile, shadowFile, response)
-                }
+            if (DEFAULT_VALIDATOR.validate(file, response)) {
+                alreadyDownloaded = true
             } else {
                 file.deleteOnExit()
-                recreate(tmpFile, shadowFile, response)
+                createFiles(response)
             }
         } else {
             if (shadowFile.exists() && tmpFile.exists()) {
                 rangeTmpFile = RangeTmpFile(tmpFile)
-
-                if (rangeTmpFile.read(response)) {
-
-                } else {
-                    recreate(tmpFile, shadowFile, response)
+                if (!rangeTmpFile.read(response)) {
+                    createFiles(response)
                 }
             } else {
-                recreate(tmpFile, shadowFile, response)
+                createFiles(response)
             }
         }
     }
 
-
-    private fun recreate(
-            tmpFile: File,
-            shadowFile: File,
-            response: Response<ResponseBody>
-    ) {
+    private fun createFiles(response: Response<ResponseBody>) {
         tmpFile.deleteOnExit()
         shadowFile.deleteOnExit()
 
@@ -102,10 +70,36 @@ class RangeDownloader : Downloader {
         val shadowCreated = shadowFile.createNewFile()
 
         if (tmpCreated && shadowCreated) {
-            //begin
             rangeTmpFile = RangeTmpFile(tmpFile)
             rangeTmpFile.write(response)
+        } else {
+            throw IllegalStateException("File create failed!")
         }
+    }
+
+
+    private fun startDownload(response: Response<ResponseBody>): Flowable<Status> {
+        val url = response.url()
+        val status = rangeTmpFile.lastStatus()
+
+        val sources = mutableListOf<Flowable<Long>>()
+
+        rangeTmpFile.undoneSegments()
+                .forEach {
+                    sources.add(
+                            InnerRangerDownloader(url, it, shadowFile, tmpFile).download()
+                    )
+                }
+
+        return Flowable.mergeDelayError(sources, DEFAULT_MAX_CONCURRENCY)
+                .map {
+                    status.apply {
+                        downloadSize += it
+                    }
+                }
+                .doOnComplete {
+                    shadowFile.renameTo(file)
+                }
     }
 
     class InternalState(

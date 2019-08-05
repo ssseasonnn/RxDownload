@@ -3,17 +3,11 @@ package zlc.season.rxdownload4.utils
 import okhttp3.internal.http.HttpHeaders
 import retrofit2.Response
 import zlc.season.rxdownload4.*
-import java.io.Closeable
+import zlc.season.rxdownload4.downloader.Downloader
+import zlc.season.rxdownload4.downloader.NormalDownloader
+import zlc.season.rxdownload4.downloader.RangeDownloader
 import java.io.File
 import java.util.regex.Pattern
-
-fun Closeable.safeClose() {
-    try {
-        close()
-    } catch (ignore: Throwable) {
-
-    }
-}
 
 fun Response<*>.url(): String {
     return raw().request().url().toString()
@@ -51,8 +45,7 @@ fun Response<*>.map(): Downloader {
 
 fun Response<*>.file(): File {
     val fileName = fileName()
-    val fullFilePath = DEFAULT_SAVE_PATH + File.separator + fileName
-    return File(fullFilePath)
+    return File(DEFAULT_SAVE_PATH, fileName)
 }
 
 fun Response<*>.fileName(): String {

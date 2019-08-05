@@ -2,15 +2,18 @@ package zlc.season.rxdownload4
 
 import java.text.NumberFormat
 
-class Status(
-        var downloadSize: Long = 0L,
-        var totalSize: Long = 0L,
+class Status(downloadSize: Long = 0, totalSize: Long = 0, isChunked: Boolean = false) {
 
-        //用于标识一个链接是否是分块下载, 如果该值为true, 那么totalSize为0
-        var isChunked: Boolean = false
-) {
+    var downloadSize: Long = downloadSize
+        internal set
 
-    constructor(status: Status) : this(status.downloadSize, status.totalSize, status.isChunked)
+    var totalSize: Long = totalSize
+        internal set
+
+    //用于标识一个链接是否是分块下载, 如果该值为true, 那么totalSize为-1
+    var isChunked: Boolean = isChunked
+        internal set
+
 
 //    fun formatTotalSize(): String {
 //        return formatSize(totalSize)

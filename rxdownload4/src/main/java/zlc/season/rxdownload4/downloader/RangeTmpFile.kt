@@ -1,4 +1,4 @@
-package zlc.season.rxdownload4
+package zlc.season.rxdownload4.downloader
 
 import okio.Buffer
 import okio.BufferedSink
@@ -6,11 +6,13 @@ import okio.BufferedSource
 import okio.ByteString.decodeHex
 import okio.Okio
 import retrofit2.Response
+import zlc.season.rxdownload4.DEFAULT_RANGE_SIZE
+import zlc.season.rxdownload4.Status
 import zlc.season.rxdownload4.utils.contentLength
 import zlc.season.rxdownload4.utils.sliceCount
 import java.io.File
 
-class RangeTmpFile(private val file: File) {
+class RangeTmpFile(private val tmpFile: File) {
     private val header = FileHeader()
     private val content = FileContent()
 
@@ -18,7 +20,7 @@ class RangeTmpFile(private val file: File) {
         val totalSize = response.contentLength()
         val totalSegments = response.sliceCount()
 
-        Okio.buffer(Okio.sink(file)).use {
+        Okio.buffer(Okio.sink(tmpFile)).use {
             header.write(it, totalSize, totalSegments)
             content.write(it, totalSize, totalSegments)
         }
@@ -28,14 +30,14 @@ class RangeTmpFile(private val file: File) {
         val totalSize = response.contentLength()
         val totalSegments = response.sliceCount()
 
-        Okio.buffer(Okio.source(file)).use {
+        Okio.buffer(Okio.source(tmpFile)).use {
             header.read(it)
             content.read(it, totalSegments)
         }
         return header.check(totalSize)
     }
 
-    fun unfinishedSegments(): List<Segment> {
+    fun undoneSegments(): List<Segment> {
         return content.segments.filter { !it.isComplete() }
     }
 
@@ -176,6 +178,9 @@ class RangeTmpFile(private val file: File) {
             return current - start
         }
 
+        /**
+         * Return the starting position of the segment
+         */
         fun startByte(): Long {
             return FileHeader.FILE_HEADER_SIZE + SEGMENT_SIZE * index
         }

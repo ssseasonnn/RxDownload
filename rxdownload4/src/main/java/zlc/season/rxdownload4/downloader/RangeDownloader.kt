@@ -35,8 +35,10 @@ class RangeDownloader : Downloader {
         beforeDownload(response)
 
         return if (alreadyDownloaded) {
-            val totalSize = response.contentLength()
-            Flowable.just(Status(totalSize, totalSize))
+            Flowable.just(Status(
+                    downloadSize = response.contentLength(),
+                    totalSize = response.contentLength()
+            ))
         } else {
             startDownload(response)
         }
@@ -87,7 +89,7 @@ class RangeDownloader : Downloader {
         rangeTmpFile.undoneSegments()
                 .forEach {
                     sources.add(
-                            InnerRangerDownloader(url, it, shadowFile, tmpFile).download()
+                            InnerDownloader(url, it, shadowFile, tmpFile).download()
                     )
                 }
 
@@ -110,7 +112,7 @@ class RangeDownloader : Downloader {
             var downloadSize: Long = 0
     )
 
-    class InnerRangerDownloader(
+    class InnerDownloader(
             private val url: String,
             private val segment: RangeTmpFile.Segment,
             private val shadowFile: File,
@@ -128,6 +130,7 @@ class RangeDownloader : Downloader {
                 segment: RangeTmpFile.Segment,
                 response: Response<ResponseBody>
         ): Flowable<Long> {
+
             val body = response.body() ?: throw RuntimeException("Response body is NULL")
 
             return Flowable.generate(
@@ -139,6 +142,8 @@ class RangeDownloader : Downloader {
                             val readLen = source.read(buffer)
 
                             if (readLen == -1) {
+                                shadowFileBuffer.force()
+                                tmpFileBuffer.force()
                                 emitter.onComplete()
                             } else {
                                 shadowFileBuffer.put(buffer, 0, readLen)
@@ -149,9 +154,7 @@ class RangeDownloader : Downloader {
                             }
                         }
                     },
-                    Consumer {
-
-                    })
+                    Consumer {})
         }
 
         private fun initialState(
@@ -175,8 +178,8 @@ class RangeDownloader : Downloader {
                     segment.remainSize()
             )
 
-            shadowFileChannel.close()
-            tmpFileChannel.close()
+            shadowFileChannel.safeClose()
+            tmpFileChannel.safeClose()
 
             return InternalState(source, shadowFileBuffer, tmpFileBuffer, downloadSize = segment.current)
         }

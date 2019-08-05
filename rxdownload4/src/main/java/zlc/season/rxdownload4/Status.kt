@@ -1,8 +1,11 @@
 package zlc.season.rxdownload4
 
-import java.text.NumberFormat
 
-class Status(downloadSize: Long = 0, totalSize: Long = 0, isChunked: Boolean = false) {
+class Status(
+        downloadSize: Long = 0,
+        totalSize: Long = 0,
+        isChunked: Boolean = false
+) {
 
     var downloadSize: Long = downloadSize
         internal set
@@ -27,17 +30,22 @@ class Status(downloadSize: Long = 0, totalSize: Long = 0, isChunked: Boolean = f
 //        return formatDownloadSize() + "/" + formatTotalSize()
 //    }
 
-    fun percent(): String {
-        val percent: String
-        val result = if (totalSize == 0L) {
+    fun percentNumber(): Double {
+        if (isChunked) {
+            throw IllegalStateException("Chunked can not get percent!")
+        }
+
+        val tmp = if (totalSize == 0L) {
             0.0
         } else {
             downloadSize * 1.0 / totalSize
         }
-        val nf = NumberFormat.getPercentInstance()
-        nf.minimumFractionDigits = 2
-        percent = nf.format(result)
-        return percent
+
+        return String.format("%.2f", tmp).toDouble()
+    }
+
+    fun percent(): String {
+        return percentNumber().toString()
     }
 
     override fun toString(): String {

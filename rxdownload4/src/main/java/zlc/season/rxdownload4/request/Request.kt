@@ -1,4 +1,4 @@
-package zlc.season.rxdownload4
+package zlc.season.rxdownload4.request
 
 import io.reactivex.Flowable
 import okhttp3.ResponseBody
@@ -7,6 +7,7 @@ import retrofit2.http.GET
 import retrofit2.http.HeaderMap
 import retrofit2.http.Streaming
 import retrofit2.http.Url
+import zlc.season.rxdownload4.RANGE_CHECK_HEADER
 
 interface Request {
 

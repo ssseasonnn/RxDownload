@@ -6,6 +6,7 @@ import io.reactivex.Flowable.generate
 import io.reactivex.functions.BiFunction
 import io.reactivex.functions.Consumer
 import okhttp3.ResponseBody
+import okio.Buffer
 import okio.BufferedSink
 import okio.BufferedSource
 import okio.Okio.buffer
@@ -50,18 +51,10 @@ class NormalDownloader : Downloader {
                 alreadyDownloaded = true
             } else {
                 file.deleteOnExit()
-                createFile(shadowFile)
+                shadowFile.recreate()
             }
         } else {
-            createFile(shadowFile)
-        }
-    }
-
-    private fun createFile(shadowFile: File) {
-        shadowFile.deleteOnExit()
-        val created = shadowFile.createNewFile()
-        if (!created) {
-            throw IllegalStateException("File create failed!")
+            shadowFile.recreate()
         }
     }
 
@@ -76,7 +69,7 @@ class NormalDownloader : Downloader {
                 },
                 BiFunction<InternalState, Emitter<Status>, InternalState> { internalState, emitter ->
                     internalState.apply {
-                        val readLen = source.read(sink.buffer(), 8192L)
+                        val readLen = source.read(buffer, 8192L)
 
                         if (readLen == -1L) {
                             sink.flush()
@@ -100,6 +93,7 @@ class NormalDownloader : Downloader {
 
     class InternalState(
             val source: BufferedSource,
-            val sink: BufferedSink
+            val sink: BufferedSink,
+            val buffer: Buffer = sink.buffer()
     )
 }

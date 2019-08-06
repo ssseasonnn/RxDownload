@@ -4,18 +4,6 @@ import java.io.File
 import java.io.RandomAccessFile
 import java.nio.channels.FileChannel
 
-fun checkFile(file: File): Boolean {
-    if (file.exists()) {
-        return true
-    } else {
-        return false
-    }
-}
-
-fun File.createDir() {
-    mkdirs()
-}
-
 fun File.shadow(): File {
     val shadowPath = "$canonicalPath.download"
     return File(shadowPath)
@@ -26,11 +14,14 @@ fun File.tmp(): File {
     return File(tmpPath)
 }
 
-fun File.recreate() {
-    if (exists()) {
-        delete()
+fun File.recreate(block: () -> Unit = {}) {
+    deleteOnExit()
+    val created = createNewFile()
+    if (created) {
+        block()
+    } else {
+        throw IllegalStateException("File create failed!")
     }
-    createNewFile()
 }
 
 fun File.channel(): FileChannel {

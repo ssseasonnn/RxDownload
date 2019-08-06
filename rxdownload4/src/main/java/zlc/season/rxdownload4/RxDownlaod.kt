@@ -1,15 +1,12 @@
 package zlc.season.rxdownload4
 
 import io.reactivex.Flowable
-import zlc.season.rxdownload4.utils.map
+import zlc.season.rxdownload4.request.Request
 
 
 fun String.download(): Flowable<Status> {
-    val request = request<Request>()
-    val flowable = request.get(this)
+    return Request().get(this)
             .flatMap {
-                return@flatMap it.map().download(it)
+                DEFAULT_MAPPER.map(it).download(it)
             }
-
-    return flowable
 }

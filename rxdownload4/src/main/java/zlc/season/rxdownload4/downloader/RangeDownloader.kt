@@ -9,8 +9,8 @@ import okhttp3.ResponseBody
 import retrofit2.Response
 import zlc.season.rxdownload4.DEFAULT_MAX_CONCURRENCY
 import zlc.season.rxdownload4.DEFAULT_VALIDATOR
-import zlc.season.rxdownload4.Request
 import zlc.season.rxdownload4.Status
+import zlc.season.rxdownload4.request.Request
 import zlc.season.rxdownload4.utils.*
 import java.io.File
 import java.io.InputStream
@@ -64,17 +64,11 @@ class RangeDownloader : Downloader {
     }
 
     private fun createFiles(response: Response<ResponseBody>) {
-        tmpFile.deleteOnExit()
-        shadowFile.deleteOnExit()
-
-        val tmpCreated = tmpFile.createNewFile()
-        val shadowCreated = shadowFile.createNewFile()
-
-        if (tmpCreated && shadowCreated) {
-            rangeTmpFile = RangeTmpFile(tmpFile)
-            rangeTmpFile.write(response)
-        } else {
-            throw IllegalStateException("File create failed!")
+        tmpFile.recreate {
+            shadowFile.recreate {
+                rangeTmpFile = RangeTmpFile(tmpFile)
+                rangeTmpFile.write(response)
+            }
         }
     }
 

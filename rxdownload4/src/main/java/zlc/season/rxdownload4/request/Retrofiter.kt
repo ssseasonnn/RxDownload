@@ -1,4 +1,4 @@
-package zlc.season.rxdownload4
+package zlc.season.rxdownload4.request
 
 import okhttp3.OkHttpClient
 import retrofit2.CallAdapter

@@ -165,7 +165,6 @@ class RangeDownloader : Downloader {
                     RangeTmpFile.Segment.SEGMENT_SIZE
             )
 
-
             val shadowFileBuffer = shadowFileChannel.map(
                     READ_WRITE,
                     segment.current,

@@ -15,7 +15,7 @@ class Task(
         val mapper: Mapper = DEFAULT_MAPPER
 ) {
     init {
-        require(rangeSize > 0)
-        require(maxConCurrency > 0)
+        require(rangeSize > 1024 * 1024) { "rangeSize must be greater than 1M" }
+        require(maxConCurrency > 0) { "maxConCurrency must be greater than 0" }
     }
 }

@@ -22,7 +22,7 @@ class RangeTmpFile(private val tmpFile: File) {
 
         Okio.buffer(Okio.sink(tmpFile)).use {
             header.write(it, totalSize, totalSegments)
-            content.write(it, totalSize, totalSegments, task)
+            content.write(it, totalSize, totalSegments, task.rangeSize)
         }
     }
 
@@ -32,10 +32,9 @@ class RangeTmpFile(private val tmpFile: File) {
 
         Okio.buffer(Okio.source(tmpFile)).use {
             header.read(it)
-            content.read(it, totalSegments)
+            content.read(it, header.totalSegments)
         }
-        return header.check(totalSize, totalSegments) &&
-                content.check(task)
+        return header.check(totalSize, totalSegments)
     }
 
     fun undoneSegments(): List<Segment> {
@@ -43,13 +42,8 @@ class RangeTmpFile(private val tmpFile: File) {
     }
 
     fun lastStatus(): Status {
-        var downloadSize = 0L
         val totalSize = header.totalSize
-
-        val segments = content.segments
-        segments.forEach {
-            downloadSize += it.completeSize()
-        }
+        val downloadSize = content.downloadSize()
 
         return Status(downloadSize, totalSize)
     }
@@ -98,18 +92,15 @@ class RangeTmpFile(private val tmpFile: File) {
     class FileContent {
         val segments = mutableListOf<Segment>()
 
-        fun check(task: Task): Boolean {
-            var isValid = true
-            segments.forEach {
-                if (it.size() != task.rangeSize) {
-                    isValid = false
-                }
-            }
-            return isValid
-        }
+        fun write(
+                sink: BufferedSink,
+                totalSize: Long,
+                totalSegments: Long,
+                rangeSize: Long
+        ) {
+            segments.clear()
 
-        fun write(sink: BufferedSink, totalSize: Long, totalSegments: Long, task: Task) {
-            sliceSegments(totalSize, totalSegments, task)
+            sliceSegments(totalSize, totalSegments, rangeSize)
 
             segments.forEach {
                 it.write(sink)
@@ -131,21 +122,27 @@ class RangeTmpFile(private val tmpFile: File) {
             return segments.any { it.isComplete() }
         }
 
-        private fun sliceSegments(totalSize: Long, totalSegments: Long, task: Task) {
-            segments.clear()
+        fun downloadSize(): Long {
+            var downloadSize = 0L
+            segments.forEach {
+                downloadSize += it.completeSize()
+            }
+            return downloadSize
+        }
 
+        private fun sliceSegments(totalSize: Long, totalSegments: Long, rangeSize: Long) {
             var start = 0L
 
             for (i in 0 until totalSegments) {
                 val end = if (i == totalSegments - 1) {
                     totalSize - 1
                 } else {
-                    start + task.rangeSize - 1
+                    start + rangeSize - 1
                 }
 
                 segments.add(Segment(i, start, start, end))
 
-                start += task.rangeSize
+                start += rangeSize
             }
         }
     }
@@ -161,19 +158,13 @@ class RangeTmpFile(private val tmpFile: File) {
             const val SEGMENT_SIZE = 32L //each Long is 8 bytes
         }
 
-        fun size(): Long {
-            return end - start
-        }
-
-        fun isComplete(): Boolean {
-            return (current - end) == 1L
-        }
-
         fun write(sink: BufferedSink): Segment {
-            sink.writeLong(index)
-            sink.writeLong(start)
-            sink.writeLong(current)
-            sink.writeLong(end)
+            sink.apply {
+                writeLong(index)
+                writeLong(start)
+                writeLong(current)
+                writeLong(end)
+            }
             return this
         }
 
@@ -181,27 +172,27 @@ class RangeTmpFile(private val tmpFile: File) {
             val buffer = Buffer()
             source.readFully(buffer, SEGMENT_SIZE)
 
-            index = buffer.readLong()
-            start = buffer.readLong()
-            current = buffer.readLong()
-            end = buffer.readLong()
+            buffer.apply {
+                index = readLong()
+                start = readLong()
+                current = readLong()
+                end = readLong()
+            }
 
             return this
         }
 
-        fun remainSize(): Long {
-            return end - current + 1
-        }
+        fun isComplete() = (current - end) == 1L
 
-        fun completeSize(): Long {
-            return current - start
-        }
+        fun size() = end - start
+
+        fun remainSize() = end - current + 1
+
+        fun completeSize() = current - start
 
         /**
          * Return the starting position of the segment
          */
-        fun startByte(): Long {
-            return FileHeader.FILE_HEADER_SIZE + SEGMENT_SIZE * index
-        }
+        fun startByte() = FileHeader.FILE_HEADER_SIZE + SEGMENT_SIZE * index
     }
 }

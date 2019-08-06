@@ -14,9 +14,8 @@ import zlc.season.rxdownload4.Status
 import zlc.season.rxdownload4.utils.*
 import java.io.File
 import java.io.InputStream
-import java.io.RandomAccessFile
 import java.nio.MappedByteBuffer
-import java.nio.channels.FileChannel
+import java.nio.channels.FileChannel.MapMode.READ_WRITE
 import java.util.concurrent.Callable
 
 class RangeDownloader : Downloader {
@@ -162,18 +161,18 @@ class RangeDownloader : Downloader {
                 segment: RangeTmpFile.Segment
         ): InternalState {
             val source = body.byteStream()
-            val shadowFileChannel = RandomAccessFile(shadowFile, "rw").channel
-            val tmpFileChannel = RandomAccessFile(tmpFile, "rw").channel
+            val shadowFileChannel = shadowFile.channel()
+            val tmpFileChannel = tmpFile.channel()
 
             val tmpFileBuffer = tmpFileChannel.map(
-                    FileChannel.MapMode.READ_WRITE,
+                    READ_WRITE,
                     segment.startByte(),
                     RangeTmpFile.Segment.SEGMENT_SIZE
             )
 
 
             val shadowFileBuffer = shadowFileChannel.map(
-                    FileChannel.MapMode.READ_WRITE,
+                    READ_WRITE,
                     segment.current,
                     segment.remainSize()
             )
@@ -181,7 +180,12 @@ class RangeDownloader : Downloader {
             shadowFileChannel.safeClose()
             tmpFileChannel.safeClose()
 
-            return InternalState(source, shadowFileBuffer, tmpFileBuffer, downloadSize = segment.current)
+            return InternalState(
+                    source,
+                    shadowFileBuffer,
+                    tmpFileBuffer,
+                    downloadSize = segment.current
+            )
         }
     }
 }

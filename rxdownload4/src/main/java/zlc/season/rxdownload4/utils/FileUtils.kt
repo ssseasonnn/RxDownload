@@ -1,6 +1,8 @@
 package zlc.season.rxdownload4.utils
 
 import java.io.File
+import java.io.RandomAccessFile
+import java.nio.channels.FileChannel
 
 fun checkFile(file: File): Boolean {
     if (file.exists()) {
@@ -29,4 +31,8 @@ fun File.recreate() {
         delete()
     }
     createNewFile()
+}
+
+fun File.channel(): FileChannel {
+    return RandomAccessFile(this, "rw").channel
 }

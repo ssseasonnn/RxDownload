@@ -7,7 +7,6 @@ import retrofit2.http.GET
 import retrofit2.http.HeaderMap
 import retrofit2.http.Streaming
 import retrofit2.http.Url
-import zlc.season.rxdownload4.RANGE_CHECK_HEADER
 
 interface Request {
 
@@ -15,7 +14,7 @@ interface Request {
     @Streaming
     fun get(
             @Url url: String,
-            @HeaderMap headers: Map<String, String> = RANGE_CHECK_HEADER
+            @HeaderMap headers: Map<String, String>
     ): Flowable<Response<ResponseBody>>
 
     companion object {

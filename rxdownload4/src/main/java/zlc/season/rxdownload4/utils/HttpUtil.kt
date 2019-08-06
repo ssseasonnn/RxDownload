@@ -2,10 +2,7 @@ package zlc.season.rxdownload4.utils
 
 import okhttp3.internal.http.HttpHeaders
 import retrofit2.Response
-import zlc.season.rxdownload4.*
-import zlc.season.rxdownload4.downloader.Downloader
-import zlc.season.rxdownload4.downloader.NormalDownloader
-import zlc.season.rxdownload4.downloader.RangeDownloader
+import zlc.season.rxdownload4.task.Task
 import java.io.File
 import java.util.regex.Pattern
 
@@ -35,17 +32,13 @@ fun Response<*>.isSupportRange(): Boolean {
     return false
 }
 
-fun Response<*>.map(): Downloader {
-    return if (isSupportRange()) {
-        RangeDownloader()
+fun Response<*>.file(task: Task): File {
+    val fileName = if (task.saveName.isEmpty()) {
+        fileName()
     } else {
-        NormalDownloader()
+        task.saveName
     }
-}
-
-fun Response<*>.file(): File {
-    val fileName = fileName()
-    return File(DEFAULT_SAVE_PATH, fileName)
+    return File(task.savePath, fileName)
 }
 
 fun Response<*>.fileName(): String {
@@ -65,10 +58,10 @@ fun Response<*>.fileName(): String {
     }
 }
 
-fun Response<*>.sliceCount(): Long {
+fun Response<*>.sliceCount(rangeSize: Long): Long {
     val totalSize = contentLength()
-    val remainder = totalSize % DEFAULT_RANGE_SIZE
-    val result = totalSize / DEFAULT_RANGE_SIZE
+    val remainder = totalSize % rangeSize
+    val result = totalSize / rangeSize
 
     return if (remainder == 0L) {
         result

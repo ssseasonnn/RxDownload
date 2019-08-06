@@ -1,4 +1,4 @@
-package zlc.season.rxdownload4
+package zlc.season.rxdownload4.task
 
 object TaskPool {
     private val map = mutableMapOf<String, Task>()

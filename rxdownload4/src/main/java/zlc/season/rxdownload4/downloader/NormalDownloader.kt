@@ -12,8 +12,8 @@ import okio.BufferedSource
 import okio.Okio.buffer
 import okio.Okio.sink
 import retrofit2.Response
-import zlc.season.rxdownload4.DEFAULT_VALIDATOR
 import zlc.season.rxdownload4.Status
+import zlc.season.rxdownload4.task.Task
 import zlc.season.rxdownload4.utils.*
 import java.io.File
 import java.util.concurrent.Callable
@@ -24,13 +24,14 @@ class NormalDownloader : Downloader {
     private lateinit var file: File
     private lateinit var shadowFile: File
 
-    override fun download(response: Response<ResponseBody>): Flowable<Status> {
+    override fun download(task: Task, response: Response<ResponseBody>): Flowable<Status> {
         val body = response.body() ?: throw RuntimeException("Response body is NULL")
 
-        file = response.file()
+        file = response.file(task)
+
         shadowFile = file.shadow()
 
-        beforeDownload(response)
+        beforeDownload(task, response)
 
         return if (alreadyDownloaded) {
             Flowable.just(Status(
@@ -45,9 +46,9 @@ class NormalDownloader : Downloader {
         }
     }
 
-    private fun beforeDownload(response: Response<ResponseBody>) {
+    private fun beforeDownload(task: Task, response: Response<ResponseBody>) {
         if (file.exists()) {
-            if (DEFAULT_VALIDATOR.validate(file, response)) {
+            if (task.validator.validate(file, response)) {
                 alreadyDownloaded = true
             } else {
                 file.deleteOnExit()

@@ -7,10 +7,9 @@ import io.reactivex.functions.Consumer
 import io.reactivex.schedulers.Schedulers
 import okhttp3.ResponseBody
 import retrofit2.Response
-import zlc.season.rxdownload4.DEFAULT_MAX_CONCURRENCY
-import zlc.season.rxdownload4.DEFAULT_VALIDATOR
 import zlc.season.rxdownload4.Status
 import zlc.season.rxdownload4.request.Request
+import zlc.season.rxdownload4.task.Task
 import zlc.season.rxdownload4.utils.*
 import java.io.File
 import java.io.InputStream
@@ -26,12 +25,12 @@ class RangeDownloader : Downloader {
     private lateinit var tmpFile: File
     private lateinit var rangeTmpFile: RangeTmpFile
 
-    override fun download(response: Response<ResponseBody>): Flowable<Status> {
-        file = response.file()
+    override fun download(task: Task, response: Response<ResponseBody>): Flowable<Status> {
+        file = response.file(task)
         shadowFile = file.shadow()
         tmpFile = file.tmp()
 
-        beforeDownload(response)
+        beforeDownload(task, response)
 
         return if (alreadyDownloaded) {
             Flowable.just(Status(
@@ -39,41 +38,43 @@ class RangeDownloader : Downloader {
                     totalSize = response.contentLength()
             ))
         } else {
-            startDownload(response)
+            startDownload(task, response)
         }
     }
 
-    private fun beforeDownload(response: Response<ResponseBody>) {
+    private fun beforeDownload(task: Task, response: Response<ResponseBody>) {
         if (file.exists()) {
-            if (DEFAULT_VALIDATOR.validate(file, response)) {
+            if (task.validator.validate(file, response)) {
                 alreadyDownloaded = true
             } else {
                 file.deleteOnExit()
-                createFiles(response)
+                createFiles(response, task)
             }
         } else {
             if (shadowFile.exists() && tmpFile.exists()) {
+
                 rangeTmpFile = RangeTmpFile(tmpFile)
-                if (!rangeTmpFile.read(response)) {
-                    createFiles(response)
+
+                if (!rangeTmpFile.read(response, task)) {
+                    createFiles(response, task)
                 }
             } else {
-                createFiles(response)
+                createFiles(response, task)
             }
         }
     }
 
-    private fun createFiles(response: Response<ResponseBody>) {
+    private fun createFiles(response: Response<ResponseBody>, task: Task) {
         tmpFile.recreate {
             shadowFile.recreate {
                 rangeTmpFile = RangeTmpFile(tmpFile)
-                rangeTmpFile.write(response)
+                rangeTmpFile.write(response, task)
             }
         }
     }
 
 
-    private fun startDownload(response: Response<ResponseBody>): Flowable<Status> {
+    private fun startDownload(task: Task, response: Response<ResponseBody>): Flowable<Status> {
         val url = response.url()
         val status = rangeTmpFile.lastStatus()
 
@@ -86,7 +87,7 @@ class RangeDownloader : Downloader {
                     )
                 }
 
-        return Flowable.mergeDelayError(sources, DEFAULT_MAX_CONCURRENCY)
+        return Flowable.mergeDelayError(sources, task.maxConCurrency)
                 .map {
                     status.apply {
                         downloadSize += it

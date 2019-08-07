@@ -6,11 +6,7 @@ import io.reactivex.Flowable.generate
 import io.reactivex.functions.BiFunction
 import io.reactivex.functions.Consumer
 import okhttp3.ResponseBody
-import okio.Buffer
-import okio.BufferedSink
-import okio.BufferedSource
-import okio.Okio.buffer
-import okio.Okio.sink
+import okio.*
 import retrofit2.Response
 import zlc.season.rxdownload4.Status
 import zlc.season.rxdownload4.task.Task
@@ -65,7 +61,7 @@ class NormalDownloader : Downloader {
                 Callable {
                     InternalState(
                             body.source(),
-                            buffer(sink(shadowFile))
+                            shadowFile.sink().buffer()
                     )
                 },
                 BiFunction<InternalState, Emitter<Status>, InternalState> { internalState, emitter ->
@@ -95,6 +91,6 @@ class NormalDownloader : Downloader {
     class InternalState(
             val source: BufferedSource,
             val sink: BufferedSink,
-            val buffer: Buffer = sink.buffer()
+            val buffer: Buffer = sink.buffer
     )
 }

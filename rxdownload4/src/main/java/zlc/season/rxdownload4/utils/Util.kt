@@ -9,3 +9,11 @@ fun Closeable.safeClose() {
 
     }
 }
+
+fun String.toLongOrDefault(defaultValue: Long): Long {
+    return try {
+        toLong()
+    } catch (_: NumberFormatException) {
+        defaultValue
+    }
+}

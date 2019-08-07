@@ -5,22 +5,46 @@ object TaskPool {
 
     @Synchronized
     fun add(task: Task) {
-        if (map[task.url] == null) {
-            map[task.url] = task
+        map[task.tag()] = task
+    }
+
+    @Synchronized
+    fun get(task: Task): Task {
+        val result = map[task.tag()]
+        if (result == null) {
+            throw IllegalStateException("Task is null")
+        } else {
+            return result
         }
     }
 
-//    @Synchronized
-//    fun get(task: Task): Task {
-//    }
+    @Synchronized
+    fun get(tag: String): Task {
+        val result = map[tag]
+        if (result == null) {
+            throw IllegalStateException("Task is null")
+        } else {
+            return result
+        }
+    }
 
     @Synchronized
     fun isContain(task: Task): Boolean {
-        return map[task.url] != null
+        return map.containsKey(task.tag())
+    }
+
+    @Synchronized
+    fun isContain(tag: String): Boolean {
+        return map.containsKey(tag)
     }
 
     @Synchronized
     fun remove(task: Task) {
-        map.remove(task.url)
+        map.remove(task.tag())
+    }
+
+    @Synchronized
+    fun remove(tag: String) {
+        map.remove(tag)
     }
 }

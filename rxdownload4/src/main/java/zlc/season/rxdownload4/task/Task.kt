@@ -4,7 +4,7 @@ import zlc.season.rxdownload4.*
 import zlc.season.rxdownload4.downloader.Mapper
 import zlc.season.rxdownload4.validator.Validator
 
-class Task(
+open class Task(
         val url: String,
         val saveName: String = "",
         val savePath: String = DEFAULT_SAVE_PATH,
@@ -17,5 +17,9 @@ class Task(
     init {
         require(rangeSize > 1024 * 1024) { "rangeSize must be greater than 1M" }
         require(maxConCurrency > 0) { "maxConCurrency must be greater than 0" }
+    }
+
+    open fun tag(): String {
+        return url
     }
 }

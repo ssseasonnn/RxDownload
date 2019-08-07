@@ -1,10 +1,7 @@
 package zlc.season.rxdownload4.downloader
 
-import okio.Buffer
-import okio.BufferedSink
-import okio.BufferedSource
-import okio.ByteString.decodeHex
-import okio.Okio
+import okio.*
+import okio.ByteString.Companion.decodeHex
 import retrofit2.Response
 import zlc.season.rxdownload4.Status
 import zlc.season.rxdownload4.task.Task
@@ -20,7 +17,7 @@ class RangeTmpFile(private val tmpFile: File) {
         val totalSize = response.contentLength()
         val totalSegments = response.sliceCount(task.rangeSize)
 
-        Okio.buffer(Okio.sink(tmpFile)).use {
+        tmpFile.sink().buffer().use {
             header.write(it, totalSize, totalSegments)
             content.write(it, totalSize, totalSegments, task.rangeSize)
         }
@@ -30,7 +27,7 @@ class RangeTmpFile(private val tmpFile: File) {
         val totalSize = response.contentLength()
         val totalSegments = response.sliceCount(task.rangeSize)
 
-        Okio.buffer(Okio.source(tmpFile)).use {
+        tmpFile.source().buffer().use {
             header.read(it)
             content.read(it, header.totalSegments)
         }
@@ -68,7 +65,7 @@ class RangeTmpFile(private val tmpFile: File) {
             this.totalSegments = totalSegments
 
             sink.apply {
-                write(decodeHex(FILE_HEADER_MAGIC_NUMBER))
+                write(FILE_HEADER_MAGIC_NUMBER.decodeHex())
                 writeLong(totalSize)
                 writeLong(totalSegments)
             }

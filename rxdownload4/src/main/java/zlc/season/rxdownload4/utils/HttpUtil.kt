@@ -1,6 +1,5 @@
 package zlc.season.rxdownload4.utils
 
-import okhttp3.internal.http.HttpHeaders
 import retrofit2.Response
 import zlc.season.rxdownload4.task.Task
 import java.io.File
@@ -11,7 +10,7 @@ fun Response<*>.url(): String {
 }
 
 fun Response<*>.contentLength(): Long {
-    return HttpHeaders.contentLength(headers())
+    return header("Content-Length").toLongOrDefault(-1)
 }
 
 fun Response<*>.isChunked(): Boolean {

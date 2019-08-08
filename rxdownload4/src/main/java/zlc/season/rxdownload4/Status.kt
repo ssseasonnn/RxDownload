@@ -1,5 +1,7 @@
 package zlc.season.rxdownload4
 
+import zlc.season.rxdownload4.utils.formatSize
+
 
 class Status(
         downloadSize: Long = 0,
@@ -13,24 +15,31 @@ class Status(
     var totalSize: Long = totalSize
         internal set
 
-    //用于标识一个链接是否是分块下载, 如果该值为true, 那么totalSize为-1
+    /**
+     * 用于标识一个链接是否是分块下载, 如果该值为true, 那么totalSize为-1
+     */
     var isChunked: Boolean = isChunked
         internal set
 
 
-//    fun formatTotalSize(): String {
-//        return formatSize(totalSize)
-//    }
-//
-//    fun formatDownloadSize(): String {
-//        return formatSize(downloadSize)
-//    }
+    /**
+     * Return total size str. eg: 10M
+     */
+    fun totalSizeStr(): String {
+        return formatSize(totalSize)
+    }
 
-//    fun formatString(): String {
-//        return formatDownloadSize() + "/" + formatTotalSize()
-//    }
+    /**
+     * Return download size str. eg: 3M
+     */
+    fun downloadSizeStr(): String {
+        return formatSize(downloadSize)
+    }
 
-    fun percentNumber(): Double {
+    /**
+     * Return percent number.
+     */
+    fun percent(): Double {
         if (isChunked) {
             throw IllegalStateException("Chunked can not get percent!")
         }
@@ -44,11 +53,14 @@ class Status(
         return String.format("%.2f", tmp).toDouble()
     }
 
-    fun percent(): String {
-        return percentNumber().toString()
+    /**
+     * Return percent string.
+     */
+    fun percentStr(): String {
+        return percent().toString()
     }
 
     override fun toString(): String {
-        return "[$downloadSize/$totalSize] - ${percent()}"
+        return "[$downloadSize/$totalSize] - ${percentStr()}"
     }
 }

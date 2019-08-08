@@ -77,7 +77,7 @@ class BasicDownloadActivity : AppCompatActivity() {
                             progress_new.max = it.totalSize.toInt()
                             progress_new.progress = it.downloadSize.toInt()
 
-                            percent_new.text = it.percent()
+                            percent_new.text = it.percentStr()
                             it.log()
                         },
                         onError = {

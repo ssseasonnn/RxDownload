@@ -4,14 +4,21 @@ import zlc.season.rxdownload4.*
 import zlc.season.rxdownload4.downloader.Mapper
 import zlc.season.rxdownload4.validator.Validator
 
+/**
+ *
+ */
 open class Task(
         val url: String,
         val saveName: String = "",
         val savePath: String = DEFAULT_SAVE_PATH,
-        val rangeSize: Long = DEFAULT_RANGE_SIZE,
-        val maxConCurrency: Int = DEFAULT_MAX_CONCURRENCY,
+
         val header: Map<String, String> = RANGE_CHECK_HEADER,
+
+        val maxConCurrency: Int = DEFAULT_MAX_CONCURRENCY,
+
         val validator: Validator = DEFAULT_VALIDATOR,
+
+        val rangeSize: Long = DEFAULT_RANGE_SIZE,
         val mapper: Mapper = DEFAULT_MAPPER
 ) {
     init {
@@ -19,7 +26,24 @@ open class Task(
         require(maxConCurrency > 0) { "maxConCurrency must be greater than 0" }
     }
 
-    open fun tag(): String {
-        return url
+    /**
+     * Each task with unique tag.
+     */
+    open fun tag() = url
+
+
+    override fun equals(other: Any?): Boolean {
+        if (other == null) return false
+        if (this === other) return true
+
+        return if (other is Task) {
+            tag() == other.tag()
+        } else {
+            false
+        }
+    }
+
+    override fun hashCode(): Int {
+        return tag().hashCode()
     }
 }

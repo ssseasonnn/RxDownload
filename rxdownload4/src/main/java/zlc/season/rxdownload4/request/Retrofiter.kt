@@ -1,5 +1,6 @@
 package zlc.season.rxdownload4.request
 
+import io.reactivex.schedulers.Schedulers
 import okhttp3.OkHttpClient
 import retrofit2.CallAdapter
 import retrofit2.Converter
@@ -22,7 +23,7 @@ val okHttpClient: OkHttpClient = OkHttpClient().newBuilder()
 inline fun <reified T> request(
         baseUrl: String = FAKE_BASE_URL,
         client: OkHttpClient = okHttpClient,
-        callAdapterFactory: CallAdapter.Factory = RxJava2CallAdapterFactory.create(),
+        callAdapterFactory: CallAdapter.Factory = RxJava2CallAdapterFactory.createWithScheduler(Schedulers.io()),
         converterFactory: Converter.Factory = GsonConverterFactory.create()
 ): T {
     val retrofit = Retrofit.Builder()

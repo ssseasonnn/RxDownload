@@ -2,6 +2,7 @@ package zlc.season.rxdownload4
 
 import zlc.season.rxdownload4.utils.formatSize
 import java.io.File
+import kotlin.math.roundToLong
 
 
 class Status(
@@ -56,6 +57,8 @@ class Status(
         } else {
             downloadSize * 1.0 / totalSize
         }
+
+        tmp.roundToLong()
 
         return String.format("%.2f", tmp).toDouble()
     }

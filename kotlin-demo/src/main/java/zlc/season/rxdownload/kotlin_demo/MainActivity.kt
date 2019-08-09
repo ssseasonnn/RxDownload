@@ -1,6 +1,7 @@
 package zlc.season.rxdownload.kotlin_demo
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.content.Intent
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
@@ -26,14 +27,15 @@ class MainActivity : AppCompatActivity() {
     }
 
 
+    @SuppressLint("CheckResult")
     private fun requestPermission(permission: String) {
         RxPermissions(this)
                 .request(permission)
-                .subscribe({
+                .subscribe {
                     if (!it) {
                         finish()
                     }
-                })
+                }
     }
 
 }

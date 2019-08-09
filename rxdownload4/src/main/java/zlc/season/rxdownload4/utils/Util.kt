@@ -3,6 +3,7 @@ package zlc.season.rxdownload4.utils
 import io.reactivex.disposables.Disposable
 import java.io.Closeable
 import java.text.DecimalFormat
+import kotlin.math.round
 
 fun Disposable?.safeDispose() {
     if (this != null && !isDisposed) {
@@ -45,4 +46,10 @@ fun formatSize(size: Long): String {
         k > 1 -> dec.format(k) + " KB"
         else -> dec.format(b) + " B"
     }
+}
+
+fun Double.round(decimals: Int): Double {
+    var multiplier = 1.0
+    repeat(decimals) { multiplier *= 10 }
+    return round(this * multiplier) / multiplier
 }

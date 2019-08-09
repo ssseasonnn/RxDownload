@@ -17,16 +17,6 @@ fun String.download(): Flowable<Status> {
 }
 
 /**
- * Returns a Download Flowable represent the current task.
- */
-fun Task.download(): Flowable<Status> {
-    return Request().get(url, header)
-            .flatMap {
-                mapper.map(it).download(this, it)
-            }
-}
-
-/**
  * Returns a Shared Download Flowable represent the current url.
  *
  * A Shared Download Flowable means it can be received by multiple downstream.
@@ -42,6 +32,16 @@ fun String.share(): Flowable<Status> {
  */
 fun String.shareDisposable(): Disposable {
     return Task(this).shareDisposable()
+}
+
+/**
+ * Returns a Download Flowable represent the current task.
+ */
+fun Task.download(): Flowable<Status> {
+    return Request().get(url, header)
+            .flatMap {
+                mapper.map(it).download(this, it)
+            }
 }
 
 /**

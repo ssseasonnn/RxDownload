@@ -6,7 +6,7 @@ import java.io.File
 import java.util.regex.Pattern
 
 fun Response<*>.url(): String {
-    return raw().request().url().toString()
+    return raw().request.url.toString()
 }
 
 fun Response<*>.contentLength(): Long {
@@ -41,7 +41,7 @@ fun Response<*>.file(task: Task): File {
 }
 
 fun Response<*>.fileName(): String {
-    val url = this.raw().request().url().toString()
+    val url = url()
 
     var fileName = contentDisposition()
     if (fileName.isEmpty()) {

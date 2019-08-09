@@ -1,12 +1,14 @@
 package zlc.season.rxdownload4
 
 import zlc.season.rxdownload4.utils.formatSize
+import java.io.File
 
 
 class Status(
         downloadSize: Long = 0,
         totalSize: Long = 0,
-        isChunked: Boolean = false
+        isChunked: Boolean = false,
+        file: File
 ) {
 
     var downloadSize: Long = downloadSize
@@ -21,6 +23,11 @@ class Status(
     var isChunked: Boolean = isChunked
         internal set
 
+    /**
+     * Return download file, if file exists
+     */
+    var file: File = file
+        internal set
 
     /**
      * Return total size str. eg: 10M

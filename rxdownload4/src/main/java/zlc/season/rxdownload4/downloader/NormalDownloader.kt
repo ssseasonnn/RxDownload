@@ -32,12 +32,14 @@ class NormalDownloader : Downloader {
         return if (alreadyDownloaded) {
             Flowable.just(Status(
                     downloadSize = response.contentLength(),
-                    totalSize = response.contentLength()
+                    totalSize = response.contentLength(),
+                    file = file
             ))
         } else {
             startDownload(body, Status(
                     totalSize = response.contentLength(),
-                    isChunked = response.isChunked()
+                    isChunked = response.isChunked(),
+                    file = file
             ))
         }
     }

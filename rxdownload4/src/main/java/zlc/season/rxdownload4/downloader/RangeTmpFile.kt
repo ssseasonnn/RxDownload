@@ -38,11 +38,11 @@ class RangeTmpFile(private val tmpFile: File) {
         return content.segments.filter { !it.isComplete() }
     }
 
-    fun lastStatus(): Status {
+    fun lastStatus(): Pair<Long, Long> {
         val totalSize = header.totalSize
         val downloadSize = content.downloadSize()
 
-        return Status(downloadSize, totalSize)
+        return Pair(downloadSize, totalSize)
     }
 
     class FileHeader(

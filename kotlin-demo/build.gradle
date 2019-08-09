@@ -41,7 +41,6 @@ dependencies {
     implementation 'com.tbruyelle.rxpermissions2:rxpermissions:0.9.4@aar'
 
 
-    implementation project(':rxdownload3')
     implementation project(':rxdownload4')
 
     testImplementation 'junit:junit:4.12'

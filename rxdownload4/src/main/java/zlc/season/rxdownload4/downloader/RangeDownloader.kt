@@ -35,7 +35,8 @@ class RangeDownloader : Downloader {
         return if (alreadyDownloaded) {
             Flowable.just(Status(
                     downloadSize = response.contentLength(),
-                    totalSize = response.contentLength()
+                    totalSize = response.contentLength(),
+                    file = file
             ))
         } else {
             startDownload(task, response)
@@ -76,7 +77,13 @@ class RangeDownloader : Downloader {
 
     private fun startDownload(task: Task, response: Response<ResponseBody>): Flowable<Status> {
         val url = response.url()
-        val status = rangeTmpFile.lastStatus()
+        val (downloadSize, totalSize) = rangeTmpFile.lastStatus()
+
+        val status = Status(
+                downloadSize = downloadSize,
+                totalSize = totalSize,
+                file = file
+        )
 
         val sources = mutableListOf<Flowable<Long>>()
 
@@ -90,7 +97,7 @@ class RangeDownloader : Downloader {
         return Flowable.mergeDelayError(sources, task.maxConCurrency)
                 .map {
                     status.apply {
-                        downloadSize += it
+                        this.downloadSize += it
                     }
                 }
                 .doOnComplete {

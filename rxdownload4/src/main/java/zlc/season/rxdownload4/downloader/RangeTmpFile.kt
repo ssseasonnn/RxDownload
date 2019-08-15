@@ -3,7 +3,6 @@ package zlc.season.rxdownload4.downloader
 import okio.*
 import okio.ByteString.Companion.decodeHex
 import retrofit2.Response
-import zlc.season.rxdownload4.Status
 import zlc.season.rxdownload4.task.Task
 import zlc.season.rxdownload4.utils.contentLength
 import zlc.season.rxdownload4.utils.sliceCount
@@ -111,14 +110,6 @@ class RangeTmpFile(private val tmpFile: File) {
             }
         }
 
-        fun isFinish(): Boolean {
-            if (segments.isEmpty()) {
-                return false
-            }
-
-            return segments.any { it.isComplete() }
-        }
-
         fun downloadSize(): Long {
             var downloadSize = 0L
             segments.forEach {
@@ -180,8 +171,6 @@ class RangeTmpFile(private val tmpFile: File) {
         }
 
         fun isComplete() = (current - end) == 1L
-
-        fun size() = end - start
 
         fun remainSize() = end - current + 1
 

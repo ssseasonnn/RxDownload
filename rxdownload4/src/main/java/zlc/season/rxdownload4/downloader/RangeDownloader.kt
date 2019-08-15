@@ -88,10 +88,8 @@ class RangeDownloader : Downloader {
         val sources = mutableListOf<Flowable<Long>>()
 
         rangeTmpFile.undoneSegments()
-                .forEach {
-                    sources.add(
-                            InnerDownloader(url, it, shadowFile, tmpFile).download()
-                    )
+                .mapTo(sources) {
+                    InnerDownloader(url, it, shadowFile, tmpFile).download()
                 }
 
         return Flowable.mergeDelayError(sources, task.maxConCurrency)

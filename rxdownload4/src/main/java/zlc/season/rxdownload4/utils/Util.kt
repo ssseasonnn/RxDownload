@@ -2,8 +2,7 @@ package zlc.season.rxdownload4.utils
 
 import io.reactivex.disposables.Disposable
 import java.io.Closeable
-import java.text.DecimalFormat
-import kotlin.math.round
+import java.math.BigDecimal
 
 fun Disposable?.safeDispose() {
     if (this != null && !isDisposed) {
@@ -27,29 +26,28 @@ fun String.toLongOrDefault(defaultValue: Long): Long {
     }
 }
 
-fun formatSize(size: Long): String {
-    if (size < 0) {
+fun Long.formatSize(): String {
+    if (this < 0) {
         throw IllegalArgumentException("Size must larger than 0.")
     }
 
-    val b = size.toDouble()
-    val k = size / 1024.0
-    val m = size / 1024.0 / 1024.0
-    val g = size / 1024.0 / 1024.0 / 1024.0
-    val t = size / 1024.0 / 1024.0 / 1024.0 / 1024.0
-    val dec = DecimalFormat("0.00")
+    val byte = this.toDouble()
+    val kb = byte / 1024.0
+    val mb = byte / 1024.0 / 1024.0
+    val gb = byte / 1024.0 / 1024.0 / 1024.0
+    val tb = byte / 1024.0 / 1024.0 / 1024.0 / 1024.0
 
     return when {
-        t > 1 -> dec.format(t) + " TB"
-        g > 1 -> dec.format(g) + " GB"
-        m > 1 -> dec.format(m) + " MB"
-        k > 1 -> dec.format(k) + " KB"
-        else -> dec.format(b) + " B"
+        tb >= 1 -> "${tb.decimal(2)} TB"
+        gb >= 1 -> "${gb.decimal(2)} GB"
+        mb >= 1 -> "${mb.decimal(2)} MB"
+        kb >= 1 -> "${kb.decimal(2)} KB"
+        else -> "${byte.decimal(2)} B"
     }
 }
 
-fun Double.round(decimals: Int): Double {
-    var multiplier = 1.0
-    repeat(decimals) { multiplier *= 10 }
-    return round(this * multiplier) / multiplier
+fun Double.decimal(digits: Int): Double {
+    return this.toBigDecimal()
+            .setScale(digits, BigDecimal.ROUND_HALF_UP)
+            .toDouble()
 }

@@ -1,8 +1,8 @@
 package zlc.season.rxdownload4
 
+import zlc.season.rxdownload4.utils.decimal
 import zlc.season.rxdownload4.utils.formatSize
 import java.io.File
-import kotlin.math.roundToLong
 
 
 class Status(
@@ -17,6 +17,12 @@ class Status(
 
     var totalSize: Long = totalSize
         internal set
+        get() {
+            if (isChunked) {
+                throw IllegalStateException("Chunked can not get totalSize!")
+            }
+            return field
+        }
 
     /**
      * 用于标识一个链接是否是分块下载, 如果该值为true, 那么totalSize为-1
@@ -34,33 +40,31 @@ class Status(
      * Return total size str. eg: 10M
      */
     fun totalSizeStr(): String {
-        return formatSize(totalSize)
+        return totalSize.formatSize()
     }
 
     /**
      * Return download size str. eg: 3M
      */
     fun downloadSizeStr(): String {
-        return formatSize(downloadSize)
+        return downloadSize.formatSize()
     }
 
     /**
      * Return percent number.
      */
-    fun percent(): Double {
+    fun percent(): Int {
         if (isChunked) {
             throw IllegalStateException("Chunked can not get percent!")
         }
 
-        val tmp = if (totalSize == 0L) {
+        val tmp = if (totalSize <= 0L) {
             0.0
         } else {
             downloadSize * 1.0 / totalSize
         }
 
-        tmp.roundToLong()
-
-        return String.format("%.2f", tmp).toDouble()
+        return (tmp.decimal(2) * 100).toInt()
     }
 
     /**
@@ -68,9 +72,5 @@ class Status(
      */
     fun percentStr(): String {
         return percent().toString()
-    }
-
-    override fun toString(): String {
-        return "[$downloadSize/$totalSize] - ${percentStr()}"
     }
 }

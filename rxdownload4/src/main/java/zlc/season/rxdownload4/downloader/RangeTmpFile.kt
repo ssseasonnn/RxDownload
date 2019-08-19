@@ -4,6 +4,7 @@ import okio.*
 import okio.ByteString.Companion.decodeHex
 import retrofit2.Response
 import zlc.season.rxdownload4.task.Task
+import zlc.season.rxdownload4.task.TaskInfo
 import zlc.season.rxdownload4.utils.contentLength
 import zlc.season.rxdownload4.utils.sliceCount
 import java.io.File
@@ -12,19 +13,19 @@ class RangeTmpFile(private val tmpFile: File) {
     private val header = FileHeader()
     private val content = FileContent()
 
-    fun write(response: Response<*>, task: Task) {
+    fun write(response: Response<*>, taskInfo: TaskInfo) {
         val totalSize = response.contentLength()
-        val totalSegments = response.sliceCount(task.rangeSize)
+        val totalSegments = response.sliceCount(taskInfo.rangeSize)
 
         tmpFile.sink().buffer().use {
             header.write(it, totalSize, totalSegments)
-            content.write(it, totalSize, totalSegments, task.rangeSize)
+            content.write(it, totalSize, totalSegments, taskInfo.rangeSize)
         }
     }
 
-    fun read(response: Response<*>, task: Task): Boolean {
+    fun read(response: Response<*>, taskInfo: TaskInfo): Boolean {
         val totalSize = response.contentLength()
-        val totalSegments = response.sliceCount(task.rangeSize)
+        val totalSegments = response.sliceCount(taskInfo.rangeSize)
 
         tmpFile.source().buffer().use {
             header.read(it)

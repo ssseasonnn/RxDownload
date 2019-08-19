@@ -8,8 +8,8 @@ import io.reactivex.schedulers.Schedulers
 import okhttp3.ResponseBody
 import retrofit2.Response
 import zlc.season.rxdownload4.Progress
-import zlc.season.rxdownload4.request.Request
-import zlc.season.rxdownload4.task.Task
+import zlc.season.rxdownload4.request.RequestImpl
+import zlc.season.rxdownload4.task.TaskInfo
 import zlc.season.rxdownload4.utils.*
 import java.io.File
 import java.io.InputStream
@@ -25,12 +25,12 @@ class RangeDownloader : Downloader {
     private lateinit var tmpFile: File
     private lateinit var rangeTmpFile: RangeTmpFile
 
-    override fun download(task: Task, response: Response<ResponseBody>): Flowable<Progress> {
-        file = response.file(task)
+    override fun download(taskInfo: TaskInfo, response: Response<ResponseBody>): Flowable<Progress> {
+        file = response.file(taskInfo.task)
         shadowFile = file.shadow()
         tmpFile = file.tmp()
 
-        beforeDownload(task, response)
+        beforeDownload(taskInfo, response)
 
         return if (alreadyDownloaded) {
             Flowable.just(Progress(
@@ -38,43 +38,43 @@ class RangeDownloader : Downloader {
                     totalSize = response.contentLength()
             ))
         } else {
-            startDownload(task, response)
+            startDownload(taskInfo, response)
         }
     }
 
-    private fun beforeDownload(task: Task, response: Response<ResponseBody>) {
+    private fun beforeDownload(taskInfo: TaskInfo, response: Response<ResponseBody>) {
         if (file.exists()) {
-            if (task.validator.validate(file, response)) {
+            if (taskInfo.validator.validate(file, response)) {
                 alreadyDownloaded = true
             } else {
                 file.deleteOnExit()
-                createFiles(response, task)
+                createFiles(response, taskInfo)
             }
         } else {
             if (shadowFile.exists() && tmpFile.exists()) {
 
                 rangeTmpFile = RangeTmpFile(tmpFile)
 
-                if (!rangeTmpFile.read(response, task)) {
-                    createFiles(response, task)
+                if (!rangeTmpFile.read(response, taskInfo)) {
+                    createFiles(response, taskInfo)
                 }
             } else {
-                createFiles(response, task)
+                createFiles(response, taskInfo)
             }
         }
     }
 
-    private fun createFiles(response: Response<ResponseBody>, task: Task) {
+    private fun createFiles(response: Response<ResponseBody>, taskInfo: TaskInfo) {
         tmpFile.recreate {
             shadowFile.recreate {
                 rangeTmpFile = RangeTmpFile(tmpFile)
-                rangeTmpFile.write(response, task)
+                rangeTmpFile.write(response, taskInfo)
             }
         }
     }
 
 
-    private fun startDownload(task: Task, response: Response<ResponseBody>): Flowable<Progress> {
+    private fun startDownload(taskInfo: TaskInfo, response: Response<ResponseBody>): Flowable<Progress> {
         val url = response.url()
         val (downloadSize, totalSize) = rangeTmpFile.lastProgress()
 
@@ -90,7 +90,7 @@ class RangeDownloader : Downloader {
                     InnerDownloader(url, it, shadowFile, tmpFile).download()
                 }
 
-        return Flowable.mergeDelayError(sources, task.maxConCurrency)
+        return Flowable.mergeDelayError(sources, taskInfo.maxConCurrency)
                 .map {
                     progress.apply {
                         this.downloadSize += it
@@ -119,7 +119,7 @@ class RangeDownloader : Downloader {
             return Flowable.just(segment)
                     .subscribeOn(Schedulers.io())
                     .map { mapOf("Range" to "bytes=${it.current}-${it.end}").log() }
-                    .flatMap { Request().get(url, it) }
+                    .flatMap { RequestImpl().get(url, it) }
                     .flatMap { rangeSave(segment, it) }
         }
 

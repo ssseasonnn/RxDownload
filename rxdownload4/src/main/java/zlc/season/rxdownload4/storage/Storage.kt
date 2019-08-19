@@ -1,10 +1,9 @@
 package zlc.season.rxdownload4.storage
 
 import zlc.season.rxdownload4.task.Task
-import zlc.season.rxdownload4.task.TaskInfo
 
 interface Storage {
-    fun load(task: Task): TaskInfo
+    fun load(task: Task)
 
     fun save(task: Task)
 }

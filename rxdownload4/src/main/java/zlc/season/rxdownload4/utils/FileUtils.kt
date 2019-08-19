@@ -1,5 +1,6 @@
 package zlc.season.rxdownload4.utils
 
+import zlc.season.rxdownload4.task.Task
 import java.io.File
 import java.io.RandomAccessFile
 import java.nio.channels.FileChannel
@@ -26,4 +27,8 @@ fun File.recreate(block: () -> Unit = {}) {
 
 fun File.channel(): FileChannel {
     return RandomAccessFile(this, "rw").channel
+}
+
+fun File.clear() {
+
 }

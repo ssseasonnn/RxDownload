@@ -10,7 +10,6 @@ import kotlinx.android.synthetic.main.activity_basic_download.*
 import kotlinx.android.synthetic.main.content_basic_download.*
 import kotlinx.android.synthetic.main.item_download.view.*
 import zlc.season.rxdownload4.download
-import zlc.season.rxdownload4.shareDownload
 import zlc.season.rxdownload4.utils.log
 import zlc.season.rxdownload4.utils.safeDispose
 
@@ -50,22 +49,22 @@ class BasicDownloadActivity : AppCompatActivity() {
         }
 
         share_download_layout.action.setOnClickListener {
-            disposable2 = url2.shareDownload()
-                    .observeOn(AndroidSchedulers.mainThread())
-                    .subscribeBy(
-                            onNext = {
-                                share_download_layout.progress.max = it.totalSize.toInt()
-                                share_download_layout.progress.progress = it.downloadSize.toInt()
-
-                                share_download_layout.percent.text = it.percentStr()
-                            },
-                            onError = {
-                                it.log()
-                            },
-                            onComplete = {
-
-                            }
-                    )
+            //            disposable2 = url2.shareDownload()
+//                    .observeOn(AndroidSchedulers.mainThread())
+//                    .subscribeBy(
+//                            onNext = {
+//                                share_download_layout.progress.max = it.totalSize.toInt()
+//                                share_download_layout.progress.progress = it.downloadSize.toInt()
+//
+//                                share_download_layout.percent.text = it.percentStr()
+//                            },
+//                            onError = {
+//                                it.log()
+//                            },
+//                            onComplete = {
+//
+//                            }
+//                    )
         }
     }
 

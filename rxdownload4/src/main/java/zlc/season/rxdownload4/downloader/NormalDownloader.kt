@@ -9,7 +9,7 @@ import okhttp3.ResponseBody
 import okio.*
 import retrofit2.Response
 import zlc.season.rxdownload4.Progress
-import zlc.season.rxdownload4.task.Task
+import zlc.season.rxdownload4.task.TaskInfo
 import zlc.season.rxdownload4.utils.*
 import java.io.File
 import java.util.concurrent.Callable
@@ -20,14 +20,24 @@ class NormalDownloader : Downloader {
     private lateinit var file: File
     private lateinit var shadowFile: File
 
-    override fun download(task: Task, response: Response<ResponseBody>): Flowable<Progress> {
+    override fun download(taskInfo: TaskInfo, response: Response<ResponseBody>): Flowable<Progress> {
         val body = response.body() ?: throw RuntimeException("Response body is NULL")
 
-        file = response.file(task)
+        taskInfo.apply {
+            storage.save(task)
+        }
+
+        val fileName = if (taskInfo.task.saveName.isEmpty()) {
+            response.fileName()
+        } else {
+            taskInfo.task.saveName
+        }
+
+        file = response.file(taskInfo.task)
 
         shadowFile = file.shadow()
 
-        beforeDownload(task, response)
+        beforeDownload(taskInfo, response)
 
         return if (alreadyDownloaded) {
             Flowable.just(Progress(
@@ -42,9 +52,9 @@ class NormalDownloader : Downloader {
         }
     }
 
-    private fun beforeDownload(task: Task, response: Response<ResponseBody>) {
+    private fun beforeDownload(taskInfo: TaskInfo, response: Response<ResponseBody>) {
         if (file.exists()) {
-            if (task.validator.validate(file, response)) {
+            if (taskInfo.validator.validate(file, response)) {
                 alreadyDownloaded = true
             } else {
                 file.deleteOnExit()

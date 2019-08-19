@@ -1,88 +1,98 @@
 package zlc.season.rxdownload4
 
+import android.os.Environment
 import io.reactivex.Flowable
-import io.reactivex.disposables.Disposable
-import io.reactivex.rxkotlin.subscribeBy
+import zlc.season.rxdownload4.downloader.DefaultDispatcher
+import zlc.season.rxdownload4.downloader.Dispatcher
 import zlc.season.rxdownload4.request.Request
+import zlc.season.rxdownload4.request.RequestImpl
+import zlc.season.rxdownload4.storage.SimpleStorage
+import zlc.season.rxdownload4.storage.Storage
 import zlc.season.rxdownload4.task.Task
 import zlc.season.rxdownload4.task.TaskInfo
-import zlc.season.rxdownload4.task.TaskPool
+import zlc.season.rxdownload4.validator.SimpleValidator
+import zlc.season.rxdownload4.validator.Validator
+import java.io.File
+
+val DEFAULT_SAVE_PATH: String = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).path
+
+val RANGE_CHECK_HEADER = mapOf("Range" to "bytes=0-")
+
+const val DEFAULT_RANGE_SIZE = 5L * 1024 * 1024 //5M
+
+const val DEFAULT_MAX_CONCURRENCY = 3
 
 
 /**
  * Returns a Download Flowable represent the current url.
  */
-fun String.download(): Flowable<Progress> {
-    return Task(this).download()
+fun String.download(
+        header: Map<String, String> = RANGE_CHECK_HEADER,
+        maxConCurrency: Int = DEFAULT_MAX_CONCURRENCY,
+        rangeSize: Long = DEFAULT_RANGE_SIZE,
+        dispatcher: Dispatcher = DefaultDispatcher(),
+        validator: Validator = SimpleValidator(),
+        storage: Storage = SimpleStorage(),
+        request: Request = RequestImpl()
+): Flowable<Progress> {
+    require(rangeSize > 1024 * 1024) { "rangeSize must be greater than 1M" }
+    require(maxConCurrency > 0) { "maxConCurrency must be greater than 0" }
+
+    return Task(this).download(
+            header = header,
+            maxConCurrency = maxConCurrency,
+            rangeSize = rangeSize,
+            dispatcher = dispatcher,
+            validator = validator,
+            storage = storage,
+            request = request
+    )
 }
 
-/**
- * Returns a Shared Download Flowable represent the current url.
- *
- * A Shared Download Flowable means it can be received by multiple downstream.
- */
-fun String.shareDownload(immediately: Boolean = true): Flowable<Progress> {
-    return Task(this).shareDownload(immediately)
-}
-
-/**
- * Returns a Disposable represent the Shared Download Flowable.
- *
- * When you call [Disposable.dispose] method, all downstream of the Shared Flowable will stop.
- */
-fun String.shareDisposable(): Disposable {
-    return Task(this).shareDisposable()
+fun String.file(storage: Storage = SimpleStorage()): File {
+    return Task(this).file(storage)
 }
 
 /**
  * Returns a Download Flowable represent the current task.
  */
-fun Task.download(): Flowable<Progress> {
-    return Request().get(url, header)
-            .flatMap {
-                mapper.map(it).download(this, it)
-            }
+fun Task.download(
+        header: Map<String, String> = RANGE_CHECK_HEADER,
+        maxConCurrency: Int = DEFAULT_MAX_CONCURRENCY,
+        rangeSize: Long = DEFAULT_RANGE_SIZE,
+        dispatcher: Dispatcher = DefaultDispatcher(),
+        validator: Validator = SimpleValidator(),
+        storage: Storage = SimpleStorage(),
+        request: Request = RequestImpl()
+): Flowable<Progress> {
+    require(rangeSize > 1024 * 1024) { "rangeSize must be greater than 1M" }
+    require(maxConCurrency > 0) { "maxConCurrency must be greater than 0" }
+
+    val taskInfo = TaskInfo(
+            task = this,
+            header = header,
+            maxConCurrency = maxConCurrency,
+            rangeSize = rangeSize,
+            dispatcher = dispatcher,
+            validator = validator,
+            storage = storage,
+            request = request
+    )
+
+    return taskInfo.download()
 }
 
-/**
- * Returns a Shared Download Flowable represent the current task.
- *
- * A Shared Download Flowable means it can be received by multiple down streams.
- */
-fun Task.shareDownload(immediately: Boolean = true): Flowable<Progress> {
-    return get(immediately).flowable
-}
+fun Task.file(storage: Storage = SimpleStorage()): File {
+    storage.load(this)
 
-/**
- * Returns a Disposable represent the Shared Download Flowable.
- *
- * When you call [Disposable.dispose] method, all downstream of the Shared Flowable will stop.
- */
-fun Task.shareDisposable(): Disposable {
-    return get().disposable
-}
-
-@Synchronized
-private fun Task.get(immediately: Boolean = true): TaskInfo {
-    val taskInfo = TaskPool.get(this)
-    return if (taskInfo != null) {
-        if (taskInfo.disposable.isDisposed) {
-            TaskPool.add(this, createTaskInfo(immediately))
-        } else {
-            taskInfo
-        }
-    } else {
-        TaskPool.add(this, createTaskInfo(immediately))
+    if (savePath.isEmpty() || saveName.isEmpty()) {
+        throw IllegalStateException("Task load failed!")
     }
-}
 
-private fun Task.createTaskInfo(immediately: Boolean = true): TaskInfo {
-    val flowable = download().replay(1)
-            .also {
-                if (immediately) {
-                    it.subscribeBy()
-                }
-            }
-    val disposable = flowable.connect()
-    return TaskInfo(flowable, disposable)
+    val file = File(savePath, saveName)
+    if (file.exists()) {
+        return file
+    } else {
+        throw IllegalStateException("file not exists")
+    }
 }

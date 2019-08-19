@@ -49,6 +49,8 @@ dependencies {
     api 'io.reactivex.rxjava2:rxandroid:2.1.1'
     api "io.reactivex.rxjava2:rxkotlin:2.4.0"
 
+    api 'com.github.ssseasonnn:ClarityPotion:1.0.0'
+
     testImplementation "org.assertj:assertj-core:3.11.1"
     testImplementation "org.junit.jupiter:junit-jupiter-api:5.2.0"
     testImplementation "org.junit.jupiter:junit-jupiter-params:5.2.0"

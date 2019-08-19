@@ -5,12 +5,12 @@ import android.support.v7.app.AppCompatActivity
 import com.squareup.picasso.Picasso
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.Disposable
-import io.reactivex.plugins.RxJavaPlugins
 import io.reactivex.rxkotlin.subscribeBy
 import kotlinx.android.synthetic.main.activity_basic_download.*
 import kotlinx.android.synthetic.main.content_basic_download.*
 import kotlinx.android.synthetic.main.item_download.view.*
 import zlc.season.rxdownload4.download
+import zlc.season.rxdownload4.shareDownload
 import zlc.season.rxdownload4.utils.log
 import zlc.season.rxdownload4.utils.safeDispose
 
@@ -23,10 +23,6 @@ class BasicDownloadActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_basic_download)
         setSupportActionBar(toolbar)
-
-        RxJavaPlugins.setErrorHandler {
-            it.log()
-        }
 
         finish.setOnClickListener {
             finish()
@@ -54,7 +50,7 @@ class BasicDownloadActivity : AppCompatActivity() {
         }
 
         share_download_layout.action.setOnClickListener {
-            disposable2 = url2.download()
+            disposable2 = url2.shareDownload()
                     .observeOn(AndroidSchedulers.mainThread())
                     .subscribeBy(
                             onNext = {
@@ -64,6 +60,7 @@ class BasicDownloadActivity : AppCompatActivity() {
                                 share_download_layout.percent.text = it.percentStr()
                             },
                             onError = {
+                                it.log()
                             },
                             onComplete = {
 

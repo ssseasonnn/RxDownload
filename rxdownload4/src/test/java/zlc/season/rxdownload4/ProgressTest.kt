@@ -5,35 +5,33 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS
 import org.junit.jupiter.api.assertThrows
-import java.io.File
 
 @TestInstance(PER_CLASS)
-class StatusTest {
-    private val status = Status(0, 0, file = File(""))
+class ProgressTest {
 
     @Test
     fun `percent should throw exception when chunked is true`() {
-        val status = Status(10, 100, true, File(""))
+        val progress = Progress(10, 100, true)
         assertThrows<IllegalStateException> {
-            status.percent()
+            progress.percent()
         }
     }
 
     @Test
     fun `get total size should throw exception when chunked is true`() {
-        val status = Status(0, 0, true, File(""))
+        val progress = Progress(0, 0, true)
         assertThrows<IllegalStateException> {
-            status.totalSize
+            progress.totalSize
         }
         assertThrows<IllegalStateException> {
-            status.totalSizeStr()
+            progress.totalSizeStr()
         }
     }
 
     @Test
     fun percentTest() {
-        val status = Status(10, 100, file = File(""))
-        val percent = status.percent()
+        val progress = Progress(10, 100)
+        val percent = progress.percent()
         assertThat(percent).isEqualTo(10)
     }
 }

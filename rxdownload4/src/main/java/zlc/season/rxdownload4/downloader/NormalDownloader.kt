@@ -8,7 +8,7 @@ import io.reactivex.functions.Consumer
 import okhttp3.ResponseBody
 import okio.*
 import retrofit2.Response
-import zlc.season.rxdownload4.Status
+import zlc.season.rxdownload4.Progress
 import zlc.season.rxdownload4.task.Task
 import zlc.season.rxdownload4.utils.*
 import java.io.File
@@ -20,7 +20,7 @@ class NormalDownloader : Downloader {
     private lateinit var file: File
     private lateinit var shadowFile: File
 
-    override fun download(task: Task, response: Response<ResponseBody>): Flowable<Status> {
+    override fun download(task: Task, response: Response<ResponseBody>): Flowable<Progress> {
         val body = response.body() ?: throw RuntimeException("Response body is NULL")
 
         file = response.file(task)
@@ -30,16 +30,14 @@ class NormalDownloader : Downloader {
         beforeDownload(task, response)
 
         return if (alreadyDownloaded) {
-            Flowable.just(Status(
+            Flowable.just(Progress(
                     downloadSize = response.contentLength(),
-                    totalSize = response.contentLength(),
-                    file = file
+                    totalSize = response.contentLength()
             ))
         } else {
-            startDownload(body, Status(
+            startDownload(body, Progress(
                     totalSize = response.contentLength(),
-                    isChunked = response.isChunked(),
-                    file = file
+                    isChunked = response.isChunked()
             ))
         }
     }
@@ -57,7 +55,7 @@ class NormalDownloader : Downloader {
         }
     }
 
-    private fun startDownload(body: ResponseBody, status: Status): Flowable<Status> {
+    private fun startDownload(body: ResponseBody, progress: Progress): Flowable<Progress> {
 
         return generate(
                 Callable {
@@ -66,7 +64,7 @@ class NormalDownloader : Downloader {
                             shadowFile.sink().buffer()
                     )
                 },
-                BiFunction<InternalState, Emitter<Status>, InternalState> { internalState, emitter ->
+                BiFunction<InternalState, Emitter<Progress>, InternalState> { internalState, emitter ->
                     internalState.apply {
                         val readLen = source.read(buffer, 8192L)
 
@@ -76,7 +74,7 @@ class NormalDownloader : Downloader {
                             emitter.onComplete()
                         } else {
                             sink.emit()
-                            emitter.onNext(status.apply {
+                            emitter.onNext(progress.apply {
                                 downloadSize += readLen
                             })
                         }

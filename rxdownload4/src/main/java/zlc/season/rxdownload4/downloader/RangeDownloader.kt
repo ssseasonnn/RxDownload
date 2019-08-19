@@ -7,7 +7,7 @@ import io.reactivex.functions.Consumer
 import io.reactivex.schedulers.Schedulers
 import okhttp3.ResponseBody
 import retrofit2.Response
-import zlc.season.rxdownload4.Status
+import zlc.season.rxdownload4.Progress
 import zlc.season.rxdownload4.request.Request
 import zlc.season.rxdownload4.task.Task
 import zlc.season.rxdownload4.utils.*
@@ -25,7 +25,7 @@ class RangeDownloader : Downloader {
     private lateinit var tmpFile: File
     private lateinit var rangeTmpFile: RangeTmpFile
 
-    override fun download(task: Task, response: Response<ResponseBody>): Flowable<Status> {
+    override fun download(task: Task, response: Response<ResponseBody>): Flowable<Progress> {
         file = response.file(task)
         shadowFile = file.shadow()
         tmpFile = file.tmp()
@@ -33,10 +33,9 @@ class RangeDownloader : Downloader {
         beforeDownload(task, response)
 
         return if (alreadyDownloaded) {
-            Flowable.just(Status(
+            Flowable.just(Progress(
                     downloadSize = response.contentLength(),
-                    totalSize = response.contentLength(),
-                    file = file
+                    totalSize = response.contentLength()
             ))
         } else {
             startDownload(task, response)
@@ -75,14 +74,13 @@ class RangeDownloader : Downloader {
     }
 
 
-    private fun startDownload(task: Task, response: Response<ResponseBody>): Flowable<Status> {
+    private fun startDownload(task: Task, response: Response<ResponseBody>): Flowable<Progress> {
         val url = response.url()
-        val (downloadSize, totalSize) = rangeTmpFile.lastStatus()
+        val (downloadSize, totalSize) = rangeTmpFile.lastProgress()
 
-        val status = Status(
+        val progress = Progress(
                 downloadSize = downloadSize,
-                totalSize = totalSize,
-                file = file
+                totalSize = totalSize
         )
 
         val sources = mutableListOf<Flowable<Long>>()
@@ -94,7 +92,7 @@ class RangeDownloader : Downloader {
 
         return Flowable.mergeDelayError(sources, task.maxConCurrency)
                 .map {
-                    status.apply {
+                    progress.apply {
                         this.downloadSize += it
                     }
                 }

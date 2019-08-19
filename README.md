@@ -39,7 +39,7 @@ Step 2. Subscribe to the mission updates
 ```kotlin
 val disposable = RxDownload.create(mission, autoStart = false)
                 .observeOn(AndroidSchedulers.mainThread())
-                .subscribe { status ->
+                .subscribe { progress ->
 
                 }
 ```

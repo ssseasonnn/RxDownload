@@ -12,7 +12,7 @@ import zlc.season.rxdownload4.task.TaskPool
 /**
  * Returns a Download Flowable represent the current url.
  */
-fun String.download(): Flowable<Status> {
+fun String.download(): Flowable<Progress> {
     return Task(this).download()
 }
 
@@ -21,8 +21,8 @@ fun String.download(): Flowable<Status> {
  *
  * A Shared Download Flowable means it can be received by multiple downstream.
  */
-fun String.share(): Flowable<Status> {
-    return Task(this).share()
+fun String.shareDownload(immediately: Boolean = true): Flowable<Progress> {
+    return Task(this).shareDownload(immediately)
 }
 
 /**
@@ -37,7 +37,7 @@ fun String.shareDisposable(): Disposable {
 /**
  * Returns a Download Flowable represent the current task.
  */
-fun Task.download(): Flowable<Status> {
+fun Task.download(): Flowable<Progress> {
     return Request().get(url, header)
             .flatMap {
                 mapper.map(it).download(this, it)
@@ -49,8 +49,8 @@ fun Task.download(): Flowable<Status> {
  *
  * A Shared Download Flowable means it can be received by multiple down streams.
  */
-fun Task.share(): Flowable<Status> {
-    return get().flowable
+fun Task.shareDownload(immediately: Boolean = true): Flowable<Progress> {
+    return get(immediately).flowable
 }
 
 /**
@@ -63,22 +63,26 @@ fun Task.shareDisposable(): Disposable {
 }
 
 @Synchronized
-private fun Task.get(): TaskInfo {
+private fun Task.get(immediately: Boolean = true): TaskInfo {
     val taskInfo = TaskPool.get(this)
     return if (taskInfo != null) {
         if (taskInfo.disposable.isDisposed) {
-            TaskPool.add(this, createTaskInfo())
+            TaskPool.add(this, createTaskInfo(immediately))
         } else {
             taskInfo
         }
     } else {
-        TaskPool.add(this, createTaskInfo())
+        TaskPool.add(this, createTaskInfo(immediately))
     }
 }
 
-private fun Task.createTaskInfo(): TaskInfo {
+private fun Task.createTaskInfo(immediately: Boolean = true): TaskInfo {
     val flowable = download().replay(1)
-            .also { it.subscribeBy() }
+            .also {
+                if (immediately) {
+                    it.subscribeBy()
+                }
+            }
     val disposable = flowable.connect()
     return TaskInfo(flowable, disposable)
 }

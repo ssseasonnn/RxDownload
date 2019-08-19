@@ -2,14 +2,12 @@ package zlc.season.rxdownload4
 
 import zlc.season.rxdownload4.utils.decimal
 import zlc.season.rxdownload4.utils.formatSize
-import java.io.File
 
 
-class Status(
+class Progress(
         downloadSize: Long = 0,
         totalSize: Long = 0,
-        isChunked: Boolean = false,
-        file: File
+        isChunked: Boolean = false
 ) {
 
     var downloadSize: Long = downloadSize
@@ -28,12 +26,6 @@ class Status(
      * 用于标识一个链接是否是分块下载, 如果该值为true, 那么totalSize为-1
      */
     var isChunked: Boolean = isChunked
-        internal set
-
-    /**
-     * Return download file, if file exists
-     */
-    var file: File = file
         internal set
 
     /**

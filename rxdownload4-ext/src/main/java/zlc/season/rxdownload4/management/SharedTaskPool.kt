@@ -6,9 +6,8 @@ object SharedTaskPool {
     private val map = mutableMapOf<Task, SharedTask>()
 
     @Synchronized
-    fun add(task: Task, taskInfo: SharedTask): SharedTask {
+    fun add(task: Task, taskInfo: SharedTask) {
         map[task] = taskInfo
-        return taskInfo
     }
 
     @Synchronized

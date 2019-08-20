@@ -6,6 +6,7 @@ import io.reactivex.Flowable.generate
 import io.reactivex.functions.BiFunction
 import io.reactivex.functions.Consumer
 import okhttp3.ResponseBody
+import okhttp3.internal.closeQuietly
 import okio.*
 import retrofit2.Response
 import zlc.season.rxdownload4.Progress
@@ -23,18 +24,7 @@ class NormalDownloader : Downloader {
     override fun download(taskInfo: TaskInfo, response: Response<ResponseBody>): Flowable<Progress> {
         val body = response.body() ?: throw RuntimeException("Response body is NULL")
 
-        taskInfo.apply {
-            storage.save(task)
-        }
-
-        val fileName = if (taskInfo.task.saveName.isEmpty()) {
-            response.fileName()
-        } else {
-            taskInfo.task.saveName
-        }
-
-        file = response.file(taskInfo.task)
-
+        file = taskInfo.task.getFile()
         shadowFile = file.shadow()
 
         beforeDownload(taskInfo, response)
@@ -92,8 +82,8 @@ class NormalDownloader : Downloader {
                 },
                 Consumer {
                     it.apply {
-                        sink.safeClose()
-                        source.safeClose()
+                        sink.closeQuietly()
+                        source.closeQuietly()
                     }
                 })
     }

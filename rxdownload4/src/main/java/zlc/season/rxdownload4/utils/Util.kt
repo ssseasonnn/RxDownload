@@ -1,20 +1,11 @@
 package zlc.season.rxdownload4.utils
 
 import io.reactivex.disposables.Disposable
-import java.io.Closeable
 import java.math.BigDecimal
 
 fun Disposable?.safeDispose() {
     if (this != null && !isDisposed) {
         dispose()
-    }
-}
-
-fun Closeable.safeClose() {
-    try {
-        close()
-    } catch (ignore: Throwable) {
-
     }
 }
 

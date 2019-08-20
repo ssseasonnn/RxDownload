@@ -6,9 +6,10 @@ import io.reactivex.functions.BiFunction
 import io.reactivex.functions.Consumer
 import io.reactivex.schedulers.Schedulers
 import okhttp3.ResponseBody
+import okhttp3.internal.closeQuietly
 import retrofit2.Response
 import zlc.season.rxdownload4.Progress
-import zlc.season.rxdownload4.request.RequestImpl
+import zlc.season.rxdownload4.request.Request
 import zlc.season.rxdownload4.task.TaskInfo
 import zlc.season.rxdownload4.utils.*
 import java.io.File
@@ -26,7 +27,7 @@ class RangeDownloader : Downloader {
     private lateinit var rangeTmpFile: RangeTmpFile
 
     override fun download(taskInfo: TaskInfo, response: Response<ResponseBody>): Flowable<Progress> {
-        file = response.file(taskInfo.task)
+        file = taskInfo.task.getFile()
         shadowFile = file.shadow()
         tmpFile = file.tmp()
 
@@ -87,7 +88,7 @@ class RangeDownloader : Downloader {
 
         rangeTmpFile.undoneSegments()
                 .mapTo(sources) {
-                    InnerDownloader(url, it, shadowFile, tmpFile).download()
+                    InnerDownloader(url, it, shadowFile, tmpFile, taskInfo.request).download()
                 }
 
         return Flowable.mergeDelayError(sources, taskInfo.maxConCurrency)
@@ -113,13 +114,14 @@ class RangeDownloader : Downloader {
             private val url: String,
             private val segment: RangeTmpFile.Segment,
             private val shadowFile: File,
-            private val tmpFile: File
+            private val tmpFile: File,
+            private val request: Request
     ) {
         fun download(): Flowable<Long> {
             return Flowable.just(segment)
                     .subscribeOn(Schedulers.io())
                     .map { mapOf("Range" to "bytes=${it.current}-${it.end}").log() }
-                    .flatMap { RequestImpl().get(url, it) }
+                    .flatMap { request.get(url, it) }
                     .flatMap { rangeSave(segment, it) }
         }
 
@@ -151,7 +153,9 @@ class RangeDownloader : Downloader {
                             }
                         }
                     },
-                    Consumer {})
+                    Consumer {
+                        it.source.closeQuietly()
+                    })
         }
 
         private fun initialState(
@@ -174,8 +178,8 @@ class RangeDownloader : Downloader {
                     segment.remainSize()
             )
 
-            shadowFileChannel.safeClose()
-            tmpFileChannel.safeClose()
+            shadowFileChannel.closeQuietly()
+            tmpFileChannel.closeQuietly()
 
             return InternalState(
                     source,

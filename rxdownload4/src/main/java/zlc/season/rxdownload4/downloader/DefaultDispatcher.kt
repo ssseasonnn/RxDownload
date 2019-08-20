@@ -6,10 +6,6 @@ import zlc.season.rxdownload4.utils.isSupportRange
 
 class DefaultDispatcher : Dispatcher {
     override fun dispatch(response: Response<ResponseBody>): Downloader {
-        if (!response.isSuccessful) {
-            throw IllegalStateException("Response is failed!")
-        }
-
         return if (response.isSupportRange()) {
             RangeDownloader()
         } else {

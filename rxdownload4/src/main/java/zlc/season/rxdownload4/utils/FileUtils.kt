@@ -30,5 +30,13 @@ fun File.channel(): FileChannel {
 }
 
 fun File.clear() {
+    val shadow = shadow()
+    val tmp = tmp()
+    shadow.deleteOnExit()
+    tmp.deleteOnExit()
+    deleteOnExit()
+}
 
+internal fun Task.getFile(): File {
+    return File(savePath, saveName)
 }

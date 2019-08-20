@@ -1,8 +1,6 @@
 package zlc.season.rxdownload4.utils
 
 import retrofit2.Response
-import zlc.season.rxdownload4.task.Task
-import java.io.File
 import java.util.regex.Pattern
 
 fun Response<*>.url(): String {
@@ -18,10 +16,6 @@ fun Response<*>.isChunked(): Boolean {
 }
 
 fun Response<*>.isSupportRange(): Boolean {
-    if (!isSuccessful) {
-        return false
-    }
-
     if (code() == 206
             || header("Content-Range").isNotEmpty()
             || header("Accept-Ranges") == "bytes") {
@@ -29,15 +23,6 @@ fun Response<*>.isSupportRange(): Boolean {
     }
 
     return false
-}
-
-fun Response<*>.file(task: Task): File {
-    val fileName = if (task.saveName.isEmpty()) {
-        fileName()
-    } else {
-        task.saveName
-    }
-    return File(task.savePath, fileName)
 }
 
 fun Response<*>.fileName(): String {

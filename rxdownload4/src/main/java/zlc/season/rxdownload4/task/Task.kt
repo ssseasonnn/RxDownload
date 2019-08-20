@@ -3,12 +3,10 @@ package zlc.season.rxdownload4.task
 import zlc.season.rxdownload4.DEFAULT_SAVE_PATH
 
 open class Task(
-        url: String,
+        val url: String,
         saveName: String = "",
         savePath: String = DEFAULT_SAVE_PATH
 ) {
-    var url: String = url
-        internal set
 
     var saveName: String = saveName
         internal set

@@ -1,6 +1,7 @@
 package zlc.season.rxdownload4
 
-import android.os.Environment
+import android.os.Environment.DIRECTORY_DOWNLOADS
+import android.os.Environment.getExternalStoragePublicDirectory
 import io.reactivex.Flowable
 import zlc.season.rxdownload4.downloader.DefaultDispatcher
 import zlc.season.rxdownload4.downloader.Dispatcher
@@ -10,11 +11,13 @@ import zlc.season.rxdownload4.storage.SimpleStorage
 import zlc.season.rxdownload4.storage.Storage
 import zlc.season.rxdownload4.task.Task
 import zlc.season.rxdownload4.task.TaskInfo
+import zlc.season.rxdownload4.utils.clear
 import zlc.season.rxdownload4.validator.SimpleValidator
 import zlc.season.rxdownload4.validator.Validator
 import java.io.File
 
-val DEFAULT_SAVE_PATH: String = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).path
+
+val DEFAULT_SAVE_PATH: String = getExternalStoragePublicDirectory(DIRECTORY_DOWNLOADS).path
 
 val RANGE_CHECK_HEADER = mapOf("Range" to "bytes=0-")
 
@@ -79,20 +82,16 @@ fun Task.download(
             request = request
     )
 
-    return taskInfo.download()
+    return taskInfo.start()
 }
 
 fun Task.file(storage: Storage = SimpleStorage()): File {
     storage.load(this)
+    return File(savePath, saveName)
+}
 
-    if (savePath.isEmpty() || saveName.isEmpty()) {
-        throw IllegalStateException("Task load failed!")
-    }
-
-    val file = File(savePath, saveName)
-    if (file.exists()) {
-        return file
-    } else {
-        throw IllegalStateException("file not exists")
-    }
+fun Task.delete(storage: Storage = SimpleStorage()) {
+    val file = file(storage)
+    file.clear()
+    storage.delete(this)
 }

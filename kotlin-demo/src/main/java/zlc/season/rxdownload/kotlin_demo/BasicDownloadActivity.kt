@@ -10,6 +10,7 @@ import kotlinx.android.synthetic.main.activity_basic_download.*
 import kotlinx.android.synthetic.main.content_basic_download.*
 import kotlinx.android.synthetic.main.item_download.view.*
 import zlc.season.rxdownload4.download
+import zlc.season.rxdownload4.file
 import zlc.season.rxdownload4.utils.log
 import zlc.season.rxdownload4.utils.safeDispose
 
@@ -44,6 +45,7 @@ class BasicDownloadActivity : AppCompatActivity() {
                                 it.log()
                             },
                             onComplete = {
+                                val file = url1.file().log()
                             }
                     )
         }

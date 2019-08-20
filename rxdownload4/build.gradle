@@ -35,7 +35,7 @@ android {
 dependencies {
     api "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
 
-    api('com.squareup.retrofit2:retrofit:2.6.1') {
+    api('com.squareup.retrofit2:retrofit:2.7.0-SNAPSHOT') {
         exclude group: 'com.squareup.okhttp3', module: 'okhttp'
     }
 
@@ -52,6 +52,7 @@ dependencies {
     api 'com.github.ssseasonnn:ClarityPotion:1.0.0'
 
     testImplementation "org.assertj:assertj-core:3.11.1"
+    testImplementation 'io.mockk:mockk:1.9.3'
     testImplementation "org.junit.jupiter:junit-jupiter-api:5.2.0"
     testImplementation "org.junit.jupiter:junit-jupiter-params:5.2.0"
     testImplementation "org.junit.jupiter:junit-jupiter-engine:5.2.0"

@@ -1,7 +1,0 @@
-<resources>
-    <string name="app_name">KotlinDemo</string>
-    <string name="title_activity_main">DOWNLOAD DEMO</string>
-    <string name="title_activity_basic_download">BASIC DOWNLOAD</string>
-    <string name="title_activity_app_market">APP MARKET</string>
-    <string name="title_activity_download_list">下载列表</string>
-</resources>

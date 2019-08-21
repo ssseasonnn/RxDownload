@@ -1,0 +1,34 @@
+<resources>
+    <string name="app_name">KotlinDemo</string>
+    <string name="title_activity_main">DOWNLOAD DEMO</string>
+    <string name="title_activity_basic_download">BASIC DOWNLOAD</string>
+    <string name="title_activity_app_market">APP MARKET</string>
+    <string name="title_activity_download_list">下载列表</string>
+
+    <string name="wechat_desc">
+        WeChat，不止是一款优秀的通讯和社交APP，而且是全球超过10亿用户都离不开的生活方式。\n
+        在WeChat，你不仅可以用文本、语音、视频、表情等多种方式与好友时刻保持联系；\n
+        你还可以访问数百万个公众号和小程序，并从中获取海量的优质资讯和服务；\n
+        你也可以与好友在WeChat游戏的世界里并肩作战，一同闯关；你更可以通过WeChat Pay 体验全球领先的移动支付所带来的生活便利。\n\n
+
+
+        功能特点:\n
+        • 【丰富的聊天方式】支持视频、图片、文本、语音、地理位置等方式与好友聊天互动.\n
+        • 【音视频通话】提供全球高质量音视频通话，支持单聊和群聊。\n
+        • 【实时位置共享】与好友分享地理位置，无需通过语言告诉对方。\n
+        • 【朋友圈】与好友分享每个精彩瞬间，记录自己的生活点滴。\n
+        • 【视频动态】用短视频记录此时此刻的你，让好友看见最真的自己。\n
+        • 【表情商店】海量动态表情，包括热门卡通人物和电影，让聊天变得更生动有趣。\n
+        • 【自定义表情】制作自定义表情最能彰显个性。\n
+        • 【公众号】海量优质资讯，任你浏览。\n
+        • 【小程序】海量的第三方优质服务，无需安装，触手可达。\n
+        • 【看一看】发现好友关注的热点和你感兴趣的内容。\n
+        • 【游戏】与好友一起并肩作战，打怪通关不要停（目前仅限于部分地区）。\n
+        • 【WeChat Pay】全球领先的移动支付体验尽在这里（目前仅限于部分地区）。\n
+        • 【WeChat Out】超低费率拨打全球的手机或固定电话（部分地区不可用）。\n
+        • 【多语言】支持超过20种语言界面，并支持多国语言的消息翻译。\n
+        • 【隐私保护】严格保护用户的隐私安全，是唯一一款通过TRUSTe认证的实时通讯应用。
+    </string>
+
+
+</resources>

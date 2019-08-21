@@ -17,9 +17,7 @@
         tools:ignore="GoogleAppIndexingWarning"
         tools:targetApi="n">
 
-        <activity
-            android:name="zlc.season.rxdownload.kotlin_demo.MainActivity"
-            android:theme="@style/AppTheme.NoActionBar">
+        <activity android:name="zlc.season.rxdownload.kotlin_demo.MainActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
@@ -27,17 +25,11 @@
             </intent-filter>
         </activity>
 
-        <activity
-            android:name="zlc.season.rxdownload.kotlin_demo.BasicDownloadActivity"
-            android:theme="@style/AppTheme.NoActionBar" />
+        <activity android:name="zlc.season.rxdownload.kotlin_demo.BasicDownloadActivity" />
 
-        <activity
-            android:name=".AppListActivity"
-            android:theme="@style/AppTheme.NoActionBar" />
+        <activity android:name=".AppListActivity" />
 
-        <activity
-            android:name=".DownloadListActivity"
-            android:theme="@style/AppTheme.NoActionBar" />
+        <activity android:name=".DownloadListActivity" />
 
     </application>
 </manifest>

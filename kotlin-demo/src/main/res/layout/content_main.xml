@@ -15,13 +15,11 @@
         android:id="@+id/basic_download"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_margin="16dp"
-        android:text="@string/basic_download" />
+        android:layout_margin="16dp" />
 
     <Button
         android:id="@+id/app_market"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_margin="16dp"
-        android:text="@string/app_market" />
+        android:layout_margin="16dp" />
 </LinearLayout>

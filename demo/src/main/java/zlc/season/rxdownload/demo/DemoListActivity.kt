@@ -18,6 +18,7 @@ import zlc.season.rxdownload4.share
 import zlc.season.rxdownload4.start
 import zlc.season.rxdownload4.stop
 import zlc.season.rxdownload4.task.Task
+import zlc.season.rxdownload4.utils.log
 import zlc.season.rxdownload4.utils.safeDispose
 import zlc.season.yasha.YashaDataSource
 import zlc.season.yasha.YashaItem
@@ -115,10 +116,12 @@ class DemoListActivity : AppCompatActivity() {
                                 button.setProgress(it.downloadSize, it.totalSize)
                             },
                             onComplete = {
+                                "onComplete".log()
                                 state = COMPLETED
                                 button.text = stateStr()
                             },
                             onError = {
+                                "onError".log()
                                 state = FAILED
                                 button.text = stateStr()
                             }
@@ -130,6 +133,7 @@ class DemoListActivity : AppCompatActivity() {
         }
 
         private fun start(button: ProgressButton) {
+            subscribe(button)
             Task(url).share().start()
             state = STARTED
             button.text = stateStr()

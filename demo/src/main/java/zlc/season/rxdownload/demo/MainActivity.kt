@@ -2,11 +2,12 @@ package zlc.season.rxdownload.demo
 
 import android.Manifest
 import android.annotation.SuppressLint
-import android.content.Intent
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
 import com.tbruyelle.rxpermissions2.RxPermissions
 import kotlinx.android.synthetic.main.content_main.*
+import zlc.season.rxdownload.demo.utils.click
+import zlc.season.rxdownload.demo.utils.start
 
 class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -15,10 +16,13 @@ class MainActivity : AppCompatActivity() {
 
         setContentView(R.layout.activity_main)
 
-        basic_download.setOnClickListener {
-            startActivity(Intent(this@MainActivity, DemoActivity::class.java))
+        basic_demo.click {
+            start(DemoActivity::class.java)
         }
 
+        demo_list.click {
+            start(DemoListActivity::class.java)
+        }
     }
 
 

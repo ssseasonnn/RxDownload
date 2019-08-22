@@ -47,7 +47,7 @@
         tools:srcCompat="@tools:sample/avatars[14]" />
 
     <TextView
-        android:id="@+id/tv_title"
+        android:id="@+id/tv_name"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="16dp"
@@ -61,7 +61,7 @@
         tools:text="TextView" />
 
     <TextView
-        android:id="@+id/tv_desc"
+        android:id="@+id/tv_size"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginStart="8dp"

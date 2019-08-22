@@ -8,7 +8,7 @@
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
 
     <application
-        android:name="zlc.season.rxdownload.demo.BaseApplication"
+        android:name=".BaseApplication"
         android:allowBackup="true"
         android:label="@string/app_name"
         android:networkSecurityConfig="@xml/network_config"
@@ -18,7 +18,8 @@
         tools:ignore="GoogleAppIndexingWarning"
         tools:targetApi="n">
 
-        <activity android:name="zlc.season.rxdownload.demo.MainActivity">
+
+        <activity android:name=".MainActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
@@ -27,22 +28,20 @@
         </activity>
 
         <activity
-            android:name="zlc.season.rxdownload.demo.DemoActivity"
-            android:theme="@style/AppTheme.NoActionBar">
+            android:name=".DemoActivity"
+            android:theme="@style/AppTheme.NoActionBar" />
 
-        </activity>
-
+        <activity android:name=".DemoListActivity" />
 
         <provider
-            android:name="zlc.season.rxdownload.demo.utils.ApkFileProvider"
+            android:name=".utils.ApkFileProvider"
             android:authorities="${applicationId}.rxdownload.demo.provider"
             android:exported="false"
             android:grantUriPermissions="true">
-
             <meta-data
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/apk_file_provider" />
         </provider>
-
     </application>
+
 </manifest>

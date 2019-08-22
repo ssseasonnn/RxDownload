@@ -4,7 +4,6 @@ import android.annotation.SuppressLint
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
 import android.text.method.ScrollingMovementMethod
-import com.squareup.picasso.Picasso
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.Disposable
 import io.reactivex.rxkotlin.subscribeBy
@@ -13,6 +12,7 @@ import kotlinx.android.synthetic.main.common_title.*
 import zlc.season.rxdownload.demo.utils.ProgressDrawable
 import zlc.season.rxdownload.demo.utils.click
 import zlc.season.rxdownload.demo.utils.installApk
+import zlc.season.rxdownload.demo.utils.load
 import zlc.season.rxdownload4.download
 import zlc.season.rxdownload4.file
 import zlc.season.rxdownload4.utils.safeDispose
@@ -29,11 +29,11 @@ class DemoActivity : AppCompatActivity() {
 
         back.click { finish() }
 
-        Picasso.with(this).load(iconUrl).into(icon)
+        icon.load(iconUrl)
 
-        tv_title.text = "微信"
-        tv_desc.text = getString(R.string.wechat_desc)
-        tv_desc.movementMethod = ScrollingMovementMethod()
+        tv_name.text = "微信"
+        tv_size.text = getString(R.string.wechat_desc)
+        tv_size.movementMethod = ScrollingMovementMethod()
 
         button.background = progressDrawable
 

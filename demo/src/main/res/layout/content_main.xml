@@ -12,15 +12,16 @@
     app:layout_behavior="@string/appbar_scrolling_view_behavior">
 
     <Button
-        android:id="@+id/basic_download"
+        android:id="@+id/basic_demo"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_margin="16dp"
         android:text="Basic Demo" />
 
     <Button
-        android:id="@+id/app_market"
+        android:id="@+id/demo_list"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_margin="16dp" />
+        android:layout_margin="16dp"
+        android:text="Demo list" />
 </LinearLayout>

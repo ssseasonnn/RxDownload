@@ -32,6 +32,10 @@ android {
         sourceCompatibility 1.8
         targetCompatibility 1.8
     }
+
+    androidExtensions {
+        experimental = true
+    }
 }
 
 dependencies {
@@ -42,9 +46,10 @@ dependencies {
     implementation 'com.android.support:appcompat-v7:28.0.0'
     implementation 'com.android.support:design:28.0.0'
 
-    implementation 'com.squareup.picasso:picasso:2.5.2'
     implementation 'com.tbruyelle.rxpermissions2:rxpermissions:0.9.4@aar'
+    implementation 'com.github.bumptech.glide:glide:4.9.0'
 
+    implementation 'com.github.ssseasonnn:Yasha:1.0.5'
 
     implementation project(':rxdownload4')
 

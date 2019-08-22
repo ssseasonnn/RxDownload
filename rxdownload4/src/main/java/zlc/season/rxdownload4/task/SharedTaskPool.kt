@@ -1,6 +1,4 @@
-package zlc.season.rxdownload4.management
-
-import zlc.season.rxdownload4.task.Task
+package zlc.season.rxdownload4.task
 
 object SharedTaskPool {
     private val map = mutableMapOf<Task, SharedTask>()
@@ -13,5 +11,10 @@ object SharedTaskPool {
     @Synchronized
     fun get(task: Task): SharedTask? {
         return map[task]
+    }
+
+    @Synchronized
+    fun remove(task: Task) {
+        map.remove(task)
     }
 }

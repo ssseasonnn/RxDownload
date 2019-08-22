@@ -18,11 +18,11 @@ class ProgressDrawable : Drawable() {
     init {
         backgroundPaint.style = Paint.Style.FILL
         backgroundPaint.isDither = true
-        backgroundPaint.color = Color.parseColor("#008577")
+        backgroundPaint.color = Color.parseColor("#FF009688")
 
         progressPaint.style = Paint.Style.FILL
         progressPaint.isDither = true
-        progressPaint.color = Color.parseColor("#D81B60")
+        progressPaint.color = Color.parseColor("#FFD81B60")
     }
 
     fun setProgress(progress: Long, max: Long) {

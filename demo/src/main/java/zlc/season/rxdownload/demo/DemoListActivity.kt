@@ -2,27 +2,26 @@ package zlc.season.rxdownload.demo
 
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
-import io.reactivex.Flowable
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.Disposable
 import io.reactivex.rxkotlin.subscribeBy
 import kotlinx.android.synthetic.main.activity_demo_list.*
 import kotlinx.android.synthetic.main.demo_list_item.*
-import zlc.season.rxdownload.demo.DemoListActivity.DemoListItem.Companion.COMPLETED
-import zlc.season.rxdownload.demo.DemoListActivity.DemoListItem.Companion.FAILED
-import zlc.season.rxdownload.demo.DemoListActivity.DemoListItem.Companion.NORMAL
-import zlc.season.rxdownload.demo.DemoListActivity.DemoListItem.Companion.PAUSED
-import zlc.season.rxdownload.demo.DemoListActivity.DemoListItem.Companion.STARTED
-import zlc.season.rxdownload.demo.utils.ProgressDrawable
-import zlc.season.rxdownload.demo.utils.background
+import zlc.season.rxdownload.demo.utils.ProgressButton
 import zlc.season.rxdownload.demo.utils.click
 import zlc.season.rxdownload.demo.utils.load
-import zlc.season.rxdownload4.Progress
-import zlc.season.rxdownload4.download
+import zlc.season.rxdownload.demo.utils.mock_json
+import zlc.season.rxdownload4.get
+import zlc.season.rxdownload4.share
+import zlc.season.rxdownload4.start
+import zlc.season.rxdownload4.stop
+import zlc.season.rxdownload4.task.SharedTask
+import zlc.season.rxdownload4.task.Task
 import zlc.season.rxdownload4.utils.safeDispose
 import zlc.season.yasha.YashaDataSource
 import zlc.season.yasha.YashaItem
-import zlc.season.yasha.YashaScope
 import zlc.season.yasha.linear
 
 class DemoListActivity : AppCompatActivity() {
@@ -40,71 +39,42 @@ class DemoListActivity : AppCompatActivity() {
 
                 onBind {
                     tv_name.text = data.name
+                    tv_size.text = data.size
+
                     iv_icon.load(data.icon)
                     btn_action.text = data.stateStr()
 
-                    val progressDrawable = ProgressDrawable()
-                    btn_action.background(progressDrawable)
+                    data.subscribe(btn_action)
 
                     btn_action.click {
-                        when (data.state) {
-                            NORMAL -> {
-                                start(progressDrawable)
-                            }
-                            STARTED -> {
-                                stop()
-                            }
-                            PAUSED -> {
-                                start(progressDrawable)
-                            }
-                            COMPLETED -> {
-
-                            }
-                            FAILED -> {
-                                start(progressDrawable)
-                            }
-                        }
+                        data.action(btn_action)
                     }
                 }
+
+                onDetach {
+                    data.dispose()
+                }
+
+                onAttach {
+                    data.subscribe(btn_action)
+                }
+
             }
         }
     }
-
-    private fun YashaScope<DemoListItem>.start(progressDrawable: ProgressDrawable) {
-        data.disposable = data.flowable
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribeBy(
-                        onNext = {
-                            progressDrawable.setProgress(it.downloadSize, it.totalSize)
-                        },
-                        onComplete = {
-                            data.state = COMPLETED
-                            btn_action.text = data.stateStr()
-                        },
-                        onError = {
-                            data.state = FAILED
-                            btn_action.text = data.stateStr()
-                        }
-                )
-        data.state = STARTED
-        btn_action.text = data.stateStr()
-    }
-
-    private fun YashaScope<DemoListItem>.stop() {
-        data.disposable.safeDispose()
-        data.state = PAUSED
-        btn_action.text = data.stateStr()
-    }
-
 
     class DemoListItem(
             val name: String,
             val icon: String,
             val url: String,
-            val flowable: Flowable<Progress>,
-            var disposable: Disposable? = null,
+            val size: String,
+
             var state: Int = NORMAL
     ) : YashaItem {
+
+        //for download use
+        var disposable: Disposable? = null
+
         companion object {
             const val NORMAL = 0
             const val STARTED = 1
@@ -124,40 +94,58 @@ class DemoListActivity : AppCompatActivity() {
             }
         }
 
-        fun action(): () -> Unit {
-            return when (state) {
-                NORMAL -> {
-                    { url.download() }
-                }
-                STARTED -> {
-                    {}
-                }
-                PAUSED -> {
-                    {}
-                }
+        fun action(button: ProgressButton) {
+            when (state) {
+                NORMAL -> start(button)
+                STARTED -> stop(button)
+                PAUSED -> start(button)
                 COMPLETED -> {
-                    {}
                 }
-                FAILED -> {
-                    {}
-                }
-                else -> {
-                    {}
-                }
+                FAILED -> start(button)
             }
+        }
+
+        fun subscribe(button: ProgressButton) {
+            disposable = Task(url).share().get()
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .subscribeBy(
+                            onNext = {
+                                button.setProgress(it.downloadSize, it.totalSize)
+                            },
+                            onComplete = {
+                                state = COMPLETED
+                                button.text = stateStr()
+                            },
+                            onError = {
+                                state = FAILED
+                                button.text = stateStr()
+                            }
+                    )
+        }
+
+        fun dispose() {
+            disposable.safeDispose()
+        }
+
+        private fun start(button: ProgressButton) {
+            Task(url).share().start()
+            state = STARTED
+            button.text = stateStr()
+        }
+
+        private fun stop(button: ProgressButton) {
+            Task(url).share().stop()
+            state = PAUSED
+            button.text = stateStr()
         }
     }
 
     class DemoListDataSource : YashaDataSource() {
-        val iconUrl = "http://pp.myapp.com/ma_icon/0/icon_10910_1564113626/256"
-        val url = "https://dldir1.qq.com/weixin/android/weixin706android1460.apk"
 
         override fun loadInitial(loadCallback: LoadCallback<YashaItem>) {
-            val testData = mutableListOf<DemoListItem>()
-            val a = DemoListItem("微信", iconUrl, url, url.download())
-            testData.add(a)
-
-            loadCallback.setResult(testData)
+            val type = object : TypeToken<List<DemoListItem>>() {}.type
+            val mockData = Gson().fromJson<List<DemoListItem>>(mock_json, type)
+            loadCallback.setResult(mockData)
         }
 
         override fun loadAfter(loadCallback: LoadCallback<YashaItem>) {

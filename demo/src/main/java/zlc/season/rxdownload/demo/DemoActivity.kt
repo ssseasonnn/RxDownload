@@ -9,7 +9,6 @@ import io.reactivex.disposables.Disposable
 import io.reactivex.rxkotlin.subscribeBy
 import kotlinx.android.synthetic.main.activity_basic_download.*
 import kotlinx.android.synthetic.main.common_title.*
-import zlc.season.rxdownload.demo.utils.ProgressDrawable
 import zlc.season.rxdownload.demo.utils.click
 import zlc.season.rxdownload.demo.utils.installApk
 import zlc.season.rxdownload.demo.utils.load
@@ -20,7 +19,19 @@ import zlc.season.rxdownload4.utils.safeDispose
 class DemoActivity : AppCompatActivity() {
 
     private var disposable: Disposable? = null
-    private val progressDrawable = ProgressDrawable()
+
+    private var state = NORMAL
+
+    companion object {
+        const val iconUrl = "http://pp.myapp.com/ma_icon/0/icon_10910_1564113626/256"
+        const val url = "https://dldir1.qq.com/weixin/android/weixin706android1460.apk"
+
+        const val NORMAL = 0
+        const val STARTED = 1
+        const val PAUSED = 2
+        const val COMPLETED = 3
+        const val FAILED = 4
+    }
 
     @SuppressLint("NewApi")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -35,9 +46,7 @@ class DemoActivity : AppCompatActivity() {
         tv_size.text = getString(R.string.wechat_desc)
         tv_size.movementMethod = ScrollingMovementMethod()
 
-        button.background = progressDrawable
-
-        button.click { start() }
+        button.click { onClick() }
     }
 
     override fun onDestroy() {
@@ -45,34 +54,42 @@ class DemoActivity : AppCompatActivity() {
         disposable.safeDispose()
     }
 
+    private fun onClick() {
+        when (state) {
+            NORMAL -> start()
+            STARTED -> stop()
+            PAUSED -> start()
+            COMPLETED -> install()
+            FAILED -> start()
+        }
+    }
+
+
     private fun start() {
         disposable = url.download()
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribeBy(
                         onNext = {
                             button.text = "${it.downloadSizeStr()}/${it.totalSizeStr()}"
-                            progressDrawable.setProgress(it.downloadSize, it.totalSize)
-
-                            button.click { stop() }
+                            button.setProgress(it.downloadSize, it.totalSize)
                         },
                         onComplete = {
+                            state = COMPLETED
                             button.text = "安装"
-                            button.click { install() }
                         },
                         onError = {
+                            state = FAILED
                             button.text = "重试"
-                            button.click { start() }
                         }
                 )
+        state = STARTED
+        button.text = "下载中..."
     }
 
     private fun stop() {
+        state = PAUSED
         disposable.safeDispose()
         button.text = "继续"
-
-        button.click {
-            start()
-        }
     }
 
     private fun install() {
@@ -80,11 +97,6 @@ class DemoActivity : AppCompatActivity() {
         if (file.exists()) {
             installApk(file)
         }
-    }
-
-    companion object {
-        const val iconUrl = "http://pp.myapp.com/ma_icon/0/icon_10910_1564113626/256"
-        const val url = "https://dldir1.qq.com/weixin/android/weixin706android1460.apk"
     }
 
 }

@@ -25,6 +25,14 @@ class ProgressDrawable : Drawable() {
         progressPaint.color = Color.parseColor("#FFD81B60")
     }
 
+    fun reset() {
+        backgroundPaint.color = Color.parseColor("#FF009688")
+        progressPaint.color = Color.parseColor("#FFD81B60")
+        this.progress = 0
+        progressRectF.right = 0f
+        invalidateSelf()
+    }
+
     fun setProgress(progress: Long, max: Long) {
         backgroundPaint.color = Color.GRAY
 

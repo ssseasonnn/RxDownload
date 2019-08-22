@@ -1,6 +1,7 @@
 package zlc.season.rxdownload4
 
 import io.reactivex.Flowable
+import io.reactivex.functions.Function
 import zlc.season.rxdownload4.downloader.DefaultDispatcher
 import zlc.season.rxdownload4.downloader.Dispatcher
 import zlc.season.rxdownload4.request.Request

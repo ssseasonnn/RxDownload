@@ -17,7 +17,6 @@ import zlc.season.rxdownload4.get
 import zlc.season.rxdownload4.share
 import zlc.season.rxdownload4.start
 import zlc.season.rxdownload4.stop
-import zlc.season.rxdownload4.task.SharedTask
 import zlc.season.rxdownload4.task.Task
 import zlc.season.rxdownload4.utils.safeDispose
 import zlc.season.yasha.YashaDataSource
@@ -43,6 +42,9 @@ class DemoListActivity : AppCompatActivity() {
 
                     iv_icon.load(data.icon)
                     btn_action.text = data.stateStr()
+
+                    //reset button progress state
+                    btn_action.reset()
 
                     data.subscribe(btn_action)
 

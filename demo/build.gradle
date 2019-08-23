@@ -33,6 +33,7 @@ android {
         targetCompatibility 1.8
     }
 
+    //Use kotlin LayoutContainer!!!
     androidExtensions {
         experimental = true
     }
@@ -49,7 +50,7 @@ dependencies {
     implementation 'com.tbruyelle.rxpermissions2:rxpermissions:0.9.4@aar'
     implementation 'com.github.bumptech.glide:glide:4.9.0'
 
-    implementation 'com.github.ssseasonnn:Yasha:1.0.5'
+    implementation 'com.github.ssseasonnn:Yasha:1.0.6'
 
     implementation project(':rxdownload4')
     implementation project(':rxdownload4-manager')

@@ -25,20 +25,18 @@ class ProgressDrawable : Drawable() {
         progressPaint.color = Color.parseColor("#FFD81B60")
     }
 
-    fun reset() {
-        backgroundPaint.color = Color.parseColor("#FF009688")
-        progressPaint.color = Color.parseColor("#FFD81B60")
-        this.progress = 0
-        progressRectF.right = 0f
-        invalidateSelf()
-    }
-
     fun setProgress(progress: Long, max: Long) {
-        backgroundPaint.color = Color.GRAY
+        if (progress == 0L || max == 0L) {
+            backgroundPaint.color = Color.parseColor("#FF009688")
+            this.progress = 0
+            progressRectF.right = 0f
+        } else {
+            backgroundPaint.color = Color.GRAY
+            this.progress = progress
+            val right = backgroundRectF.width() * progress / max
+            progressRectF.right = right
+        }
 
-        this.progress = progress
-        val right = backgroundRectF.width() * progress / max
-        progressRectF.right = right
         invalidateSelf()
     }
 

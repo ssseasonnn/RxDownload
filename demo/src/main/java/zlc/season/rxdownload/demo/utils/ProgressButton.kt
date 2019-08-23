@@ -14,10 +14,6 @@ class ProgressButton @JvmOverloads constructor(
         background(progressDrawable)
     }
 
-    fun reset() {
-        progressDrawable.reset()
-    }
-
     fun setProgress(downloadSize: Long, totalSize: Long) {
         progressDrawable.setProgress(downloadSize, totalSize)
     }

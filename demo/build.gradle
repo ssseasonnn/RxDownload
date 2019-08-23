@@ -52,6 +52,9 @@ dependencies {
     implementation 'com.github.ssseasonnn:Yasha:1.0.5'
 
     implementation project(':rxdownload4')
+    implementation project(':rxdownload4-manager')
+
+//    implementation 'com.github.ssseasonnn:RxDownload:b53fb95d'
 
     testImplementation 'junit:junit:4.12'
 

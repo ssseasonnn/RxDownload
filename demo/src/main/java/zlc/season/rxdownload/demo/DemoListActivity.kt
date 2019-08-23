@@ -13,10 +13,8 @@ import zlc.season.rxdownload.demo.utils.ProgressButton
 import zlc.season.rxdownload.demo.utils.click
 import zlc.season.rxdownload.demo.utils.load
 import zlc.season.rxdownload.demo.utils.mock_json
-import zlc.season.rxdownload4.get
-import zlc.season.rxdownload4.share
-import zlc.season.rxdownload4.start
-import zlc.season.rxdownload4.stop
+import zlc.season.rxdownload4.Progress
+import zlc.season.rxdownload4.manager.*
 import zlc.season.rxdownload4.task.Task
 import zlc.season.rxdownload4.utils.log
 import zlc.season.rxdownload4.utils.safeDispose
@@ -38,28 +36,26 @@ class DemoListActivity : AppCompatActivity() {
                 res(R.layout.demo_list_item)
 
                 onBind {
+                    "${data.name} onBind".log()
                     tv_name.text = data.name
                     tv_size.text = data.size
 
                     iv_icon.load(data.icon)
-                    btn_action.text = data.stateStr()
-
-                    //reset button progress state
-                    btn_action.reset()
-
-                    data.subscribe(btn_action)
 
                     btn_action.click {
-                        data.action(btn_action)
+                        data.action()
                     }
                 }
 
                 onDetach {
+                    "${data.name} onDetach".log()
                     data.dispose()
                 }
 
                 onAttach {
+                    "${data.name} onAttach".log()
                     data.subscribe(btn_action)
+                    btn_action.text = data.stateStr()
                 }
 
             }
@@ -70,79 +66,59 @@ class DemoListActivity : AppCompatActivity() {
             val name: String,
             val icon: String,
             val url: String,
-            val size: String,
-
-            var state: Int = NORMAL
+            val size: String
     ) : YashaItem {
 
         //for download use
         var disposable: Disposable? = null
-
-        companion object {
-            const val NORMAL = 0
-            const val STARTED = 1
-            const val PAUSED = 2
-            const val COMPLETED = 3
-            const val FAILED = 4
-        }
+        var progress: Progress? = null
 
         fun stateStr(): String {
-            return when (state) {
-                NORMAL -> "下载"
-                STARTED -> "暂停"
-                PAUSED -> "继续"
-                COMPLETED -> "安装"
-                FAILED -> "重试"
-                else -> "NONE"
+            return when (Task(url).manager().currentStatus()) {
+                is Normal -> "下载"
+                is Started -> "暂停"
+                is Paused -> "继续"
+                is Completed -> "安装"
+                is Failed -> "重试"
+                is Downloading -> "暂停"
             }
         }
 
-        fun action(button: ProgressButton) {
-            when (state) {
-                NORMAL -> start(button)
-                STARTED -> stop(button)
-                PAUSED -> start(button)
-                COMPLETED -> {
+        fun action() {
+            val taskManager = Task(url).manager()
+            when (taskManager.currentStatus()) {
+                is Normal -> taskManager.start()
+                is Started -> taskManager.stop()
+                is Downloading -> taskManager.stop()
+                is Completed -> {
                 }
-                FAILED -> start(button)
+                is Failed -> taskManager.start()
+                is Paused -> taskManager.start()
             }
         }
 
-        fun subscribe(button: ProgressButton) {
-            disposable = Task(url).share().get()
+        fun subscribe(btn_action: ProgressButton) {
+            val taskManager = Task(url).manager()
+
+            btn_action.setProgress(taskManager.currentProgress().downloadSize,
+                    taskManager.currentProgress().totalSize)
+
+            disposable = taskManager.status()
                     .observeOn(AndroidSchedulers.mainThread())
-                    .subscribeBy(
-                            onNext = {
-                                button.setProgress(it.downloadSize, it.totalSize)
-                            },
-                            onComplete = {
-                                "onComplete".log()
-                                state = COMPLETED
-                                button.text = stateStr()
-                            },
-                            onError = {
-                                "onError".log()
-                                state = FAILED
-                                button.text = stateStr()
-                            }
-                    )
+                    .subscribeBy { status ->
+                        if (status is Downloading) {
+                            btn_action.setProgress(
+                                    status.progress.downloadSize,
+                                    status.progress.totalSize
+                            )
+                        }
+
+                        btn_action.text = stateStr()
+                    }
         }
 
         fun dispose() {
             disposable.safeDispose()
-        }
-
-        private fun start(button: ProgressButton) {
-            subscribe(button)
-            Task(url).share().start()
-            state = STARTED
-            button.text = stateStr()
-        }
-
-        private fun stop(button: ProgressButton) {
-            Task(url).share().stop()
-            state = PAUSED
-            button.text = stateStr()
         }
     }
 

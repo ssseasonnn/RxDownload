@@ -14,7 +14,6 @@ class BaseApplication : Application() {
         RxJavaPlugins.setErrorHandler {
             if (it is UndeliverableException) {
                 //do nothing
-                "do nothing".log()
             } else {
                 it.log()
             }

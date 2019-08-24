@@ -29,15 +29,10 @@ class DemoListItem(
         val taskManager = url.manager()
 
         btn_action.text = stateStr(context)
-        btn_action.setProgress(taskManager.currentProgress().downloadSize,
-                taskManager.currentProgress().totalSize)
+        btn_action.setStatus(taskManager.currentStatus())
 
         taskManager.subscribe {
-            btn_action.setProgress(
-                    it.progress.downloadSize,
-                    it.progress.totalSize
-            )
-
+            btn_action.setStatus(it)
             btn_action.text = stateStr(context)
         }
     }

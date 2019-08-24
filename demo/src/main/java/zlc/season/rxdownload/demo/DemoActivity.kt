@@ -14,7 +14,6 @@ import zlc.season.rxdownload.demo.utils.installApk
 import zlc.season.rxdownload.demo.utils.load
 import zlc.season.rxdownload4.download
 import zlc.season.rxdownload4.file
-import zlc.season.rxdownload4.utils.log
 import zlc.season.rxdownload4.utils.safeDispose
 
 class DemoActivity : AppCompatActivity() {
@@ -72,15 +71,13 @@ class DemoActivity : AppCompatActivity() {
                 .subscribeBy(
                         onNext = {
                             button.text = "${it.downloadSizeStr()}/${it.totalSizeStr()}"
-                            button.setProgress(it.downloadSize, it.totalSize)
+                            button.setProgress(it)
                         },
                         onComplete = {
-                            "onComplete".log()
                             state = COMPLETED
                             button.text = "安装"
                         },
                         onError = {
-                            "onError".log()
                             state = FAILED
                             button.text = "重试"
                         }

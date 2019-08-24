@@ -2,6 +2,8 @@ package zlc.season.rxdownload.demo.utils
 
 import android.graphics.*
 import android.graphics.drawable.Drawable
+import zlc.season.rxdownload4.Progress
+import zlc.season.rxdownload4.manager.*
 
 class ProgressDrawable : Drawable() {
     private var backgroundPaint = Paint(Paint.ANTI_ALIAS_FLAG)
@@ -13,6 +15,7 @@ class ProgressDrawable : Drawable() {
     private var roundCorner = 0
 
     private var progress = 0L
+    private var max = 100L
 
 
     init {
@@ -25,18 +28,32 @@ class ProgressDrawable : Drawable() {
         progressPaint.color = Color.parseColor("#FFD81B60")
     }
 
-    fun setProgress(progress: Long, max: Long) {
-        if (progress == 0L || max == 0L) {
-            backgroundPaint.color = Color.parseColor("#FF009688")
-            this.progress = 0
-            progressRectF.right = 0f
-        } else {
-            backgroundPaint.color = Color.GRAY
-            this.progress = progress
-            val right = backgroundRectF.width() * progress / max
-            progressRectF.right = right
+    fun setStatus(status: Status) {
+        when (status) {
+            is Normal -> {
+                backgroundPaint.color = Color.parseColor("#FF009688")
+                this.progress = 0
+                this.max = 100
+                progressRectF.right = 0f
+                invalidateSelf()
+            }
+            is Started,
+            is Downloading,
+            is Paused,
+            is Completed,
+            is Failed -> {
+                backgroundPaint.color = Color.GRAY
+                this.progress = status.progress.downloadSize
+                this.max = status.progress.totalSize
+                invalidateSelf()
+            }
         }
+    }
 
+    fun setProgress(progress: Progress) {
+        backgroundPaint.color = Color.GRAY
+        this.progress = progress.downloadSize
+        this.max = progress.totalSize
         invalidateSelf()
     }
 
@@ -47,6 +64,9 @@ class ProgressDrawable : Drawable() {
     }
 
     override fun draw(canvas: Canvas) {
+        val right = backgroundRectF.width() * progress / max
+        progressRectF.right = right
+
         canvas.drawRoundRect(backgroundRectF, roundCorner.toFloat(), roundCorner.toFloat(), backgroundPaint)
         canvas.drawRoundRect(progressRectF, roundCorner.toFloat(), roundCorner.toFloat(), progressPaint)
     }

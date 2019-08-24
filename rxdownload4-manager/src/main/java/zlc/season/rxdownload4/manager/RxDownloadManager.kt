@@ -1,7 +1,5 @@
 package zlc.season.rxdownload4.manager
 
-import io.reactivex.Flowable
-import io.reactivex.processors.BehaviorProcessor
 import zlc.season.rxdownload4.*
 import zlc.season.rxdownload4.downloader.DefaultDispatcher
 import zlc.season.rxdownload4.downloader.Dispatcher
@@ -12,6 +10,27 @@ import zlc.season.rxdownload4.storage.Storage
 import zlc.season.rxdownload4.task.Task
 import zlc.season.rxdownload4.validator.SimpleValidator
 import zlc.season.rxdownload4.validator.Validator
+import java.io.File
+
+fun String.manager(
+        header: Map<String, String> = RANGE_CHECK_HEADER,
+        maxConCurrency: Int = DEFAULT_MAX_CONCURRENCY,
+        rangeSize: Long = DEFAULT_RANGE_SIZE,
+        dispatcher: Dispatcher = DefaultDispatcher(),
+        validator: Validator = SimpleValidator(),
+        storage: Storage = SimpleStorage(),
+        request: Request = RequestImpl()
+): TaskManager {
+    return Task(this).manager(
+            header = header,
+            maxConCurrency = maxConCurrency,
+            rangeSize = rangeSize,
+            dispatcher = dispatcher,
+            validator = validator,
+            storage = storage,
+            request = request
+    )
+}
 
 fun Task.manager(
         header: Map<String, String> = RANGE_CHECK_HEADER,
@@ -57,13 +76,15 @@ private fun Task.createManager(
             storage = storage,
             request = request
     )
-    val processor = BehaviorProcessor.create<Status>().toSerialized()
-    return TaskManager(this, flowable, processor)
+    return TaskManager(this, storage, flowable)
 }
 
+fun TaskManager.subscribe(onNext: (Status) -> Unit) {
+    setOnNext(onNext)
+}
 
-fun TaskManager.status(): Flowable<Status> {
-    return innerGet()
+fun TaskManager.dispose() {
+    setOnNext()
 }
 
 fun TaskManager.currentStatus(): Status {
@@ -82,6 +103,10 @@ fun TaskManager.stop() {
     innerStop()
 }
 
-fun TaskManager.delete() {
+fun TaskManager.file(): File {
+    return getFile()
+}
 
+fun TaskManager.delete() {
+    innerDelete()
 }

@@ -3,8 +3,7 @@ package zlc.season.rxdownload.demo.utils
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
-import android.content.Intent.ACTION_VIEW
-import android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION
+import android.content.Intent.*
 import android.graphics.drawable.Drawable
 import android.net.Uri.fromFile
 import android.os.Build.VERSION.SDK_INT
@@ -25,6 +24,7 @@ fun Context.installApk(file: File) {
         fromFile(file)
     }
     intent.setDataAndType(uri, "application/vnd.android.package-archive")
+    intent.addFlags(FLAG_ACTIVITY_NEW_TASK)
     intent.addFlags(FLAG_GRANT_READ_URI_PERMISSION)
     startActivity(intent)
 }

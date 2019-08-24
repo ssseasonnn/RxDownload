@@ -2,7 +2,7 @@ package zlc.season.rxdownload4.downloader
 
 import io.reactivex.Emitter
 import io.reactivex.Flowable
-import io.reactivex.functions.BiFunction
+import io.reactivex.functions.BiConsumer
 import io.reactivex.functions.Consumer
 import io.reactivex.schedulers.Schedulers
 import okhttp3.ResponseBody
@@ -99,6 +99,7 @@ class RangeDownloader : Downloader {
                 }
                 .doOnComplete {
                     shadowFile.renameTo(file)
+                    tmpFile.delete()
                 }
     }
 
@@ -120,7 +121,7 @@ class RangeDownloader : Downloader {
         fun download(): Flowable<Long> {
             return Flowable.just(segment)
                     .subscribeOn(Schedulers.io())
-                    .map { mapOf("Range" to "bytes=${it.current}-${it.end}").log() }
+                    .map { mapOf("Range" to "bytes=${it.current}-${it.end}") }
                     .flatMap { request.get(url, it) }
                     .flatMap { rangeSave(segment, it) }
         }
@@ -136,7 +137,7 @@ class RangeDownloader : Downloader {
                     Callable {
                         initialState(body, segment)
                     },
-                    BiFunction<InternalState, Emitter<Long>, InternalState> { internalState, emitter ->
+                    BiConsumer<InternalState, Emitter<Long>> { internalState, emitter ->
                         internalState.apply {
                             val readLen = source.read(buffer)
 

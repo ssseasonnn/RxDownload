@@ -31,4 +31,11 @@
     </string>
 
 
+    <string name="download">下载</string>
+    <string name="pause">暂停</string>
+    <string name="continue_text">继续</string>
+    <string name="install">安装</string>
+    <string name="retry">重试</string>
+
+
 </resources>

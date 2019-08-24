@@ -3,7 +3,7 @@ package zlc.season.rxdownload4.downloader
 import io.reactivex.Emitter
 import io.reactivex.Flowable
 import io.reactivex.Flowable.generate
-import io.reactivex.functions.BiFunction
+import io.reactivex.functions.BiConsumer
 import io.reactivex.functions.Consumer
 import okhttp3.ResponseBody
 import okhttp3.internal.closeQuietly
@@ -64,7 +64,7 @@ class NormalDownloader : Downloader {
                             shadowFile.sink().buffer()
                     )
                 },
-                BiFunction<InternalState, Emitter<Progress>, InternalState> { internalState, emitter ->
+                BiConsumer<InternalState, Emitter<Progress>> { internalState, emitter ->
                     internalState.apply {
                         val readLen = source.read(buffer, 8192L)
 

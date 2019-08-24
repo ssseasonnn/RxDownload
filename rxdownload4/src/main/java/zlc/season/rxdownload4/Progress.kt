@@ -1,7 +1,7 @@
 package zlc.season.rxdownload4
 
-import zlc.season.rxdownload4.utils.decimal
 import zlc.season.rxdownload4.utils.formatSize
+import zlc.season.rxdownload4.utils.ratio
 
 
 class Progress(
@@ -45,24 +45,18 @@ class Progress(
     /**
      * Return percent number.
      */
-    fun percent(): Int {
+    fun percent(): Double {
         if (isChunked) {
             throw IllegalStateException("Chunked can not get percent!")
         }
 
-        val tmp = if (totalSize <= 0L) {
-            0.0
-        } else {
-            downloadSize * 1.0 / totalSize
-        }
-
-        return (tmp.decimal(2) * 100).toInt()
+        return downloadSize ratio totalSize
     }
 
     /**
      * Return percent string.
      */
     fun percentStr(): String {
-        return percent().toString()
+        return "${percent()}%"
     }
 }

@@ -42,3 +42,11 @@ fun Double.decimal(digits: Int): Double {
             .setScale(digits, BigDecimal.ROUND_HALF_UP)
             .toDouble()
 }
+
+infix fun Long.ratio(bottom: Long): Double {
+    if (bottom <= 0) {
+        return 0.0
+    }
+    val result = (this * 100.0).toBigDecimal().divide((bottom * 1.0).toBigDecimal(), 2, BigDecimal.ROUND_HALF_UP)
+    return result.toDouble()
+}

@@ -3,41 +3,35 @@ package zlc.season.rxdownload4.storage
 import android.content.Context.MODE_PRIVATE
 import zlc.season.claritypotion.ClarityPotion.Companion.clarityPotion
 import zlc.season.rxdownload4.task.Task
-import zlc.season.rxdownload4.utils.log
 
-class SimpleStorage : Storage {
-    companion object {
-        //memory cache
-        private val taskPool = mutableMapOf<Int, Task>()
-    }
-
+class SimpleStorage : MemoryStorage() {
     private val sp by lazy {
         clarityPotion.getSharedPreferences("rxdownload_simple_storage", MODE_PRIVATE)
     }
 
     @Synchronized
     override fun load(task: Task) {
-        val result = taskPool[task.hashCode()]
-        if (result == null) {
+        super.load(task)
+
+        if (isEmpty(task)) {
             localLoad(task)
-            taskPool[task.hashCode()] = task
-        } else {
-            task.saveName = result.saveName
-            task.savePath = result.savePath
+            super.save(task)
         }
     }
 
     @Synchronized
     override fun save(task: Task) {
-        taskPool[task.hashCode()] = task
+        super.save(task)
         localSave(task)
     }
 
     @Synchronized
     override fun delete(task: Task) {
-        taskPool.remove(task.hashCode())
+        super.delete(task)
         localDelete(task)
     }
+
+    private fun isEmpty(task: Task) = task.saveName.isEmpty() || task.savePath.isEmpty()
 
     private fun localSave(task: Task) {
         val key = task.hashCode().toString()
@@ -58,10 +52,10 @@ class SimpleStorage : Storage {
                 task.saveName = splits[0]
                 task.savePath = splits[1]
             } else {
-                "task load failed".log()
+                throw IllegalStateException("Task load failed!")
             }
         } else {
-            "task load failed".log()
+            throw IllegalStateException("Task load failed!")
         }
     }
 

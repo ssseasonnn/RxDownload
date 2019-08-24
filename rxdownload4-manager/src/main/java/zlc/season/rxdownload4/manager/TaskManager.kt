@@ -44,8 +44,6 @@ class TaskManager(
 
     internal fun innerStatus() = currentStatus
 
-    internal fun progress() = currentProgress
-
     @Synchronized
     internal fun innerStart() {
         if (isStarted()) return

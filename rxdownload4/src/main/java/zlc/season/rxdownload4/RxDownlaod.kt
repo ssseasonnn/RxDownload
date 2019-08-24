@@ -14,6 +14,8 @@ import zlc.season.rxdownload4.task.TaskInfo
 import zlc.season.rxdownload4.utils.clear
 import zlc.season.rxdownload4.validator.SimpleValidator
 import zlc.season.rxdownload4.validator.Validator
+import zlc.season.rxdownload4.watcher.Watcher
+import zlc.season.rxdownload4.watcher.WatcherImpl
 import java.io.File
 
 
@@ -36,7 +38,8 @@ fun String.download(
         dispatcher: Dispatcher = DefaultDispatcher(),
         validator: Validator = SimpleValidator(),
         storage: Storage = SimpleStorage(),
-        request: Request = RequestImpl()
+        request: Request = RequestImpl(),
+        watcher: Watcher = WatcherImpl()
 ): Flowable<Progress> {
     require(rangeSize > 1024 * 1024) { "rangeSize must be greater than 1M" }
     require(maxConCurrency > 0) { "maxConCurrency must be greater than 0" }
@@ -48,7 +51,8 @@ fun String.download(
             dispatcher = dispatcher,
             validator = validator,
             storage = storage,
-            request = request
+            request = request,
+            watcher = watcher
     )
 }
 
@@ -66,7 +70,8 @@ fun Task.download(
         dispatcher: Dispatcher = DefaultDispatcher(),
         validator: Validator = SimpleValidator(),
         storage: Storage = SimpleStorage(),
-        request: Request = RequestImpl()
+        request: Request = RequestImpl(),
+        watcher: Watcher = WatcherImpl()
 ): Flowable<Progress> {
     require(rangeSize > 1024 * 1024) { "rangeSize must be greater than 1M" }
     require(maxConCurrency > 0) { "maxConCurrency must be greater than 0" }
@@ -79,7 +84,8 @@ fun Task.download(
             dispatcher = dispatcher,
             validator = validator,
             storage = storage,
-            request = request
+            request = request,
+            watcher = watcher
     )
 
     return taskInfo.start()

@@ -1,6 +1,9 @@
 package zlc.season.rxdownload4.manager
 
-import zlc.season.rxdownload4.*
+import zlc.season.rxdownload4.DEFAULT_MAX_CONCURRENCY
+import zlc.season.rxdownload4.DEFAULT_RANGE_SIZE
+import zlc.season.rxdownload4.RANGE_CHECK_HEADER
+import zlc.season.rxdownload4.download
 import zlc.season.rxdownload4.downloader.DefaultDispatcher
 import zlc.season.rxdownload4.downloader.Dispatcher
 import zlc.season.rxdownload4.request.Request
@@ -10,6 +13,8 @@ import zlc.season.rxdownload4.storage.Storage
 import zlc.season.rxdownload4.task.Task
 import zlc.season.rxdownload4.validator.SimpleValidator
 import zlc.season.rxdownload4.validator.Validator
+import zlc.season.rxdownload4.watcher.Watcher
+import zlc.season.rxdownload4.watcher.WatcherImpl
 import java.io.File
 
 fun String.manager(
@@ -19,7 +24,8 @@ fun String.manager(
         dispatcher: Dispatcher = DefaultDispatcher(),
         validator: Validator = SimpleValidator(),
         storage: Storage = SimpleStorage(),
-        request: Request = RequestImpl()
+        request: Request = RequestImpl(),
+        watcher: Watcher = WatcherImpl()
 ): TaskManager {
     return Task(this).manager(
             header = header,
@@ -28,7 +34,8 @@ fun String.manager(
             dispatcher = dispatcher,
             validator = validator,
             storage = storage,
-            request = request
+            request = request,
+            watcher = watcher
     )
 }
 
@@ -39,7 +46,8 @@ fun Task.manager(
         dispatcher: Dispatcher = DefaultDispatcher(),
         validator: Validator = SimpleValidator(),
         storage: Storage = SimpleStorage(),
-        request: Request = RequestImpl()
+        request: Request = RequestImpl(),
+        watcher: Watcher = WatcherImpl()
 ): TaskManager {
     var taskManager = TaskManagerPool.get(this)
     if (taskManager == null) {
@@ -50,7 +58,8 @@ fun Task.manager(
                 dispatcher = dispatcher,
                 validator = validator,
                 storage = storage,
-                request = request
+                request = request,
+                watcher = watcher
         )
         TaskManagerPool.add(this, taskManager)
     }
@@ -64,7 +73,8 @@ private fun Task.createManager(
         dispatcher: Dispatcher,
         validator: Validator,
         storage: Storage,
-        request: Request
+        request: Request,
+        watcher: Watcher
 ): TaskManager {
 
     val flowable = download(
@@ -74,10 +84,12 @@ private fun Task.createManager(
             dispatcher = dispatcher,
             validator = validator,
             storage = storage,
-            request = request
+            request = request,
+            watcher = watcher
     )
     return TaskManager(this, storage, flowable)
 }
+
 
 fun TaskManager.subscribe(onNext: (Status) -> Unit) {
     setOnNext(onNext)
@@ -89,10 +101,6 @@ fun TaskManager.dispose() {
 
 fun TaskManager.currentStatus(): Status {
     return innerStatus()
-}
-
-fun TaskManager.currentProgress(): Progress {
-    return progress()
 }
 
 fun TaskManager.start() {

@@ -8,6 +8,7 @@ import zlc.season.rxdownload4.request.Request
 import zlc.season.rxdownload4.storage.Storage
 import zlc.season.rxdownload4.utils.fileName
 import zlc.season.rxdownload4.validator.Validator
+import zlc.season.rxdownload4.watcher.Watcher
 
 class TaskInfo(
         val task: Task,
@@ -17,7 +18,8 @@ class TaskInfo(
         val dispatcher: Dispatcher,
         val validator: Validator,
         val storage: Storage,
-        val request: Request
+        val request: Request,
+        val watcher: Watcher
 ) {
     fun start(): Flowable<Progress> {
         return request.get(task.url, header)
@@ -33,10 +35,18 @@ class TaskInfo(
                         task.savePath = DEFAULT_SAVE_PATH
                     }
 
+                    //watch task
+                    watcher.watch(task)
+
+                    //save task info
                     storage.save(task)
                 }
                 .flatMap {
                     dispatcher.dispatch(it).download(this, it)
+                }
+                .doFinally {
+                    //unwatch task
+                    watcher.unwatch(task)
                 }
     }
 }

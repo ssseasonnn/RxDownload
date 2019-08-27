@@ -93,7 +93,7 @@ fun Task.download(
 
 fun Task.file(storage: Storage = SimpleStorage()): File {
     storage.load(this)
-    check(isEmpty()) { "Task file not found!" }
+    check(!isEmpty()) { "Task file not found!" }
     return File(savePath, saveName)
 }
 

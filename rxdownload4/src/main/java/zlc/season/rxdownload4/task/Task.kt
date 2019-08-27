@@ -1,12 +1,16 @@
 package zlc.season.rxdownload4.task
 
 import zlc.season.rxdownload4.DEFAULT_SAVE_PATH
+import zlc.season.rxdownload4.utils.getFileNameFromUrl
 
 open class Task(
         val url: String,
+        taskName: String = getFileNameFromUrl(url),
         saveName: String = "",
         savePath: String = DEFAULT_SAVE_PATH
 ) {
+    var taskName: String = taskName
+        internal set
 
     var saveName: String = saveName
         internal set
@@ -33,5 +37,9 @@ open class Task(
 
     override fun hashCode(): Int {
         return tag().hashCode()
+    }
+
+    open fun isEmpty(): Boolean {
+        return taskName.isEmpty() || saveName.isEmpty() || savePath.isEmpty()
     }
 }

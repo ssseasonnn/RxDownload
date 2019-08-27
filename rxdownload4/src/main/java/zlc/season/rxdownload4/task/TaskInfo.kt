@@ -22,11 +22,11 @@ class TaskInfo(
         val watcher: Watcher
 ) {
     fun start(): Flowable<Progress> {
+        storage.load(task)
+
         return request.get(task.url, header)
                 .doOnNext {
-                    if (!it.isSuccessful) {
-                        throw IllegalStateException("Request failed!")
-                    }
+                    check(it.isSuccessful) { "Request failed!" }
 
                     if (task.saveName.isEmpty()) {
                         task.saveName = it.fileName()

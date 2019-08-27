@@ -6,6 +6,7 @@ import zlc.season.rxdownload4.RANGE_CHECK_HEADER
 import zlc.season.rxdownload4.download
 import zlc.season.rxdownload4.downloader.DefaultDispatcher
 import zlc.season.rxdownload4.downloader.Dispatcher
+import zlc.season.rxdownload4.manager.notification.SimpleNotificationCreator
 import zlc.season.rxdownload4.request.Request
 import zlc.season.rxdownload4.request.RequestImpl
 import zlc.season.rxdownload4.storage.SimpleStorage
@@ -87,20 +88,20 @@ private fun Task.createManager(
             request = request,
             watcher = watcher
     )
-    return TaskManager(this, storage, flowable)
+    return TaskManager(this, storage, flowable, SimpleNotificationCreator())
 }
 
 
 fun TaskManager.subscribe(onNext: (Status) -> Unit) {
-    setOnNext(onNext)
+    setCallback(onNext)
 }
 
 fun TaskManager.dispose() {
-    setOnNext()
+    setCallback()
 }
 
 fun TaskManager.currentStatus(): Status {
-    return innerStatus()
+    return currentStatus()
 }
 
 fun TaskManager.start() {
@@ -116,5 +117,6 @@ fun TaskManager.file(): File {
 }
 
 fun TaskManager.delete() {
+    stop()
     innerDelete()
 }

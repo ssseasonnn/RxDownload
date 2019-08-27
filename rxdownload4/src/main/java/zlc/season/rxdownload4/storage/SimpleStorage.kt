@@ -13,7 +13,7 @@ class SimpleStorage : MemoryStorage() {
     override fun load(task: Task) {
         super.load(task)
 
-        if (isEmpty(task)) {
+        if (task.isEmpty()) {
             localLoad(task)
             super.save(task)
         }
@@ -31,11 +31,9 @@ class SimpleStorage : MemoryStorage() {
         localDelete(task)
     }
 
-    private fun isEmpty(task: Task) = task.saveName.isEmpty() || task.savePath.isEmpty()
-
     private fun localSave(task: Task) {
         val key = task.hashCode().toString()
-        val value = task.saveName + "\n" + task.savePath
+        val value = task.taskName + "\n" + task.saveName + "\n" + task.savePath
 
         val editor = sp.edit()
         editor.putString(key, value)
@@ -48,14 +46,11 @@ class SimpleStorage : MemoryStorage() {
 
         if (!value.isNullOrEmpty()) {
             val splits = value.split("\n")
-            if (splits.size == 2) {
-                task.saveName = splits[0]
-                task.savePath = splits[1]
-            } else {
-                throw IllegalStateException("Task load failed!")
+            if (splits.size == 3) {
+                task.taskName = splits[0]
+                task.saveName = splits[1]
+                task.savePath = splits[2]
             }
-        } else {
-            throw IllegalStateException("Task load failed!")
         }
     }
 

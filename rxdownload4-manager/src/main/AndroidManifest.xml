@@ -1,1 +1,9 @@
-<manifest package="zlc.season.rxdownload4.manager" />
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="zlc.season.rxdownload4.manager">
+
+    <application>
+        <service
+            android:name=".notification.NotificationActionService"
+            android:exported="false" />
+    </application>
+</manifest>

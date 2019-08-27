@@ -46,9 +46,7 @@ class Progress(
      * Return percent number.
      */
     fun percent(): Double {
-        if (isChunked) {
-            throw IllegalStateException("Chunked can not get percent!")
-        }
+        check(!isChunked) { "Chunked can not get percent!" }
 
         return downloadSize ratio totalSize
     }

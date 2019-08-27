@@ -1,6 +1,7 @@
 package zlc.season.rxdownload4.utils
 
 import retrofit2.Response
+import java.util.*
 import java.util.regex.Pattern
 
 fun Response<*>.url(): String {
@@ -33,13 +34,7 @@ fun Response<*>.fileName(): String {
         fileName = getFileNameFromUrl(url)
     }
 
-    val dotIndex = fileName.indexOf('.')
-
-    if (dotIndex > 0 && dotIndex < fileName.lastIndex) {
-        return fileName
-    } else {
-        throw IllegalStateException("Invalid filename: $fileName")
-    }
+    return fileName
 }
 
 fun Response<*>.sliceCount(rangeSize: Long): Long {
@@ -55,7 +50,7 @@ fun Response<*>.sliceCount(rangeSize: Long): Long {
 }
 
 private fun Response<*>.contentDisposition(): String {
-    val contentDisposition = header("Content-Disposition").toLowerCase()
+    val contentDisposition = header("Content-Disposition").toLowerCase(Locale.getDefault())
 
     if (contentDisposition.isEmpty()) {
         return ""
@@ -79,7 +74,7 @@ private fun Response<*>.contentDisposition(): String {
     return result
 }
 
-private fun getFileNameFromUrl(url: String): String {
+fun getFileNameFromUrl(url: String): String {
     var temp = url
     if (temp.isNotEmpty()) {
         val fragment = temp.lastIndexOf('#')

@@ -18,9 +18,7 @@ fun String.toLongOrDefault(defaultValue: Long): Long {
 }
 
 fun Long.formatSize(): String {
-    if (this < 0) {
-        throw IllegalArgumentException("Size must larger than 0.")
-    }
+    require(this >= 0) { "Size must larger than 0." }
 
     val byte = this.toDouble()
     val kb = byte / 1024.0

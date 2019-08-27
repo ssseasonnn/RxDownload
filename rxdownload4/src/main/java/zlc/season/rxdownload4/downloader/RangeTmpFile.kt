@@ -3,7 +3,6 @@ package zlc.season.rxdownload4.downloader
 import okio.*
 import okio.ByteString.Companion.decodeHex
 import retrofit2.Response
-import zlc.season.rxdownload4.task.Task
 import zlc.season.rxdownload4.task.TaskInfo
 import zlc.season.rxdownload4.utils.contentLength
 import zlc.season.rxdownload4.utils.sliceCount

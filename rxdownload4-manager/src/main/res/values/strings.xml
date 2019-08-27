@@ -1,4 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="normal">NORMAL</string>
+    <string name="action_start">继续</string>
+    <string name="action_stop">暂停</string>
+    <string name="action_cancel">取消</string>
 </resources>

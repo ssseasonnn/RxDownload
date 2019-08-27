@@ -18,11 +18,11 @@ class SimpleNotificationCreator : NotificationCreator {
     private val channelName = "RxDownload"
     private val channelDesc = "RxDownload"
 
-    private lateinit var startedBuilder: Builder
-    private lateinit var downloadingBuilder: Builder
-    private lateinit var pausedBuilder: Builder
-    private lateinit var completedBuilder: Builder
-    private lateinit var failedBuilder: Builder
+    private var startedBuilder: Builder? = null
+    private var downloadingBuilder: Builder? = null
+    private var pausedBuilder: Builder? = null
+    private var completedBuilder: Builder? = null
+    private var failedBuilder: Builder? = null
 
     override fun init(task: Task) {
         if (!isEnableNotification()) {
@@ -31,7 +31,7 @@ class SimpleNotificationCreator : NotificationCreator {
 
         createNotificationChannel(channelId, channelName, channelDesc)
 
-        initStatusBuilder(task)
+        initBuilder(task)
     }
 
     private fun createNotificationBuilder(
@@ -60,7 +60,7 @@ class SimpleNotificationCreator : NotificationCreator {
         return notificationBuilder
     }
 
-    private fun initStatusBuilder(task: Task) {
+    private fun initBuilder(task: Task) {
         startedBuilder = createNotificationBuilder(
                 title = task.taskName,
                 content = "下载中...",
@@ -100,16 +100,16 @@ class SimpleNotificationCreator : NotificationCreator {
     override fun create(task: Task, status: Status): Notification? {
         return when (status) {
             is Normal -> null
-            is Started -> startedBuilder.build()
+            is Started -> startedBuilder?.build()
             is Downloading ->
-                downloadingBuilder.setProgress(
+                downloadingBuilder?.setProgress(
                         status.progress.totalSize.toInt(),
                         status.progress.downloadSize.toInt(),
                         status.progress.isChunked
-                ).build()
-            is Paused -> pausedBuilder.build()
-            is Completed -> completedBuilder.build()
-            is Failed -> failedBuilder.build()
+                )?.build()
+            is Paused -> pausedBuilder?.build()
+            is Completed -> completedBuilder?.build()
+            is Failed -> failedBuilder?.build()
         }
     }
 }

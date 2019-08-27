@@ -59,43 +59,49 @@ class TaskManager(
         if (isStarted()) return
 
         notificationDisposable = connectFlowable.sample(250, MILLISECONDS)
+                .doOnCancel {
+                    notificationHandler.onPaused()
+                }
                 .subscribeWith(object : DisposableSubscriber<Progress>() {
                     override fun onStart() {
                         super.onStart()
-                        notificationHandler.onStart()
+                        notificationHandler.onStarted()
                     }
 
                     override fun onComplete() {
-                        notificationHandler.onComplete()
+                        notificationHandler.onCompleted()
                     }
 
                     override fun onNext(t: Progress) {
-                        notificationHandler.onNext(t)
+                        notificationHandler.onDownloading(t)
                     }
 
                     override fun onError(t: Throwable) {
-                        notificationHandler.onError(t)
+                        notificationHandler.onFailed(t)
                     }
                 })
 
         downloadDisposable = connectFlowable
                 .observeOn(AndroidSchedulers.mainThread())
+                .doOnCancel {
+                    downloadHandler.onPaused()
+                }
                 .subscribeWith(object : DisposableSubscriber<Progress>() {
                     override fun onStart() {
                         super.onStart()
-                        downloadHandler.onStart()
+                        downloadHandler.onStarted()
                     }
 
                     override fun onComplete() {
-                        downloadHandler.onComplete()
+                        downloadHandler.onCompleted()
                     }
 
                     override fun onNext(t: Progress) {
-                        downloadHandler.onNext(t)
+                        downloadHandler.onDownloading(t)
                     }
 
                     override fun onError(t: Throwable) {
-                        downloadHandler.onError(t)
+                        downloadHandler.onFailed(t)
                     }
                 })
 
@@ -109,9 +115,6 @@ class TaskManager(
         notificationDisposable.safeDispose()
         downloadDisposable.safeDispose()
         disposable.safeDispose()
-
-        downloadHandler.onPaused()
-        notificationHandler.onPaused()
     }
 
     private fun isStarted(): Boolean {
@@ -145,14 +148,14 @@ class TaskManager(
             if (enableLog) "[${task.tag()}] normal".log()
         }
 
-        fun onStart() {
+        fun onStarted() {
             currentStatus = started.apply { progress = currentProgress }
             callback(currentStatus)
 
             if (enableLog) "[${task.tag()}] started".log()
         }
 
-        fun onNext(next: Progress) {
+        fun onDownloading(next: Progress) {
             currentProgress = next
             currentStatus = downloading.apply { progress = currentProgress }
             callback(currentStatus)
@@ -160,14 +163,14 @@ class TaskManager(
             if (enableLog) "[${task.tag()}] downloading ${next.percentStr()}".log()
         }
 
-        fun onComplete() {
+        fun onCompleted() {
             currentStatus = completed.apply { progress = currentProgress }
             callback(currentStatus)
 
             if (enableLog) "[${task.tag()}] completed".log()
         }
 
-        fun onError(t: Throwable) {
+        fun onFailed(t: Throwable) {
             currentStatus = failed.apply { progress = currentProgress }
             callback(currentStatus)
 

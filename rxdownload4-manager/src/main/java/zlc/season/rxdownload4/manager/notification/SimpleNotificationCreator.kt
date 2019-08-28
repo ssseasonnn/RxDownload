@@ -65,7 +65,7 @@ class SimpleNotificationCreator : NotificationCreator {
                 title = task.taskName,
                 content = "下载中...",
                 icon = R.drawable.ic_download,
-                actions = listOf(stopAction(task.url), cancelAction(task.url))
+                actions = listOf(stopAction(task), cancelAction(task))
         )
 
         downloadingBuilder = createNotificationBuilder(
@@ -73,14 +73,14 @@ class SimpleNotificationCreator : NotificationCreator {
                 content = "",
                 icon = R.drawable.ic_download,
                 progress = null,
-                actions = listOf(stopAction(task.url), cancelAction(task.url))
+                actions = listOf(stopAction(task), cancelAction(task))
         )
 
         pausedBuilder = createNotificationBuilder(
                 title = task.taskName,
                 content = "已暂停下载",
                 icon = R.drawable.ic_pause,
-                actions = listOf(startAction(task.url), cancelAction(task.url))
+                actions = listOf(startAction(task), cancelAction(task))
         )
 
         completedBuilder = createNotificationBuilder(
@@ -93,7 +93,7 @@ class SimpleNotificationCreator : NotificationCreator {
                 title = task.taskName,
                 content = "下载错误",
                 icon = R.drawable.ic_pause,
-                actions = listOf(startAction(task.url), cancelAction(task.url))
+                actions = listOf(startAction(task), cancelAction(task))
         )
     }
 

@@ -2,11 +2,13 @@ package zlc.season.rxdownload4.manager.notification
 
 import android.app.IntentService
 import android.app.PendingIntent
+import android.app.PendingIntent.FLAG_UPDATE_CURRENT
 import android.content.Intent
 import android.support.v4.app.NotificationCompat.Action
 import android.support.v4.app.NotificationCompat.Action.Builder
 import zlc.season.claritypotion.ClarityPotion.Companion.clarityPotion
 import zlc.season.rxdownload4.manager.*
+import zlc.season.rxdownload4.task.Task
 import zlc.season.rxdownload4.utils.log
 
 class NotificationActionService : IntentService("NotificationActionService") {
@@ -17,52 +19,40 @@ class NotificationActionService : IntentService("NotificationActionService") {
         val ACTION_STOP = "${clarityPotion.packageName}.rxdownload.action.STOP"
         val ACTION_CANCEL = "${clarityPotion.packageName}.rxdownload.action.CANCEL"
 
-        fun startAction(url: String): Action {
-            val intent = Intent(clarityPotion, NotificationActionService::class.java)
-            intent.action = ACTION_START
-            intent.putExtra(INTENT_KEY, url)
-
-            val pendingIntent = PendingIntent.getService(clarityPotion, 0, intent, 0)
-
+        fun startAction(task: Task): Action {
             return Builder(
                     R.drawable.ic_start,
                     clarityPotion.getString(R.string.action_start),
-                    pendingIntent
+                    createPendingIntent(ACTION_START, task)
             ).build()
         }
 
-        fun stopAction(url: String): Action {
-            val intent = Intent(clarityPotion, NotificationActionService::class.java)
-            intent.action = ACTION_STOP
-            intent.putExtra(INTENT_KEY, url)
-
-            val pendingIntent = PendingIntent.getService(clarityPotion, 0, intent, 0)
-
+        fun stopAction(task: Task): Action {
             return Builder(
                     R.drawable.ic_pause,
                     clarityPotion.getString(R.string.action_stop),
-                    pendingIntent
+                    createPendingIntent(ACTION_STOP, task)
             ).build()
         }
 
-        fun cancelAction(url: String): Action {
-            val intent = Intent(clarityPotion, NotificationActionService::class.java)
-            intent.action = ACTION_CANCEL
-            intent.putExtra(INTENT_KEY, url)
-
-            val pendingIntent = PendingIntent.getService(clarityPotion, 0, intent, 0)
-
+        fun cancelAction(task: Task): Action {
             return Builder(
-                    R.drawable.ic_close,
+                    R.drawable.ic_cancel,
                     clarityPotion.getString(R.string.action_cancel),
-                    pendingIntent
+                    createPendingIntent(ACTION_CANCEL, task)
             ).build()
+        }
+
+        private fun createPendingIntent(action: String, task: Task): PendingIntent {
+            val intent = Intent(clarityPotion, NotificationActionService::class.java)
+            intent.action = action
+            intent.putExtra(INTENT_KEY, task.url)
+
+            return PendingIntent.getService(clarityPotion, task.hashCode(), intent, FLAG_UPDATE_CURRENT)
         }
     }
 
     override fun onHandleIntent(intent: Intent?) {
-        intent?.action.log()
-
         intent?.let {
             val url = it.getStringExtra(INTENT_KEY) ?: ""
             check(url.isNotEmpty()) { "Invalid url!" }

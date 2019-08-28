@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import io.reactivex.Flowable
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.Disposable
+import io.reactivex.flowables.ConnectableFlowable
 import io.reactivex.subscribers.DisposableSubscriber
 import zlc.season.rxdownload4.Progress
 import zlc.season.rxdownload4.delete
@@ -20,15 +21,13 @@ class TaskManager(
         private val task: Task,
         private val storage: Storage,
 
-        private val flowable: Flowable<Progress>,
+        private val connectFlowable: ConnectableFlowable<Progress>,
         private val notificationCreator: NotificationCreator
 ) {
 
     init {
         notificationCreator.init(task)
     }
-
-    private val connectFlowable = flowable.publish()
 
     private val downloadHandler = StatusHandler(task, true)
     private val notificationHandler = StatusHandler(task) {
@@ -50,8 +49,6 @@ class TaskManager(
     internal fun currentStatus() = downloadHandler.currentStatus
 
     internal fun getFile() = task.file(storage)
-
-    internal fun innerDelete() = task.delete(storage)
 
     @SuppressLint("CheckResult")
     @Synchronized
@@ -115,6 +112,11 @@ class TaskManager(
         notificationDisposable.safeDispose()
         downloadDisposable.safeDispose()
         disposable.safeDispose()
+    }
+
+    internal fun innerDelete() {
+        task.delete(storage)
+        notificationManager.cancel(task.hashCode())
     }
 
     private fun isStarted(): Boolean {

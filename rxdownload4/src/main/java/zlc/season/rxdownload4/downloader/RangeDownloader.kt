@@ -100,6 +100,7 @@ class RangeDownloader : Downloader {
                 .doOnComplete {
                     shadowFile.renameTo(file)
                     tmpFile.delete()
+                    response.body()?.closeQuietly()
                 }
     }
 

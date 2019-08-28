@@ -6,6 +6,7 @@ import zlc.season.rxdownload4.RANGE_CHECK_HEADER
 import zlc.season.rxdownload4.download
 import zlc.season.rxdownload4.downloader.DefaultDispatcher
 import zlc.season.rxdownload4.downloader.Dispatcher
+import zlc.season.rxdownload4.manager.notification.NotificationCreator
 import zlc.season.rxdownload4.manager.notification.SimpleNotificationCreator
 import zlc.season.rxdownload4.request.Request
 import zlc.season.rxdownload4.request.RequestImpl
@@ -48,7 +49,8 @@ fun Task.manager(
         validator: Validator = SimpleValidator(),
         storage: Storage = SimpleStorage(),
         request: Request = RequestImpl(),
-        watcher: Watcher = WatcherImpl()
+        watcher: Watcher = WatcherImpl(),
+        notificationCreator: NotificationCreator = SimpleNotificationCreator()
 ): TaskManager {
     var taskManager = TaskManagerPool.get(this)
     if (taskManager == null) {
@@ -60,7 +62,8 @@ fun Task.manager(
                 validator = validator,
                 storage = storage,
                 request = request,
-                watcher = watcher
+                watcher = watcher,
+                notificationCreator = notificationCreator
         )
         TaskManagerPool.add(this, taskManager)
     }
@@ -75,7 +78,8 @@ private fun Task.createManager(
         validator: Validator,
         storage: Storage,
         request: Request,
-        watcher: Watcher
+        watcher: Watcher,
+        notificationCreator: NotificationCreator
 ): TaskManager {
 
     val flowable = download(
@@ -88,7 +92,7 @@ private fun Task.createManager(
             request = request,
             watcher = watcher
     )
-    return TaskManager(this, storage, flowable, SimpleNotificationCreator())
+    return TaskManager(this, storage, flowable.publish(), notificationCreator)
 }
 
 

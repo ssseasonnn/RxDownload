@@ -29,6 +29,7 @@ dependencies {
     api project(":rxdownload4")
 
     api "com.android.support:support-compat:28.0.0"
+    api 'com.github.ssseasonnn:IronBranch:1.0.0'
 
     testImplementation 'junit:junit:4.12'
     androidTestImplementation 'com.android.support.test:runner:1.0.2'

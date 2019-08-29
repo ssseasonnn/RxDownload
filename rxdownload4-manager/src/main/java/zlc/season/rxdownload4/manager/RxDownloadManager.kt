@@ -1,5 +1,6 @@
 package zlc.season.rxdownload4.manager
 
+import zlc.season.ironbranch.ensureMainThread
 import zlc.season.rxdownload4.DEFAULT_MAX_CONCURRENCY
 import zlc.season.rxdownload4.DEFAULT_RANGE_SIZE
 import zlc.season.rxdownload4.RANGE_CHECK_HEADER
@@ -109,18 +110,24 @@ fun TaskManager.currentStatus(): Status {
 }
 
 fun TaskManager.start() {
-    innerStart()
+    ensureMainThread {
+        innerStart()
+    }
 }
 
 fun TaskManager.stop() {
-    innerStop()
+    ensureMainThread {
+        innerStop()
+    }
+}
+
+fun TaskManager.delete() {
+    ensureMainThread {
+        stop()
+        innerDelete()
+    }
 }
 
 fun TaskManager.file(): File {
     return getFile()
-}
-
-fun TaskManager.delete() {
-    stop()
-    innerDelete()
 }

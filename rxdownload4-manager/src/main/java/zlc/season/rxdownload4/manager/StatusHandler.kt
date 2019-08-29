@@ -50,7 +50,10 @@ class StatusHandler(
     }
 
     fun onFailed(t: Throwable) {
-        currentStatus = failed.apply { progress = currentProgress }
+        currentStatus = failed.apply {
+            progress = currentProgress
+            throwable = t
+        }
         callback(currentStatus)
 
         if (enableLog) "[${task.tag()}] failed".log()

@@ -14,6 +14,7 @@ import zlc.season.rxdownload4.manager.notification.NotificationCreator
 import zlc.season.rxdownload4.manager.notification.notificationManager
 import zlc.season.rxdownload4.storage.Storage
 import zlc.season.rxdownload4.task.Task
+import zlc.season.rxdownload4.utils.log
 import zlc.season.rxdownload4.utils.safeDispose
 import java.util.concurrent.TimeUnit.MILLISECONDS
 
@@ -50,8 +51,6 @@ class TaskManager(
 
     internal fun getFile() = task.file(storage)
 
-    @SuppressLint("CheckResult")
-    @Synchronized
     internal fun innerStart() {
         if (isStarted()) return
 
@@ -70,6 +69,7 @@ class TaskManager(
                 .subscribeOn(mainThread())
                 .observeOn(mainThread())
                 .doOnCancel {
+                    "download do on cancel".log()
                     downloadHandler.onPaused()
                 }
                 .doOnNext {
@@ -92,6 +92,7 @@ class TaskManager(
                 .subscribeOn(mainThread())
                 .observeOn(mainThread())
                 .doOnCancel {
+                    "notification do on cancel".log()
                     notificationHandler.onPaused()
                 }
                 .doOnNext {
@@ -106,7 +107,6 @@ class TaskManager(
                 .subscribeBy()
     }
 
-    @Synchronized
     internal fun innerStop() {
         if (isStopped()) return
 

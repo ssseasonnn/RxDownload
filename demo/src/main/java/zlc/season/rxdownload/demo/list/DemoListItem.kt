@@ -1,6 +1,7 @@
-package zlc.season.rxdownload.demo
+package zlc.season.rxdownload.demo.list
 
 import android.content.Context
+import zlc.season.rxdownload.demo.R
 import zlc.season.rxdownload.demo.utils.ProgressButton
 import zlc.season.rxdownload.demo.utils.installApk
 import zlc.season.rxdownload4.manager.*
@@ -39,12 +40,13 @@ class DemoListItem(
 
     private fun stateStr(context: Context): String {
         return when (url.manager().currentStatus()) {
-            is Normal -> context.getString(R.string.download)
-            is Started -> context.getString(R.string.pause)
-            is Downloading -> context.getString(R.string.pause)
+            is Normal -> context.getString(R.string.start_text)
+            is Started -> context.getString(R.string.pause_text)
+            is Downloading -> context.getString(R.string.pause_text)
             is Paused -> context.getString(R.string.continue_text)
-            is Completed -> context.getString(R.string.install)
-            is Failed -> context.getString(R.string.retry)
+            is Completed -> context.getString(R.string.install_text)
+            is Failed -> context.getString(R.string.retry_text)
+            is Deleted -> context.getString(R.string.start_text)
         }
     }
 

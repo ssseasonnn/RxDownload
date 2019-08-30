@@ -1,9 +1,10 @@
-package zlc.season.rxdownload.demo
+package zlc.season.rxdownload.demo.list
 
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
 import kotlinx.android.synthetic.main.activity_demo_list.*
 import kotlinx.android.synthetic.main.demo_list_item.*
+import zlc.season.rxdownload.demo.R
 import zlc.season.rxdownload.demo.utils.click
 import zlc.season.rxdownload.demo.utils.load
 import zlc.season.yasha.linear

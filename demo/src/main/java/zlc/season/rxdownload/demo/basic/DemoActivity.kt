@@ -1,4 +1,4 @@
-package zlc.season.rxdownload.demo
+package zlc.season.rxdownload.demo.basic
 
 import android.annotation.SuppressLint
 import android.os.Bundle
@@ -9,6 +9,7 @@ import io.reactivex.disposables.Disposable
 import io.reactivex.rxkotlin.subscribeBy
 import kotlinx.android.synthetic.main.activity_basic_download.*
 import kotlinx.android.synthetic.main.common_title.*
+import zlc.season.rxdownload.demo.R
 import zlc.season.rxdownload.demo.utils.click
 import zlc.season.rxdownload.demo.utils.installApk
 import zlc.season.rxdownload.demo.utils.load

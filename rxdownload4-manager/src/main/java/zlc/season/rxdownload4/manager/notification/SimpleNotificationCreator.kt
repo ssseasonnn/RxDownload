@@ -44,6 +44,7 @@ class SimpleNotificationCreator : NotificationCreator {
             is Paused -> pausedBuilder?.build()
             is Completed -> completedBuilder?.build()
             is Failed -> failedBuilder?.build()
+            is Deleted -> null
         }
     }
 

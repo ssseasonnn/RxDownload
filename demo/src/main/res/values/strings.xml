@@ -1,11 +1,7 @@
 <resources>
     <string name="app_name">KotlinDemo</string>
-    <string name="title_activity_main">DOWNLOAD DEMO</string>
-    <string name="title_activity_basic_download">BASIC DOWNLOAD</string>
-    <string name="title_activity_app_market">APP MARKET</string>
-    <string name="title_activity_download_list">下载列表</string>
 
-    <string name="wechat_desc">
+    <string name="wechat_desc" translatable="false">
         WeChat，不止是一款优秀的通讯和社交APP，而且是全球超过10亿用户都离不开的生活方式。\n
         在WeChat，你不仅可以用文本、语音、视频、表情等多种方式与好友时刻保持联系；\n
         你还可以访问数百万个公众号和小程序，并从中获取海量的优质资讯和服务；\n
@@ -31,11 +27,11 @@
     </string>
 
 
-    <string name="download">下载</string>
-    <string name="pause">暂停</string>
-    <string name="continue_text">继续</string>
-    <string name="install">安装</string>
-    <string name="retry">重试</string>
+    <string name="start_text">Download</string>
+    <string name="pause_text">Pause</string>
+    <string name="continue_text">Continue</string>
+    <string name="install_text">Install</string>
+    <string name="retry_text">Retry</string>
 
 
 </resources>

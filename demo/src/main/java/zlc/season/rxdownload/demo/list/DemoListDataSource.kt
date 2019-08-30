@@ -1,4 +1,4 @@
-package zlc.season.rxdownload.demo
+package zlc.season.rxdownload.demo.list
 
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken

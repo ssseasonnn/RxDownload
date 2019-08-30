@@ -28,10 +28,10 @@
         </activity>
 
         <activity
-            android:name=".DemoActivity"
+            android:name=".basic.DemoActivity"
             android:theme="@style/AppTheme.NoActionBar" />
 
-        <activity android:name=".DemoListActivity" />
+        <activity android:name=".list.DemoListActivity" />
 
         <provider
             android:name=".utils.ApkFileProvider"

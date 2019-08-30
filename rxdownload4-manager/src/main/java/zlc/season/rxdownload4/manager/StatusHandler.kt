@@ -17,12 +17,12 @@ class StatusHandler(var callback: (Status) -> Unit = {}) {
         //reset current progress
         currentProgress = Progress()
 
-        currentStatus = normal.apply { progress = currentProgress }
+        currentStatus = normal.updateProgress()
         callback(currentStatus)
     }
 
     fun onStarted() {
-        currentStatus = started.apply { progress = currentProgress }
+        currentStatus = started.updateProgress()
         callback(currentStatus)
     }
 
@@ -30,12 +30,12 @@ class StatusHandler(var callback: (Status) -> Unit = {}) {
         //set current progress
         currentProgress = next
 
-        currentStatus = downloading.apply { progress = currentProgress }
+        currentStatus = downloading.updateProgress()
         callback(currentStatus)
     }
 
     fun onCompleted() {
-        currentStatus = completed.apply { progress = currentProgress }
+        currentStatus = completed.updateProgress()
         callback(currentStatus)
     }
 
@@ -48,7 +48,20 @@ class StatusHandler(var callback: (Status) -> Unit = {}) {
     }
 
     fun onPaused() {
-        currentStatus = paused.apply { progress = currentProgress }
+        currentStatus = paused.updateProgress()
         callback(currentStatus)
+    }
+
+    fun onDeleted() {
+        //reset current progress
+        currentProgress = Progress()
+        currentStatus = paused.updateProgress()
+
+        callback(currentStatus)
+    }
+
+    private fun Status.updateProgress(): Status {
+        progress = currentProgress
+        return this
     }
 }

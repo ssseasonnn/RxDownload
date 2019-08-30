@@ -7,7 +7,6 @@ import io.reactivex.rxkotlin.subscribeBy
 import zlc.season.rxdownload4.Progress
 import zlc.season.rxdownload4.delete
 import zlc.season.rxdownload4.file
-import zlc.season.rxdownload4.manager.notification.NotificationCreator
 import zlc.season.rxdownload4.manager.notification.notificationManager
 import zlc.season.rxdownload4.storage.Storage
 import zlc.season.rxdownload4.task.Task
@@ -95,7 +94,7 @@ class TaskManager(
         task.delete(storage)
         notificationManager.cancel(task.hashCode())
 
-        downloadHandler.onNormal()
+        downloadHandler.onDeleted()
     }
 
     private fun isStarted(): Boolean {

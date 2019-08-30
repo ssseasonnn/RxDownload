@@ -1,7 +1,6 @@
-package zlc.season.rxdownload4.manager.notification
+package zlc.season.rxdownload4.manager
 
 import android.app.Notification
-import zlc.season.rxdownload4.manager.Status
 import zlc.season.rxdownload4.task.Task
 
 interface NotificationCreator {

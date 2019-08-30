@@ -7,8 +7,6 @@ import zlc.season.rxdownload4.RANGE_CHECK_HEADER
 import zlc.season.rxdownload4.download
 import zlc.season.rxdownload4.downloader.DefaultDispatcher
 import zlc.season.rxdownload4.downloader.Dispatcher
-import zlc.season.rxdownload4.manager.notification.NotificationCreator
-import zlc.season.rxdownload4.manager.notification.SimpleNotificationCreator
 import zlc.season.rxdownload4.request.Request
 import zlc.season.rxdownload4.request.RequestImpl
 import zlc.season.rxdownload4.storage.SimpleStorage
@@ -29,7 +27,7 @@ fun String.manager(
         storage: Storage = SimpleStorage(),
         request: Request = RequestImpl(),
         watcher: Watcher = WatcherImpl(),
-        notificationCreator: NotificationCreator = SimpleNotificationCreator()
+        notificationCreator: NotificationCreator = EmptyNotification()
 ): TaskManager {
     return Task(this).manager(
             header = header,
@@ -53,7 +51,7 @@ fun Task.manager(
         storage: Storage = SimpleStorage(),
         request: Request = RequestImpl(),
         watcher: Watcher = WatcherImpl(),
-        notificationCreator: NotificationCreator = SimpleNotificationCreator()
+        notificationCreator: NotificationCreator = EmptyNotification()
 ): TaskManager {
     var taskManager = TaskManagerPool.get(this)
     if (taskManager == null) {

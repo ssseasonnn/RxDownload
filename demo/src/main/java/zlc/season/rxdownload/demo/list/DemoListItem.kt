@@ -5,6 +5,7 @@ import zlc.season.rxdownload.demo.R
 import zlc.season.rxdownload.demo.utils.ProgressButton
 import zlc.season.rxdownload.demo.utils.installApk
 import zlc.season.rxdownload4.manager.*
+import zlc.season.rxdownload4.notification.SimpleNotificationCreator
 import zlc.season.yasha.YashaItem
 
 class DemoListItem(
@@ -23,11 +24,12 @@ class DemoListItem(
             is Failed -> taskManager.start()
             is Paused -> taskManager.start()
             is Completed -> context.installApk(taskManager.file())
+            is Deleted -> taskManager.start()
         }
     }
 
     fun subscribe(btn_action: ProgressButton, context: Context) {
-        val taskManager = url.manager()
+        val taskManager = url.manager(notificationCreator = SimpleNotificationCreator())
 
         btn_action.text = stateStr(context)
         btn_action.setStatus(taskManager.currentStatus())

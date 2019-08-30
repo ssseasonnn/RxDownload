@@ -11,6 +11,7 @@ android {
     defaultConfig {
         applicationId "zlc.season.rxdownload.kotlin_demo"
         minSdkVersion 15
+        //noinspection OldTargetApi
         targetSdkVersion 28
         versionCode 1
         versionName "1.0"
@@ -54,8 +55,9 @@ dependencies {
 
     implementation project(':rxdownload4')
     implementation project(':rxdownload4-manager')
+    implementation project(':rxdownload4-notification')
 
-//    implementation 'com.github.ssseasonnn:RxDownload:b53fb95d'
+//    implementation 'com.github.ssseasonnn:RxDownload:1.0.0'
 
     testImplementation 'junit:junit:4.12'
 

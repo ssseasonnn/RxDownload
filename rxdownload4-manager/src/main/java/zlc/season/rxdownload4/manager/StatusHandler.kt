@@ -9,6 +9,7 @@ class StatusHandler(var callback: (Status) -> Unit = {}) {
     private val paused = Paused()
     private val completed = Completed()
     private val failed = Failed()
+    private val deleted = Deleted()
 
     var currentStatus: Status = normal
     private var currentProgress: Progress = Progress()
@@ -55,7 +56,7 @@ class StatusHandler(var callback: (Status) -> Unit = {}) {
     fun onDeleted() {
         //reset current progress
         currentProgress = Progress()
-        currentStatus = paused.updateProgress()
+        currentStatus = deleted.updateProgress()
 
         callback(currentStatus)
     }

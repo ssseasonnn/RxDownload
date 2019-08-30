@@ -30,7 +30,8 @@ class ProgressDrawable : Drawable() {
 
     fun setStatus(status: Status) {
         when (status) {
-            is Normal -> {
+            is Normal,
+            is Deleted -> {
                 backgroundPaint.color = Color.parseColor("#FF009688")
                 this.progress = 0
                 this.max = 100

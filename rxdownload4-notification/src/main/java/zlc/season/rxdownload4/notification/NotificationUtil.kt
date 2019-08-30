@@ -1,4 +1,4 @@
-package zlc.season.rxdownload4.manager.notification
+package zlc.season.rxdownload4.notification
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -11,7 +11,8 @@ import android.support.v4.app.NotificationManagerCompat
 import zlc.season.claritypotion.ClarityPotion.Companion.clarityPotion
 import zlc.season.rxdownload4.Progress
 
-val notificationManager by lazy {
+
+private val notificationManager by lazy {
     clarityPotion.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 }
 
@@ -32,6 +33,7 @@ fun createNotificationChannel(
                 NotificationManager.IMPORTANCE_DEFAULT
         )
         notificationChannel.description = channelDescription
+
         notificationManager.createNotificationChannel(notificationChannel)
     }
 }

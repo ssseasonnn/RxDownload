@@ -1,12 +1,12 @@
-package zlc.season.rxdownload4.manager.notification
+package zlc.season.rxdownload4.notification
 
 import android.app.Notification
 import android.support.v4.app.NotificationCompat.Builder
 import zlc.season.claritypotion.ClarityPotion.Companion.clarityPotion
 import zlc.season.rxdownload4.manager.*
-import zlc.season.rxdownload4.manager.notification.NotificationActionService.Companion.cancelAction
-import zlc.season.rxdownload4.manager.notification.NotificationActionService.Companion.startAction
-import zlc.season.rxdownload4.manager.notification.NotificationActionService.Companion.stopAction
+import zlc.season.rxdownload4.notification.NotificationActionService.Companion.cancelAction
+import zlc.season.rxdownload4.notification.NotificationActionService.Companion.startAction
+import zlc.season.rxdownload4.notification.NotificationActionService.Companion.stopAction
 import zlc.season.rxdownload4.task.Task
 import zlc.season.rxdownload4.utils.log
 

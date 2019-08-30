@@ -1,13 +1,15 @@
 package zlc.season.rxdownload4.manager
 
+import android.app.NotificationManager
+import android.content.Context
 import io.reactivex.android.schedulers.AndroidSchedulers.mainThread
 import io.reactivex.disposables.Disposable
 import io.reactivex.flowables.ConnectableFlowable
 import io.reactivex.rxkotlin.subscribeBy
+import zlc.season.claritypotion.ClarityPotion.Companion.clarityPotion
 import zlc.season.rxdownload4.Progress
 import zlc.season.rxdownload4.delete
 import zlc.season.rxdownload4.file
-import zlc.season.rxdownload4.manager.notification.notificationManager
 import zlc.season.rxdownload4.storage.Storage
 import zlc.season.rxdownload4.task.Task
 import zlc.season.rxdownload4.utils.safeDispose
@@ -23,6 +25,10 @@ class TaskManager(
 
     init {
         notificationCreator.init(task)
+    }
+
+    private val notificationManager by lazy {
+        clarityPotion.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
     }
 
     private val downloadHandler = StatusHandler()

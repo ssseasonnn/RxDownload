@@ -1,4 +1,4 @@
-package zlc.season.rxdownload4.manager.notification
+package zlc.season.rxdownload4.notification
 
 import android.app.IntentService
 import android.app.PendingIntent
@@ -7,9 +7,11 @@ import android.content.Intent
 import android.support.v4.app.NotificationCompat.Action
 import android.support.v4.app.NotificationCompat.Action.Builder
 import zlc.season.claritypotion.ClarityPotion.Companion.clarityPotion
-import zlc.season.rxdownload4.manager.*
+import zlc.season.rxdownload4.manager.delete
+import zlc.season.rxdownload4.manager.manager
+import zlc.season.rxdownload4.manager.start
+import zlc.season.rxdownload4.manager.stop
 import zlc.season.rxdownload4.task.Task
-import zlc.season.rxdownload4.utils.log
 
 class NotificationActionService : IntentService("NotificationActionService") {
     companion object {

@@ -1,12 +1,9 @@
 package zlc.season.rxdownload4.manager
 
-import android.annotation.SuppressLint
-import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.android.schedulers.AndroidSchedulers.mainThread
 import io.reactivex.disposables.Disposable
 import io.reactivex.flowables.ConnectableFlowable
 import io.reactivex.rxkotlin.subscribeBy
-import io.reactivex.subscribers.DisposableSubscriber
 import zlc.season.rxdownload4.Progress
 import zlc.season.rxdownload4.delete
 import zlc.season.rxdownload4.file
@@ -14,7 +11,6 @@ import zlc.season.rxdownload4.manager.notification.NotificationCreator
 import zlc.season.rxdownload4.manager.notification.notificationManager
 import zlc.season.rxdownload4.storage.Storage
 import zlc.season.rxdownload4.task.Task
-import zlc.season.rxdownload4.utils.log
 import zlc.season.rxdownload4.utils.safeDispose
 import java.util.concurrent.TimeUnit.MILLISECONDS
 
@@ -30,8 +26,8 @@ class TaskManager(
         notificationCreator.init(task)
     }
 
-    private val downloadHandler = StatusHandler(task, true)
-    private val notificationHandler = StatusHandler(task) {
+    private val downloadHandler = StatusHandler()
+    private val notificationHandler = StatusHandler {
         val notification = notificationCreator.create(task, it)
         notification?.let {
             notificationManager.notify(task.hashCode(), it)
@@ -63,47 +59,25 @@ class TaskManager(
 
     private fun subscribeDownload() {
         downloadDisposable = connectFlowable
-                .doOnSubscribe {
-                    downloadHandler.onStarted()
-                }
+                .doOnSubscribe { downloadHandler.onStarted() }
                 .subscribeOn(mainThread())
                 .observeOn(mainThread())
-                .doOnCancel {
-                    "download do on cancel".log()
-                    downloadHandler.onPaused()
-                }
-                .doOnNext {
-                    downloadHandler.onDownloading(it)
-                }
-                .doOnComplete {
-                    downloadHandler.onCompleted()
-                }
-                .doOnError {
-                    downloadHandler.onFailed(it)
-                }
+                .doOnNext { downloadHandler.onDownloading(it) }
+                .doOnComplete { downloadHandler.onCompleted() }
+                .doOnError { downloadHandler.onFailed(it) }
+                .doOnCancel { downloadHandler.onPaused() }
                 .subscribeBy()
     }
 
     private fun subscribeNotification() {
         notificationDisposable = connectFlowable.sample(250, MILLISECONDS)
-                .doOnSubscribe {
-                    notificationHandler.onStarted()
-                }
+                .doOnSubscribe { notificationHandler.onStarted() }
                 .subscribeOn(mainThread())
                 .observeOn(mainThread())
-                .doOnCancel {
-                    "notification do on cancel".log()
-                    notificationHandler.onPaused()
-                }
-                .doOnNext {
-                    notificationHandler.onDownloading(it)
-                }
-                .doOnComplete {
-                    notificationHandler.onCompleted()
-                }
-                .doOnError {
-                    notificationHandler.onFailed(it)
-                }
+                .doOnNext { notificationHandler.onDownloading(it) }
+                .doOnComplete { notificationHandler.onCompleted() }
+                .doOnError { notificationHandler.onFailed(it) }
+                .doOnCancel { notificationHandler.onPaused() }
                 .subscribeBy()
     }
 
@@ -116,8 +90,12 @@ class TaskManager(
     }
 
     internal fun innerDelete() {
+        innerStop()
+
         task.delete(storage)
         notificationManager.cancel(task.hashCode())
+
+        downloadHandler.onNormal()
     }
 
     private fun isStarted(): Boolean {

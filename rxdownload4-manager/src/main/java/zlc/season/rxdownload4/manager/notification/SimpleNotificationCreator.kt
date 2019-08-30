@@ -1,11 +1,8 @@
 package zlc.season.rxdownload4.manager.notification
 
 import android.app.Notification
-import android.app.PendingIntent
-import android.support.v4.app.NotificationCompat.Action
 import android.support.v4.app.NotificationCompat.Builder
 import zlc.season.claritypotion.ClarityPotion.Companion.clarityPotion
-import zlc.season.rxdownload4.Progress
 import zlc.season.rxdownload4.manager.*
 import zlc.season.rxdownload4.manager.notification.NotificationActionService.Companion.cancelAction
 import zlc.season.rxdownload4.manager.notification.NotificationActionService.Companion.startAction
@@ -34,69 +31,6 @@ class SimpleNotificationCreator : NotificationCreator {
         initBuilder(task)
     }
 
-    private fun createNotificationBuilder(
-            title: String,
-            content: String,
-            icon: Int,
-            intent: PendingIntent? = null,
-            progress: Progress? = null,
-            actions: List<Action> = emptyList()
-    ): Builder {
-        val notificationBuilder = Builder(clarityPotion, channelId)
-        notificationBuilder.setContentTitle(title)
-                .setContentText(content)
-                .setSmallIcon(icon)
-                .setContentIntent(intent)
-
-        progress?.let {
-            notificationBuilder.setProgress(it.totalSize.toInt(), it.downloadSize.toInt(), it.isChunked)
-        }
-
-
-        actions.forEach {
-            notificationBuilder.addAction(it)
-        }
-
-        return notificationBuilder
-    }
-
-    private fun initBuilder(task: Task) {
-        startedBuilder = createNotificationBuilder(
-                title = task.taskName,
-                content = "下载中...",
-                icon = R.drawable.ic_download,
-                actions = listOf(stopAction(task), cancelAction(task))
-        )
-
-        downloadingBuilder = createNotificationBuilder(
-                title = task.taskName,
-                content = "",
-                icon = R.drawable.ic_download,
-                progress = null,
-                actions = listOf(stopAction(task), cancelAction(task))
-        )
-
-        pausedBuilder = createNotificationBuilder(
-                title = task.taskName,
-                content = "已暂停下载",
-                icon = R.drawable.ic_pause,
-                actions = listOf(startAction(task), cancelAction(task))
-        )
-
-        completedBuilder = createNotificationBuilder(
-                title = task.taskName,
-                content = "下载完成",
-                icon = R.drawable.ic_completed
-        )
-
-        failedBuilder = createNotificationBuilder(
-                title = task.taskName,
-                content = "下载错误",
-                icon = R.drawable.ic_pause,
-                actions = listOf(startAction(task), cancelAction(task))
-        )
-    }
-
     override fun create(task: Task, status: Status): Notification? {
         return when (status) {
             is Normal -> null
@@ -111,5 +45,47 @@ class SimpleNotificationCreator : NotificationCreator {
             is Completed -> completedBuilder?.build()
             is Failed -> failedBuilder?.build()
         }
+    }
+
+    private fun initBuilder(task: Task) {
+        startedBuilder = createNotificationBuilder(
+                channelId = channelId,
+                title = task.taskName,
+                content = clarityPotion.getString(R.string.notification_started_text),
+                icon = R.drawable.ic_download,
+                actions = listOf(stopAction(task), cancelAction(task))
+        )
+
+        downloadingBuilder = createNotificationBuilder(
+                channelId = channelId,
+                title = task.taskName,
+                content = "",
+                icon = R.drawable.ic_download,
+                progress = null,
+                actions = listOf(stopAction(task), cancelAction(task))
+        )
+
+        pausedBuilder = createNotificationBuilder(
+                channelId = channelId,
+                title = task.taskName,
+                content = clarityPotion.getString(R.string.notification_paused_text),
+                icon = R.drawable.ic_pause,
+                actions = listOf(startAction(task), cancelAction(task))
+        )
+
+        completedBuilder = createNotificationBuilder(
+                channelId = channelId,
+                title = task.taskName,
+                content = clarityPotion.getString(R.string.notification_completed_text),
+                icon = R.drawable.ic_completed
+        )
+
+        failedBuilder = createNotificationBuilder(
+                channelId = channelId,
+                title = task.taskName,
+                content = clarityPotion.getString(R.string.notification_failed_text),
+                icon = R.drawable.ic_pause,
+                actions = listOf(startAction(task), cancelAction(task))
+        )
     }
 }

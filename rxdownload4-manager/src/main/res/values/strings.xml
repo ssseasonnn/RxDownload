@@ -1,7 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="normal">NORMAL</string>
-    <string name="action_start">继续</string>
-    <string name="action_stop">暂停</string>
-    <string name="action_cancel">取消</string>
+    <string name="action_start">Continue</string>
+    <string name="action_stop">Pause</string>
+    <string name="action_cancel">Cancel</string>
+
+    <string name="notification_started_text">Downloading…</string>
+    <string name="notification_paused_text">Download suspended</string>
+    <string name="notification_completed_text">Download complete</string>
+    <string name="notification_failed_text">Download failed</string>
 </resources>

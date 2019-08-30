@@ -28,7 +28,8 @@ fun String.manager(
         validator: Validator = SimpleValidator(),
         storage: Storage = SimpleStorage(),
         request: Request = RequestImpl(),
-        watcher: Watcher = WatcherImpl()
+        watcher: Watcher = WatcherImpl(),
+        notificationCreator: NotificationCreator = SimpleNotificationCreator()
 ): TaskManager {
     return Task(this).manager(
             header = header,
@@ -38,7 +39,8 @@ fun String.manager(
             validator = validator,
             storage = storage,
             request = request,
-            watcher = watcher
+            watcher = watcher,
+            notificationCreator = notificationCreator
     )
 }
 
@@ -83,7 +85,7 @@ private fun Task.createManager(
         notificationCreator: NotificationCreator
 ): TaskManager {
 
-    val flowable = download(
+    val download = download(
             header = header,
             maxConCurrency = maxConCurrency,
             rangeSize = rangeSize,
@@ -93,12 +95,12 @@ private fun Task.createManager(
             request = request,
             watcher = watcher
     )
-    return TaskManager(this, storage, flowable.publish(), notificationCreator)
+    return TaskManager(this, storage, download.publish(), notificationCreator)
 }
 
 
-fun TaskManager.subscribe(onNext: (Status) -> Unit) {
-    setCallback(onNext)
+fun TaskManager.subscribe(function: (Status) -> Unit) {
+    setCallback(function)
 }
 
 fun TaskManager.dispose() {
@@ -123,7 +125,6 @@ fun TaskManager.stop() {
 
 fun TaskManager.delete() {
     ensureMainThread {
-        stop()
         innerDelete()
     }
 }

@@ -1,18 +1,8 @@
 package zlc.season.rxdownload4.manager
 
 import zlc.season.rxdownload4.Progress
-import zlc.season.rxdownload4.task.Task
-import zlc.season.rxdownload4.utils.log
 
-class StatusHandler(
-        private val task: Task,
-        private val enableLog: Boolean = false,
-        var callback: (Status) -> Unit = {}
-) {
-
-    var currentStatus: Status = Normal()
-    var currentProgress: Progress = Progress()
-
+class StatusHandler(var callback: (Status) -> Unit = {}) {
     private val normal = Normal()
     private val started = Started()
     private val downloading = Downloading()
@@ -20,33 +10,33 @@ class StatusHandler(
     private val completed = Completed()
     private val failed = Failed()
 
+    var currentStatus: Status = normal
+    private var currentProgress: Progress = Progress()
+
     fun onNormal() {
+        //reset current progress
+        currentProgress = Progress()
+
         currentStatus = normal.apply { progress = currentProgress }
         callback(currentStatus)
-
-        if (enableLog) "[${task.tag()}] normal".log()
     }
 
     fun onStarted() {
         currentStatus = started.apply { progress = currentProgress }
         callback(currentStatus)
-
-        if (enableLog) "[${task.tag()}] started".log()
     }
 
     fun onDownloading(next: Progress) {
+        //set current progress
         currentProgress = next
+
         currentStatus = downloading.apply { progress = currentProgress }
         callback(currentStatus)
-
-        if (enableLog) "[${task.tag()}] downloading ${next.percentStr()}".log()
     }
 
     fun onCompleted() {
         currentStatus = completed.apply { progress = currentProgress }
         callback(currentStatus)
-
-        if (enableLog) "[${task.tag()}] completed".log()
     }
 
     fun onFailed(t: Throwable) {
@@ -55,14 +45,10 @@ class StatusHandler(
             throwable = t
         }
         callback(currentStatus)
-
-        if (enableLog) "[${task.tag()}] failed".log()
     }
 
     fun onPaused() {
         currentStatus = paused.apply { progress = currentProgress }
         callback(currentStatus)
-
-        if (enableLog) "[${task.tag()}] paused".log()
     }
 }

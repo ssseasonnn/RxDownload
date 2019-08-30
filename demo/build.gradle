@@ -53,11 +53,11 @@ dependencies {
 
     implementation 'com.github.ssseasonnn:Yasha:1.0.6'
 
-    implementation project(':rxdownload4')
-    implementation project(':rxdownload4-manager')
-    implementation project(':rxdownload4-notification')
+//    implementation project(':rxdownload4')
+//    implementation project(':rxdownload4-manager')
+//    implementation project(':rxdownload4-notification')
 
-//    implementation 'com.github.ssseasonnn:RxDownload:1.0.0'
+    implementation 'com.github.ssseasonnn:RxDownload:1.0.0'
 
     testImplementation 'junit:junit:4.12'
 

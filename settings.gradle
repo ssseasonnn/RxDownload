@@ -1,1 +1,1 @@
-include ':demo', ':rxdownload4', ':rxdownload4-manager', ':rxdownload4-notification', ':rxdownload4-recorder'
+include ':demo', ':rxdownload4', ':rxdownload4-manager', ':rxdownload4-notification'

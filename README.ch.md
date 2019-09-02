@@ -10,36 +10,69 @@
 
 *Read this in other languages: [中文](README.ch.md), [English](README.md)* 
 
+## Prepare
+
+- 添加jitpack仓库:
+
+    ```gradle
+    maven { url 'https://jitpack.io' }
+    maven {
+        url 'https://oss.sonatype.org/content/repositories/snapshots/'
+    }
+    ```
+
+    > 由于依赖retrofit-2.7.0, 而retrofit 2.7.0目前还没正式发布,
+    因此暂时需要添加 **https://oss.sonatype.org/content/repositories/snapshots/** 仓库
+    
+- 添加RxDownload依赖:
+
+    ```gradle
+    //按需加载
+    implementation "com.github.ssseasonnn.RxDownload:rxdownload4:1.0.0"
+    implementation "com.github.ssseasonnn.RxDownload:rxdownload4-manager:1.0.0"
+    implementation "com.github.ssseasonnn.RxDownload:rxdownload4-notification:1.0.0"
+    
+    or: 
+    //添加RxDownload4的所有依赖
+    implementation "com.github.ssseasonnn:RxDownload:1.0.0"
+    ```
 
 ## Basic Usage
 
-开始下载:
+- 开始下载:
 
-```kotlin
-disposable = url.download()
-        .observeOn(AndroidSchedulers.mainThread())
-        .subscribeBy(
-                onNext = {
-                    //下载进度
-                    button.text = "${it.downloadSizeStr()}/${it.totalSizeStr()}"
-                    button.setProgress(it)
-                },
-                onComplete = {
-                    //下载完成
-                    button.text = "打开"
-                },
-                onError = {
-                    //下载失败
-                    button.text = "重试"
-                }
-        )    
-```
+    ```kotlin
+    disposable = url.download()
+            .observeOn(AndroidSchedulers.mainThread())
+            .subscribeBy(
+                    onNext = { progress ->
+                        //下载进度
+                        button.text = "${progress.downloadSizeStr()}/${progress.totalSizeStr()}"
+                        button.setProgress(progress)
+                    },
+                    onComplete = {
+                        //下载完成
+                        button.text = "打开"
+                    },
+                    onError = {
+                        //下载失败
+                        button.text = "重试"
+                    }
+            )    
+    ```
 
-停止下载:
+- 停止下载:
 
-```kotlin
-disposable.dispose()    
-```
+    ```kotlin
+    disposable.dispose()    
+    ```
+
+- 获取下载文件:
+
+    ```kotlin
+    val file = url.file() 
+    // 使用文件...    
+    ```
 
 ## Task Manager
 
@@ -83,6 +116,12 @@ disposable.dispose()
     taskManager.delete()
     ```
 
+- 获取下载文件:
+
+    ```kotlin
+    val file = taskManager.file()
+    // 使用文件...  
+    ```
 
 ## License
 

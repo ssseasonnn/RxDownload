@@ -10,6 +10,32 @@ A multi-threaded download tool written with RxJava and Kotlin
 
 *Read this in other languages: [中文](README.ch.md), [English](README.md)* 
 
+## Prepare
+
+- Add jitpack repo:
+
+    ```gradle
+    maven { url 'https://jitpack.io' }
+    maven {
+        url 'https://oss.sonatype.org/content/repositories/snapshots/'
+    }
+    ```
+
+    > Due to the dependence on retrofit-2.7.0, retrofit 2.7.0 has not yet been officially released.
+    So temporarily need to add **https://oss.sonatype.org/content/repositories/snapshots/** repo.
+    
+- Add RxDownload dependency:
+
+    ```gradle
+    //Load on demand
+    implementation "com.github.ssseasonnn.RxDownload:rxdownload4:1.0.0"
+    implementation "com.github.ssseasonnn.RxDownload:rxdownload4-manager:1.0.0"
+    implementation "com.github.ssseasonnn.RxDownload:rxdownload4-notification:1.0.0"
+    
+    or: 
+    //Add all dependencies of RxDownload4
+    implementation "com.github.ssseasonnn:RxDownload:1.0.0"
+    ```
 
 ## Basic Usage
 
@@ -19,10 +45,10 @@ A multi-threaded download tool written with RxJava and Kotlin
     disposable = url.download()
             .observeOn(AndroidSchedulers.mainThread())
             .subscribeBy(
-                    onNext = { 
+                    onNext = { progress ->
                         //download progress
-                        button.text = "${it.downloadSizeStr()}/${it.totalSizeStr()}"
-                        button.setProgress(it)
+                        button.text = "${progress.downloadSizeStr()}/${progress.totalSizeStr()}"
+                        button.setProgress(progress)
                     },
                     onComplete = {
                         //download complete
@@ -60,7 +86,7 @@ A multi-threaded download tool written with RxJava and Kotlin
 
     ```kotlin
     taskManager.subscribe { status ->
-        // Get download status
+        // Receive download status
         btn_action.setStatus(status)
     }
         

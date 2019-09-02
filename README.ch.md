@@ -8,7 +8,7 @@
 
 基于RxJava打造的下载工具, 支持多线程下载和断点续传,使用Kotlin编写
 
-*Read this in other languages: [中文](README.ch.md), [English](README.md)* 
+*Read this in other languages: [中文](README.ch.md), [English](README.md), [Changelog](CHANGELOG.md)* 
 
 ## Prepare
 

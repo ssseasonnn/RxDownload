@@ -18,6 +18,7 @@ import zlc.season.rxdownload4.watcher.Watcher
 import zlc.season.rxdownload4.watcher.WatcherImpl
 import java.io.File
 
+@JvmOverloads
 fun String.manager(
         header: Map<String, String> = RANGE_CHECK_HEADER,
         maxConCurrency: Int = DEFAULT_MAX_CONCURRENCY,
@@ -42,6 +43,7 @@ fun String.manager(
     )
 }
 
+@JvmOverloads
 fun Task.manager(
         header: Map<String, String> = RANGE_CHECK_HEADER,
         maxConCurrency: Int = DEFAULT_MAX_CONCURRENCY,

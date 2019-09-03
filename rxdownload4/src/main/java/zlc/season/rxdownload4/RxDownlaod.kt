@@ -31,6 +31,7 @@ const val DEFAULT_MAX_CONCURRENCY = 3
 /**
  * Returns a Download Flowable represent the current url.
  */
+@JvmOverloads
 fun String.download(
         header: Map<String, String> = RANGE_CHECK_HEADER,
         maxConCurrency: Int = DEFAULT_MAX_CONCURRENCY,
@@ -56,13 +57,20 @@ fun String.download(
     )
 }
 
+@JvmOverloads
 fun String.file(storage: Storage = SimpleStorage()): File {
     return Task(this).file(storage)
+}
+
+@JvmOverloads
+fun String.delete(storage: Storage = SimpleStorage()) {
+    Task(this).delete(storage)
 }
 
 /**
  * Returns a Download Flowable represent the current task.
  */
+@JvmOverloads
 fun Task.download(
         header: Map<String, String> = RANGE_CHECK_HEADER,
         maxConCurrency: Int = DEFAULT_MAX_CONCURRENCY,
@@ -91,12 +99,14 @@ fun Task.download(
     return taskInfo.start()
 }
 
+@JvmOverloads
 fun Task.file(storage: Storage = SimpleStorage()): File {
     storage.load(this)
     check(!isEmpty()) { "Task file not found!" }
     return File(savePath, saveName)
 }
 
+@JvmOverloads
 fun Task.delete(storage: Storage = SimpleStorage()) {
     val file = file(storage)
     file.clear()

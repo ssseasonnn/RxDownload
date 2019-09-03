@@ -87,10 +87,20 @@
     ```kotlin
     taskManager.subscribe { status ->
         // 获取下载状态
-        btn_action.setStatus(status)
+        when (status) {
+            is Normal -> {}
+            is Started -> {}
+            is Downloading -> {}
+            is Paused -> {}
+            is Completed -> {}
+            is Failed -> {}
+            is Deleted -> {}
+        }
     }
         
     ``` 
+    
+    > **progress**可从**status**中获取, 当status为**Failed**时, 能额外从中获取**throwable**,代表失败的原因
     
 - 取消状态更新订阅:
 

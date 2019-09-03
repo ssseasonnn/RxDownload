@@ -87,10 +87,21 @@ A multi-threaded download tool written with RxJava and Kotlin
     ```kotlin
     taskManager.subscribe { status ->
         // Receive download status
-        btn_action.setStatus(status)
+        when (status) {
+            is Normal -> {}
+            is Started -> {}
+            is Downloading -> {}
+            is Paused -> {}
+            is Completed -> {}
+            is Failed -> {}
+            is Deleted -> {}
+        }
     }
         
     ``` 
+    
+    > **progress** can be obtained from **status**, when status is **Failed**, 
+    you can get **throwable** from it, which is the reason for the failure.
     
 - Cancel status update subscription:
 

@@ -12,6 +12,7 @@ import zlc.season.rxdownload4.storage.Storage
 import zlc.season.rxdownload4.task.Task
 import zlc.season.rxdownload4.task.TaskInfo
 import zlc.season.rxdownload4.utils.clear
+import zlc.season.rxdownload4.utils.log
 import zlc.season.rxdownload4.validator.SimpleValidator
 import zlc.season.rxdownload4.validator.Validator
 import zlc.season.rxdownload4.watcher.Watcher
@@ -102,7 +103,9 @@ fun Task.download(
 @JvmOverloads
 fun Task.file(storage: Storage = SimpleStorage()): File {
     storage.load(this)
-    check(!isEmpty()) { "Task file not found!" }
+    if (!isEmpty()) {
+        "Task file not found".log()
+    }
     return File(savePath, saveName)
 }
 

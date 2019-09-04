@@ -146,11 +146,12 @@ class RangeDownloader : Downloader {
                                 shadowFileBuffer.force()
                                 tmpFileBuffer.force()
                                 emitter.onComplete()
-                            } else {
+                            } else if (readLen > 0) {
+                                downloadSize += readLen
+
                                 shadowFileBuffer.put(buffer, 0, readLen)
                                 tmpFileBuffer.putLong(16, downloadSize)
 
-                                downloadSize += readLen
                                 emitter.onNext(readLen.toLong())
                             }
                         }

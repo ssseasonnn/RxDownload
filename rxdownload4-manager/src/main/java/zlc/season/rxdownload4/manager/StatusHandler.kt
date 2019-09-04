@@ -12,6 +12,7 @@ class StatusHandler(var callback: (Status) -> Unit = {}) {
     private val deleted = Deleted()
 
     var currentStatus: Status = normal
+
     private var currentProgress: Progress = Progress()
 
     fun onNormal() {
@@ -19,12 +20,12 @@ class StatusHandler(var callback: (Status) -> Unit = {}) {
         currentProgress = Progress()
 
         currentStatus = normal.updateProgress()
-        callback(currentStatus)
+        handleCallback()
     }
 
     fun onStarted() {
         currentStatus = started.updateProgress()
-        callback(currentStatus)
+        handleCallback()
     }
 
     fun onDownloading(next: Progress) {
@@ -32,12 +33,12 @@ class StatusHandler(var callback: (Status) -> Unit = {}) {
         currentProgress = next
 
         currentStatus = downloading.updateProgress()
-        callback(currentStatus)
+        handleCallback()
     }
 
     fun onCompleted() {
         currentStatus = completed.updateProgress()
-        callback(currentStatus)
+        handleCallback()
     }
 
     fun onFailed(t: Throwable) {
@@ -45,12 +46,13 @@ class StatusHandler(var callback: (Status) -> Unit = {}) {
             progress = currentProgress
             throwable = t
         }
-        callback(currentStatus)
+        handleCallback()
     }
 
     fun onPaused() {
         currentStatus = paused.updateProgress()
-        callback(currentStatus)
+
+        handleCallback()
     }
 
     fun onDeleted() {
@@ -58,11 +60,15 @@ class StatusHandler(var callback: (Status) -> Unit = {}) {
         currentProgress = Progress()
         currentStatus = deleted.updateProgress()
 
-        callback(currentStatus)
+        handleCallback()
     }
 
     private fun Status.updateProgress(): Status {
         progress = currentProgress
         return this
+    }
+
+    private fun handleCallback() {
+        callback(currentStatus)
     }
 }

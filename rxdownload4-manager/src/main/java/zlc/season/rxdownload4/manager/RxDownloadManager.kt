@@ -44,6 +44,7 @@ fun String.manager(
 }
 
 @JvmOverloads
+@Synchronized
 fun Task.manager(
         header: Map<String, String> = RANGE_CHECK_HEADER,
         maxConCurrency: Int = DEFAULT_MAX_CONCURRENCY,

@@ -1,12 +1,9 @@
 package zlc.season.rxdownload4.manager
 
-import android.app.NotificationManager
-import android.content.Context
 import io.reactivex.android.schedulers.AndroidSchedulers.mainThread
 import io.reactivex.disposables.Disposable
 import io.reactivex.flowables.ConnectableFlowable
 import io.reactivex.rxkotlin.subscribeBy
-import zlc.season.claritypotion.ClarityPotion.Companion.clarityPotion
 import zlc.season.rxdownload4.Progress
 import zlc.season.rxdownload4.delete
 import zlc.season.rxdownload4.file
@@ -27,22 +24,18 @@ class TaskManager(
         notificationCreator.init(task)
     }
 
-    private val notificationManager by lazy {
-        clarityPotion.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-    }
-
     private val downloadHandler = StatusHandler()
+
     private val notificationHandler = StatusHandler {
         val notification = notificationCreator.create(task, it)
-        notification?.let {
-            notificationManager.notify(task.hashCode(), it)
-        }
+        showNotification(task, notification)
     }
 
     //Download disposable
     private var disposable: Disposable? = null
     private var downloadDisposable: Disposable? = null
     private var notificationDisposable: Disposable? = null
+
 
     internal fun setCallback(callback: (Status) -> Unit = {}) {
         downloadHandler.callback = callback
@@ -75,10 +68,8 @@ class TaskManager(
     }
 
     private fun subscribeNotification() {
-        notificationDisposable = connectFlowable.sample(250, MILLISECONDS)
+        notificationDisposable = connectFlowable.sample(500, MILLISECONDS)
                 .doOnSubscribe { notificationHandler.onStarted() }
-                .subscribeOn(mainThread())
-                .observeOn(mainThread())
                 .doOnNext { notificationHandler.onDownloading(it) }
                 .doOnComplete { notificationHandler.onCompleted() }
                 .doOnError { notificationHandler.onFailed(it) }
@@ -87,7 +78,11 @@ class TaskManager(
     }
 
     internal fun innerStop() {
-        if (isStopped()) return
+        if (isStopped()) {
+            //fix notification update too fast bug
+            notificationHandler.onPaused()
+            return
+        }
 
         notificationDisposable.safeDispose()
         downloadDisposable.safeDispose()
@@ -98,7 +93,7 @@ class TaskManager(
         innerStop()
 
         task.delete(storage)
-        notificationManager.cancel(task.hashCode())
+        cancelNotification(task)
 
         downloadHandler.onDeleted()
     }

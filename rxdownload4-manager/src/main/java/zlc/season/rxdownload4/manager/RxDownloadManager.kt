@@ -29,7 +29,8 @@ fun String.manager(
         storage: Storage = SimpleStorage(),
         request: Request = RequestImpl(),
         watcher: Watcher = WatcherImpl(),
-        notificationCreator: NotificationCreator = EmptyNotification()
+        notificationCreator: NotificationCreator = EmptyNotification(),
+        database: TaskDatabase
 ): TaskManager {
     return Task(this).manager(
             header = header,
@@ -40,7 +41,8 @@ fun String.manager(
             storage = storage,
             request = request,
             watcher = watcher,
-            notificationCreator = notificationCreator
+            notificationCreator = notificationCreator,
+            database = database
     )
 }
 
@@ -55,7 +57,8 @@ fun Task.manager(
         storage: Storage = SimpleStorage(),
         request: Request = RequestImpl(),
         watcher: Watcher = WatcherImpl(),
-        notificationCreator: NotificationCreator = EmptyNotification()
+        notificationCreator: NotificationCreator = EmptyNotification(),
+        database: TaskDatabase
 ): TaskManager {
     var taskManager = TaskManagerPool.get(this)
     if (taskManager == null) {
@@ -68,7 +71,8 @@ fun Task.manager(
                 storage = storage,
                 request = request,
                 watcher = watcher,
-                notificationCreator = notificationCreator
+                notificationCreator = notificationCreator,
+                database = database
         )
         TaskManagerPool.add(this, taskManager)
     }
@@ -84,7 +88,8 @@ private fun Task.createManager(
         storage: Storage,
         request: Request,
         watcher: Watcher,
-        notificationCreator: NotificationCreator
+        notificationCreator: NotificationCreator,
+        database: TaskDatabase
 ): TaskManager {
 
     val download = download(
@@ -97,7 +102,13 @@ private fun Task.createManager(
             request = request,
             watcher = watcher
     )
-    return TaskManager(this, storage, download.publish(), notificationCreator)
+    return TaskManager(
+            task = this,
+            storage = storage,
+            taskDatabase = database,
+            connectFlowable = download.publish(),
+            notificationCreator = notificationCreator
+    )
 }
 
 

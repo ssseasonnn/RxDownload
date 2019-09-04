@@ -15,7 +15,7 @@ import java.util.concurrent.TimeUnit.MILLISECONDS
 class TaskManager(
         private val task: Task,
         private val storage: Storage,
-        private val taskDatabase: TaskDatabase,
+        val taskDatabase: TaskDatabase,
         private val connectFlowable: ConnectableFlowable<Progress>,
         private val notificationCreator: NotificationCreator
 ) {

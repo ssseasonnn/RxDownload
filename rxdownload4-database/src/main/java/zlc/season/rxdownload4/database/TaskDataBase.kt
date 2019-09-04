@@ -4,9 +4,11 @@ package zlc.season.rxdownload4.database
 import android.arch.persistence.room.Database
 import android.arch.persistence.room.Room
 import android.arch.persistence.room.RoomDatabase
+import android.arch.persistence.room.TypeConverters
 import android.content.Context
 
 @Database(entities = [TaskEntity::class], version = 1)
+@TypeConverters(StatusConverter::class)
 abstract class TaskDataBase : RoomDatabase() {
     abstract fun taskDao(): TaskDao
 

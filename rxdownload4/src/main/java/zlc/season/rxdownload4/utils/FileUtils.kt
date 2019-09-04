@@ -16,7 +16,7 @@ fun File.tmp(): File {
 }
 
 fun File.recreate(block: () -> Unit = {}) {
-    deleteOnExit()
+    delete()
     val created = createNewFile()
     if (created) {
         block()
@@ -32,9 +32,9 @@ fun File.channel(): FileChannel {
 fun File.clear() {
     val shadow = shadow()
     val tmp = tmp()
-    shadow.deleteOnExit()
-    tmp.deleteOnExit()
-    deleteOnExit()
+    shadow.delete()
+    tmp.delete()
+    delete()
 }
 
 internal fun Task.getFile(): File {

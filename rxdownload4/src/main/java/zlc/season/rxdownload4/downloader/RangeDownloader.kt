@@ -48,7 +48,7 @@ class RangeDownloader : Downloader {
             if (taskInfo.validator.validate(file, response)) {
                 alreadyDownloaded = true
             } else {
-                file.deleteOnExit()
+                file.delete()
                 createFiles(response, taskInfo)
             }
         } else {

@@ -44,7 +44,7 @@ class TaskManager(
     private var downloadDisposable: Disposable? = null
     private var notificationDisposable: Disposable? = null
 
-    fun setCallback(callback: (Status) -> Unit = {}) {
+    internal fun setCallback(callback: (Status) -> Unit = {}) {
         downloadHandler.callback = callback
     }
 

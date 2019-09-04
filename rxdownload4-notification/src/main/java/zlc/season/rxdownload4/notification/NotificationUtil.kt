@@ -1,5 +1,6 @@
 package zlc.season.rxdownload4.notification
 
+import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -34,6 +35,9 @@ fun createNotificationChannel(
         )
         notificationChannel.description = channelDescription
 
+        notificationChannel.enableVibration(false)
+        notificationChannel.enableLights(false)
+
         notificationManager.createNotificationChannel(notificationChannel)
     }
 }
@@ -54,6 +58,7 @@ fun createNotificationBuilder(
             .setContentText(content)
             .setSmallIcon(icon)
             .setContentIntent(intent)
+            .setDefaults(Notification.DEFAULT_ALL)
 
     progress?.let {
         notificationBuilder.setProgress(

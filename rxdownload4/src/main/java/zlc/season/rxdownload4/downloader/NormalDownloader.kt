@@ -47,7 +47,7 @@ class NormalDownloader : Downloader {
             if (taskInfo.validator.validate(file, response)) {
                 alreadyDownloaded = true
             } else {
-                file.deleteOnExit()
+                file.delete()
                 shadowFile.recreate()
             }
         } else {

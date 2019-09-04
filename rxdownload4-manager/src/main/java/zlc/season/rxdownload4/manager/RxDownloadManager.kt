@@ -1,5 +1,6 @@
 package zlc.season.rxdownload4.manager
 
+import io.reactivex.Flowable
 import zlc.season.ironbranch.ensureMainThread
 import zlc.season.rxdownload4.DEFAULT_MAX_CONCURRENCY
 import zlc.season.rxdownload4.DEFAULT_RANGE_SIZE
@@ -132,4 +133,8 @@ fun TaskManager.delete() {
 
 fun TaskManager.file(): File {
     return getFile()
+}
+
+fun TaskManager.getAll(): Flowable<List<Task>> {
+    return taskDatabase.getAll()
 }

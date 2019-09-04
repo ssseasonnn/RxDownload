@@ -15,7 +15,7 @@ import java.util.concurrent.TimeUnit.MILLISECONDS
 class TaskManager(
         private val task: Task,
         private val storage: Storage,
-
+        private val taskDatabase: TaskDatabase,
         private val connectFlowable: ConnectableFlowable<Progress>,
         private val notificationCreator: NotificationCreator
 ) {
@@ -24,9 +24,9 @@ class TaskManager(
         notificationCreator.init(task)
     }
 
-    private val downloadHandler = StatusHandler()
+    private val downloadHandler = StatusHandler(task, taskDatabase)
 
-    private val notificationHandler = StatusHandler {
+    private val notificationHandler = StatusHandler(task) {
         val notification = notificationCreator.create(task, it)
         showNotification(task, notification)
     }
@@ -95,7 +95,10 @@ class TaskManager(
         task.delete(storage)
         cancelNotification(task)
 
+        //special handle
         downloadHandler.onDeleted()
+
+        taskDatabase.delete(task)
     }
 
     private fun isStarted(): Boolean {

@@ -4,7 +4,6 @@ import zlc.season.rxdownload4.Progress
 
 sealed class Status {
     var progress: Progress = Progress()
-        internal set
 }
 
 class Normal : Status()

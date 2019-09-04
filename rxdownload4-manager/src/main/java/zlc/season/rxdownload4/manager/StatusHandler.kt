@@ -1,8 +1,13 @@
 package zlc.season.rxdownload4.manager
 
 import zlc.season.rxdownload4.Progress
+import zlc.season.rxdownload4.task.Task
 
-class StatusHandler(var callback: (Status) -> Unit = {}) {
+class StatusHandler(
+        private val task: Task,
+        private val taskDatabase: TaskDatabase? = null,
+        var callback: (Status) -> Unit = {}
+) {
     private val normal = Normal()
     private val started = Started()
     private val downloading = Downloading()
@@ -25,6 +30,13 @@ class StatusHandler(var callback: (Status) -> Unit = {}) {
 
     fun onStarted() {
         currentStatus = started.updateProgress()
+
+        taskDatabase?.let {
+            if (!it.contain(task)) {
+                it.insert(task)
+            }
+        }
+
         handleCallback()
     }
 
@@ -70,5 +82,7 @@ class StatusHandler(var callback: (Status) -> Unit = {}) {
 
     private fun handleCallback() {
         callback(currentStatus)
+
+        taskDatabase?.update(task, currentStatus)
     }
 }

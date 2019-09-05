@@ -33,17 +33,14 @@ class DemoListItem(
         val taskManager = url.manager(notificationCreator = SimpleNotificationCreator(),
                 recorder = RoomRecorder())
 
-        btn_action.text = stateStr(context)
-        btn_action.setStatus(taskManager.currentStatus())
-
         taskManager.subscribe {
             btn_action.setStatus(it)
-            btn_action.text = stateStr(context)
+            btn_action.text = stateStr(context, it)
         }
     }
 
-    private fun stateStr(context: Context): String {
-        return when (url.manager().currentStatus()) {
+    private fun stateStr(context: Context, status: Status): String {
+        return when (status) {
             is Normal -> context.getString(R.string.start_text)
             is Started -> context.getString(R.string.pause_text)
             is Downloading -> context.getString(R.string.pause_text)

@@ -41,7 +41,7 @@
         tools:text="TextView" />
 
     <zlc.season.rxdownload.demo.utils.ProgressButton
-        android:id="@+id/btn_action"
+        android:id="@+id/btn_pause"
         android:layout_width="100dp"
         android:layout_height="40dp"
         android:layout_marginEnd="8dp"

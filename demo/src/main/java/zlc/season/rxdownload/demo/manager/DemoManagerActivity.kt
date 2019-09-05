@@ -3,6 +3,7 @@ package zlc.season.rxdownload.demo.manager
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
 import kotlinx.android.synthetic.main.activity_demo_list.*
+import kotlinx.android.synthetic.main.demo_download_list_item.*
 import zlc.season.rxdownload.demo.R
 import zlc.season.yasha.linear
 
@@ -19,16 +20,25 @@ class DemoManagerActivity : AppCompatActivity() {
         recycler_view.linear(dataSource) {
 
             renderItem<DemoManagerItem> {
-                res(R.layout.demo_list_item)
+                res(R.layout.demo_download_list_item)
 
                 onBind {
-
+                    tv_name.text = data.task.taskName
                 }
 
                 onAttach {
+                    data.subscribe(
+                            progress_bar,
+                            tv_status,
+                            tv_percent,
+                            btn_start,
+                            btn_pause,
+                            containerView.context
+                    )
                 }
 
                 onDetach {
+                    data.dispose()
                 }
             }
         }

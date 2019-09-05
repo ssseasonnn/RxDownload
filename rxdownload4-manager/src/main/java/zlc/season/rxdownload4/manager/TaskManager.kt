@@ -47,8 +47,6 @@ class TaskManager(
 
     internal fun innerStart() {
         if (isStarted()) {
-            //fix notification update too fast bug
-            notificationHandler.onStarted()
             return
         }
 
@@ -85,6 +83,7 @@ class TaskManager(
         if (isStopped()) {
             //fix notification update too fast bug
             notificationHandler.onPaused()
+            downloadHandler.onPaused()
             return
         }
 

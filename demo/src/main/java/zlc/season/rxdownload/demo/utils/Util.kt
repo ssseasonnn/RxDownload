@@ -13,6 +13,11 @@ import android.support.v4.view.ViewCompat
 import android.view.View
 import android.widget.ImageView
 import com.bumptech.glide.Glide
+import zlc.season.rxdownload4.manager.TaskManager
+import zlc.season.rxdownload4.manager.manager
+import zlc.season.rxdownload4.notification.SimpleNotificationCreator
+import zlc.season.rxdownload4.recorder.RoomRecorder
+import zlc.season.rxdownload4.task.Task
 import java.io.File
 
 fun Context.installApk(file: File) {
@@ -35,6 +40,14 @@ fun View.click(block: () -> Unit) {
     }
 }
 
+fun View.visible() {
+    visibility = View.VISIBLE
+}
+
+fun View.gone() {
+    visibility = View.GONE
+}
+
 fun ImageView.load(url: String) {
     Glide.with(this).load(url).into(this)
 }
@@ -45,4 +58,12 @@ fun View.background(drawable: Drawable) {
 
 fun Activity.start(clazz: Class<*>) {
     startActivity(Intent(this, clazz))
+}
+
+
+fun Task.createTaskManager(): TaskManager {
+    return manager(
+            notificationCreator = SimpleNotificationCreator(),
+            recorder = RoomRecorder()
+    )
 }

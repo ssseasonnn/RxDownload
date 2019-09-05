@@ -52,13 +52,13 @@ class DemoListActivity : AppCompatActivity() {
 
                     iv_icon.load(data.icon)
 
-                    btn_action.click {
+                    btn_pause.click {
                         data.action(containerView.context)
                     }
                 }
 
                 onAttach {
-                    data.subscribe(btn_action, containerView.context)
+                    data.subscribe(btn_pause, containerView.context)
                 }
 
                 onDetach {

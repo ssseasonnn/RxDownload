@@ -1,6 +1,5 @@
 package zlc.season.rxdownload4.manager
 
-import io.reactivex.Flowable
 import zlc.season.ironbranch.ensureMainThread
 import zlc.season.rxdownload4.DEFAULT_MAX_CONCURRENCY
 import zlc.season.rxdownload4.DEFAULT_RANGE_SIZE
@@ -30,7 +29,7 @@ fun String.manager(
         request: Request = RequestImpl(),
         watcher: Watcher = WatcherImpl(),
         notificationCreator: NotificationCreator = EmptyNotification(),
-        database: TaskDatabase
+        recorder: TaskRecorder = EmptyTaskRecorder()
 ): TaskManager {
     return Task(this).manager(
             header = header,
@@ -42,7 +41,7 @@ fun String.manager(
             request = request,
             watcher = watcher,
             notificationCreator = notificationCreator,
-            database = database
+            recorder = recorder
     )
 }
 
@@ -58,7 +57,7 @@ fun Task.manager(
         request: Request = RequestImpl(),
         watcher: Watcher = WatcherImpl(),
         notificationCreator: NotificationCreator = EmptyNotification(),
-        database: TaskDatabase
+        recorder: TaskRecorder = EmptyTaskRecorder()
 ): TaskManager {
     var taskManager = TaskManagerPool.get(this)
     if (taskManager == null) {
@@ -72,7 +71,7 @@ fun Task.manager(
                 request = request,
                 watcher = watcher,
                 notificationCreator = notificationCreator,
-                database = database
+                recorder = recorder
         )
         TaskManagerPool.add(this, taskManager)
     }
@@ -89,7 +88,7 @@ private fun Task.createManager(
         request: Request,
         watcher: Watcher,
         notificationCreator: NotificationCreator,
-        database: TaskDatabase
+        recorder: TaskRecorder
 ): TaskManager {
 
     val download = download(
@@ -105,7 +104,7 @@ private fun Task.createManager(
     return TaskManager(
             task = this,
             storage = storage,
-            taskDatabase = database,
+            taskRecorder = recorder,
             connectFlowable = download.publish(),
             notificationCreator = notificationCreator
     )
@@ -146,6 +145,6 @@ fun TaskManager.file(): File {
     return getFile()
 }
 
-fun TaskManager.getAll(): Flowable<List<Task>> {
-    return taskDatabase.getAll()
+fun TaskManager.taskRecorder(): TaskRecorder {
+    return getTaskRecorder()
 }

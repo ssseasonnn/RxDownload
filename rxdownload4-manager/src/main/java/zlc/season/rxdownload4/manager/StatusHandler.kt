@@ -5,7 +5,7 @@ import zlc.season.rxdownload4.task.Task
 
 class StatusHandler(
         private val task: Task,
-        private val taskDatabase: TaskDatabase? = null,
+        private val taskRecorder: TaskRecorder? = null,
         var callback: (Status) -> Unit = {}
 ) {
     private val normal = Normal()
@@ -31,11 +31,8 @@ class StatusHandler(
     fun onStarted() {
         currentStatus = started.updateProgress()
 
-        taskDatabase?.let {
-            if (!it.contain(task)) {
-                it.insert(task)
-            }
-        }
+        //try to insert
+        taskRecorder?.insert(task)
 
         handleCallback()
     }
@@ -83,6 +80,6 @@ class StatusHandler(
     private fun handleCallback() {
         callback(currentStatus)
 
-        taskDatabase?.update(task, currentStatus)
+        taskRecorder?.update(task, currentStatus)
     }
 }

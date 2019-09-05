@@ -3,7 +3,7 @@ package zlc.season.rxdownload4.task
 import zlc.season.rxdownload4.DEFAULT_SAVE_PATH
 import zlc.season.rxdownload4.utils.getFileNameFromUrl
 
-open class Task(
+open class Task @JvmOverloads constructor(
         val url: String,
         taskName: String = getFileNameFromUrl(url),
         saveName: String = "",

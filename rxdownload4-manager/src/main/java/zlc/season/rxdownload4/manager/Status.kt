@@ -18,7 +18,6 @@ class Completed : Status()
 
 class Failed : Status() {
     var throwable: Throwable = RuntimeException("UNKNOWN ERROR")
-        internal set
 }
 
 class Deleted : Status()

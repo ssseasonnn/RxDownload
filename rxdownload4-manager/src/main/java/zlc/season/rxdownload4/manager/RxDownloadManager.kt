@@ -29,7 +29,7 @@ fun String.manager(
         request: Request = RequestImpl(),
         watcher: Watcher = WatcherImpl(),
         notificationCreator: NotificationCreator = EmptyNotification(),
-        recorder: TaskRecorder = EmptyTaskRecorder()
+        recorder: TaskRecorder = EmptyRecorder()
 ): TaskManager {
     return Task(this).manager(
             header = header,
@@ -57,7 +57,7 @@ fun Task.manager(
         request: Request = RequestImpl(),
         watcher: Watcher = WatcherImpl(),
         notificationCreator: NotificationCreator = EmptyNotification(),
-        recorder: TaskRecorder = EmptyTaskRecorder()
+        recorder: TaskRecorder = EmptyRecorder()
 ): TaskManager {
     var taskManager = TaskManagerPool.get(this)
     if (taskManager == null) {
@@ -112,11 +112,15 @@ private fun Task.createManager(
 
 
 fun TaskManager.subscribe(function: (Status) -> Unit) {
-    setCallback(function)
+    ensureMainThread {
+        setCallback(function)
+    }
 }
 
 fun TaskManager.dispose() {
-    setCallback()
+    ensureMainThread {
+        setCallback()
+    }
 }
 
 fun TaskManager.currentStatus(): Status {
@@ -143,8 +147,4 @@ fun TaskManager.delete() {
 
 fun TaskManager.file(): File {
     return getFile()
-}
-
-fun TaskManager.taskRecorder(): TaskRecorder {
-    return getTaskRecorder()
 }

@@ -15,9 +15,9 @@ import java.util.concurrent.TimeUnit.MILLISECONDS
 class TaskManager(
         private val task: Task,
         private val storage: Storage,
-        private val taskRecorder: TaskRecorder,
         private val connectFlowable: ConnectableFlowable<Progress>,
-        private val notificationCreator: NotificationCreator
+        private val notificationCreator: NotificationCreator,
+        taskRecorder: TaskRecorder
 ) {
 
     init {
@@ -38,10 +38,8 @@ class TaskManager(
 
 
     internal fun setCallback(callback: (Status) -> Unit = {}) {
-        downloadHandler.callback = callback
+        downloadHandler.setCallback(callback)
     }
-
-    internal fun getTaskRecorder() = taskRecorder
 
     internal fun currentStatus() = downloadHandler.currentStatus
 
@@ -103,8 +101,6 @@ class TaskManager(
 
         //special handle
         downloadHandler.onDeleted()
-
-        taskRecorder.delete(task)
     }
 
     private fun isStarted(): Boolean {

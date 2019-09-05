@@ -5,28 +5,19 @@ import zlc.season.rxdownload4.utils.ratio
 
 
 class Progress(
-        downloadSize: Long = 0,
+        var downloadSize: Long = 0,
         totalSize: Long = 0,
-        isChunked: Boolean = false
+        /**
+         * 用于标识一个链接是否是分块下载, 如果该值为true, 那么totalSize为-1
+         */
+        var isChunked: Boolean = false
 ) {
 
-    var downloadSize: Long = downloadSize
-        internal set
-
     var totalSize: Long = totalSize
-        internal set
         get() {
-            if (isChunked) {
-                throw IllegalStateException("Chunked can not get totalSize!")
-            }
+            check(!isChunked) { "Chunked can not get totalSize!" }
             return field
         }
-
-    /**
-     * 用于标识一个链接是否是分块下载, 如果该值为true, 那么totalSize为-1
-     */
-    var isChunked: Boolean = isChunked
-        internal set
 
     /**
      * Return total size str. eg: 10M

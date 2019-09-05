@@ -1,4 +1,4 @@
-package zlc.season.rxdownload4.database
+package zlc.season.rxdownload4.recorder
 
 import android.arch.persistence.room.TypeConverter
 import zlc.season.rxdownload4.manager.*

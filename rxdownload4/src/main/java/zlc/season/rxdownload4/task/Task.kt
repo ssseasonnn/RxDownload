@@ -3,20 +3,12 @@ package zlc.season.rxdownload4.task
 import zlc.season.rxdownload4.DEFAULT_SAVE_PATH
 import zlc.season.rxdownload4.utils.getFileNameFromUrl
 
-open class Task @JvmOverloads constructor(
-        val url: String,
-        taskName: String = getFileNameFromUrl(url),
-        saveName: String = "",
-        savePath: String = DEFAULT_SAVE_PATH
+open class Task(
+        var url: String,
+        var taskName: String = getFileNameFromUrl(url),
+        var saveName: String = "",
+        var savePath: String = DEFAULT_SAVE_PATH
 ) {
-    var taskName: String = taskName
-        internal set
-
-    var saveName: String = saveName
-        internal set
-
-    var savePath: String = savePath
-        internal set
 
     /**
      * Each task with unique tag.

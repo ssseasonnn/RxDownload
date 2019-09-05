@@ -18,6 +18,11 @@
         tools:ignore="GoogleAppIndexingWarning"
         tools:targetApi="n">
 
+        <activity
+            android:name=".manager.DemoManagerActivity"
+            android:theme="@style/AppTheme.NoActionBar">
+
+        </activity>
 
         <activity android:name=".MainActivity">
             <intent-filter>
@@ -31,7 +36,9 @@
             android:name=".basic.DemoActivity"
             android:theme="@style/AppTheme.NoActionBar" />
 
-        <activity android:name=".list.DemoListActivity" />
+        <activity
+            android:name=".list.DemoListActivity"
+            android:theme="@style/AppTheme.NoActionBar" />
 
         <provider
             android:name=".utils.ApkFileProvider"

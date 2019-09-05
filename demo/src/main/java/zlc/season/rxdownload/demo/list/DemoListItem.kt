@@ -6,6 +6,7 @@ import zlc.season.rxdownload.demo.utils.ProgressButton
 import zlc.season.rxdownload.demo.utils.installApk
 import zlc.season.rxdownload4.manager.*
 import zlc.season.rxdownload4.notification.SimpleNotificationCreator
+import zlc.season.rxdownload4.recorder.RoomRecorder
 import zlc.season.yasha.YashaItem
 
 class DemoListItem(
@@ -29,7 +30,8 @@ class DemoListItem(
     }
 
     fun subscribe(btn_action: ProgressButton, context: Context) {
-        val taskManager = url.manager(notificationCreator = SimpleNotificationCreator())
+        val taskManager = url.manager(notificationCreator = SimpleNotificationCreator(),
+                recorder = RoomRecorder())
 
         btn_action.text = stateStr(context)
         btn_action.setStatus(taskManager.currentStatus())

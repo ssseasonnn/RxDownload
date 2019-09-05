@@ -1,4 +1,4 @@
-package zlc.season.rxdownload4.database
+package zlc.season.rxdownload4.recorder
 
 import android.arch.persistence.room.Embedded
 import android.arch.persistence.room.Entity
@@ -14,15 +14,13 @@ import zlc.season.rxdownload4.task.Task
 )
 class TaskEntity(
         @PrimaryKey
-        val id: Int,
+        var id: Int,
 
         @Embedded
-        val task: Task,
+        var task: Task,
 
-        val status: Status,
+        var status: Status,
 
         @Embedded
-        val progress: Progress,
-
-        val time: Long = System.currentTimeMillis()
+        var progress: Progress
 )

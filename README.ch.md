@@ -31,6 +31,7 @@
     implementation "com.github.ssseasonnn.RxDownload:rxdownload4:1.0.0"
     implementation "com.github.ssseasonnn.RxDownload:rxdownload4-manager:1.0.0"
     implementation "com.github.ssseasonnn.RxDownload:rxdownload4-notification:1.0.0"
+    implementation "com.github.ssseasonnn.RxDownload:rxdownload4-recorder:1.0.0"
     
     or: 
     //添加RxDownload4的所有依赖
@@ -85,7 +86,8 @@
 - 订阅状态更新通知:
 
     ```kotlin
-    taskManager.subscribe { status ->
+    //keep this tag for dispose
+    val tag = taskManager.subscribe { status ->
         // 获取下载状态
         when (status) {
             is Normal -> {}
@@ -105,7 +107,8 @@
 - 取消状态更新订阅:
 
     ```kotlin
-    taskManager.dispose()
+    //dispose tag
+    taskManager.dispose(tag)
     ```
     
 - 开始下载:
@@ -132,6 +135,53 @@
     val file = taskManager.file()
     // 使用文件...  
     ```
+
+## Task Recorder
+
+- 获取所有下载记录列表:
+
+    ```kotlin
+     RxDownloadRecorder.getAllTask()
+           .observeOn(AndroidSchedulers.mainThread())
+           .subscribeBy { list ->
+               //list of TaskEntity                        
+           }
+    ```
+    
+- 查询某个状态的所有下载记录:
+
+    ```kotlin
+     // 查询所有下载完成的记录
+     RxDownloadRecorder.getAllTaskWithStatus(Completed())
+           .observeOn(AndroidSchedulers.mainThread())
+           .subscribeBy { list ->
+               //list of TaskEntity                        
+           } 
+    ``` 
+    
+- 分页查询下载记录列表:
+
+    ```kotlin
+     RxDownloadRecorder.getTaskList(page, pageSize)
+           .observeOn(AndroidSchedulers.mainThread())
+           .subscribeBy { list ->
+               //list of TaskEntity                        
+           }
+    ```
+    
+- 分页查询某个状态下的下载记录列表:
+
+    ```kotlin
+     // 获取下载完成的分页列表
+     RxDownloadRecorder.getTaskListWithStatus(Completed(), page, pageSize)
+           .observeOn(AndroidSchedulers.mainThread())
+           .subscribeBy { list ->
+               //list of TaskEntity                        
+           }
+    ```
+
+    > **TaskEntity** 拥有一个**abnormalExit**字段, 该字段用来表示该Task是否是被APP强制杀进程导致的暂停
+
 
 ## License
 

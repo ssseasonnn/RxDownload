@@ -31,6 +31,7 @@ A multi-threaded download tool written with RxJava and Kotlin
     implementation "com.github.ssseasonnn.RxDownload:rxdownload4:1.0.0"
     implementation "com.github.ssseasonnn.RxDownload:rxdownload4-manager:1.0.0"
     implementation "com.github.ssseasonnn.RxDownload:rxdownload4-notification:1.0.0"
+    implementation "com.github.ssseasonnn.RxDownload:rxdownload4-recorder:1.0.0"
     
     or: 
     //Add all dependencies of RxDownload4
@@ -85,7 +86,8 @@ A multi-threaded download tool written with RxJava and Kotlin
 - Subscribe to status update:
 
     ```kotlin
-    taskManager.subscribe { status ->
+   //keep this tag for dispose
+   val tag = taskManager.subscribe { status ->
         // Receive download status
         when (status) {
             is Normal -> {}
@@ -106,7 +108,8 @@ A multi-threaded download tool written with RxJava and Kotlin
 - Cancel status update subscription:
 
     ```kotlin
-    taskManager.dispose()
+    //dispose tag
+    taskManager.dispose(tag)
     ```
     
 - Start download:
@@ -133,6 +136,55 @@ A multi-threaded download tool written with RxJava and Kotlin
     val file = taskManager.file() 
     // use file...   
     ```
+    
+## Task Recorder
+
+- Get a list of all downloads:
+
+    ```kotlin
+     RxDownloadRecorder.getAllTask()
+           .observeOn(AndroidSchedulers.mainThread())
+           .subscribeBy { list ->
+               //list of TaskEntity                        
+           }
+    ```
+    
+- Query all download records for a state:
+
+    ```kotlin
+     // Query all Completed records
+     RxDownloadRecorder.getAllTaskWithStatus(Completed())
+           .observeOn(AndroidSchedulers.mainThread())
+           .subscribeBy { list ->
+               //list of TaskEntity                        
+           } 
+    ``` 
+    
+- Paging query download record list:
+
+    ```kotlin
+     RxDownloadRecorder.getTaskList(page, pageSize)
+           .observeOn(AndroidSchedulers.mainThread())
+           .subscribeBy { list ->
+               //list of TaskEntity                        
+           }
+    ```
+    
+- Paging query list of download records in a certain state:
+
+    ```kotlin
+     // Get the list of pages that have been Completed
+     RxDownloadRecorder.getTaskListWithStatus(Completed(), page, pageSize)
+           .observeOn(AndroidSchedulers.mainThread())
+           .subscribeBy { list ->
+               //list of TaskEntity                        
+           }
+    ```
+
+    > **TaskEntity** has a **abnormalExit** field, 
+    which is used to indicate whether the Task has paused by the APP forced close.
+
+
 
 ## License
 

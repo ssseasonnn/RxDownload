@@ -2,8 +2,8 @@ package zlc.season.rxdownload.demo.manager
 
 import android.annotation.SuppressLint
 import io.reactivex.rxkotlin.subscribeBy
+import zlc.season.rxdownload4.recorder.RxDownloadRecorder
 import zlc.season.rxdownload4.recorder.TaskEntity
-import zlc.season.rxdownload4.recorder.getTaskPage
 import zlc.season.yasha.YashaDataSource
 import zlc.season.yasha.YashaItem
 
@@ -13,7 +13,7 @@ class DemoManagerDataSource : YashaDataSource() {
 
     @SuppressLint("CheckResult")
     override fun loadInitial(loadCallback: LoadCallback<YashaItem>) {
-        getTaskPage(page, pageSize)
+        RxDownloadRecorder.getTaskList(page, pageSize)
                 .map { mapResult(it) }
                 .subscribeBy {
                     loadCallback.setResult(it)
@@ -25,7 +25,7 @@ class DemoManagerDataSource : YashaDataSource() {
     override fun loadAfter(loadCallback: LoadCallback<YashaItem>) {
         page++
 
-        getTaskPage(page, pageSize)
+        RxDownloadRecorder.getTaskList(page, pageSize)
                 .map { mapResult(it) }
                 .subscribeBy {
                     loadCallback.setResult(it)
@@ -34,7 +34,7 @@ class DemoManagerDataSource : YashaDataSource() {
 
     private fun mapResult(list: List<TaskEntity>): MutableList<DemoManagerItem> {
         val result = mutableListOf<DemoManagerItem>()
-        list.mapTo(result) { DemoManagerItem(it.task) }
+        list.mapTo(result) { DemoManagerItem(it.task, it.status) }
         return result
     }
 }

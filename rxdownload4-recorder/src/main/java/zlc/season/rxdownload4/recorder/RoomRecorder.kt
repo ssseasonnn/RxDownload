@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import zlc.season.ironbranch.ioThread
 import zlc.season.rxdownload4.manager.Status
 import zlc.season.rxdownload4.manager.TaskRecorder
+import zlc.season.rxdownload4.recorder.RxDownloadRecorder.taskDataBase
 import zlc.season.rxdownload4.task.Task
 
 @SuppressLint("CheckResult")

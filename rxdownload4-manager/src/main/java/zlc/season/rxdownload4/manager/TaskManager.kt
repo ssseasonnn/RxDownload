@@ -37,8 +37,12 @@ class TaskManager(
     private var notificationDisposable: Disposable? = null
 
 
-    internal fun setCallback(callback: (Status) -> Unit = {}) {
-        downloadHandler.setCallback(callback)
+    internal fun addCallback(tag: Any, callback: (Status) -> Unit) {
+        downloadHandler.addCallback(tag, callback)
+    }
+
+    internal fun removeCallback(tag: Any) {
+        downloadHandler.removeCallback(tag)
     }
 
     internal fun currentStatus() = downloadHandler.currentStatus

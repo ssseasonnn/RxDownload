@@ -1,10 +1,10 @@
 package zlc.season.rxdownload4.manager
 
+import zlc.season.ironbranch.assertMainThreadWithResult
 import zlc.season.ironbranch.ensureMainThread
 import zlc.season.rxdownload4.DEFAULT_MAX_CONCURRENCY
 import zlc.season.rxdownload4.DEFAULT_RANGE_SIZE
 import zlc.season.rxdownload4.RANGE_CHECK_HEADER
-import zlc.season.rxdownload4.download
 import zlc.season.rxdownload4.downloader.DefaultDispatcher
 import zlc.season.rxdownload4.downloader.Dispatcher
 import zlc.season.rxdownload4.request.Request
@@ -46,7 +46,6 @@ fun String.manager(
 }
 
 @JvmOverloads
-@Synchronized
 fun Task.manager(
         header: Map<String, String> = RANGE_CHECK_HEADER,
         maxConCurrency: Int = DEFAULT_MAX_CONCURRENCY,
@@ -59,39 +58,8 @@ fun Task.manager(
         notificationCreator: NotificationCreator = EmptyNotification(),
         recorder: TaskRecorder = EmptyRecorder()
 ): TaskManager {
-    var taskManager = TaskManagerPool.get(this)
-    if (taskManager == null) {
-        taskManager = createManager(
-                header = header,
-                maxConCurrency = maxConCurrency,
-                rangeSize = rangeSize,
-                dispatcher = dispatcher,
-                validator = validator,
-                storage = storage,
-                request = request,
-                watcher = watcher,
-                notificationCreator = notificationCreator,
-                recorder = recorder
-        )
-        TaskManagerPool.add(this, taskManager)
-    }
-    return taskManager
-}
-
-private fun Task.createManager(
-        header: Map<String, String>,
-        maxConCurrency: Int,
-        rangeSize: Long,
-        dispatcher: Dispatcher,
-        validator: Validator,
-        storage: Storage,
-        request: Request,
-        watcher: Watcher,
-        notificationCreator: NotificationCreator,
-        recorder: TaskRecorder
-): TaskManager {
-
-    val download = download(
+    return TaskManagerPool.obtain(
+            task = this,
             header = header,
             maxConCurrency = maxConCurrency,
             rangeSize = rangeSize,
@@ -99,27 +67,23 @@ private fun Task.createManager(
             validator = validator,
             storage = storage,
             request = request,
-            watcher = watcher
-    )
-    return TaskManager(
-            task = this,
-            storage = storage,
-            taskRecorder = recorder,
-            connectFlowable = download.publish(),
-            notificationCreator = notificationCreator
+            watcher = watcher,
+            notificationCreator = notificationCreator,
+            recorder = recorder
     )
 }
 
-
-fun TaskManager.subscribe(function: (Status) -> Unit) {
-    ensureMainThread {
-        setCallback(function)
+fun TaskManager.subscribe(function: (Status) -> Unit): Any {
+    return assertMainThreadWithResult {
+        val tag = Any()
+        addCallback(tag, function)
+        return@assertMainThreadWithResult tag
     }
 }
 
-fun TaskManager.dispose() {
+fun TaskManager.dispose(tag: Any) {
     ensureMainThread {
-        setCallback()
+        removeCallback(tag)
     }
 }
 

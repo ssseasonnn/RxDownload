@@ -34,4 +34,9 @@
     <string name="retry_text">Retry</string>
 
 
+    <string name="started_text">Downloading</string>
+    <string name="paused_text">Download suspended</string>
+    <string name="failed_text">Download failed</string>
+    <string name="completed_text">Download complete</string>
+
 </resources>

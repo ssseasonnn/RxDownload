@@ -6,7 +6,7 @@ import zlc.season.rxdownload4.task.Task
 class StatusHandler(
         private val task: Task,
         private val taskRecorder: TaskRecorder? = null,
-        private var callback: (Status) -> Unit = {}
+        callback: (Status) -> Unit = {}
 ) {
     private val normal = Normal()
     private val started = Started()
@@ -18,16 +18,30 @@ class StatusHandler(
 
     var currentStatus: Status = normal
 
+    private val callbackMap = mutableMapOf<Any, (Status) -> Unit>()
+
     private var currentProgress: Progress = Progress()
 
-    fun setCallback(callback: (Status) -> Unit) {
-        this.callback = callback
+    init {
+        callbackMap[Any()] = callback
+    }
+
+    fun addCallback(tag: Any, callback: (Status) -> Unit) {
+        callbackMap[tag] = callback
+
+        //emit last status when not normal
+//        if (currentStatus != normal) {
         callback(currentStatus)
+//        }
+    }
+
+    fun removeCallback(tag: Any) {
+        callbackMap.remove(tag)
     }
 
     fun onStarted() {
         currentStatus = started.updateProgress()
-        callback(currentStatus)
+        dispatchCallback()
 
         //try to insert
         taskRecorder?.insert(task)
@@ -37,14 +51,14 @@ class StatusHandler(
         //set current progress
         currentProgress = next
         currentStatus = downloading.updateProgress()
-        callback(currentStatus)
+        dispatchCallback()
 
         taskRecorder?.update(task, currentStatus)
     }
 
     fun onCompleted() {
         currentStatus = completed.updateProgress()
-        callback(currentStatus)
+        dispatchCallback()
 
         taskRecorder?.update(task, currentStatus)
     }
@@ -54,14 +68,14 @@ class StatusHandler(
             progress = currentProgress
             throwable = t
         }
-        callback(currentStatus)
+        dispatchCallback()
 
         taskRecorder?.update(task, currentStatus)
     }
 
     fun onPaused() {
         currentStatus = paused.updateProgress()
-        callback(currentStatus)
+        dispatchCallback()
 
         taskRecorder?.update(task, currentStatus)
     }
@@ -70,9 +84,16 @@ class StatusHandler(
         //reset current progress
         currentProgress = Progress()
         currentStatus = deleted.updateProgress()
-        callback(currentStatus)
+        dispatchCallback()
 
+        //delete
         taskRecorder?.delete(task)
+    }
+
+    private fun dispatchCallback() {
+        callbackMap.values.forEach {
+            it(currentStatus)
+        }
     }
 
     private fun Status.updateProgress(): Status {

@@ -21,19 +21,26 @@
 
     <TextView
         android:id="@+id/tv_name"
-        android:layout_width="wrap_content"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
+        android:ellipsize="end"
+        android:maxLines="1"
         android:textColor="@android:color/black"
-        app:layout_constraintStart_toStartOf="@+id/progress_bar"
+        app:layout_constraintEnd_toEndOf="@+id/barrier"
+        app:layout_constraintHorizontal_bias="0.0"
+        app:layout_constraintStart_toEndOf="@+id/iv_icon"
         app:layout_constraintTop_toTopOf="@+id/iv_icon"
-        tools:text="TextView" />
+        tools:text="TextViewTextViewTextViewTextViewTextViewTextView" />
 
     <TextView
         android:id="@+id/tv_status"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
         app:layout_constraintBottom_toBottomOf="@+id/iv_icon"
-        app:layout_constraintStart_toStartOf="@+id/progress_bar"
+        app:layout_constraintStart_toEndOf="@+id/iv_icon"
         tools:text="TextView" />
 
     <ImageView
@@ -60,6 +67,19 @@
         app:layout_constraintTop_toTopOf="@+id/iv_icon"
         tools:text="Button" />
 
+
+    <ImageView
+        android:id="@+id/btn_more"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="16dp"
+        android:src="@drawable/ic_more"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="@+id/iv_icon"
+        app:layout_constraintEnd_toStartOf="@+id/btn_cancel"
+        app:layout_constraintTop_toTopOf="@+id/iv_icon"
+        tools:text="Button" />
+
     <ImageView
         android:id="@+id/btn_cancel"
         android:layout_width="wrap_content"
@@ -70,6 +90,7 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="@+id/iv_icon"
         tools:text="Button" />
+
 
     <ProgressBar
         android:id="@+id/progress_bar"
@@ -89,8 +110,9 @@
         android:id="@+id/tv_percent"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_marginEnd="16dp"
         app:layout_constraintBottom_toBottomOf="@+id/tv_status"
-        app:layout_constraintEnd_toEndOf="@+id/progress_bar"
+        app:layout_constraintEnd_toEndOf="@+id/barrier"
         app:layout_constraintTop_toTopOf="@+id/tv_status"
         tools:text="TextView" />
 
@@ -99,5 +121,5 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         app:barrierDirection="left"
-        app:constraint_referenced_ids="btn_start,btn_pause" />
+        app:constraint_referenced_ids="btn_start,btn_pause,btn_more" />
 </android.support.constraint.ConstraintLayout>

@@ -6,6 +6,6 @@
 
     <string name="notification_started_text">下载中…</string>
     <string name="notification_completed_text">下载完成</string>
-    <string name="notification_failed_text">下载错误</string>
+    <string name="notification_failed_text">下载失败</string>
     <string name="notification_paused_text">已暂停下载</string>
 </resources>

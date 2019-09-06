@@ -16,6 +16,8 @@ class DemoListItem(
         val size: String
 ) : YashaItem {
 
+    private var tag: Any? = null
+
     fun action(context: Context) {
         val taskManager = url.manager()
         when (taskManager.currentStatus()) {
@@ -33,7 +35,7 @@ class DemoListItem(
         val taskManager = url.manager(notificationCreator = SimpleNotificationCreator(),
                 recorder = RoomRecorder())
 
-        taskManager.subscribe {
+        tag = taskManager.subscribe {
             btn_action.setStatus(it)
             btn_action.text = stateStr(context, it)
         }
@@ -48,11 +50,14 @@ class DemoListItem(
             is Completed -> context.getString(R.string.install_text)
             is Failed -> context.getString(R.string.retry_text)
             is Deleted -> context.getString(R.string.start_text)
+            else -> ""
         }
     }
 
     fun dispose() {
-        url.manager().dispose()
+        tag?.let {
+            url.manager().dispose(it)
+        }
     }
 
     override fun cleanUp() {

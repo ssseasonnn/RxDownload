@@ -9,7 +9,7 @@ import zlc.season.rxdownload4.manager.Status
 import zlc.season.rxdownload4.task.Task
 
 @Entity(
-        tableName = "task_record",
+        tableName = TAB_NAME,
         indices = [Index("id", unique = true)]
 )
 class TaskEntity(
@@ -22,5 +22,8 @@ class TaskEntity(
         var status: Status,
 
         @Embedded
-        var progress: Progress
+        var progress: Progress,
+
+        //异常结束
+        var abnormalExit: Boolean = false
 )

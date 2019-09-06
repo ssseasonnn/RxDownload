@@ -7,27 +7,17 @@ import android.widget.TextView
 import zlc.season.rxdownload.demo.R
 import zlc.season.rxdownload.demo.utils.createTaskManager
 import zlc.season.rxdownload.demo.utils.gone
-import zlc.season.rxdownload.demo.utils.installApk
 import zlc.season.rxdownload.demo.utils.visible
 import zlc.season.rxdownload4.manager.*
 import zlc.season.rxdownload4.task.Task
 import zlc.season.yasha.YashaItem
 
 class DemoManagerItem(
-        val task: Task
+        val task: Task,
+        val status: Status
 ) : YashaItem {
-    fun action(context: Context) {
-        val taskManager = task.createTaskManager()
-        when (taskManager.currentStatus()) {
-            is Normal -> taskManager.start()
-            is Started -> taskManager.stop()
-            is Downloading -> taskManager.stop()
-            is Failed -> taskManager.start()
-            is Paused -> taskManager.start()
-            is Completed -> context.installApk(taskManager.file())
-            is Deleted -> taskManager.start()
-        }
-    }
+
+    private var tag: Any? = null
 
     fun subscribe(
             progressBar: ProgressBar,
@@ -35,40 +25,68 @@ class DemoManagerItem(
             percentTv: TextView,
             startIv: ImageView,
             pauseIv: ImageView,
+            cancelIv: ImageView,
+            moreIv: ImageView,
             context: Context
     ) {
         val taskManager = task.createTaskManager()
 
-        taskManager.subscribe {
-            progressBar.progress = it.progress.downloadSize.toInt()
-            progressBar.max = it.progress.totalSize.toInt()
-            progressBar.isIndeterminate = it.progress.isChunked
+        tag = taskManager.subscribe {
+            renderStatus(it, progressBar, statusTv, percentTv, startIv, pauseIv, cancelIv, moreIv, context)
+        }
+    }
 
-            statusTv.text = stateStr(context, it)
-            percentTv.text = it.progress.percentStr()
+    fun renderStatus(
+            status: Status,
+            progressBar: ProgressBar,
+            statusTv: TextView,
+            percentTv: TextView,
+            startIv: ImageView,
+            pauseIv: ImageView,
+            cancelIv: ImageView,
+            moreIv: ImageView,
+            context: Context
+    ) {
+        progressBar.progress = status.progress.percent().toInt()
+        progressBar.max = 100
+        progressBar.isIndeterminate = status.progress.isChunked
 
-            when (it) {
-                is Started,
-                is Downloading -> {
-                    startIv.gone()
-                    pauseIv.visible()
-                }
-                is Normal,
-                is Paused,
-                is Failed -> {
-                    startIv.visible()
-                    pauseIv.gone()
-                }
-                is Completed -> {
-                    startIv.gone()
-                    pauseIv.gone()
-                }
+        statusTv.text = stateStr(context, status)
+        percentTv.text = status.progress.percentStr()
+
+        when (status) {
+            is Started,
+            is Downloading -> {
+                startIv.gone()
+                pauseIv.visible()
+                cancelIv.visible()
+                moreIv.gone()
+                progressBar.visible()
+            }
+            is Normal,
+            is Paused,
+            is Failed -> {
+                startIv.visible()
+                pauseIv.gone()
+                cancelIv.visible()
+                moreIv.gone()
+                progressBar.visible()
+            }
+            is Completed -> {
+                percentTv.gone()
+                startIv.gone()
+                pauseIv.gone()
+                cancelIv.gone()
+                moreIv.visible()
+                progressBar.gone()
             }
         }
     }
 
     fun dispose() {
-        task.createTaskManager().dispose()
+        tag?.let {
+            task.createTaskManager().dispose(it)
+        }
     }
 
     fun cancel() {
@@ -83,19 +101,24 @@ class DemoManagerItem(
         task.createTaskManager().stop()
     }
 
+    fun delete() {
+        task.createTaskManager().delete()
+    }
+
     override fun cleanUp() {
         dispose()
     }
 
     private fun stateStr(context: Context, status: Status): String {
         return when (status) {
-            is Normal -> context.getString(R.string.start_text)
-            is Started -> context.getString(R.string.pause_text)
-            is Downloading -> context.getString(R.string.pause_text)
-            is Paused -> context.getString(R.string.continue_text)
-            is Completed -> context.getString(R.string.install_text)
-            is Failed -> context.getString(R.string.retry_text)
-            is Deleted -> context.getString(R.string.start_text)
+            is Normal -> ""
+            is Started -> context.getString(R.string.started_text)
+            is Downloading -> context.getString(R.string.started_text)
+            is Paused -> context.getString(R.string.paused_text)
+            is Completed -> context.getString(R.string.completed_text)
+            is Failed -> context.getString(R.string.failed_text)
+            is Deleted -> ""
+            else -> ""
         }
     }
 }

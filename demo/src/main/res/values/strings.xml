@@ -39,4 +39,6 @@
     <string name="failed_text">Download failed</string>
     <string name="completed_text">Download complete</string>
 
+    <string name="title_manager">Download Manager</string>
+
 </resources>

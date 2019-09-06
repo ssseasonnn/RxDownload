@@ -30,9 +30,9 @@ class StatusHandler(
         callbackMap[tag] = callback
 
         //emit last status when not normal
-//        if (currentStatus != normal) {
-        callback(currentStatus)
-//        }
+        if (currentStatus != normal) {
+            callback(currentStatus)
+        }
     }
 
     fun removeCallback(tag: Any) {

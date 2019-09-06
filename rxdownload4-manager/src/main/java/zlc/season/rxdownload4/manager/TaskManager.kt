@@ -94,6 +94,9 @@ class TaskManager(
         notificationDisposable.safeDispose()
         downloadDisposable.safeDispose()
         disposable.safeDispose()
+
+        //fix when app killed notification can't stop bug
+        notificationHandler.onPaused()
     }
 
     internal fun innerDelete() {

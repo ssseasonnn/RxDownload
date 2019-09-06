@@ -59,7 +59,7 @@ class NotificationActionService : IntentService("NotificationActionService") {
             val url = it.getStringExtra(INTENT_KEY) ?: ""
             check(url.isNotEmpty()) { "Invalid url!" }
 
-            val taskManager = url.manager()
+            val taskManager = url.manager(notificationCreator = SimpleNotificationCreator())
 
             when (it.action) {
                 ACTION_START -> {

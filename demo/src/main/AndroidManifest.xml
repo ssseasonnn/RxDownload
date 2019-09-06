@@ -15,14 +15,9 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme"
         android:usesCleartextTraffic="true"
-        tools:ignore="GoogleAppIndexingWarning"
+        tools:ignore="AllowBackup,GoogleAppIndexingWarning,MissingApplicationIcon"
         tools:targetApi="n">
 
-        <activity
-            android:name=".manager.DemoManagerActivity"
-            android:theme="@style/AppTheme.NoActionBar">
-
-        </activity>
 
         <activity android:name=".MainActivity">
             <intent-filter>
@@ -39,6 +34,14 @@
         <activity
             android:name=".list.DemoListActivity"
             android:theme="@style/AppTheme.NoActionBar" />
+
+        <activity
+            android:name=".manager.DemoManagerActivity"
+            android:label="@string/title_manager"
+            android:theme="@style/AppTheme.NoActionBar">
+
+        </activity>
+
 
         <provider
             android:name=".utils.ApkFileProvider"

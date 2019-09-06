@@ -14,6 +14,9 @@ class DemoManagerActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_demo_manager)
+
+        setSupportActionBar(toolbar)
+
         renderList()
     }
 
@@ -25,16 +28,6 @@ class DemoManagerActivity : AppCompatActivity() {
 
                 onBind {
                     tv_name.text = data.task.taskName
-
-                    data.renderStatus(data.status,
-                            progress_bar,
-                            tv_status,
-                            tv_percent,
-                            btn_start,
-                            btn_pause,
-                            btn_cancel,
-                            btn_more,
-                            containerView.context)
 
                     btn_start.click {
                         data.start()
@@ -51,16 +44,7 @@ class DemoManagerActivity : AppCompatActivity() {
                 }
 
                 onAttach {
-                    data.subscribe(
-                            progress_bar,
-                            tv_status,
-                            tv_percent,
-                            btn_start,
-                            btn_pause,
-                            btn_cancel,
-                            btn_more,
-                            containerView.context
-                    )
+                    data.subscribe(this, containerView.context)
                 }
 
                 onDetach {

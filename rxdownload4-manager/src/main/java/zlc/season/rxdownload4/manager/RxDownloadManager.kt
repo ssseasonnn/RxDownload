@@ -88,7 +88,9 @@ fun TaskManager.dispose(tag: Any) {
 }
 
 fun TaskManager.currentStatus(): Status {
-    return currentStatus()
+    return assertMainThreadWithResult {
+        return@assertMainThreadWithResult currentStatus()
+    }
 }
 
 fun TaskManager.start() {

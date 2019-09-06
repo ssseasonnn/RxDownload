@@ -12,4 +12,6 @@
     <string name="completed_text">下载完成</string>
     <string name="failed_text">下载失败</string>
     <string name="paused_text">已暂停下载</string>
+
+    <string name="title_manager">下载管理</string>
 </resources>

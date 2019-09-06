@@ -31,7 +31,7 @@ fun createNotificationChannel(
         val notificationChannel = NotificationChannel(
                 channelId,
                 channelName,
-                NotificationManager.IMPORTANCE_DEFAULT
+                NotificationManager.IMPORTANCE_LOW
         )
         notificationChannel.description = channelDescription
 
@@ -58,6 +58,7 @@ fun createNotificationBuilder(
             .setContentText(content)
             .setSmallIcon(icon)
             .setContentIntent(intent)
+            .setVibrate(longArrayOf(0L))
             .setDefaults(Notification.DEFAULT_ALL)
 
     progress?.let {

@@ -35,6 +35,10 @@ class DemoListItem(
         val taskManager = url.manager(notificationCreator = SimpleNotificationCreator(),
                 recorder = RoomRecorder())
 
+        val currentStatus = taskManager.currentStatus()
+        btn_action.setStatus(currentStatus)
+        btn_action.text = stateStr(context, currentStatus)
+
         tag = taskManager.subscribe {
             btn_action.setStatus(it)
             btn_action.text = stateStr(context, it)

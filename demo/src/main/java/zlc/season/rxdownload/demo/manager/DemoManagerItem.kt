@@ -1,9 +1,7 @@
 package zlc.season.rxdownload.demo.manager
 
 import android.content.Context
-import android.widget.ImageView
-import android.widget.ProgressBar
-import android.widget.TextView
+import kotlinx.android.synthetic.main.demo_download_list_item.*
 import zlc.season.rxdownload.demo.R
 import zlc.season.rxdownload.demo.utils.createTaskManager
 import zlc.season.rxdownload.demo.utils.gone
@@ -11,74 +9,70 @@ import zlc.season.rxdownload.demo.utils.visible
 import zlc.season.rxdownload4.manager.*
 import zlc.season.rxdownload4.task.Task
 import zlc.season.yasha.YashaItem
+import zlc.season.yasha.YashaScope
 
 class DemoManagerItem(
         val task: Task,
-        val status: Status
+        val lastStatus: Status
 ) : YashaItem {
 
     private var tag: Any? = null
 
     fun subscribe(
-            progressBar: ProgressBar,
-            statusTv: TextView,
-            percentTv: TextView,
-            startIv: ImageView,
-            pauseIv: ImageView,
-            cancelIv: ImageView,
-            moreIv: ImageView,
+            scope: YashaScope<DemoManagerItem>,
             context: Context
     ) {
         val taskManager = task.createTaskManager()
 
+        renderStatus(scope, lastStatus, context)
+
         tag = taskManager.subscribe {
-            renderStatus(it, progressBar, statusTv, percentTv, startIv, pauseIv, cancelIv, moreIv, context)
+            renderStatus(scope, it, context)
         }
     }
 
-    fun renderStatus(
-            status: Status,
-            progressBar: ProgressBar,
-            statusTv: TextView,
-            percentTv: TextView,
-            startIv: ImageView,
-            pauseIv: ImageView,
-            cancelIv: ImageView,
-            moreIv: ImageView,
-            context: Context
-    ) {
-        progressBar.progress = status.progress.percent().toInt()
-        progressBar.max = 100
-        progressBar.isIndeterminate = status.progress.isChunked
+    private fun renderStatus(scope: YashaScope<DemoManagerItem>, it: Status, context: Context) {
+        scope.apply {
+            progress_bar.progress = it.progress.percent().toInt()
+            progress_bar.max = 100
+            progress_bar.isIndeterminate = it.progress.isChunked
 
-        statusTv.text = stateStr(context, status)
-        percentTv.text = status.progress.percentStr()
+            tv_status.text = stateStr(context, it)
+            tv_percent.text = it.progress.percentStr()
 
-        when (status) {
-            is Started,
-            is Downloading -> {
-                startIv.gone()
-                pauseIv.visible()
-                cancelIv.visible()
-                moreIv.gone()
-                progressBar.visible()
-            }
-            is Normal,
-            is Paused,
-            is Failed -> {
-                startIv.visible()
-                pauseIv.gone()
-                cancelIv.visible()
-                moreIv.gone()
-                progressBar.visible()
-            }
-            is Completed -> {
-                percentTv.gone()
-                startIv.gone()
-                pauseIv.gone()
-                cancelIv.gone()
-                moreIv.visible()
-                progressBar.gone()
+            when (it) {
+                is Normal -> {
+                    // do nothing
+                }
+                is Started,
+                is Downloading -> {
+                    btn_start.gone()
+                    btn_pause.visible()
+                    btn_cancel.visible()
+                    btn_more.gone()
+
+                    progress_bar.visible()
+                    tv_percent.visible()
+                }
+                is Paused,
+                is Failed -> {
+                    btn_start.visible()
+                    btn_pause.gone()
+                    btn_cancel.visible()
+                    btn_more.gone()
+
+                    progress_bar.visible()
+                    tv_percent.visible()
+                }
+                is Completed -> {
+                    btn_start.gone()
+                    btn_pause.gone()
+                    btn_cancel.gone()
+                    btn_more.visible()
+
+                    progress_bar.gone()
+                    tv_percent.gone()
+                }
             }
         }
     }

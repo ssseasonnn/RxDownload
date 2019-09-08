@@ -3,10 +3,9 @@ package zlc.season.rxdownload.demo.list
 import android.content.Context
 import zlc.season.rxdownload.demo.R
 import zlc.season.rxdownload.demo.utils.ProgressButton
+import zlc.season.rxdownload.demo.utils.createTaskManager
 import zlc.season.rxdownload.demo.utils.installApk
 import zlc.season.rxdownload4.manager.*
-import zlc.season.rxdownload4.notification.SimpleNotificationCreator
-import zlc.season.rxdownload4.recorder.RoomRecorder
 import zlc.season.yasha.YashaItem
 
 class DemoListItem(
@@ -19,7 +18,7 @@ class DemoListItem(
     private var tag: Any? = null
 
     fun action(context: Context) {
-        val taskManager = url.manager()
+        val taskManager = url.createTaskManager()
         when (taskManager.currentStatus()) {
             is Normal -> taskManager.start()
             is Started -> taskManager.stop()
@@ -32,8 +31,7 @@ class DemoListItem(
     }
 
     fun subscribe(btn_action: ProgressButton, context: Context) {
-        val taskManager = url.manager(notificationCreator = SimpleNotificationCreator(),
-                recorder = RoomRecorder())
+        val taskManager = url.createTaskManager()
 
         val currentStatus = taskManager.currentStatus()
         btn_action.setStatus(currentStatus)
@@ -60,7 +58,7 @@ class DemoListItem(
 
     fun dispose() {
         tag?.let {
-            url.manager().dispose(it)
+            url.createTaskManager().dispose(it)
         }
     }
 

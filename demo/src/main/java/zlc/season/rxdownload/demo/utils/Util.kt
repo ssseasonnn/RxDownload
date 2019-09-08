@@ -60,6 +60,10 @@ fun Activity.start(clazz: Class<*>) {
     startActivity(Intent(this, clazz))
 }
 
+fun String.createTaskManager(): TaskManager {
+    return manager(notificationCreator = SimpleNotificationCreator(),
+            recorder = RoomRecorder())
+}
 
 fun Task.createTaskManager(): TaskManager {
     return manager(

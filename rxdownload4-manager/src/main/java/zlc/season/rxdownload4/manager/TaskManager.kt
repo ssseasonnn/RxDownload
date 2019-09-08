@@ -110,7 +110,6 @@ class TaskManager(
 
         //special handle
         downloadHandler.onDeleted()
-        notificationHandler.onDeleted()
 
         cancelNotification(task)
     }

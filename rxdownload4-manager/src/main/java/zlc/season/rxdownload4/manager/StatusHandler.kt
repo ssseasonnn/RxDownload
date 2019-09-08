@@ -2,10 +2,12 @@ package zlc.season.rxdownload4.manager
 
 import zlc.season.rxdownload4.Progress
 import zlc.season.rxdownload4.task.Task
+import zlc.season.rxdownload4.utils.log
 
 class StatusHandler(
         private val task: Task,
         private val taskRecorder: TaskRecorder? = null,
+        private val logTag: String = "",
         callback: (Status) -> Unit = {}
 ) {
     private val normal = Normal()
@@ -45,6 +47,8 @@ class StatusHandler(
 
         //try to insert
         taskRecorder?.insert(task)
+
+        "$logTag [${task.taskName}] started".log()
     }
 
     fun onDownloading(next: Progress) {
@@ -54,6 +58,8 @@ class StatusHandler(
         dispatchCallback()
 
         taskRecorder?.update(task, currentStatus)
+
+        "$logTag [${task.taskName}] downloading".log()
     }
 
     fun onCompleted() {
@@ -61,6 +67,8 @@ class StatusHandler(
         dispatchCallback()
 
         taskRecorder?.update(task, currentStatus)
+
+        "$logTag [${task.taskName}] completed".log()
     }
 
     fun onFailed(t: Throwable) {
@@ -71,6 +79,8 @@ class StatusHandler(
         dispatchCallback()
 
         taskRecorder?.update(task, currentStatus)
+
+        "$logTag [${task.taskName}] failed".log()
     }
 
     fun onPaused() {
@@ -78,6 +88,8 @@ class StatusHandler(
         dispatchCallback()
 
         taskRecorder?.update(task, currentStatus)
+
+        "$logTag [${task.taskName}] paused".log()
     }
 
     fun onDeleted() {
@@ -88,6 +100,8 @@ class StatusHandler(
 
         //delete
         taskRecorder?.delete(task)
+
+        "$logTag [${task.taskName}] deleted".log()
     }
 
     private fun dispatchCallback() {

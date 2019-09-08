@@ -15,79 +15,69 @@ class SimpleNotificationCreator : NotificationCreator {
     private val channelName = "RxDownload"
     private val channelDesc = "RxDownload"
 
-    private var startedBuilder: Builder? = null
-    private var downloadingBuilder: Builder? = null
-    private var pausedBuilder: Builder? = null
-    private var completedBuilder: Builder? = null
-    private var failedBuilder: Builder? = null
+    private lateinit var task: Task
+    private val builderHelper by lazy { BuilderHelper(channelId, task) }
 
     override fun init(task: Task) {
+        this.task = task
+
         if (!isEnableNotification()) {
             "Notification not enable".log()
         }
 
         createNotificationChannel(channelId, channelName, channelDesc)
-
-        initBuilder(task)
     }
 
     override fun create(task: Task, status: Status): Notification? {
-        return when (status) {
-            is Normal -> null
-            is Started -> startedBuilder?.build()
-            is Downloading ->
-                downloadingBuilder?.setProgress(
+        return builderHelper.get(status).build()
+    }
+
+    class BuilderHelper(private val channelId: String, private val task: Task) {
+        private val builderMap = mutableMapOf<Status, Builder>()
+
+        private val startedContent by lazy { clarityPotion.getString(R.string.notification_started_text) }
+        private val pausedContent by lazy { clarityPotion.getString(R.string.notification_paused_text) }
+        private val failedContent by lazy { clarityPotion.getString(R.string.notification_failed_text) }
+        private val completedContent by lazy { clarityPotion.getString(R.string.notification_completed_text) }
+
+        private val startedActions by lazy { listOf(stopAction(task), cancelAction(task)) }
+        private val downloadingActions by lazy { listOf(stopAction(task), cancelAction(task)) }
+        private val pausedActions by lazy { listOf(startAction(task), cancelAction(task)) }
+        private val failedActions by lazy { listOf(startAction(task), cancelAction(task)) }
+
+        fun get(status: Status): Builder {
+            var builder = builderMap[status]
+
+            if (builder == null) {
+                val (content, actions, icon) = when (status) {
+                    is Normal -> Triple("", emptyList(), 0)
+                    is Started -> Triple(startedContent, startedActions, R.drawable.ic_download)
+                    is Downloading -> Triple("", downloadingActions, R.drawable.ic_download)
+                    is Paused -> Triple(pausedContent, pausedActions, R.drawable.ic_pause)
+                    is Failed -> Triple(failedContent, failedActions, R.drawable.ic_pause)
+                    is Completed -> Triple(completedContent, emptyList(), R.drawable.ic_completed)
+                    is Deleted -> Triple("", emptyList(), 0)
+                }
+
+                val newBuilder = createNotificationBuilder(
+                        channelId = channelId,
+                        title = task.taskName,
+                        content = content,
+                        icon = icon,
+                        actions = actions
+                )
+                builderMap[status] = newBuilder
+                builder = newBuilder
+            }
+
+            if (status is Downloading) {
+                builder.setProgress(
                         status.progress.totalSize.toInt(),
                         status.progress.downloadSize.toInt(),
                         status.progress.isChunked
-                )?.build()
-            is Paused -> pausedBuilder?.build()
-            is Completed -> completedBuilder?.build()
-            is Failed -> failedBuilder?.build()
-            is Deleted -> null
-            else -> null
+                )
+            }
+            return builder
         }
-    }
-
-    private fun initBuilder(task: Task) {
-        startedBuilder = createNotificationBuilder(
-                channelId = channelId,
-                title = task.taskName,
-                content = clarityPotion.getString(R.string.notification_started_text),
-                icon = R.drawable.ic_download,
-                actions = listOf(stopAction(task), cancelAction(task))
-        )
-
-        downloadingBuilder = createNotificationBuilder(
-                channelId = channelId,
-                title = task.taskName,
-                content = "",
-                icon = R.drawable.ic_download,
-                progress = null,
-                actions = listOf(stopAction(task), cancelAction(task))
-        )
-
-        pausedBuilder = createNotificationBuilder(
-                channelId = channelId,
-                title = task.taskName,
-                content = clarityPotion.getString(R.string.notification_paused_text),
-                icon = R.drawable.ic_pause,
-                actions = listOf(startAction(task), cancelAction(task))
-        )
-
-        completedBuilder = createNotificationBuilder(
-                channelId = channelId,
-                title = task.taskName,
-                content = clarityPotion.getString(R.string.notification_completed_text),
-                icon = R.drawable.ic_completed
-        )
-
-        failedBuilder = createNotificationBuilder(
-                channelId = channelId,
-                title = task.taskName,
-                content = clarityPotion.getString(R.string.notification_failed_text),
-                icon = R.drawable.ic_pause,
-                actions = listOf(startAction(task), cancelAction(task))
-        )
     }
 }

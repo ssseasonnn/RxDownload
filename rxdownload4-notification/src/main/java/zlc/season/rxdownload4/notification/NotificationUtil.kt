@@ -11,10 +11,15 @@ import android.support.v4.app.NotificationCompat.Builder
 import android.support.v4.app.NotificationManagerCompat
 import zlc.season.claritypotion.ClarityPotion.Companion.clarityPotion
 import zlc.season.rxdownload4.Progress
+import zlc.season.rxdownload4.task.Task
 
 
 private val notificationManager by lazy {
     clarityPotion.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+}
+
+fun cancelNotification(task: Task) {
+    notificationManager.cancel(task.hashCode())
 }
 
 fun isEnableNotification(): Boolean {

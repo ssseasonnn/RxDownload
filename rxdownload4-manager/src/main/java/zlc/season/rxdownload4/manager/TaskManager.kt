@@ -24,11 +24,13 @@ class TaskManager(
         notificationCreator.init(task)
     }
 
-    private val downloadHandler = StatusHandler(task, taskRecorder)
+    private val downloadHandler by lazy { StatusHandler(task, taskRecorder) }
 
-    private val notificationHandler = StatusHandler(task) {
-        val notification = notificationCreator.create(task, it)
-        showNotification(task, notification)
+    private val notificationHandler by lazy {
+        StatusHandler(task, logTag = "Notification") {
+            val notification = notificationCreator.create(task, it)
+            showNotification(task, notification)
+        }
     }
 
     //Download disposable
@@ -96,17 +98,21 @@ class TaskManager(
         disposable.safeDispose()
 
         //fix when app killed notification can't stop bug
-        notificationHandler.onPaused()
+        if (disposable == null) {
+            notificationHandler.onPaused()
+        }
     }
 
     internal fun innerDelete() {
         innerStop()
 
         task.delete(storage)
-        cancelNotification(task)
 
         //special handle
         downloadHandler.onDeleted()
+        notificationHandler.onDeleted()
+
+        cancelNotification(task)
     }
 
     private fun isStarted(): Boolean {

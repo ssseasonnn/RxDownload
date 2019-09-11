@@ -28,14 +28,14 @@
 
     ```gradle
     //按需加载
-    implementation "com.github.ssseasonnn.RxDownload:rxdownload4:1.0.0"
-    implementation "com.github.ssseasonnn.RxDownload:rxdownload4-manager:1.0.0"
-    implementation "com.github.ssseasonnn.RxDownload:rxdownload4-notification:1.0.0"
-    implementation "com.github.ssseasonnn.RxDownload:rxdownload4-recorder:1.0.0"
+    implementation "com.github.ssseasonnn.RxDownload:rxdownload4:1.0.3"
+    implementation "com.github.ssseasonnn.RxDownload:rxdownload4-manager:1.0.3"
+    implementation "com.github.ssseasonnn.RxDownload:rxdownload4-notification:1.0.3"
+    implementation "com.github.ssseasonnn.RxDownload:rxdownload4-recorder:1.0.3"
     
     or: 
     //添加RxDownload4的所有依赖
-    implementation "com.github.ssseasonnn:RxDownload:1.0.0"
+    implementation "com.github.ssseasonnn:RxDownload:1.0.3"
     ```
 
 ## Basic Usage

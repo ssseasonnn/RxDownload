@@ -1,6 +1,10 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## [RxDownload4 v1.0.3] - 2019-09-11
+- Optimize manager creation
+- Fix native crash
+
 ## [RxDownload4 v1.0.2] - 2019-09-06
 - Add Task Recorder API
 - Fix notification bug

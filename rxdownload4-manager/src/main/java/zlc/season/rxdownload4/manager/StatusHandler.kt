@@ -11,12 +11,12 @@ class StatusHandler(
         callback: (Status) -> Unit = {}
 ) {
     private val normal = Normal()
-    private val started = Started()
-    private val downloading = Downloading()
-    private val paused = Paused()
-    private val completed = Completed()
-    private val failed = Failed()
-    private val deleted = Deleted()
+    private val started by lazy { Started() }
+    private val downloading by lazy { Downloading() }
+    private val paused by lazy { Paused() }
+    private val completed by lazy { Completed() }
+    private val failed by lazy { Failed() }
+    private val deleted by lazy { Deleted() }
 
     var currentStatus: Status = normal
 

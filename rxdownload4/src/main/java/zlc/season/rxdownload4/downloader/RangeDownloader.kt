@@ -15,6 +15,7 @@ import zlc.season.rxdownload4.utils.*
 import java.io.File
 import java.io.InputStream
 import java.nio.MappedByteBuffer
+import java.nio.channels.FileChannel
 import java.nio.channels.FileChannel.MapMode.READ_WRITE
 import java.util.concurrent.Callable
 
@@ -106,10 +107,10 @@ class RangeDownloader : Downloader {
 
     class InternalState(
             val source: InputStream,
-            val shadowFileBuffer: MappedByteBuffer,
+            val shadowChannel: FileChannel,
             val tmpFileBuffer: MappedByteBuffer,
             val buffer: ByteArray = ByteArray(8192),
-            var downloadSize: Long = 0
+            var current: Long = 0
     )
 
     class InnerDownloader(
@@ -122,7 +123,7 @@ class RangeDownloader : Downloader {
         fun download(): Flowable<Long> {
             return Flowable.just(segment)
                     .subscribeOn(Schedulers.io())
-                    .map { mapOf("Range" to "bytes=${it.current}-${it.end}") }
+                    .map { mapOf("Range" to "bytes=${it.current}-${it.end}").log() }
                     .flatMap { request.get(url, it) }
                     .flatMap { rangeSave(segment, it) }
         }
@@ -143,20 +144,27 @@ class RangeDownloader : Downloader {
                             val readLen = source.read(buffer)
 
                             if (readLen == -1) {
-                                shadowFileBuffer.force()
                                 tmpFileBuffer.force()
                                 emitter.onComplete()
                             } else if (readLen > 0) {
-                                downloadSize += readLen
+                                current += readLen
+
+                                val shadowFileBuffer = shadowChannel.map(
+                                        READ_WRITE,
+                                        current,
+                                        readLen.toLong()
+                                )
 
                                 shadowFileBuffer.put(buffer, 0, readLen)
-                                tmpFileBuffer.putLong(16, downloadSize)
+
+                                tmpFileBuffer.putLong(16, current)
 
                                 emitter.onNext(readLen.toLong())
                             }
                         }
                     },
                     Consumer {
+                        it.shadowChannel.closeQuietly()
                         it.source.closeQuietly()
                     })
         }
@@ -175,21 +183,15 @@ class RangeDownloader : Downloader {
                     RangeTmpFile.Segment.SEGMENT_SIZE
             )
 
-            val shadowFileBuffer = shadowFileChannel.map(
-                    READ_WRITE,
-                    segment.current,
-                    segment.remainSize()
-            )
-
-            shadowFileChannel.closeQuietly()
             tmpFileChannel.closeQuietly()
 
             return InternalState(
                     source,
-                    shadowFileBuffer,
+                    shadowFileChannel,
                     tmpFileBuffer,
-                    downloadSize = segment.current
+                    current = segment.current
             )
         }
+
     }
 }

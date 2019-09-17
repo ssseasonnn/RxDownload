@@ -5,13 +5,13 @@ import zlc.season.rxdownload4.manager.*
 
 class StatusConverter {
     companion object {
-        const val NORMAL = 0
+        const val NORMAL = 0  //never save
         const val STARTED = 1
         const val DOWNLOADING = 2
         const val PAUSED = 3
         const val COMPLETED = 4
         const val FAILED = 5
-        const val DELETED = 6
+        const val DELETED = 6 //never save
     }
 
     @TypeConverter

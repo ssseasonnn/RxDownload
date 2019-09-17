@@ -14,4 +14,8 @@
     <string name="paused_text">已暂停下载</string>
 
     <string name="title_manager">下载管理</string>
+
+    <string name="menu_start_all">全部开始</string>
+    <string name="menu_stop_all">全部暂停</string>
+    <string name="menu_delete_all">全部取消</string>
 </resources>

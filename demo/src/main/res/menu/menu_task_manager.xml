@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item
+        android:id="@+id/start_all"
+        android:icon="@drawable/ic_start"
+        android:title="@string/menu_start_all" />
+    <item
+        android:id="@+id/stop_all"
+        android:icon="@drawable/ic_pause"
+        android:title="@string/menu_stop_all" />
+    <item
+        android:id="@+id/delete_all"
+        android:icon="@drawable/ic_cancel"
+        android:title="@string/menu_delete_all" />
+</menu>

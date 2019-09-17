@@ -46,7 +46,20 @@ class SimpleNotificationCreator : NotificationCreator {
         private val failedActions by lazy { listOf(startAction(task), cancelAction(task)) }
 
         fun get(status: Status): Builder {
-            var builder = builderMap[status]
+            val builder = getBuilder(status)
+
+            if (status is Downloading) {
+                builder.setProgress(
+                        status.progress.totalSize.toInt(),
+                        status.progress.downloadSize.toInt(),
+                        status.progress.isChunked
+                )
+            }
+            return builder
+        }
+
+        private fun getBuilder(status: Status): Builder {
+            val builder = builderMap[status]
 
             if (builder == null) {
                 val (content, actions, icon) = when (status) {
@@ -67,17 +80,11 @@ class SimpleNotificationCreator : NotificationCreator {
                         actions = actions
                 )
                 builderMap[status] = newBuilder
-                builder = newBuilder
-            }
 
-            if (status is Downloading) {
-                builder.setProgress(
-                        status.progress.totalSize.toInt(),
-                        status.progress.downloadSize.toInt(),
-                        status.progress.isChunked
-                )
+                return newBuilder
+            } else {
+                return builder
             }
-            return builder
         }
     }
 }

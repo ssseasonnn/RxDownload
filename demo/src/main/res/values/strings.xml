@@ -41,4 +41,8 @@
 
     <string name="title_manager">Download Manager</string>
 
+    <string name="menu_start_all">Start All</string>
+    <string name="menu_stop_all">Stop All</string>
+    <string name="menu_delete_all">Cancel All</string>
+
 </resources>

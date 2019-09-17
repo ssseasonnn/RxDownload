@@ -22,14 +22,14 @@ interface TaskDao {
     @Query("SELECT * FROM task_record")
     fun getAll(): Maybe<List<TaskEntity>>
 
-    @Query("SELECT * FROM task_record WHERE status = :status")
-    fun getAllWithStatus(status: Status): Maybe<List<TaskEntity>>
+    @Query("SELECT * FROM task_record WHERE status IN(:status)")
+    fun getAllWithStatus(vararg status: Status): Maybe<List<TaskEntity>>
 
     @Query("SELECT * FROM task_record LIMIT :size OFFSET :start")
     fun page(start: Int, size: Int): Maybe<List<TaskEntity>>
 
-    @Query("SELECT * FROM task_record WHERE status=:status LIMIT :size OFFSET :start")
-    fun pageWithStatus(start: Int, size: Int, status: Status): Maybe<List<TaskEntity>>
+    @Query("SELECT * FROM task_record WHERE status IN(:status) LIMIT :size OFFSET :start")
+    fun pageWithStatus(start: Int, size: Int, vararg status: Status): Maybe<List<TaskEntity>>
 
     @Query("SELECT * FROM task_record WHERE id = :id")
     fun get(id: Int): Maybe<TaskEntity>

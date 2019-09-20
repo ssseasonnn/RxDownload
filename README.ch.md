@@ -183,6 +183,24 @@
     > **TaskEntity** 拥有一个**abnormalExit**字段, 该字段用来表示该Task是否是被APP强制杀进程导致的暂停
 
 
+- 全部开始:
+
+    ```kotlin
+     RxDownloadRecorder.startAll()
+    ```
+    
+- 全部暂停:
+
+    ```kotlin
+     RxDownloadRecorder.stopAll()
+    ```
+    
+- 全部删除:
+
+    ```kotlin
+     RxDownloadRecorder.deleteAll()
+    ```
+
 ## License
 
 > ```

@@ -184,7 +184,23 @@ A multi-threaded download tool written with RxJava and Kotlin
     > **TaskEntity** has a **abnormalExit** field, 
     which is used to indicate whether the Task has paused by the APP forced close.
 
+- Start All:
 
+    ```kotlin
+     RxDownloadRecorder.startAll()
+    ```
+    
+- Stop All:
+
+    ```kotlin
+     RxDownloadRecorder.stopAll()
+    ```
+    
+- Delete All:
+
+    ```kotlin
+     RxDownloadRecorder.deleteAll()
+    ```
 
 ## License
 

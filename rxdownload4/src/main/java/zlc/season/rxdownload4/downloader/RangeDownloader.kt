@@ -147,8 +147,6 @@ class RangeDownloader : Downloader {
                                 tmpFileBuffer.force()
                                 emitter.onComplete()
                             } else if (readLen > 0) {
-                                current += readLen
-
                                 val shadowFileBuffer = shadowChannel.map(
                                         READ_WRITE,
                                         current,
@@ -156,6 +154,8 @@ class RangeDownloader : Downloader {
                                 )
 
                                 shadowFileBuffer.put(buffer, 0, readLen)
+
+                                current += readLen
 
                                 tmpFileBuffer.putLong(16, current)
 

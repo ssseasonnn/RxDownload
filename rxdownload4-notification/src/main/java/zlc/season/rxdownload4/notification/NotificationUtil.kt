@@ -42,6 +42,8 @@ fun createNotificationChannel(
 
         notificationChannel.enableVibration(false)
         notificationChannel.enableLights(false)
+        notificationChannel.vibrationPattern = longArrayOf(0L)
+        notificationChannel.setSound(null, null)
 
         notificationManager.createNotificationChannel(notificationChannel)
     }
@@ -64,7 +66,8 @@ fun createNotificationBuilder(
             .setSmallIcon(icon)
             .setContentIntent(intent)
             .setVibrate(longArrayOf(0L))
-            .setDefaults(Notification.DEFAULT_ALL)
+            .setSound(null)
+            .setDefaults(Notification.FLAG_ONLY_ALERT_ONCE)
 
     progress?.let {
         notificationBuilder.setProgress(

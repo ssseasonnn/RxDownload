@@ -2,7 +2,7 @@ package zlc.season.rxdownload4.utils
 
 import android.util.Log
 
-var LOG_ENABLE = true
+var LOG_ENABLE = false
 
 const val LOG_TAG = "RxDownload"
 

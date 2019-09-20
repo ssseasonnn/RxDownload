@@ -3,6 +3,7 @@ package zlc.season.rxdownload4.recorder
 import android.annotation.SuppressLint
 import io.reactivex.Flowable.fromIterable
 import io.reactivex.Maybe
+import io.reactivex.android.schedulers.AndroidSchedulers.mainThread
 import io.reactivex.rxkotlin.subscribeBy
 import io.reactivex.schedulers.Schedulers.io
 import zlc.season.claritypotion.ClarityPotion.Companion.clarityPotion
@@ -38,30 +39,42 @@ object RxDownloadRecorder {
                 .doOnSuccess { mapResult(it) }
     }
 
-    fun startAll() {
+    fun startAll(callback: () -> Unit = {}) {
         getAllTaskWithStatus(Paused(), Failed())
                 .flatMapPublisher { fromIterable(it) }
                 .doOnNext {
                     it.task.createManager().start()
                 }
+                .observeOn(mainThread())
+                .doOnComplete {
+                    callback()
+                }
                 .subscribeBy()
     }
 
 
-    fun stopAll() {
+    fun stopAll(callback: () -> Unit = {}) {
         getAllTaskWithStatus(Started(), Downloading())
                 .flatMapPublisher { fromIterable(it) }
                 .doOnNext {
                     it.task.createManager().stop()
                 }
+                .observeOn(mainThread())
+                .doOnComplete {
+                    callback()
+                }
                 .subscribeBy()
     }
 
-    fun deleteAll() {
+    fun deleteAll(callback: () -> Unit = {}) {
         getAllTask()
                 .flatMapPublisher { fromIterable(it) }
                 .doOnNext {
                     it.task.createManager().delete()
+                }
+                .observeOn(mainThread())
+                .doOnComplete {
+                    callback()
                 }
                 .subscribeBy()
     }

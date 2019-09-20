@@ -47,6 +47,7 @@ class StatusHandler(
 
         //try to insert
         taskRecorder?.insert(task)
+        taskRecorder?.update(task, currentStatus)
 
         "$logTag [${task.taskName}] started".log()
     }

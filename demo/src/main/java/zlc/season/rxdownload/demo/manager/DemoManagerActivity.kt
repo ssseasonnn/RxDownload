@@ -69,10 +69,12 @@ class DemoManagerActivity : AppCompatActivity() {
                 RxDownloadRecorder.startAll()
             }
             R.id.stop_all -> {
-
+                RxDownloadRecorder.stopAll()
             }
             R.id.delete_all -> {
-
+                RxDownloadRecorder.deleteAll {
+                    dataSource.clearAll()
+                }
             }
         }
         return super.onOptionsItemSelected(item)

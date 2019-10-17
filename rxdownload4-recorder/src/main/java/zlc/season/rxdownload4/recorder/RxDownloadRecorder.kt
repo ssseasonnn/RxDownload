@@ -15,6 +15,34 @@ import zlc.season.rxdownload4.task.Task
 object RxDownloadRecorder {
     val taskDataBase by lazy { TaskDataBase.getInstance(clarityPotion) }
 
+    fun getTask(url: String): Maybe<TaskEntity> {
+        return getTask(Task(url))
+    }
+
+    fun getTask(task: Task): Maybe<TaskEntity> {
+        return taskDataBase.taskDao().get(task.hashCode())
+                .subscribeOn(io())
+                .doOnSuccess {
+                    it.status.progress = it.progress
+                }
+    }
+
+    fun getTaskList(vararg url: String): Maybe<List<TaskEntity>> {
+        val tasks = mutableListOf<Task>()
+        url.mapTo(tasks) { Task(it) }
+        return getTaskList(*tasks.toTypedArray())
+    }
+
+    fun getTaskList(vararg task: Task): Maybe<List<TaskEntity>> {
+        val ids = mutableListOf<Int>()
+        task.mapTo(ids) {
+            it.hashCode()
+        }
+        return taskDataBase.taskDao().get(*ids.toIntArray())
+                .subscribeOn(io())
+                .doOnSuccess { mapResult(it) }
+    }
+
     fun getTaskList(page: Int, pageSize: Int): Maybe<List<TaskEntity>> {
         return taskDataBase.taskDao().page(page * pageSize, pageSize)
                 .subscribeOn(io())

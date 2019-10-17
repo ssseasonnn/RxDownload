@@ -14,7 +14,7 @@ import zlc.season.rxdownload4.task.Task
 )
 class TaskEntity(
         @PrimaryKey
-        var id: Int,
+        var id: Int, //This id is Task.hashCode()
 
         @Embedded
         var task: Task,

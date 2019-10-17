@@ -33,4 +33,7 @@ interface TaskDao {
 
     @Query("SELECT * FROM task_record WHERE id = :id")
     fun get(id: Int): Maybe<TaskEntity>
+
+    @Query("SELECT * FROM task_record WHERE id IN(:id)")
+    fun get(vararg id: Int): Maybe<List<TaskEntity>>
 }

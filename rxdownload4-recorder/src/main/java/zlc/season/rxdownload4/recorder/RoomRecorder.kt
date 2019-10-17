@@ -19,7 +19,6 @@ class RoomRecorder : TaskRecorder {
         ioThread {
             taskDataBase.taskDao().update(task.map(status))
         }
-
     }
 
     override fun delete(task: Task) {

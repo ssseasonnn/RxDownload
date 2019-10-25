@@ -28,14 +28,14 @@
 
     ```gradle
     //按需加载
-    implementation "com.github.ssseasonnn.RxDownload:rxdownload4:1.0.4"
-    implementation "com.github.ssseasonnn.RxDownload:rxdownload4-manager:1.0.4"
-    implementation "com.github.ssseasonnn.RxDownload:rxdownload4-notification:1.0.4"
-    implementation "com.github.ssseasonnn.RxDownload:rxdownload4-recorder:1.0.4"
+    implementation "com.github.ssseasonnn.RxDownload:rxdownload4:1.0.5"
+    implementation "com.github.ssseasonnn.RxDownload:rxdownload4-manager:1.0.5"
+    implementation "com.github.ssseasonnn.RxDownload:rxdownload4-notification:1.0.5"
+    implementation "com.github.ssseasonnn.RxDownload:rxdownload4-recorder:1.0.5"
     
     or: 
     //添加RxDownload4的所有依赖
-    implementation "com.github.ssseasonnn:RxDownload:1.0.4"
+    implementation "com.github.ssseasonnn:RxDownload:1.0.5"
     ```
 
 ## Basic Usage
@@ -72,8 +72,18 @@
 
     ```kotlin
     val file = url.file() 
+    // 或者
+    val file = task.file() 
     // 使用文件...    
     ```
+- 删除下载的文件:
+
+    ```kotlin
+    url.delete()
+    // 或者
+    task.delete() 
+    ```
+
 
 ## Task Manager
 
@@ -138,6 +148,28 @@
 
 ## Task Recorder
 
+- 查询单个任务:
+
+    ```kotlin
+     // Query task with url
+     RxDownloadRecorder.getTask("url")
+           .observeOn(AndroidSchedulers.mainThread())
+           .subscribeBy { TaskEntity ->
+               // TaskEntity                        
+           } 
+    ``` 
+    
+- 查询一批任务:
+
+    ```kotlin
+     // Query task with urls
+     RxDownloadRecorder.getTaskList("url1","url2","url3")
+           .observeOn(AndroidSchedulers.mainThread())
+           .subscribeBy { list ->
+               // list of TaskEntity                        
+           } 
+    ```    
+    
 - 获取所有下载记录列表:
 
     ```kotlin

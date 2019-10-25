@@ -1,6 +1,9 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## [RxDownload4 v1.0.5] - 2019-10-25
+- Add query singe task api
+
 ## [RxDownload4 v1.0.4] - 2019-09-20
 - Add startAll,stopAll,deleteAll api
 - Fix download file error bug

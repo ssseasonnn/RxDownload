@@ -1,6 +1,9 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## [RxDownload4 v1.0.6] - 2019-11-20
+- Fix duplicate download tasks bug
+
 ## [RxDownload4 v1.0.5] - 2019-10-25
 - Add query singe task api
 

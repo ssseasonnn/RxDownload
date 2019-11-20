@@ -8,6 +8,7 @@ android {
 
     defaultConfig {
         minSdkVersion 15
+        //noinspection OldTargetApi
         targetSdkVersion 28
         versionCode 1
         versionName "1.0"
@@ -50,7 +51,7 @@ dependencies {
     api 'io.reactivex.rxjava2:rxandroid:2.1.1'
     api "io.reactivex.rxjava2:rxkotlin:2.4.0"
 
-    api 'com.github.ssseasonnn:ClarityPotion:1.0.0'
+    api 'com.github.ssseasonnn:ClarityPotion:1.0.2'
 
     testImplementation "org.assertj:assertj-core:3.11.1"
     testImplementation 'io.mockk:mockk:1.9.3'

@@ -6,9 +6,11 @@ import zlc.season.rxdownload4.utils.getFile
 class WatcherImpl : Watcher {
     @Synchronized
     override fun watch(task: Task) {
+        //check task
         check(taskMap[task.tag()] == null) { "Task [${task.tag()} is exists!" }
 
         val filePath = task.getFile().canonicalPath
+        //check file
         check(fileMap[filePath] == null) { "File [$filePath] is occupied!" }
 
         taskMap[task.tag()] = task.tag()

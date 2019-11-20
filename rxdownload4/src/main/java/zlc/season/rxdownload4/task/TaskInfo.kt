@@ -22,7 +22,11 @@ class TaskInfo(
         val watcher: Watcher
 ) {
     fun start(): Flowable<Progress> {
+        //Before start download, we should load task first.
         storage.load(task)
+
+        //Identify if the task is being watched.
+        var watchFlag = false
 
         return request.get(task.url, header)
                 .doOnNext {
@@ -35,8 +39,14 @@ class TaskInfo(
                         task.savePath = DEFAULT_SAVE_PATH
                     }
 
-                    //watch task
-                    watcher.watch(task)
+                    try {
+                        //Watch task, should be done when the task
+                        //has save path and save name.
+                        watcher.watch(task)
+                        watchFlag = true
+                    } catch (e: Throwable) {
+                        throw e
+                    }
 
                     //save task info
                     storage.save(task)
@@ -46,7 +56,9 @@ class TaskInfo(
                 }
                 .doFinally {
                     //unwatch task
-                    watcher.unwatch(task)
+                    if (watchFlag) {
+                        watcher.unwatch(task)
+                    }
                 }
     }
 }

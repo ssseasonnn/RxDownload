@@ -1,11 +1,22 @@
 package zlc.season.rxdownload4.utils
 
 import retrofit2.Response
+import java.io.Closeable
 import java.util.*
 import java.util.regex.Pattern
 
+/** Closes this, ignoring any checked exceptions. */
+fun Closeable.closeQuietly() {
+    try {
+        close()
+    } catch (rethrown: RuntimeException) {
+        throw rethrown
+    } catch (_: Exception) {
+    }
+}
+
 fun Response<*>.url(): String {
-    return raw().request.url.toString()
+    return raw().request().url().toString()
 }
 
 fun Response<*>.contentLength(): Long {

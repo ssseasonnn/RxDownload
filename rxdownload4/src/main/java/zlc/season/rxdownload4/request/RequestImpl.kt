@@ -8,20 +8,20 @@ import retrofit2.http.HeaderMap
 import retrofit2.http.Streaming
 import retrofit2.http.Url
 
-interface RequestImpl : Request {
+class RequestImpl : Request {
+    private val api = request<Api>()
 
-    @GET
-    @Streaming
-    override fun get(
-            @Url url: String,
-            @HeaderMap headers: Map<String, String>
-    ): Flowable<Response<ResponseBody>>
+    override fun get(url: String, headers: Map<String, String>): Flowable<Response<ResponseBody>> {
+        return api.get(url, headers)
+    }
 
-    companion object {
-        private val request = request<RequestImpl>()
-
-        operator fun invoke(): RequestImpl {
-            return request
-        }
+    interface Api {
+        @GET
+        @Streaming
+        fun get(
+                @Url url: String,
+                @HeaderMap headers: Map<String, String>
+        ): Flowable<Response<ResponseBody>>
     }
 }
+

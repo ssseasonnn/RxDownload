@@ -10,18 +10,21 @@ android {
     compileSdkVersion 28
     defaultConfig {
         applicationId "zlc.season.rxdownload.kotlin_demo"
-        minSdkVersion 21
+        minSdkVersion 15
         //noinspection OldTargetApi
         targetSdkVersion 28
         versionCode 1
         versionName "1.0"
-
+        multiDexEnabled true
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
     }
     buildTypes {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+        debug{
+            multiDexKeepProguard file('multidex-config.pro')
         }
     }
 
@@ -52,7 +55,7 @@ dependencies {
     implementation 'com.github.bumptech.glide:glide:4.9.0'
 
     implementation 'com.github.ssseasonnn:Yasha:1.0.6'
-
+    implementation 'com.android.support:multidex:1.0.3'
     implementation project(':rxdownload4')
     implementation project(':rxdownload4-manager')
     implementation project(':rxdownload4-notification')

@@ -1,6 +1,12 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## [RxDownload4 v1.0.7] - 2019-11-27
+- Downgrade okhttp to 3.12.6
+- Downgrade retrofit to 2.6.2
+- Support Android 4.0.3+
+- Fix download dir not exists bug
+
 ## [RxDownload4 v1.0.6] - 2019-11-20
 - Fix duplicate download tasks bug
 

@@ -16,26 +16,19 @@ A multi-threaded download tool written with RxJava and Kotlin
 
     ```gradle
     maven { url 'https://jitpack.io' }
-    maven {
-        url 'https://oss.sonatype.org/content/repositories/snapshots/'
-    }
-    ```
-
-    > Due to the dependence on retrofit-2.7.0, retrofit 2.7.0 has not yet been officially released.
-    So temporarily need to add **https://oss.sonatype.org/content/repositories/snapshots/** repo.
     
 - Add RxDownload dependency:
 
     ```gradle
     //Load on demand
-    implementation "com.github.ssseasonnn.RxDownload:rxdownload4:1.0.6"
-    implementation "com.github.ssseasonnn.RxDownload:rxdownload4-manager:1.0.6"
-    implementation "com.github.ssseasonnn.RxDownload:rxdownload4-notification:1.0.6"
-    implementation "com.github.ssseasonnn.RxDownload:rxdownload4-recorder:1.0.6"
+    implementation "com.github.ssseasonnn.RxDownload:rxdownload4:1.0.7"
+    implementation "com.github.ssseasonnn.RxDownload:rxdownload4-manager:1.0.7"
+    implementation "com.github.ssseasonnn.RxDownload:rxdownload4-notification:1.0.7"
+    implementation "com.github.ssseasonnn.RxDownload:rxdownload4-recorder:1.0.7"
     
     or: 
     //Add all dependencies of RxDownload4
-    implementation "com.github.ssseasonnn:RxDownload:1.0.6"
+    implementation "com.github.ssseasonnn:RxDownload:1.0.7"
     ```
 
 ## Basic Usage

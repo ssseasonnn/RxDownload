@@ -16,26 +16,19 @@
 
     ```gradle
     maven { url 'https://jitpack.io' }
-    maven {
-        url 'https://oss.sonatype.org/content/repositories/snapshots/'
-    }
-    ```
-
-    > 由于依赖retrofit-2.7.0, 而retrofit 2.7.0目前还没正式发布,
-    因此暂时需要添加 **https://oss.sonatype.org/content/repositories/snapshots/** 仓库
     
 - 添加RxDownload依赖:
 
     ```gradle
     //按需加载
-    implementation "com.github.ssseasonnn.RxDownload:rxdownload4:1.0.6"
-    implementation "com.github.ssseasonnn.RxDownload:rxdownload4-manager:1.0.6"
-    implementation "com.github.ssseasonnn.RxDownload:rxdownload4-notification:1.0.6"
-    implementation "com.github.ssseasonnn.RxDownload:rxdownload4-recorder:1.0.6"
+    implementation "com.github.ssseasonnn.RxDownload:rxdownload4:1.0.7"
+    implementation "com.github.ssseasonnn.RxDownload:rxdownload4-manager:1.0.7"
+    implementation "com.github.ssseasonnn.RxDownload:rxdownload4-notification:1.0.7"
+    implementation "com.github.ssseasonnn.RxDownload:rxdownload4-recorder:1.0.7"
     
     or: 
     //添加RxDownload4的所有依赖
-    implementation "com.github.ssseasonnn:RxDownload:1.0.6"
+    implementation "com.github.ssseasonnn:RxDownload:1.0.7"
     ```
 
 ## Basic Usage

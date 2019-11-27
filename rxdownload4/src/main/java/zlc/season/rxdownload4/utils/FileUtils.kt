@@ -37,6 +37,10 @@ fun File.clear() {
     delete()
 }
 
+internal fun Task.getDir(): File {
+    return File(savePath)
+}
+
 internal fun Task.getFile(): File {
     return File(savePath, saveName)
 }

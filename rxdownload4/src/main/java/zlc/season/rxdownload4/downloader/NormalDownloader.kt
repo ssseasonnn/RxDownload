@@ -6,7 +6,6 @@ import io.reactivex.Flowable.generate
 import io.reactivex.functions.BiConsumer
 import io.reactivex.functions.Consumer
 import okhttp3.ResponseBody
-import okhttp3.internal.closeQuietly
 import okio.*
 import retrofit2.Response
 import zlc.season.rxdownload4.Progress
@@ -43,6 +42,12 @@ class NormalDownloader : Downloader {
     }
 
     private fun beforeDownload(taskInfo: TaskInfo, response: Response<ResponseBody>) {
+        //make sure dir is exists
+        val fileDir = taskInfo.task.getDir()
+        if (!fileDir.exists() || !fileDir.isDirectory) {
+            fileDir.mkdirs()
+        }
+
         if (file.exists()) {
             if (taskInfo.validator.validate(file, response)) {
                 alreadyDownloaded = true

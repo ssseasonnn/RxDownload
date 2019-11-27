@@ -6,7 +6,6 @@ import io.reactivex.functions.BiConsumer
 import io.reactivex.functions.Consumer
 import io.reactivex.schedulers.Schedulers
 import okhttp3.ResponseBody
-import okhttp3.internal.closeQuietly
 import retrofit2.Response
 import zlc.season.rxdownload4.Progress
 import zlc.season.rxdownload4.request.Request
@@ -45,6 +44,12 @@ class RangeDownloader : Downloader {
     }
 
     private fun beforeDownload(taskInfo: TaskInfo, response: Response<ResponseBody>) {
+        //make sure dir is exists
+        val fileDir = taskInfo.task.getDir()
+        if (!fileDir.exists() || !fileDir.isDirectory) {
+            fileDir.mkdirs()
+        }
+
         if (file.exists()) {
             if (taskInfo.validator.validate(file, response)) {
                 alreadyDownloaded = true

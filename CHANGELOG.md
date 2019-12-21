@@ -1,6 +1,9 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## [RxDownload4 v1.0.8] - 2019-12-21
+- Fix native crash
+
 ## [RxDownload4 v1.0.7] - 2019-11-27
 - Downgrade okhttp to 3.12.6
 - Downgrade retrofit to 2.6.2

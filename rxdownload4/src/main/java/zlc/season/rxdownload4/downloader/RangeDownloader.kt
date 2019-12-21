@@ -8,6 +8,7 @@ import io.reactivex.schedulers.Schedulers
 import okhttp3.ResponseBody
 import retrofit2.Response
 import zlc.season.rxdownload4.Progress
+import zlc.season.rxdownload4.downloader.RangeTmpFile.Segment.Companion.SEGMENT_SIZE
 import zlc.season.rxdownload4.request.Request
 import zlc.season.rxdownload4.task.TaskInfo
 import zlc.season.rxdownload4.utils.*
@@ -113,8 +114,9 @@ class RangeDownloader : Downloader {
     class InternalState(
             val source: InputStream,
             val shadowChannel: FileChannel,
-            val tmpFileBuffer: MappedByteBuffer,
-            val buffer: ByteArray = ByteArray(8192),
+            val tmpFileChannel: FileChannel,
+            var tmpFileBuffer: MappedByteBuffer,
+            var shadowFileBuffer: MappedByteBuffer,
             var current: Long = 0
     )
 
@@ -146,18 +148,12 @@ class RangeDownloader : Downloader {
                     },
                     BiConsumer<InternalState, Emitter<Long>> { internalState, emitter ->
                         internalState.apply {
+                            val buffer = ByteArray(8192)
                             val readLen = source.read(buffer)
 
                             if (readLen == -1) {
-                                tmpFileBuffer.force()
                                 emitter.onComplete()
-                            } else if (readLen > 0) {
-                                val shadowFileBuffer = shadowChannel.map(
-                                        READ_WRITE,
-                                        current,
-                                        readLen.toLong()
-                                )
-
+                            } else {
                                 shadowFileBuffer.put(buffer, 0, readLen)
 
                                 current += readLen
@@ -169,6 +165,7 @@ class RangeDownloader : Downloader {
                         }
                     },
                     Consumer {
+                        it.tmpFileChannel.closeQuietly()
                         it.shadowChannel.closeQuietly()
                         it.source.closeQuietly()
                     })
@@ -185,15 +182,21 @@ class RangeDownloader : Downloader {
             val tmpFileBuffer = tmpFileChannel.map(
                     READ_WRITE,
                     segment.startByte(),
-                    RangeTmpFile.Segment.SEGMENT_SIZE
+                    SEGMENT_SIZE
             )
 
-            tmpFileChannel.closeQuietly()
+            val shadowFileBuffer = shadowFileChannel.map(
+                    READ_WRITE,
+                    segment.current,
+                    segment.remainSize()
+            )
 
             return InternalState(
                     source,
                     shadowFileChannel,
+                    tmpFileChannel,
                     tmpFileBuffer,
+                    shadowFileBuffer,
                     current = segment.current
             )
         }

@@ -26,6 +26,7 @@ class DemoActivity : AppCompatActivity() {
     companion object {
         const val iconUrl = "http://pp.myapp.com/ma_icon/0/icon_10910_1564113626/256"
         const val url = "https://dldir1.qq.com/weixin/android/weixin706android1460.apk"
+//        const val url = "http://dlied5.myapp.com/myapp/1104466820/cos.release-40109/10006654_com.tencent.tmgp.sgame_u367648_1.51.1.23_zmvjbg.apk"
 
         const val NORMAL = 0
         const val STARTED = 1

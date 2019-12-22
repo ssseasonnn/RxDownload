@@ -4,10 +4,12 @@
 
     <string name="continue_text">继续</string>
     <string name="start_text">下载</string>
+    <string name="pending_text">等待</string>
     <string name="install_text">安装</string>
     <string name="pause_text">暂停</string>
     <string name="retry_text">重试</string>
 
+    <string name="pended_text">等待中</string>
     <string name="started_text">下载中…</string>
     <string name="completed_text">下载完成</string>
     <string name="failed_text">下载失败</string>

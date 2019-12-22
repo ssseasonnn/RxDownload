@@ -17,7 +17,8 @@ class TaskManager(
         private val storage: Storage,
         private val connectFlowable: ConnectableFlowable<Progress>,
         private val notificationCreator: NotificationCreator,
-        taskRecorder: TaskRecorder
+        taskRecorder: TaskRecorder,
+        val taskLimitation: TaskLimitation
 ) {
 
     init {
@@ -38,9 +39,20 @@ class TaskManager(
     private var downloadDisposable: Disposable? = null
     private var notificationDisposable: Disposable? = null
 
+    /**
+     * Send Pending event by hand
+     */
+    internal fun sendPendingEventManual() {
+        downloadHandler.onPending()
+        notificationHandler.onPending()
+    }
 
-    internal fun addCallback(tag: Any, callback: (Status) -> Unit) {
-        downloadHandler.addCallback(tag, callback)
+    /**
+     * @param tag As the unique identifier for this subscription
+     * @param receiveLastStatus If true, the last status will be received after subscribing
+     */
+    internal fun addCallback(tag: Any, receiveLastStatus: Boolean, callback: (Status) -> Unit) {
+        downloadHandler.addCallback(tag, receiveLastStatus, callback)
     }
 
     internal fun removeCallback(tag: Any) {
@@ -86,21 +98,12 @@ class TaskManager(
     }
 
     internal fun innerStop() {
-        if (isStopped()) {
-            //fix notification update too fast bug
-            notificationHandler.onPaused()
-            downloadHandler.onPaused()
-            return
-        }
+        notificationHandler.onPaused()
+        downloadHandler.onPaused()
 
         notificationDisposable.safeDispose()
         downloadDisposable.safeDispose()
         disposable.safeDispose()
-
-        //fix when app killed notification can't stop bug
-        if (disposable == null) {
-            notificationHandler.onPaused()
-        }
     }
 
     internal fun innerDelete() {
@@ -116,9 +119,5 @@ class TaskManager(
 
     private fun isStarted(): Boolean {
         return disposable != null && !disposable!!.isDisposed
-    }
-
-    private fun isStopped(): Boolean {
-        return disposable != null && disposable!!.isDisposed
     }
 }

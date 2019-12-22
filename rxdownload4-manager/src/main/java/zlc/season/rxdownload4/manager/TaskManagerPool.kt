@@ -34,7 +34,8 @@ object TaskManagerPool {
             request: Request,
             watcher: Watcher,
             notificationCreator: NotificationCreator,
-            recorder: TaskRecorder
+            recorder: TaskRecorder,
+            taskLimitation: TaskLimitation
     ): TaskManager {
 
         if (get(task) == null) {
@@ -50,7 +51,8 @@ object TaskManagerPool {
                             request = request,
                             watcher = watcher,
                             notificationCreator = notificationCreator,
-                            recorder = recorder
+                            recorder = recorder,
+                            taskLimitation = taskLimitation
                     )
                     add(task, taskManager)
                 }
@@ -70,7 +72,8 @@ object TaskManagerPool {
             request: Request,
             watcher: Watcher,
             notificationCreator: NotificationCreator,
-            recorder: TaskRecorder
+            recorder: TaskRecorder,
+            taskLimitation: TaskLimitation
     ): TaskManager {
 
         val download = download(
@@ -88,7 +91,8 @@ object TaskManagerPool {
                 storage = storage,
                 taskRecorder = recorder,
                 connectFlowable = download.publish(),
-                notificationCreator = notificationCreator
+                notificationCreator = notificationCreator,
+                taskLimitation = taskLimitation
         )
     }
 

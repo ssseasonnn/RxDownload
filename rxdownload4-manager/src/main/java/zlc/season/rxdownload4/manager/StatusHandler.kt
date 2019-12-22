@@ -11,6 +11,7 @@ class StatusHandler(
         callback: (Status) -> Unit = {}
 ) {
     private val normal = Normal()
+    private val pending by lazy { Pending() }
     private val started by lazy { Started() }
     private val downloading by lazy { Downloading() }
     private val paused by lazy { Paused() }
@@ -20,25 +21,33 @@ class StatusHandler(
 
     var currentStatus: Status = normal
 
-    private val callbackMap = mutableMapOf<Any, (Status) -> Unit>()
+    private val callbackSafeMap = SafeIterableMap<Any, (Status) -> Unit>()
 
     private var currentProgress: Progress = Progress()
 
     init {
-        callbackMap[Any()] = callback
+        callbackSafeMap.putIfAbsent(Any(), callback)
     }
 
-    fun addCallback(tag: Any, callback: (Status) -> Unit) {
-        callbackMap[tag] = callback
+    fun addCallback(tag: Any, receiveLastStatus: Boolean, callback: (Status) -> Unit) {
+        callbackSafeMap.putIfAbsent(tag, callback)
 
         //emit last status when not normal
-        if (currentStatus != normal) {
+        if (receiveLastStatus && currentStatus != normal) {
             callback(currentStatus)
         }
     }
 
     fun removeCallback(tag: Any) {
-        callbackMap.remove(tag)
+        callbackSafeMap.remove(tag)
+    }
+
+    fun onPending() {
+        currentStatus = pending.updateProgress()
+        dispatchCallback()
+
+        //try to insert
+        taskRecorder?.insert(task)
     }
 
     fun onStarted() {
@@ -106,8 +115,8 @@ class StatusHandler(
     }
 
     private fun dispatchCallback() {
-        callbackMap.values.forEach {
-            it(currentStatus)
+        callbackSafeMap.forEach {
+            it.value(currentStatus)
         }
     }
 

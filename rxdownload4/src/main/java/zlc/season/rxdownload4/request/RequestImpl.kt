@@ -8,7 +8,7 @@ import retrofit2.http.HeaderMap
 import retrofit2.http.Streaming
 import retrofit2.http.Url
 
-class RequestImpl : Request {
+object RequestImpl : Request {
     private val api = request<Api>()
 
     override fun get(url: String, headers: Map<String, String>): Flowable<Response<ResponseBody>> {

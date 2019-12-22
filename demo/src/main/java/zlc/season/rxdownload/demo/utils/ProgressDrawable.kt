@@ -38,6 +38,7 @@ class ProgressDrawable : Drawable() {
                 progressRectF.right = 0f
                 invalidateSelf()
             }
+            is Pending,
             is Started,
             is Downloading,
             is Paused,

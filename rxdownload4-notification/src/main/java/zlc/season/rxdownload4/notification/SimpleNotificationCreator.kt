@@ -35,11 +35,13 @@ class SimpleNotificationCreator : NotificationCreator {
     class BuilderHelper(private val channelId: String, private val task: Task) {
         private val builderMap = mutableMapOf<Status, Builder>()
 
+        private val pendingContent by lazy { clarityPotion.getString(R.string.notification_pending_text) }
         private val startedContent by lazy { clarityPotion.getString(R.string.notification_started_text) }
         private val pausedContent by lazy { clarityPotion.getString(R.string.notification_paused_text) }
         private val failedContent by lazy { clarityPotion.getString(R.string.notification_failed_text) }
         private val completedContent by lazy { clarityPotion.getString(R.string.notification_completed_text) }
 
+        private val pendingActions by lazy { listOf(stopAction(task), cancelAction(task)) }
         private val startedActions by lazy { listOf(stopAction(task), cancelAction(task)) }
         private val downloadingActions by lazy { listOf(stopAction(task), cancelAction(task)) }
         private val pausedActions by lazy { listOf(startAction(task), cancelAction(task)) }
@@ -64,6 +66,7 @@ class SimpleNotificationCreator : NotificationCreator {
             if (builder == null) {
                 val (content, actions, icon) = when (status) {
                     is Normal -> Triple("", emptyList(), 0)
+                    is Pending -> Triple(pendingContent, pendingActions, R.drawable.ic_download)
                     is Started -> Triple(startedContent, startedActions, R.drawable.ic_download)
                     is Downloading -> Triple("", downloadingActions, R.drawable.ic_download)
                     is Paused -> Triple(pausedContent, pausedActions, R.drawable.ic_pause)

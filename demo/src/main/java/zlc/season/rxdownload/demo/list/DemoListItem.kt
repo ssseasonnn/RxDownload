@@ -21,6 +21,7 @@ class DemoListItem(
         val taskManager = url.createTaskManager()
         when (taskManager.currentStatus()) {
             is Normal -> taskManager.start()
+            is Pending -> taskManager.stop()
             is Started -> taskManager.stop()
             is Downloading -> taskManager.stop()
             is Failed -> taskManager.start()
@@ -46,6 +47,7 @@ class DemoListItem(
     private fun stateStr(context: Context, status: Status): String {
         return when (status) {
             is Normal -> context.getString(R.string.start_text)
+            is Pending -> context.getString(R.string.pending_text)
             is Started -> context.getString(R.string.pause_text)
             is Downloading -> context.getString(R.string.pause_text)
             is Paused -> context.getString(R.string.continue_text)

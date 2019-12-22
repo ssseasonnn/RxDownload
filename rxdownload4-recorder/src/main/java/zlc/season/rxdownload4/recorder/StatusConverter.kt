@@ -12,12 +12,14 @@ class StatusConverter {
         const val COMPLETED = 4
         const val FAILED = 5
         const val DELETED = 6 //never save
+        const val PENDING = 7 //never save
     }
 
     @TypeConverter
     fun intToStatus(status: Int): Status {
         return when (status) {
             NORMAL -> Normal()
+            PENDING -> Pending()
             STARTED -> Started()
             DOWNLOADING -> Downloading()
             PAUSED -> Paused()
@@ -32,6 +34,7 @@ class StatusConverter {
     fun statusToInt(status: Status): Int {
         return when (status) {
             is Normal -> NORMAL
+            is Pending -> PENDING
             is Started -> STARTED
             is Downloading -> DOWNLOADING
             is Paused -> PAUSED

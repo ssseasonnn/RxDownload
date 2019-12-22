@@ -3,7 +3,10 @@ package zlc.season.rxdownload4.watcher
 import zlc.season.rxdownload4.task.Task
 import zlc.season.rxdownload4.utils.getFile
 
-class WatcherImpl : Watcher {
+object WatcherImpl : Watcher {
+    private val taskMap = mutableMapOf<String, String>()
+    private val fileMap = mutableMapOf<String, String>()
+
     @Synchronized
     override fun watch(task: Task) {
         //check task
@@ -21,10 +24,5 @@ class WatcherImpl : Watcher {
     override fun unwatch(task: Task) {
         taskMap.remove(task.tag())
         fileMap.remove(task.getFile().canonicalPath)
-    }
-
-    companion object {
-        private val taskMap = mutableMapOf<String, String>()
-        private val fileMap = mutableMapOf<String, String>()
     }
 }

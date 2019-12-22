@@ -28,12 +28,14 @@
 
 
     <string name="start_text">Download</string>
+    <string name="pending_text">Pending</string>
     <string name="pause_text">Pause</string>
     <string name="continue_text">Continue</string>
     <string name="install_text">Install</string>
     <string name="retry_text">Retry</string>
 
 
+    <string name="pended_text">Pending</string>
     <string name="started_text">Downloading</string>
     <string name="paused_text">Download suspended</string>
     <string name="failed_text">Download failed</string>

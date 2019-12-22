@@ -44,6 +44,7 @@ class DemoManagerItem(
                 is Normal -> {
                     // do nothing
                 }
+                is Pending,
                 is Started,
                 is Downloading -> {
                     btn_start.gone()
@@ -106,6 +107,7 @@ class DemoManagerItem(
     private fun stateStr(context: Context, status: Status): String {
         return when (status) {
             is Normal -> ""
+            is Pending -> context.getString(R.string.pending_text)
             is Started -> context.getString(R.string.started_text)
             is Downloading -> context.getString(R.string.started_text)
             is Paused -> context.getString(R.string.paused_text)

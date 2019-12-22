@@ -4,6 +4,7 @@
     <string name="action_stop">Pause</string>
     <string name="action_cancel">Cancel</string>
 
+    <string name="notification_pending_text">Pending…</string>
     <string name="notification_started_text">Downloading…</string>
     <string name="notification_paused_text">Download suspended</string>
     <string name="notification_completed_text">Download complete</string>

@@ -2,7 +2,7 @@ package zlc.season.rxdownload4.manager
 
 import zlc.season.rxdownload4.task.Task
 
-class EmptyRecorder : TaskRecorder {
+object EmptyRecorder : TaskRecorder {
 
     override fun insert(task: Task) {
     }

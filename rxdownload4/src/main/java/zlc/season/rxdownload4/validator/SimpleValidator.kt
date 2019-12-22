@@ -5,7 +5,7 @@ import retrofit2.Response
 import zlc.season.rxdownload4.utils.contentLength
 import java.io.File
 
-class SimpleValidator : Validator {
+object SimpleValidator : Validator {
     override fun validate(file: File, response: Response<ResponseBody>): Boolean {
         return file.length() == response.contentLength()
     }

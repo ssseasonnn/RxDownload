@@ -82,7 +82,7 @@ object RxDownloadRecorder {
 
 
     fun stopAll(callback: () -> Unit = {}) {
-        getAllTaskWithStatus(Started(), Downloading())
+        getAllTaskWithStatus(Pending(), Started(), Downloading())
                 .flatMapPublisher { fromIterable(it) }
                 .doOnNext {
                     it.task.createManager().stop()

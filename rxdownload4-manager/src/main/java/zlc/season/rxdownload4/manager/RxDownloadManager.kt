@@ -23,13 +23,14 @@ fun String.manager(
         header: Map<String, String> = RANGE_CHECK_HEADER,
         maxConCurrency: Int = DEFAULT_MAX_CONCURRENCY,
         rangeSize: Long = DEFAULT_RANGE_SIZE,
-        dispatcher: Dispatcher = DefaultDispatcher(),
-        validator: Validator = SimpleValidator(),
+        dispatcher: Dispatcher = DefaultDispatcher,
+        validator: Validator = SimpleValidator,
         storage: Storage = SimpleStorage(),
-        request: Request = RequestImpl(),
-        watcher: Watcher = WatcherImpl(),
-        notificationCreator: NotificationCreator = EmptyNotification(),
-        recorder: TaskRecorder = EmptyRecorder()
+        request: Request = RequestImpl,
+        watcher: Watcher = WatcherImpl,
+        notificationCreator: NotificationCreator = EmptyNotification,
+        recorder: TaskRecorder = EmptyRecorder,
+        taskLimitation: TaskLimitation = BasicTaskLimitation.of()
 ): TaskManager {
     return Task(this).manager(
             header = header,
@@ -41,7 +42,8 @@ fun String.manager(
             request = request,
             watcher = watcher,
             notificationCreator = notificationCreator,
-            recorder = recorder
+            recorder = recorder,
+            taskLimitation = taskLimitation
     )
 }
 
@@ -50,13 +52,14 @@ fun Task.manager(
         header: Map<String, String> = RANGE_CHECK_HEADER,
         maxConCurrency: Int = DEFAULT_MAX_CONCURRENCY,
         rangeSize: Long = DEFAULT_RANGE_SIZE,
-        dispatcher: Dispatcher = DefaultDispatcher(),
-        validator: Validator = SimpleValidator(),
+        dispatcher: Dispatcher = DefaultDispatcher,
+        validator: Validator = SimpleValidator,
         storage: Storage = SimpleStorage(),
-        request: Request = RequestImpl(),
-        watcher: Watcher = WatcherImpl(),
-        notificationCreator: NotificationCreator = EmptyNotification(),
-        recorder: TaskRecorder = EmptyRecorder()
+        request: Request = RequestImpl,
+        watcher: Watcher = WatcherImpl,
+        notificationCreator: NotificationCreator = EmptyNotification,
+        recorder: TaskRecorder = EmptyRecorder,
+        taskLimitation: TaskLimitation = BasicTaskLimitation.of()
 ): TaskManager {
     return TaskManagerPool.obtain(
             task = this,
@@ -69,14 +72,15 @@ fun Task.manager(
             request = request,
             watcher = watcher,
             notificationCreator = notificationCreator,
-            recorder = recorder
+            recorder = recorder,
+            taskLimitation = taskLimitation
     )
 }
 
 fun TaskManager.subscribe(function: (Status) -> Unit): Any {
     return assertMainThreadWithResult {
         val tag = Any()
-        addCallback(tag, function)
+        addCallback(tag, true, function)
         return@assertMainThreadWithResult tag
     }
 }
@@ -95,19 +99,19 @@ fun TaskManager.currentStatus(): Status {
 
 fun TaskManager.start() {
     ensureMainThread {
-        innerStart()
+        taskLimitation.start(this)
     }
 }
 
 fun TaskManager.stop() {
     ensureMainThread {
-        innerStop()
+        taskLimitation.stop(this)
     }
 }
 
 fun TaskManager.delete() {
     ensureMainThread {
-        innerDelete()
+        taskLimitation.delete(this)
     }
 }
 

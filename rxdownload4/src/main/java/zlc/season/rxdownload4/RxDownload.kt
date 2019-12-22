@@ -37,11 +37,11 @@ fun String.download(
         header: Map<String, String> = RANGE_CHECK_HEADER,
         maxConCurrency: Int = DEFAULT_MAX_CONCURRENCY,
         rangeSize: Long = DEFAULT_RANGE_SIZE,
-        dispatcher: Dispatcher = DefaultDispatcher(),
-        validator: Validator = SimpleValidator(),
+        dispatcher: Dispatcher = DefaultDispatcher,
+        validator: Validator = SimpleValidator,
         storage: Storage = SimpleStorage(),
-        request: Request = RequestImpl(),
-        watcher: Watcher = WatcherImpl()
+        request: Request = RequestImpl,
+        watcher: Watcher = WatcherImpl
 ): Flowable<Progress> {
     require(rangeSize > 1024 * 1024) { "rangeSize must be greater than 1M" }
     require(maxConCurrency > 0) { "maxConCurrency must be greater than 0" }
@@ -76,11 +76,11 @@ fun Task.download(
         header: Map<String, String> = RANGE_CHECK_HEADER,
         maxConCurrency: Int = DEFAULT_MAX_CONCURRENCY,
         rangeSize: Long = DEFAULT_RANGE_SIZE,
-        dispatcher: Dispatcher = DefaultDispatcher(),
-        validator: Validator = SimpleValidator(),
+        dispatcher: Dispatcher = DefaultDispatcher,
+        validator: Validator = SimpleValidator,
         storage: Storage = SimpleStorage(),
-        request: Request = RequestImpl(),
-        watcher: Watcher = WatcherImpl()
+        request: Request = RequestImpl,
+        watcher: Watcher = WatcherImpl
 ): Flowable<Progress> {
     require(rangeSize > 1024 * 1024) { "rangeSize must be greater than 1M" }
     require(maxConCurrency > 0) { "maxConCurrency must be greater than 0" }

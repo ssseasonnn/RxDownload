@@ -5,10 +5,12 @@ class BasicTaskLimitation(private val maxTaskNumber: Int) : TaskLimitation {
     private var currentTakNumber = 0
 
     companion object {
+        private const val MAX_TASK_NUMBER = 3
+
         @Volatile
         private var INSTANCE: BasicTaskLimitation? = null
 
-        fun of(maxTaskNumber: Int = 5): TaskLimitation =
+        fun of(maxTaskNumber: Int = MAX_TASK_NUMBER): TaskLimitation =
                 INSTANCE ?: synchronized(this) {
                     INSTANCE ?: BasicTaskLimitation(maxTaskNumber)
                 }
@@ -18,10 +20,6 @@ class BasicTaskLimitation(private val maxTaskNumber: Int) : TaskLimitation {
         if (currentTakNumber < maxTaskNumber) {
             currentTakNumber++
             taskManager.innerStart()
-            val tag1 = Any()
-            taskManager.addCallback(tag1, false) {
-                taskManager.removeCallback(tag1)
-            }
 
             val tag = Any()
             taskManager.addCallback(tag, false) {

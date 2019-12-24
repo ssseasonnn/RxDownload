@@ -39,7 +39,7 @@ fun String.download(
         rangeSize: Long = DEFAULT_RANGE_SIZE,
         dispatcher: Dispatcher = DefaultDispatcher,
         validator: Validator = SimpleValidator,
-        storage: Storage = SimpleStorage(),
+        storage: Storage = SimpleStorage,
         request: Request = RequestImpl,
         watcher: Watcher = WatcherImpl
 ): Flowable<Progress> {
@@ -59,12 +59,12 @@ fun String.download(
 }
 
 @JvmOverloads
-fun String.file(storage: Storage = SimpleStorage()): File {
+fun String.file(storage: Storage = SimpleStorage): File {
     return Task(this).file(storage)
 }
 
 @JvmOverloads
-fun String.delete(storage: Storage = SimpleStorage()) {
+fun String.delete(storage: Storage = SimpleStorage) {
     Task(this).delete(storage)
 }
 
@@ -78,7 +78,7 @@ fun Task.download(
         rangeSize: Long = DEFAULT_RANGE_SIZE,
         dispatcher: Dispatcher = DefaultDispatcher,
         validator: Validator = SimpleValidator,
-        storage: Storage = SimpleStorage(),
+        storage: Storage = SimpleStorage,
         request: Request = RequestImpl,
         watcher: Watcher = WatcherImpl
 ): Flowable<Progress> {
@@ -101,7 +101,7 @@ fun Task.download(
 }
 
 @JvmOverloads
-fun Task.file(storage: Storage = SimpleStorage()): File {
+fun Task.file(storage: Storage = SimpleStorage): File {
     storage.load(this)
     if (isEmpty()) {
         "Task file not found".log()
@@ -110,7 +110,7 @@ fun Task.file(storage: Storage = SimpleStorage()): File {
 }
 
 @JvmOverloads
-fun Task.delete(storage: Storage = SimpleStorage()) {
+fun Task.delete(storage: Storage = SimpleStorage) {
     val file = file(storage)
     file.clear()
     storage.delete(this)

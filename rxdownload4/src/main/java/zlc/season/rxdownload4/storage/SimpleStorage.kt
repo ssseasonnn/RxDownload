@@ -4,7 +4,7 @@ import android.content.Context.MODE_PRIVATE
 import zlc.season.claritypotion.ClarityPotion.Companion.clarityPotion
 import zlc.season.rxdownload4.task.Task
 
-class SimpleStorage : MemoryStorage() {
+object SimpleStorage : MemoryStorage() {
     private val sp by lazy {
         clarityPotion.getSharedPreferences("rxdownload_simple_storage", MODE_PRIVATE)
     }

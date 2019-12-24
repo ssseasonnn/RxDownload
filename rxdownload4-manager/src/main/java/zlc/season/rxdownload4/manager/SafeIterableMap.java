@@ -6,6 +6,12 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.WeakHashMap;
 
+/**
+ * Copy from androidx, to support remove when iterator
+ *
+ * @param <K> KEY
+ * @param <V> VALUE
+ */
 public class SafeIterableMap<K, V> implements Iterable<Map.Entry<K, V>> {
 
     private Entry<K, V> mStart;

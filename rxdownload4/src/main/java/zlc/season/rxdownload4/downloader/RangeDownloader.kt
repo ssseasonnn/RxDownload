@@ -74,7 +74,7 @@ class RangeDownloader : Downloader {
 
     private fun createFiles(response: Response<ResponseBody>, taskInfo: TaskInfo) {
         tmpFile.recreate {
-            shadowFile.recreate {
+            shadowFile.recreate(response.contentLength()) {
                 rangeTmpFile = RangeTmpFile(tmpFile)
                 rangeTmpFile.write(response, taskInfo)
             }

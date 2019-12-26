@@ -15,14 +15,19 @@ fun File.tmp(): File {
     return File(tmpPath)
 }
 
-fun File.recreate(block: () -> Unit = {}) {
+fun File.recreate(length: Long = 0L, block: () -> Unit = {}) {
     delete()
     val created = createNewFile()
     if (created) {
+        setLength(length)
         block()
     } else {
         throw IllegalStateException("File create failed!")
     }
+}
+
+fun File.setLength(length: Long = 0L) {
+    RandomAccessFile(this, "rw").setLength(length)
 }
 
 fun File.channel(): FileChannel {

@@ -103,7 +103,7 @@ fun Task.download(
 @JvmOverloads
 fun Task.file(storage: Storage = SimpleStorage()): File {
     storage.load(this)
-    if (!isEmpty()) {
+    if (isEmpty()) {
         "Task file not found".log()
     }
     return File(savePath, saveName)

@@ -12,7 +12,9 @@ class BasicTaskLimitation(private val maxTaskNumber: Int) : TaskLimitation {
 
         fun of(maxTaskNumber: Int = MAX_TASK_NUMBER): TaskLimitation =
                 INSTANCE ?: synchronized(this) {
-                    INSTANCE ?: BasicTaskLimitation(maxTaskNumber)
+                    INSTANCE ?: BasicTaskLimitation(maxTaskNumber).also {
+                        INSTANCE = it
+                    }
                 }
     }
 

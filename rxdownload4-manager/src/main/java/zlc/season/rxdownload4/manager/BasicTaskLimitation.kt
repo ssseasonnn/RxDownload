@@ -37,7 +37,7 @@ class BasicTaskLimitation(private val maxTaskNumber: Int) : TaskLimitation {
 
         } else {
             taskManagerList.add(taskManager)
-            taskManager.sendPendingEventManual()
+            taskManager.innerPending()
         }
     }
 

@@ -29,7 +29,7 @@ class SimpleNotificationCreator : NotificationCreator {
     }
 
     override fun create(task: Task, status: Status): Notification? {
-        return builderHelper.get(status).build()
+        return builderHelper.get(status)?.build()
     }
 
     class BuilderHelper(private val channelId: String, private val task: Task) {
@@ -47,15 +47,18 @@ class SimpleNotificationCreator : NotificationCreator {
         private val pausedActions by lazy { listOf(startAction(task), cancelAction(task)) }
         private val failedActions by lazy { listOf(startAction(task), cancelAction(task)) }
 
-        fun get(status: Status): Builder {
+        fun get(status: Status): Builder? {
             val builder = getBuilder(status)
 
-            if (status is Downloading) {
-                builder.setProgress(
+            when (status) {
+                is Downloading -> builder.setProgress(
                         status.progress.totalSize.toInt(),
                         status.progress.downloadSize.toInt(),
                         status.progress.isChunked
                 )
+                //Do not need notification
+                is Normal -> return null
+                is Deleted -> return null
             }
             return builder
         }

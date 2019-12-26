@@ -25,8 +25,13 @@ class TaskManager(
         notificationCreator.init(task)
     }
 
-    private val downloadHandler by lazy { StatusHandler(task, taskRecorder) }
+    //For download use
+    private val downloadHandler by lazy { StatusHandler(task) }
 
+    //For record use
+    private val recordHandler by lazy { StatusHandler(task, taskRecorder) }
+
+    //For notification use
     private val notificationHandler by lazy {
         StatusHandler(task, logTag = "Notification") {
             val notification = notificationCreator.create(task, it)
@@ -37,15 +42,8 @@ class TaskManager(
     //Download disposable
     private var disposable: Disposable? = null
     private var downloadDisposable: Disposable? = null
+    private var recordDisposable: Disposable? = null
     private var notificationDisposable: Disposable? = null
-
-    /**
-     * Send Pending event by hand
-     */
-    internal fun sendPendingEventManual() {
-        downloadHandler.onPending()
-        notificationHandler.onPending()
-    }
 
     /**
      * @param tag As the unique identifier for this subscription
@@ -69,7 +67,7 @@ class TaskManager(
         }
 
         subscribeNotification()
-
+        subscribeRecord()
         subscribeDownload()
 
         disposable = connectFlowable.connect()
@@ -87,6 +85,17 @@ class TaskManager(
                 .subscribeBy()
     }
 
+    private fun subscribeRecord() {
+        recordDisposable = connectFlowable.sample(1000, MILLISECONDS)
+                .doOnSubscribe { recordHandler.onStarted() }
+                .doOnNext { recordHandler.onDownloading(it) }
+                .doOnComplete { recordHandler.onCompleted() }
+                .doOnError { recordHandler.onFailed(it) }
+                .doOnCancel { recordHandler.onPaused() }
+                .subscribeBy()
+    }
+
+
     private fun subscribeNotification() {
         notificationDisposable = connectFlowable.sample(500, MILLISECONDS)
                 .doOnSubscribe { notificationHandler.onStarted() }
@@ -98,10 +107,13 @@ class TaskManager(
     }
 
     internal fun innerStop() {
+        //send pause status
         notificationHandler.onPaused()
         downloadHandler.onPaused()
+        recordHandler.onPaused()
 
         notificationDisposable.safeDispose()
+        recordDisposable.safeDispose()
         downloadDisposable.safeDispose()
         disposable.safeDispose()
     }
@@ -111,10 +123,21 @@ class TaskManager(
 
         task.delete(storage)
 
-        //special handle
+        //send delete status
         downloadHandler.onDeleted()
+        notificationHandler.onDeleted()
+        recordHandler.onDeleted()
 
         cancelNotification(task)
+    }
+
+    /**
+     * Send Pending status
+     */
+    internal fun innerPending() {
+        downloadHandler.onPending()
+        recordHandler.onPending()
+        notificationHandler.onPending()
     }
 
     private fun isStarted(): Boolean {

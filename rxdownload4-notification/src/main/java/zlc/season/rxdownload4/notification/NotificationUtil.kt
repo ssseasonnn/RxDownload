@@ -6,9 +6,9 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.os.Build
-import android.support.v4.app.NotificationCompat.Action
-import android.support.v4.app.NotificationCompat.Builder
-import android.support.v4.app.NotificationManagerCompat
+import androidx.core.app.NotificationCompat.Action
+import androidx.core.app.NotificationCompat.Builder
+import androidx.core.app.NotificationManagerCompat
 import zlc.season.claritypotion.ClarityPotion.Companion.clarityPotion
 import zlc.season.rxdownload4.Progress
 import zlc.season.rxdownload4.task.Task

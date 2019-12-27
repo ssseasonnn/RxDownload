@@ -3,7 +3,7 @@ package zlc.season.rxdownload.demo
 import android.Manifest
 import android.annotation.SuppressLint
 import android.os.Bundle
-import android.support.v7.app.AppCompatActivity
+import androidx.appcompat.app.AppCompatActivity
 import com.tbruyelle.rxpermissions2.RxPermissions
 import kotlinx.android.synthetic.main.content_main.*
 import zlc.season.rxdownload.demo.basic.DemoActivity

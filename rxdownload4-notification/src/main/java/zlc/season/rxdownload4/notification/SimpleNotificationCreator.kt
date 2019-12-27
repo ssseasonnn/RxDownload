@@ -1,7 +1,7 @@
 package zlc.season.rxdownload4.notification
 
 import android.app.Notification
-import android.support.v4.app.NotificationCompat.Builder
+import androidx.core.app.NotificationCompat.Builder
 import zlc.season.claritypotion.ClarityPotion.Companion.clarityPotion
 import zlc.season.rxdownload4.manager.*
 import zlc.season.rxdownload4.notification.NotificationActionService.Companion.cancelAction

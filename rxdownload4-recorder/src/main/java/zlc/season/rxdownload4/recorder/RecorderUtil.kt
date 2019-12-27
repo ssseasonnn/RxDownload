@@ -1,6 +1,6 @@
 package zlc.season.rxdownload4.recorder
 
-import android.arch.persistence.db.SupportSQLiteDatabase
+import androidx.sqlite.db.SupportSQLiteDatabase
 import zlc.season.rxdownload4.manager.Normal
 import zlc.season.rxdownload4.manager.Status
 import zlc.season.rxdownload4.recorder.StatusConverter.Companion.DOWNLOADING

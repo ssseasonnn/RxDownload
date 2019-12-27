@@ -4,8 +4,8 @@ import android.app.IntentService
 import android.app.PendingIntent
 import android.app.PendingIntent.FLAG_UPDATE_CURRENT
 import android.content.Intent
-import android.support.v4.app.NotificationCompat.Action
-import android.support.v4.app.NotificationCompat.Action.Builder
+import androidx.core.app.NotificationCompat.Action
+import androidx.core.app.NotificationCompat.Action.Builder
 import zlc.season.claritypotion.ClarityPotion.Companion.clarityPotion
 import zlc.season.rxdownload4.manager.delete
 import zlc.season.rxdownload4.manager.manager

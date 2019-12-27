@@ -1,9 +1,9 @@
 package zlc.season.rxdownload.demo.list
 
 import android.os.Bundle
-import android.support.v7.app.AppCompatActivity
 import android.view.Menu
 import android.view.MenuItem
+import androidx.appcompat.app.AppCompatActivity
 import kotlinx.android.synthetic.main.activity_demo_list.*
 import kotlinx.android.synthetic.main.demo_list_item.*
 import zlc.season.rxdownload.demo.R

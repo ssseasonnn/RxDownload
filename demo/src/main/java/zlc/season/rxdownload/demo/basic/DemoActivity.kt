@@ -2,8 +2,8 @@ package zlc.season.rxdownload.demo.basic
 
 import android.annotation.SuppressLint
 import android.os.Bundle
-import android.support.v7.app.AppCompatActivity
 import android.text.method.ScrollingMovementMethod
+import androidx.appcompat.app.AppCompatActivity
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.Disposable
 import io.reactivex.rxkotlin.subscribeBy
@@ -67,6 +67,7 @@ class DemoActivity : AppCompatActivity() {
     }
 
 
+    @SuppressLint("SetTextI18n")
     private fun start() {
         disposable = url.download()
                 .observeOn(AndroidSchedulers.mainThread())

@@ -8,8 +8,8 @@ import android.graphics.drawable.Drawable
 import android.net.Uri.fromFile
 import android.os.Build.VERSION.SDK_INT
 import android.os.Build.VERSION_CODES.N
-import android.support.v4.content.FileProvider.getUriForFile
-import android.support.v4.view.ViewCompat
+import androidx.core.content.FileProvider.getUriForFile
+import androidx.core.view.ViewCompat
 import android.view.View
 import android.widget.ImageView
 import com.bumptech.glide.Glide

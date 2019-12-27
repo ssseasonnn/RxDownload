@@ -1,7 +1,7 @@
 package zlc.season.rxdownload4.recorder
 
-import android.arch.persistence.room.*
-import android.arch.persistence.room.OnConflictStrategy.IGNORE
+import androidx.room.*
+import androidx.room.OnConflictStrategy.IGNORE
 import io.reactivex.Maybe
 import zlc.season.rxdownload4.manager.Status
 

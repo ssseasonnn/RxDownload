@@ -1,6 +1,8 @@
 package zlc.season.rxdownload4.manager;
 
-import android.support.annotation.NonNull;
+import androidx.annotation.NonNull;
+
+import org.jetbrains.annotations.NotNull;
 
 import java.util.Iterator;
 import java.util.Map;
@@ -180,6 +182,7 @@ public class SafeIterableMap<K, V> implements Iterable<Map.Entry<K, V>> {
         return !iterator1.hasNext() && !iterator2.hasNext();
     }
 
+    @NotNull
     @Override
     public String toString() {
         StringBuilder builder = new StringBuilder();

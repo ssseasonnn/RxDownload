@@ -16,7 +16,7 @@ android {
         versionCode 1
         versionName "1.0"
 
-        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
 
     buildTypes {
@@ -30,10 +30,10 @@ android {
 
 dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
+    implementation 'androidx.room:room-runtime:2.2.3'
+    implementation 'androidx.room:room-rxjava2:2.2.3'
+    kapt 'androidx.room:room-compiler:2.2.3'
+
     implementation project(":rxdownload4-manager")
     implementation project(":rxdownload4-notification")
-
-    implementation 'android.arch.persistence.room:runtime:1.1.1'
-    implementation 'android.arch.persistence.room:rxjava2:1.1.1'
-    kapt 'android.arch.persistence.room:compiler:1.1.1'
 }

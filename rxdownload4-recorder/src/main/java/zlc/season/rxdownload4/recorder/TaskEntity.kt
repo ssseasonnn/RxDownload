@@ -1,9 +1,9 @@
 package zlc.season.rxdownload4.recorder
 
-import android.arch.persistence.room.Embedded
-import android.arch.persistence.room.Entity
-import android.arch.persistence.room.Index
-import android.arch.persistence.room.PrimaryKey
+import androidx.room.Embedded
+import androidx.room.Entity
+import androidx.room.Index
+import androidx.room.PrimaryKey
 import zlc.season.rxdownload4.Progress
 import zlc.season.rxdownload4.manager.Status
 import zlc.season.rxdownload4.task.Task

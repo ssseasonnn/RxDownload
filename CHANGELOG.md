@@ -1,6 +1,9 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## [RxDownload4 v1.1.0] - 2019-12-27
+- Migrate to androidx
+
 ## [RxDownload4 v1.0.9] - 2019-12-26
 - Support limit number of tasks
 - Add Pending status

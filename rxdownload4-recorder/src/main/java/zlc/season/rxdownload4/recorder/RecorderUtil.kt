@@ -1,5 +1,6 @@
 package zlc.season.rxdownload4.recorder
 
+import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import zlc.season.rxdownload4.manager.Normal
 import zlc.season.rxdownload4.manager.Status
@@ -19,6 +20,17 @@ internal fun fixAbnormalState(db: SupportSQLiteDatabase) {
         db.setTransactionSuccessful()
     } finally {
         db.endTransaction()
+    }
+}
+
+/**
+ * Migration from v1 to v2.
+ *
+ * Add extraInfo column
+ */
+internal val MIGRATION_1_2 = object : Migration(1, 2) {
+    override fun migrate(database: SupportSQLiteDatabase) {
+        database.execSQL("""ALTER TABLE $TAB_NAME ADD COLUMN extraInfo TEXT NOT NULL DEFAULT "" """)
     }
 }
 

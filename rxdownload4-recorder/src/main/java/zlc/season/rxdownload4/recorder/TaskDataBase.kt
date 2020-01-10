@@ -9,7 +9,7 @@ import androidx.room.TypeConverters
 import androidx.sqlite.db.SupportSQLiteDatabase
 
 
-@Database(entities = [TaskEntity::class], version = 1)
+@Database(entities = [TaskEntity::class], version = 2)
 @TypeConverters(StatusConverter::class)
 abstract class TaskDataBase : RoomDatabase() {
     abstract fun taskDao(): TaskDao
@@ -25,6 +25,7 @@ abstract class TaskDataBase : RoomDatabase() {
 
         private fun buildDatabase(context: Context) =
                 Room.databaseBuilder(context.applicationContext, TaskDataBase::class.java, DB_NAME)
+                        .addMigrations(MIGRATION_1_2)
                         .addCallback(callback).build()
 
         private val callback = object : RoomDatabase.Callback() {

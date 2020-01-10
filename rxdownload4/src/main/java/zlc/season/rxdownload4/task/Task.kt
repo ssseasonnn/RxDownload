@@ -7,7 +7,9 @@ open class Task(
         var url: String,
         var taskName: String = getFileNameFromUrl(url),
         var saveName: String = "",
-        var savePath: String = DEFAULT_SAVE_PATH
+        var savePath: String = DEFAULT_SAVE_PATH,
+
+        var extraInfo: String = ""
 ) {
 
     /**

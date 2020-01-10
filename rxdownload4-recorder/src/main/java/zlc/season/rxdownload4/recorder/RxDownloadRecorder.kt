@@ -15,6 +15,20 @@ import zlc.season.rxdownload4.task.Task
 object RxDownloadRecorder {
     val taskDataBase by lazy { TaskDataBase.getInstance(clarityPotion) }
 
+    /**
+     * Update task extraInfo
+     */
+    fun update(task: Task, newExtraInfo: String): Maybe<TaskEntity> {
+        return Maybe.just(task)
+                .subscribeOn(io())
+                .flatMap {
+                    taskDataBase.taskDao().update(task.hashCode(), newExtraInfo)
+                }
+                .flatMap {
+                    getTask(task)
+                }
+    }
+
     fun getTask(url: String): Maybe<TaskEntity> {
         return getTask(Task(url))
     }

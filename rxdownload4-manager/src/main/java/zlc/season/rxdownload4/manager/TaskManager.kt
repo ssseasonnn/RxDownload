@@ -11,6 +11,7 @@ import zlc.season.rxdownload4.storage.Storage
 import zlc.season.rxdownload4.task.Task
 import zlc.season.rxdownload4.utils.safeDispose
 import java.util.concurrent.TimeUnit.MILLISECONDS
+import java.util.concurrent.TimeUnit.SECONDS
 
 class TaskManager(
         private val task: Task,
@@ -86,7 +87,7 @@ class TaskManager(
     }
 
     private fun subscribeRecord() {
-        recordDisposable = connectFlowable.sample(1000, MILLISECONDS)
+        recordDisposable = connectFlowable.sample(10, SECONDS)
                 .doOnSubscribe { recordHandler.onStarted() }
                 .doOnNext { recordHandler.onDownloading(it) }
                 .doOnComplete { recordHandler.onCompleted() }

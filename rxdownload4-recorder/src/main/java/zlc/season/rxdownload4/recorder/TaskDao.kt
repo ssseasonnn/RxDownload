@@ -8,16 +8,16 @@ import zlc.season.rxdownload4.manager.Status
 @Dao
 interface TaskDao {
     @Insert(onConflict = IGNORE)
-    fun insert(taskEntity: TaskEntity)
+    fun insert(taskEntity: TaskEntity): Maybe<Long>
 
     @Update
-    fun update(taskEntity: TaskEntity)
+    fun update(taskEntity: TaskEntity): Maybe<Int>
 
     @Update
-    fun update(list: List<TaskEntity>)
+    fun update(list: List<TaskEntity>): Maybe<Int>
 
     @Delete
-    fun delete(taskEntity: TaskEntity)
+    fun delete(taskEntity: TaskEntity): Maybe<Int>
 
     @Query("SELECT * FROM task_record")
     fun getAll(): Maybe<List<TaskEntity>>
@@ -36,4 +36,7 @@ interface TaskDao {
 
     @Query("SELECT * FROM task_record WHERE id IN(:id)")
     fun get(vararg id: Int): Maybe<List<TaskEntity>>
+
+    @Query("UPDATE task_record SET extraInfo = :extraInfo WHERE id = :id")
+    fun update(id: Int, extraInfo: String): Maybe<Int>
 }

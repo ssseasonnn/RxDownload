@@ -66,6 +66,7 @@ fun createNotificationBuilder(
             .setSmallIcon(icon)
             .setContentIntent(intent)
             .setVibrate(longArrayOf(0L))
+            .setOngoing(true)
             .setSound(null)
             .setDefaults(Notification.FLAG_ONLY_ALERT_ONCE)
 

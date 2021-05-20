@@ -52,7 +52,6 @@ dependencies {
     implementation 'com.google.android.material:material:1.0.0'
     implementation 'androidx.recyclerview:recyclerview:1.1.0'
 
-    implementation 'com.tbruyelle.rxpermissions2:rxpermissions:0.9.4@aar'
     implementation 'com.github.bumptech.glide:glide:4.10.0'
 
     implementation 'com.github.ssseasonnn:Yasha:1.0.8'

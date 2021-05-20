@@ -1,8 +1,7 @@
 package zlc.season.rxdownload4
 
-import android.os.Environment.DIRECTORY_DOWNLOADS
-import android.os.Environment.getExternalStoragePublicDirectory
 import io.reactivex.Flowable
+import zlc.season.claritypotion.ClarityPotion
 import zlc.season.rxdownload4.downloader.DefaultDispatcher
 import zlc.season.rxdownload4.downloader.Dispatcher
 import zlc.season.rxdownload4.request.Request
@@ -20,7 +19,7 @@ import zlc.season.rxdownload4.watcher.WatcherImpl
 import java.io.File
 
 
-val DEFAULT_SAVE_PATH: String = getExternalStoragePublicDirectory(DIRECTORY_DOWNLOADS).path
+val DEFAULT_SAVE_PATH: String = ClarityPotion.clarityPotion.filesDir.path
 
 val RANGE_CHECK_HEADER = mapOf("Range" to "bytes=0-")
 

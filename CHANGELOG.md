@@ -1,6 +1,9 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## [RxDownload4 v1.1.2] - 2020-01-10
+- Adapt Android 10
+
 ## [RxDownload4 v1.1.1] - 2020-01-10
 - Task add extraInfo
 

@@ -10,13 +10,14 @@ import zlc.season.rxdownload4.notification.NotificationActionService.Companion.s
 import zlc.season.rxdownload4.task.Task
 import zlc.season.rxdownload4.utils.log
 
-class SimpleNotificationCreator : NotificationCreator {
+class SimpleNotificationCreator(title: String? = null) : NotificationCreator {
     private val channelId = "RxDownload"
     private val channelName = "RxDownload"
     private val channelDesc = "RxDownload"
+    private val mTitle = title
 
     private lateinit var task: Task
-    private val builderHelper by lazy { BuilderHelper(channelId, task) }
+    private val builderHelper by lazy { BuilderHelper(channelId, task, mTitle) }
 
     override fun init(task: Task) {
         this.task = task
@@ -32,7 +33,8 @@ class SimpleNotificationCreator : NotificationCreator {
         return builderHelper.get(status)?.build()
     }
 
-    class BuilderHelper(private val channelId: String, private val task: Task) {
+    class BuilderHelper(private val channelId: String, private val task: Task, private var title: String?) {
+
         private val builderMap = mutableMapOf<Status, Builder>()
 
         private val pendingContent by lazy { clarityPotion.getString(R.string.notification_pending_text) }
@@ -46,6 +48,12 @@ class SimpleNotificationCreator : NotificationCreator {
         private val downloadingActions by lazy { listOf(stopAction(task), cancelAction(task)) }
         private val pausedActions by lazy { listOf(startAction(task), cancelAction(task)) }
         private val failedActions by lazy { listOf(startAction(task), cancelAction(task)) }
+
+        init {
+            if (title == null) {
+                title = task.taskName
+            }
+        }
 
         fun get(status: Status): Builder? {
             val builder = getBuilder(status)
@@ -80,7 +88,7 @@ class SimpleNotificationCreator : NotificationCreator {
 
                 val newBuilder = createNotificationBuilder(
                         channelId = channelId,
-                        title = task.taskName,
+                        title = title!!,
                         content = content,
                         icon = icon,
                         actions = actions

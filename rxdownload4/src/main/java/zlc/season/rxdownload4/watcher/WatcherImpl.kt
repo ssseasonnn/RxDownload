@@ -10,7 +10,7 @@ object WatcherImpl : Watcher {
     @Synchronized
     override fun watch(task: Task) {
         //check task
-        check(taskMap[task.tag()] == null) { "Task [${task.tag()} is exists!" }
+        check(taskMap[task.tag()] == null) { "Task [${task.tag()} already exists!" }
 
         val filePath = task.getFile().canonicalPath
         //check file

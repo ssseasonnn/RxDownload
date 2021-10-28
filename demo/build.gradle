@@ -7,12 +7,12 @@ apply plugin: 'kotlin-kapt'
 apply plugin: 'kotlin-android-extensions'
 
 android {
-    compileSdkVersion 28
+    compileSdkVersion 31
     defaultConfig {
         applicationId "zlc.season.rxdownload.kotlin_demo"
         minSdkVersion 15
         //noinspection OldTargetApi
-        targetSdkVersion 28
+        targetSdkVersion 31
         versionCode 1
         versionName "1.0"
         multiDexEnabled true

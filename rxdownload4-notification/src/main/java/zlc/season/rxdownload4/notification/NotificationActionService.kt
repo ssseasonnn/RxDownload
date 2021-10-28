@@ -2,8 +2,10 @@ package zlc.season.rxdownload4.notification
 
 import android.app.IntentService
 import android.app.PendingIntent
+import android.app.PendingIntent.FLAG_IMMUTABLE
 import android.app.PendingIntent.FLAG_UPDATE_CURRENT
 import android.content.Intent
+import android.os.Build
 import androidx.core.app.NotificationCompat.Action
 import androidx.core.app.NotificationCompat.Action.Builder
 import zlc.season.claritypotion.ClarityPotion.Companion.clarityPotion
@@ -23,25 +25,25 @@ class NotificationActionService : IntentService("NotificationActionService") {
 
         fun startAction(task: Task): Action {
             return Builder(
-                    R.drawable.ic_start,
-                    clarityPotion.getString(R.string.action_start),
-                    createPendingIntent(ACTION_START, task)
+                R.drawable.ic_start,
+                clarityPotion.getString(R.string.action_start),
+                createPendingIntent(ACTION_START, task)
             ).build()
         }
 
         fun stopAction(task: Task): Action {
             return Builder(
-                    R.drawable.ic_pause,
-                    clarityPotion.getString(R.string.action_stop),
-                    createPendingIntent(ACTION_STOP, task)
+                R.drawable.ic_pause,
+                clarityPotion.getString(R.string.action_stop),
+                createPendingIntent(ACTION_STOP, task)
             ).build()
         }
 
         fun cancelAction(task: Task): Action {
             return Builder(
-                    R.drawable.ic_cancel,
-                    clarityPotion.getString(R.string.action_cancel),
-                    createPendingIntent(ACTION_CANCEL, task)
+                R.drawable.ic_cancel,
+                clarityPotion.getString(R.string.action_cancel),
+                createPendingIntent(ACTION_CANCEL, task)
             ).build()
         }
 
@@ -50,7 +52,13 @@ class NotificationActionService : IntentService("NotificationActionService") {
             intent.action = action
             intent.putExtra(INTENT_KEY, task.url)
 
-            return PendingIntent.getService(clarityPotion, task.hashCode(), intent, FLAG_UPDATE_CURRENT)
+            return PendingIntent.getService(
+                clarityPotion, task.hashCode(), intent, if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                    FLAG_IMMUTABLE or FLAG_UPDATE_CURRENT
+                } else {
+                    FLAG_UPDATE_CURRENT
+                }
+            )
         }
     }
 

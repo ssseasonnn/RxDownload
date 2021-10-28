@@ -14,11 +14,12 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme"
         android:usesCleartextTraffic="true"
-        tools:ignore="AllowBackup,GoogleAppIndexingWarning,MissingApplicationIcon"
-        tools:targetApi="n">
+        tools:ignore="AllowBackup,GoogleAppIndexingWarning,MissingApplicationIcon">
 
 
-        <activity android:name=".MainActivity">
+        <activity
+            android:name=".MainActivity"
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 

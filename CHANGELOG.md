@@ -1,6 +1,9 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## [RxDownload4 v1.1.4] - 2021-10-28
+- Adapt Android 12
+
 ## [RxDownload4 v1.1.3] - 2020-01-10
 - Adapt Android 10
 

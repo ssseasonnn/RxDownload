@@ -21,14 +21,14 @@ A multi-threaded download tool written with RxJava and Kotlin
 
     ```gradle
     //Load on demand
-    implementation "com.github.ssseasonnn.RxDownload:rxdownload4:1.1.3"
-    implementation "com.github.ssseasonnn.RxDownload:rxdownload4-manager:1.1.3"
-    implementation "com.github.ssseasonnn.RxDownload:rxdownload4-notification:1.1.3"
-    implementation "com.github.ssseasonnn.RxDownload:rxdownload4-recorder:1.1.3"
+    implementation "com.github.ssseasonnn.RxDownload:rxdownload4:1.1.4"
+    implementation "com.github.ssseasonnn.RxDownload:rxdownload4-manager:1.1.4"
+    implementation "com.github.ssseasonnn.RxDownload:rxdownload4-notification:1.1.4"
+    implementation "com.github.ssseasonnn.RxDownload:rxdownload4-recorder:1.1.4"
     
     or: 
     //Add all dependencies of RxDownload4
-    implementation "com.github.ssseasonnn:RxDownload:1.1.3"
+    implementation "com.github.ssseasonnn:RxDownload:1.1.4"
     ```
 
 ## Basic Usage
